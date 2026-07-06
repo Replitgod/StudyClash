@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
+import { getSupabaseClient } from "@/lib/supabase";
 
-// This client uses the SERVICE ROLE key, which is safe here because
-// this code only ever runs on the server (inside this API route).
-// Never send the service role key to the browser.
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string
-);
+function getOpenAIClient() {
+  const apiKey = process.env.OPENAI_API_KEY;
 
-// The OpenAI key also stays on the server. The frontend never sees it.
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+  if (!apiKey) {
+    throw new Error("OpenAI API key is not configured.");
+  }
+
+  return new OpenAI({ apiKey });
+}
 
 // Shape of a single quiz question returned by the AI
 type GeneratedQuestion = {
@@ -27,6 +24,9 @@ type GeneratedQuestion = {
 
 export async function POST(req: NextRequest) {
   try {
+    const supabase = getSupabaseClient();
+    const openai = getOpenAIClient();
+
     // 1. Read the data sent from the frontend form
     const body = await req.json();
     const { studentName, courseName, deckTitle, notes } = body;
