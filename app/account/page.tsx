@@ -291,7 +291,7 @@ export default function AccountPage() {
           {/* Actions */}
           <div className="mt-6 flex flex-col gap-3">
             <Link
-              href="/create"
+              href="/login?redirect=/create"
               className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
             >
               Create a Battle Deck

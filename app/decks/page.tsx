@@ -87,7 +87,7 @@ export default function DecksPage() {
 
         {/* Create new deck button */}
         <Link
-          href="/create"
+          href="/login?redirect=/create"
           className="group relative mt-6 inline-flex w-full max-w-xs items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:mt-8 sm:w-auto sm:hover:scale-105"
         >
           <span className="relative z-10">+ Create New Deck</span>

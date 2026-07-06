@@ -26,16 +26,14 @@ type GeneratedQuestion = {
 };
 
 const REQUIRED_TOTAL = 15;
-const REQUIRED_EASY = 5;
-const REQUIRED_MEDIUM = 7;
-const REQUIRED_HARD = 3;
+const MIN_QUESTIONS = 8;
 const MIN_NOTES_WORD_COUNT = 30;
 
 function buildPrompt(notes: string): string {
   return `
 You are a quiz generator for a study app called StudyClash.
 
-Read the notes below and create exactly ${REQUIRED_TOTAL} multiple-choice questions
+Read the notes below and create between ${MIN_QUESTIONS} and ${REQUIRED_TOTAL} multiple-choice questions
 that test understanding of the material. Every question must be answerable
 using ONLY the information in the notes below. Do not introduce outside facts,
 and do not invent details that are not present in the notes.
@@ -48,15 +46,11 @@ Rules for every question:
 - "topic": a short label (2-4 words) for the subtopic this question covers
 - "difficulty": exactly one of "easy", "medium", or "hard"
 
-Difficulty mix (must match exactly):
-- Exactly ${REQUIRED_EASY} questions with difficulty "easy" (basic recall/definitions)
-- Exactly ${REQUIRED_MEDIUM} questions with difficulty "medium" (applying or connecting concepts)
-- Exactly ${REQUIRED_HARD} questions with difficulty "hard" (nuanced or multi-step reasoning)
-
 Other rules:
 - No two questions may test the exact same fact or be reworded duplicates of each other.
 - Every question must be unique in what it tests.
-- If the notes do not contain enough distinct material to support ${REQUIRED_TOTAL} unique, non-overlapping questions, do your best to cover every distinct fact, concept, or detail in the notes without repeating yourself.
+- If the notes do not contain enough distinct material to support ${REQUIRED_TOTAL} unique questions, create as many strong questions as you can while keeping them non-overlapping and directly grounded in the notes.
+- Prioritize clarity and detail over forcing a large number of questions.
 
 Return ONLY valid JSON in this exact shape, with no extra text, no markdown, no code fences:
 {
@@ -104,14 +98,11 @@ function validateQuestions(questions: unknown): string | null {
     return "AI response was not a list of questions.";
   }
 
-  if (questions.length !== REQUIRED_TOTAL) {
-    return `Expected exactly ${REQUIRED_TOTAL} questions, got ${questions.length}.`;
+  if (questions.length < MIN_QUESTIONS || questions.length > REQUIRED_TOTAL) {
+    return `Expected between ${MIN_QUESTIONS} and ${REQUIRED_TOTAL} questions, got ${questions.length}.`;
   }
 
   const seenQuestionTexts = new Set<string>();
-  let easyCount = 0;
-  let mediumCount = 0;
-  let hardCount = 0;
 
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i] as Partial<GeneratedQuestion>;
@@ -163,23 +154,11 @@ function validateQuestions(questions: unknown): string | null {
       return `${label} has an invalid difficulty value.`;
     }
 
-    if (difficulty === "easy") easyCount++;
-    if (difficulty === "medium") mediumCount++;
-    if (difficulty === "hard") hardCount++;
-
     const normalizedText = q.question_text.trim().toLowerCase();
     if (seenQuestionTexts.has(normalizedText)) {
       return `Duplicate question detected: "${q.question_text.trim()}"`;
     }
     seenQuestionTexts.add(normalizedText);
-  }
-
-  if (
-    easyCount !== REQUIRED_EASY ||
-    mediumCount !== REQUIRED_MEDIUM ||
-    hardCount !== REQUIRED_HARD
-  ) {
-    return `Difficulty mix is incorrect. Expected ${REQUIRED_EASY} easy, ${REQUIRED_MEDIUM} medium, ${REQUIRED_HARD} hard — got ${easyCount} easy, ${mediumCount} medium, ${hardCount} hard.`;
   }
 
   return null;

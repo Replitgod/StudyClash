@@ -785,7 +785,7 @@ export default function ResultsPage() {
           </Link>
 
           <Link
-            href="/create"
+            href="/login?redirect=/create"
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-4 text-base font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10 sm:px-8"
           >
             Create New Deck

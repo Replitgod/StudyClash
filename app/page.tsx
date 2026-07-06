@@ -52,7 +52,7 @@ export default function Home() {
           {/* CTA buttons */}
           <div className="mt-8 flex w-full max-w-xs flex-col items-stretch gap-3 sm:mt-10 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-4">
             <Link
-              href="/create"
+              href="/login?redirect=/create"
               className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:w-auto sm:hover:scale-105 sm:text-lg"
             >
               <span className="relative z-10">Create Battle Deck</span>
@@ -292,7 +292,7 @@ export default function Home() {
 
           <div className="mt-6 flex w-full max-w-xs flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-4">
             <Link
-              href="/create"
+              href="/login?redirect=/create"
               className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:w-auto sm:hover:scale-105"
             >
               <span className="relative z-10">Create Battle Deck</span>

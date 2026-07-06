@@ -1,17 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  const redirectParam = searchParams.get("redirect");
+  const safeRedirect =
+    typeof redirectParam === "string" &&
+    redirectParam.startsWith("/") &&
+    !redirectParam.startsWith("//")
+      ? redirectParam
+      : "/account";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +46,47 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/account");
+    // Check whether this account has 2FA enabled and not yet verified
+    // for this session. If so, send them to /mfa before letting them
+    // reach anything else — /account, /create, etc.
+    const { data: aalData, error: aalError } =
+      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+    if (aalError) {
+      // Fail open to the intended destination rather than blocking login
+      // entirely over an assurance-level check we couldn't complete.
+      router.push(safeRedirect);
+      return;
+    }
+
+    if (aalData.currentLevel === "aal1" && aalData.nextLevel === "aal2") {
+      router.push("/mfa");
+      return;
+    }
+
+    router.push(safeRedirect);
   };
+
+  const handleGoogleLogin = async () => {
+    setErrorMessage(null);
+    setIsGoogleLoading(true);
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}${safeRedirect}`,
+      },
+    });
+
+    if (error) {
+      setErrorMessage(error.message);
+      setIsGoogleLoading(false);
+    }
+    // On success, the browser navigates away to Google's login page,
+    // so there's nothing else to do here.
+  };
+
+  const isAnyLoading = isSubmitting || isGoogleLoading;
 
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
@@ -77,6 +126,36 @@ export default function LoginPage() {
 
         {/* Form card */}
         <div className="mt-8 w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:mt-10 sm:p-6">
+          {/* Google OAuth button */}
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={isAnyLoading}
+            className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white/90 transition-colors duration-150 hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isGoogleLoading ? (
+              <SpinnerIcon />
+            ) : (
+              <svg className="h-4.5 w-4.5 flex-shrink-0" viewBox="0 0 24 24">
+                <path
+                  fill="#EA4335"
+                  d="M12 10.2v3.9h5.5c-.24 1.3-1.66 3.8-5.5 3.8-3.31 0-6.02-2.74-6.02-6.1s2.7-6.1 6.02-6.1c1.89 0 3.16.8 3.88 1.5l2.65-2.55C16.9 3.06 14.7 2 12 2 6.98 2 2.93 6.06 2.93 11s4.05 9 9.07 9c5.24 0 8.71-3.68 8.71-8.86 0-.6-.07-1.05-.15-1.5H12z"
+                />
+              </svg>
+            )}
+            Continue with Google
+          </button>
+
+          {/* Divider */}
+          <div className="my-5 flex items-center gap-3">
+            <div className="h-px flex-1 bg-white/10" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-white/30">
+              or
+            </span>
+            <div className="h-px flex-1 bg-white/10" />
+          </div>
+
+          {/* Email/password form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <label
@@ -93,7 +172,8 @@ export default function LoginPage() {
                 placeholder="you@example.com"
                 autoComplete="email"
                 required
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                disabled={isAnyLoading}
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 disabled:opacity-50 sm:py-3 sm:text-sm"
               />
             </div>
 
@@ -112,42 +192,25 @@ export default function LoginPage() {
                 placeholder="Enter your password"
                 autoComplete="current-password"
                 required
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                disabled={isAnyLoading}
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 disabled:opacity-50 sm:py-3 sm:text-sm"
               />
             </div>
 
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isAnyLoading}
               className="group relative mt-2 flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100 sm:py-3.5 sm:hover:scale-[1.02] sm:text-sm"
             >
               {isSubmitting ? (
                 <>
-                  <svg
-                    className="h-4 w-4 flex-shrink-0 animate-spin"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                    />
-                  </svg>
+                  <SpinnerIcon />
                   <span className="relative z-10">Logging In...</span>
                 </>
               ) : (
                 <span className="relative z-10">Log In</span>
               )}
-              {!isSubmitting && (
+              {!isAnyLoading && (
                 <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover:translate-x-full" />
               )}
             </button>
@@ -176,7 +239,7 @@ export default function LoginPage() {
         <p className="mt-6 text-center text-sm text-white/40">
           Don&apos;t have an account?{" "}
           <Link
-            href="/signup"
+            href={`/signup?redirect=${encodeURIComponent(safeRedirect)}`}
             className="font-semibold text-fuchsia-300 hover:text-fuchsia-200"
           >
             Sign up
@@ -184,5 +247,45 @@ export default function LoginPage() {
         </p>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+          <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-14 sm:px-6 sm:py-20">
+            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
+              LOADING
+            </div>
+            <p className="mt-4 text-sm text-white/50">Preparing login...</p>
+          </div>
+        </main>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function SpinnerIcon() {
+  return (
+    <svg className="h-4 w-4 flex-shrink-0 animate-spin" fill="none" viewBox="0 0 24 24">
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+      />
+    </svg>
   );
 }

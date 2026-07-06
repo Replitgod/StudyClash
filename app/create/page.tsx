@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
@@ -12,6 +11,35 @@ const GENERATION_STEPS = [
   "Saving battle",
   "Preparing arena",
 ];
+
+// Defined OUTSIDE the page component (module scope), NOT inside CreateDeck.
+// Keeping it here means it has a stable identity across re-renders — if it
+// were declared inside CreateDeck, every keystroke would recreate this
+// function, causing React to treat it as a "new" component and remount
+// everything under it, including the form inputs (the one-letter-at-a-time
+// typing bug).
+function Background({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+      </div>
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+        }}
+      />
+      <div className="relative z-10 flex min-h-screen flex-col items-center px-4 py-10 sm:px-6 sm:py-20">
+        {children}
+      </div>
+    </main>
+  );
+}
 
 export default function CreateDeck() {
   const router = useRouter();
@@ -46,6 +74,17 @@ export default function CreateDeck() {
       }
     };
   }, []);
+
+  // Redirect logged-out users to /login immediately once auth state has
+  // finished resolving. This runs as a side effect (not inline in the
+  // render) so it fires reliably even if useAuth's isLoggedIn flips after
+  // the first render. redirect=/create lets the login page send them back
+  // here after they log in.
+  useEffect(() => {
+    if (!isAuthLoading && !isLoggedIn) {
+      router.push("/login?redirect=/create");
+    }
+  }, [isAuthLoading, isLoggedIn, router]);
 
   const handlePdfSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -176,30 +215,13 @@ export default function CreateDeck() {
 
   const notesWordCount = notes.trim() ? notes.trim().split(/\s+/).length : 0;
 
-  // ---------- Shared background wrapper ----------
-  const Background = ({ children }: { children: React.ReactNode }) => (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
-      </div>
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
-      <div className="relative z-10 flex min-h-screen flex-col items-center px-4 py-10 sm:px-6 sm:py-20">
-        {children}
-      </div>
-    </main>
-  );
-
-  // ---------- Auth loading state ----------
-  if (isAuthLoading) {
+  // ---------- Auth loading OR redirecting state ----------
+  // Shown while auth status is still resolving, AND while a logged-out
+  // user is being redirected away. This second case matters: without it,
+  // there'd be a one-frame flash of "not logged in" content (or nothing)
+  // between isAuthLoading flipping to false and the router.push above
+  // actually navigating away.
+  if (isAuthLoading || !isLoggedIn) {
     return (
       <Background>
         <svg
@@ -221,54 +243,7 @@ export default function CreateDeck() {
             d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
           />
         </svg>
-        <p className="mt-4 text-sm text-white/50">Loading...</p>
-      </Background>
-    );
-  }
-
-  // ---------- Not logged in ----------
-  if (!isLoggedIn) {
-    return (
-      <Background>
-        <div className="mt-10 w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm sm:mt-20 sm:p-8">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-fuchsia-500/10">
-            <svg
-              className="h-6 w-6 text-fuchsia-300"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
-              />
-            </svg>
-          </div>
-          <h1 className="mt-4 text-lg font-bold text-white">
-            Log in to create battle decks
-          </h1>
-          <p className="mt-2 text-sm text-white/50">
-            You need an account to generate AI-powered quiz battles from your
-            notes.
-          </p>
-
-          <div className="mt-6 flex flex-col gap-3">
-            <Link
-              href="/login"
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
-            >
-              Log In
-            </Link>
-            <Link
-              href="/signup"
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10"
-            >
-              Sign Up
-            </Link>
-          </div>
-        </div>
+        <p className="mt-4 text-sm text-white/50">Checking login...</p>
       </Background>
     );
   }
