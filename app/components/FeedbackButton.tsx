@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { trackEvent } from "@/lib/trackEvent";
 
 export default function FeedbackButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,9 +36,12 @@ export default function FeedbackButton() {
     setIsSubmitting(true);
     setErrorMessage(null);
 
+    const trimmedMessage = message.trim();
+    const currentPageUrl = window.location.href;
+
     const { error } = await supabase.from("feedback_reports").insert({
-      message: message.trim(),
-      page_url: window.location.href,
+      message: trimmedMessage,
+      page_url: currentPageUrl,
     });
 
     if (error) {
@@ -49,6 +53,11 @@ export default function FeedbackButton() {
     setIsSubmitting(false);
     setIsSubmitted(true);
     setMessage("");
+
+    trackEvent("feedback_submitted", {
+      pageUrl: currentPageUrl,
+      messageLength: trimmedMessage.length,
+    });
   };
 
   return (

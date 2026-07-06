@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { trackEvent } from "@/lib/trackEvent";
 
 type Match = {
   id: string;
@@ -135,9 +136,7 @@ export default function ResultsPage() {
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
 
   // Report Bad Question state, keyed by question_id
-  const [reportStates, setReportStates] = useState<Record<string, ReportState>>(
-    {}
-  );
+  const [reportStates, setReportStates] = useState<Record<string, ReportState>>({});
 
   useEffect(() => {
     async function loadResults() {
@@ -172,6 +171,14 @@ export default function ResultsPage() {
 
       setMatch(matchData);
       setDeck(deckData);
+
+      // Track that this results page was actually viewed, once the
+      // match/deck have loaded successfully.
+      trackEvent("page_view", {
+        page: "results",
+        matchId,
+        deckId: matchData.deck_id,
+      });
 
       // 3. Try to load per-question answers from sessionStorage.
       try {
@@ -331,10 +338,16 @@ export default function ResultsPage() {
       isSubmitted: true,
       isFormOpen: false,
     });
+
+    trackEvent("question_report_submitted", {
+      questionId,
+      deckId: deck.id,
+      reason: currentState.selectedReason,
+    });
   };
 
   // ---------- Shared background wrapper ----------
-  const Background = ({ children }: { children: ReactNode }) => (
+  const Background = ({ children }: { children: React.ReactNode }) => (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
@@ -785,7 +798,7 @@ export default function ResultsPage() {
           </Link>
 
           <Link
-            href="/login?redirect=/create"
+            href="/create"
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-4 text-base font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10 sm:px-8"
           >
             Create New Deck

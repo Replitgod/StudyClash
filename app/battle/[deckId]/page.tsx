@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { trackEvent } from "@/lib/trackEvent";
 
 type Question = {
   id: string;
@@ -48,10 +49,7 @@ const RANK_BADGES: Record<number, { label: string; color: string }> = {
 };
 
 // Defined OUTSIDE the page component so it keeps a stable identity across
-// re-renders. If this were defined inside BattlePage, every re-render
-// (e.g. every keystroke in the name input) would create a "new" component
-// type, forcing React to remount the whole subtree underneath it —
-// including the name input — causing it to lose focus after each letter.
+// re-renders, preventing the whole subtree from remounting on state changes.
 function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
@@ -215,6 +213,12 @@ export default function BattlePage() {
 
     setPlayerName(finalName);
     setHasStarted(true);
+
+    trackEvent("battle_started", {
+      deckId,
+      playerName: finalName,
+      totalQuestions: questions.length,
+    });
   };
 
   const handleSelectAnswer = (choice: string) => {
@@ -282,17 +286,16 @@ export default function BattlePage() {
       // Fails silently if sessionStorage is unavailable — not critical.
     }
 
+    trackEvent("battle_finished", {
+      deckId,
+      matchId: matchData.id,
+      score: correctCount,
+      totalQuestions: questions.length,
+      timeTakenSeconds: elapsedSeconds,
+    });
+
     router.push(`/results/${matchData.id}`);
-  }, [
-    currentIndex,
-    questions,
-    answers,
-    deckId,
-    deck,
-    playerName,
-    elapsedSeconds,
-    router,
-  ]);
+  }, [currentIndex, questions, answers, deckId, deck, playerName, elapsedSeconds, router]);
 
   // ---------- Loading state ----------
   if (isLoading) {

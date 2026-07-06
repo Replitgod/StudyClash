@@ -1,27 +1,19 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { trackEvent } from "@/lib/trackEvent";
 
-function LoginPageContent() {
+export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-
-  const redirectParam = searchParams.get("redirect");
-  const safeRedirect =
-    typeof redirectParam === "string" &&
-    redirectParam.startsWith("/") &&
-    !redirectParam.startsWith("//")
-      ? redirectParam
-      : "/account";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +38,8 @@ function LoginPageContent() {
       return;
     }
 
+    trackEvent("login_completed", { method: "password" });
+
     // Check whether this account has 2FA enabled and not yet verified
     // for this session. If so, send them to /mfa before letting them
     // reach anything else — /account, /create, etc.
@@ -53,9 +47,10 @@ function LoginPageContent() {
       await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
     if (aalError) {
-      // Fail open to the intended destination rather than blocking login
-      // entirely over an assurance-level check we couldn't complete.
-      router.push(safeRedirect);
+      // Fail open to /account rather than blocking login entirely over
+      // an assurance-level check we couldn't complete. The account page
+      // and generate-questions route both re-check this independently.
+      router.push("/account");
       return;
     }
 
@@ -64,17 +59,23 @@ function LoginPageContent() {
       return;
     }
 
-    router.push(safeRedirect);
+    router.push("/account");
   };
 
   const handleGoogleLogin = async () => {
     setErrorMessage(null);
     setIsGoogleLoading(true);
 
+    // Note: for OAuth, this only fires the redirect to Google. There's no
+    // "success" callback here — the browser navigates away entirely, then
+    // Supabase redirects back to redirectTo (/account) with a session
+    // already established. login_completed for OAuth isn't tracked from
+    // this file since this page never sees the completed session; it
+    // would need to be tracked from wherever redirectTo lands instead.
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}${safeRedirect}`,
+        redirectTo: `${window.location.origin}/account`,
       },
     });
 
@@ -239,7 +240,7 @@ function LoginPageContent() {
         <p className="mt-6 text-center text-sm text-white/40">
           Don&apos;t have an account?{" "}
           <Link
-            href={`/signup?redirect=${encodeURIComponent(safeRedirect)}`}
+            href="/signup"
             className="font-semibold text-fuchsia-300 hover:text-fuchsia-200"
           >
             Sign up
@@ -247,26 +248,6 @@ function LoginPageContent() {
         </p>
       </div>
     </main>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
-          <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-14 sm:px-6 sm:py-20">
-            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
-              LOADING
-            </div>
-            <p className="mt-4 text-sm text-white/50">Preparing login...</p>
-          </div>
-        </main>
-      }
-    >
-      <LoginPageContent />
-    </Suspense>
   );
 }
 

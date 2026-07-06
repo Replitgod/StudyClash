@@ -16,6 +16,18 @@ type AdminStats = {
   generationsToday: number;
 };
 
+type AdminAnalytics = {
+  eventsToday: number;
+  pageViewsToday: number;
+  deckGenerationStartedToday: number;
+  deckGenerationSuccessToday: number;
+  deckGenerationFailedToday: number;
+  battleStartedToday: number;
+  battleFinishedToday: number;
+  feedbackSubmittedToday: number;
+  questionReportSubmittedToday: number;
+};
+
 type FeedbackReport = {
   id: string;
   message: string;
@@ -39,12 +51,23 @@ type RecentDeck = {
   created_at: string;
 };
 
+type AnalyticsEvent = {
+  id: string;
+  user_id: string | null;
+  event_name: string;
+  page_url: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+};
+
 type AdminData = {
   stats: AdminStats;
+  analytics: AdminAnalytics;
   recent: {
     feedback: FeedbackReport[];
     questionReports: QuestionReport[];
     decks: RecentDeck[];
+    events: AnalyticsEvent[];
   };
 };
 
@@ -81,6 +104,25 @@ function formatDateTime(isoString: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+// Small readable labels for raw event_name values, e.g. "battle_started"
+// -> "Battle Started". Falls back to the raw name if not mapped.
+function formatEventName(eventName: string): string {
+  const map: Record<string, string> = {
+    page_view: "Page View",
+    signup_completed: "Signup Completed",
+    login_completed: "Login Completed",
+    deck_create_opened: "Deck Create Opened",
+    deck_generation_started: "Deck Generation Started",
+    deck_generation_success: "Deck Generation Success",
+    deck_generation_failed: "Deck Generation Failed",
+    battle_started: "Battle Started",
+    battle_finished: "Battle Finished",
+    feedback_submitted: "Feedback Submitted",
+    question_report_submitted: "Question Report Submitted",
+  };
+  return map[eventName] || eventName;
 }
 
 export default function AdminPage() {
@@ -263,7 +305,7 @@ export default function AdminPage() {
   }
 
   // ---------- Admin dashboard ----------
-  const { stats, recent } = data;
+  const { stats, analytics, recent } = data;
 
   const statCards = [
     { label: "Total Users", value: stats.totalUsers, color: "text-fuchsia-300" },
@@ -274,6 +316,18 @@ export default function AdminPage() {
     { label: "Decks Today", value: stats.decksToday, color: "text-cyan-300" },
     { label: "Battles Today", value: stats.battlesToday, color: "text-violet-300" },
     { label: "Generations Today", value: stats.generationsToday, color: "text-fuchsia-300" },
+  ];
+
+  const analyticsCards = [
+    { label: "Events Today", value: analytics.eventsToday, color: "text-white" },
+    { label: "Page Views Today", value: analytics.pageViewsToday, color: "text-cyan-300" },
+    { label: "Deck Gen Started", value: analytics.deckGenerationStartedToday, color: "text-fuchsia-300" },
+    { label: "Deck Gen Success", value: analytics.deckGenerationSuccessToday, color: "text-emerald-300" },
+    { label: "Deck Gen Failed", value: analytics.deckGenerationFailedToday, color: "text-red-300" },
+    { label: "Battles Started", value: analytics.battleStartedToday, color: "text-violet-300" },
+    { label: "Battles Finished", value: analytics.battleFinishedToday, color: "text-violet-300" },
+    { label: "Feedback Submitted", value: analytics.feedbackSubmittedToday, color: "text-emerald-300" },
+    { label: "Question Reports Submitted", value: analytics.questionReportSubmittedToday, color: "text-red-300" },
   ];
 
   return (
@@ -311,8 +365,46 @@ export default function AdminPage() {
         ))}
       </div>
 
+      {/* Analytics section */}
+      <div className="mt-10 w-full sm:mt-12">
+        <div className="flex items-center gap-2">
+          <svg
+            className="h-4 w-4 flex-shrink-0 text-cyan-300"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
+            />
+          </svg>
+          <p className="text-xs font-bold uppercase tracking-wider text-white/60">
+            Today&apos;s Analytics
+          </p>
+        </div>
+
+        <div className="mt-4 grid w-full grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+          {analyticsCards.map((card) => (
+            <div
+              key={card.label}
+              className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center backdrop-blur-sm sm:p-5"
+            >
+              <p className={`text-2xl font-black sm:text-3xl ${card.color}`}>
+                {card.value}
+              </p>
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40 sm:text-xs">
+                {card.label}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Recent data grid */}
-      <div className="mt-8 grid w-full grid-cols-1 gap-5 sm:mt-10 lg:grid-cols-3">
+      <div className="mt-10 grid w-full grid-cols-1 gap-5 sm:mt-12 lg:grid-cols-3">
         {/* Recent decks */}
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
           <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
@@ -399,6 +491,55 @@ export default function AdminPage() {
                   </p>
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Latest analytics events */}
+      <div className="mt-10 w-full sm:mt-12">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
+          <p className="text-xs font-bold uppercase tracking-wider text-white/60">
+            Latest 20 Events
+          </p>
+
+          {recent.events.length === 0 ? (
+            <p className="mt-3 text-sm text-white/40">No events logged yet.</p>
+          ) : (
+            <div className="mt-4 overflow-x-auto">
+              <div className="flex min-w-[640px] flex-col gap-2">
+                {/* Header row (hidden on very small screens to save space) */}
+                <div className="hidden grid-cols-12 gap-3 px-3 text-[10px] font-bold uppercase tracking-wider text-white/30 sm:grid">
+                  <span className="col-span-3">Event</span>
+                  <span className="col-span-4">Page</span>
+                  <span className="col-span-3">Metadata</span>
+                  <span className="col-span-2">Time</span>
+                </div>
+
+                {recent.events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="grid grid-cols-12 items-start gap-3 rounded-xl border border-white/10 bg-black/30 p-3"
+                  >
+                    <div className="col-span-3">
+                      <span className="rounded-full bg-fuchsia-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fuchsia-300">
+                        {formatEventName(event.event_name)}
+                      </span>
+                    </div>
+                    <p className="col-span-4 truncate text-[11px] text-white/50">
+                      {event.page_url || "—"}
+                    </p>
+                    <p className="col-span-3 truncate text-[11px] text-white/40">
+                      {event.metadata
+                        ? JSON.stringify(event.metadata)
+                        : "—"}
+                    </p>
+                    <p className="col-span-2 text-[10px] text-white/30">
+                      {formatDateTime(event.created_at)}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

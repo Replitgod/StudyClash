@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
+import { trackEvent } from "@/lib/trackEvent";
 
 const GENERATION_STEPS = [
   "Reading notes",
@@ -16,8 +17,7 @@ const GENERATION_STEPS = [
 // Keeping it here means it has a stable identity across re-renders — if it
 // were declared inside CreateDeck, every keystroke would recreate this
 // function, causing React to treat it as a "new" component and remount
-// everything under it, including the form inputs (the one-letter-at-a-time
-// typing bug).
+// everything under it, including the form inputs.
 function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
@@ -66,6 +66,10 @@ export default function CreateDeck() {
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
 
+  // Ensures the "deck_create_opened" event only fires once per visit to
+  // this page, not every time isLoggedIn re-evaluates.
+  const hasTrackedOpenRef = useRef(false);
+
   // Clean up the step interval if the component unmounts mid-generation
   useEffect(() => {
     return () => {
@@ -76,15 +80,22 @@ export default function CreateDeck() {
   }, []);
 
   // Redirect logged-out users to /login immediately once auth state has
-  // finished resolving. This runs as a side effect (not inline in the
-  // render) so it fires reliably even if useAuth's isLoggedIn flips after
-  // the first render. redirect=/create lets the login page send them back
-  // here after they log in.
+  // finished resolving. redirect=/create lets the login page send them
+  // back here after they log in.
   useEffect(() => {
     if (!isAuthLoading && !isLoggedIn) {
       router.push("/login?redirect=/create");
     }
   }, [isAuthLoading, isLoggedIn, router]);
+
+  // Track that a logged-in user actually reached the create form.
+  // Fires once, only after auth has resolved and confirmed isLoggedIn.
+  useEffect(() => {
+    if (!isAuthLoading && isLoggedIn && !hasTrackedOpenRef.current) {
+      hasTrackedOpenRef.current = true;
+      trackEvent("deck_create_opened");
+    }
+  }, [isAuthLoading, isLoggedIn]);
 
   const handlePdfSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -148,6 +159,13 @@ export default function CreateDeck() {
     setErrorMessage(null);
     setCurrentStep(0);
 
+    trackEvent("deck_generation_started", {
+      deckTitle,
+      courseName,
+      notesWordCount: notes.trim().split(/\s+/).length,
+      usedPdfUpload: !!selectedFileName,
+    });
+
     // Advance through the visual steps on a timer while the real request
     // is in flight. It stops one step before the end so it never claims
     // "Preparing arena" is done before the API call actually finishes.
@@ -184,6 +202,10 @@ export default function CreateDeck() {
           `Server error (status ${response.status}). Please try again.`
         );
         setIsGenerating(false);
+        trackEvent("deck_generation_failed", {
+          reason: "non_json_response",
+          status: response.status,
+        });
         return;
       }
 
@@ -193,6 +215,10 @@ export default function CreateDeck() {
         if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
         setErrorMessage(data.error || "Something went wrong.");
         setIsGenerating(false);
+        trackEvent("deck_generation_failed", {
+          reason: data.error || "unknown_error",
+          status: response.status,
+        });
         return;
       }
 
@@ -201,26 +227,31 @@ export default function CreateDeck() {
       if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
       setCurrentStep(GENERATION_STEPS.length - 1);
 
+      trackEvent("deck_generation_success", {
+        deckId: data.deckId,
+        deckTitle,
+        courseName,
+      });
+
       setTimeout(() => {
         router.push(`/battle/${data.deckId}`);
       }, 500);
     } catch (err) {
       if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
-      setErrorMessage(
-        err instanceof Error ? err.message : "Something went wrong."
-      );
+      const message =
+        err instanceof Error ? err.message : "Something went wrong.";
+      setErrorMessage(message);
       setIsGenerating(false);
+      trackEvent("deck_generation_failed", {
+        reason: "client_exception",
+        message,
+      });
     }
   };
 
   const notesWordCount = notes.trim() ? notes.trim().split(/\s+/).length : 0;
 
   // ---------- Auth loading OR redirecting state ----------
-  // Shown while auth status is still resolving, AND while a logged-out
-  // user is being redirected away. This second case matters: without it,
-  // there'd be a one-frame flash of "not logged in" content (or nothing)
-  // between isAuthLoading flipping to false and the router.push above
-  // actually navigating away.
   if (isAuthLoading || !isLoggedIn) {
     return (
       <Background>

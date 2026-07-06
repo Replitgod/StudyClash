@@ -1,13 +1,13 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { trackEvent } from "@/lib/trackEvent";
 
-function SignupPageContent() {
+export default function SignupPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,14 +16,6 @@ function SignupPageContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-
-  const redirectParam = searchParams.get("redirect");
-  const safeRedirect =
-    typeof redirectParam === "string" &&
-    redirectParam.startsWith("/") &&
-    !redirectParam.startsWith("//")
-      ? redirectParam
-      : "/account";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,16 +50,31 @@ function SignupPageContent() {
       return;
     }
 
+    // The account was created successfully in either case below — the
+    // only difference is whether email confirmation is required before
+    // the user can actually use the session. Track signup_completed here
+    // since account creation itself succeeded, tagging whether it needed
+    // confirmation so the two paths can be told apart later if needed.
+
     // If Supabase returns an active session right away, email confirmation
     // is not required on this project, and the user is already signed in.
     if (data.session) {
-      router.push(safeRedirect);
+      trackEvent("signup_completed", {
+        method: "password",
+        requiredEmailConfirmation: false,
+      });
+      router.push("/account");
       return;
     }
 
     // Otherwise, this project requires the user to confirm their email
     // before they can sign in. Show a clear message instead of a
     // confusing redirect to a page they can't use yet.
+    trackEvent("signup_completed", {
+      method: "password",
+      requiredEmailConfirmation: true,
+    });
+
     setIsSubmitting(false);
     setNeedsEmailConfirmation(true);
   };
@@ -76,13 +83,17 @@ function SignupPageContent() {
     setErrorMessage(null);
     setIsGoogleLoading(true);
 
-    // Signing up and logging in with Google are the same call — Supabase
-    // creates the account automatically on first OAuth login, so there's
-    // no separate "signUpWithOAuth" method.
+    // Note: same limitation as Google login — this only fires the
+    // redirect to Google. The browser navigates away entirely, so there's
+    // no "success" moment to track signup_completed from here. If this
+    // is a brand-new Google identity, Supabase creates the account
+    // automatically and lands on redirectTo (/account) with a session
+    // already established — signup_completed for that path would need
+    // to be tracked from /account instead, not from this file.
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}${safeRedirect}`,
+        redirectTo: `${window.location.origin}/account`,
       },
     });
 
@@ -161,7 +172,7 @@ function SignupPageContent() {
                 email, then log in below.
               </p>
               <Link
-                href={`/login?redirect=${encodeURIComponent(safeRedirect)}`}
+                href="/login"
                 className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
               >
                 Go to Login
@@ -305,7 +316,7 @@ function SignupPageContent() {
           <p className="mt-6 text-center text-sm text-white/40">
             Already have an account?{" "}
             <Link
-              href={`/login?redirect=${encodeURIComponent(safeRedirect)}`}
+              href="/login"
               className="font-semibold text-fuchsia-300 hover:text-fuchsia-200"
             >
               Log in
@@ -314,26 +325,6 @@ function SignupPageContent() {
         )}
       </div>
     </main>
-  );
-}
-
-export default function SignupPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
-          <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-14 sm:px-6 sm:py-20">
-            <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
-              LOADING
-            </div>
-            <p className="mt-4 text-sm text-white/50">Preparing signup...</p>
-          </div>
-        </main>
-      }
-    >
-      <SignupPageContent />
-    </Suspense>
   );
 }
 

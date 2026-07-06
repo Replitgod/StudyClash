@@ -20,6 +20,27 @@ function getAdminEmails(): string[] {
     .filter((email) => email.length > 0);
 }
 
+// Counts rows in analytics_events matching a specific event_name, created
+// today. Returns 0 on error rather than throwing, so one bad event-name
+// count doesn't take down the whole stats response — errors are still
+// collected by the caller for logging.
+async function countEventToday(
+  eventName: string,
+  startOfTodayIso: string
+): Promise<{ count: number; error: string | null }> {
+  const { count, error } = await supabase
+    .from("analytics_events")
+    .select("id", { count: "exact", head: true })
+    .eq("event_name", eventName)
+    .gte("created_at", startOfTodayIso);
+
+  if (error) {
+    return { count: 0, error: error.message };
+  }
+
+  return { count: count || 0, error: null };
+}
+
 export async function GET(req: NextRequest) {
   try {
     // 1. Read the Authorization Bearer token
@@ -76,6 +97,19 @@ export async function GET(req: NextRequest) {
       recentFeedbackResult,
       recentQuestionReportsResult,
       recentDecksResult,
+      // Analytics: total events today
+      eventsTodayResult,
+      // Analytics: per-event-name counts today
+      pageViewsTodayResult,
+      deckGenStartedTodayResult,
+      deckGenSuccessTodayResult,
+      deckGenFailedTodayResult,
+      battleStartedTodayResult,
+      battleFinishedTodayResult,
+      feedbackSubmittedTodayResult,
+      questionReportSubmittedTodayResult,
+      // Analytics: latest 20 raw events
+      recentEventsResult,
     ] = await Promise.all([
       supabase.from("profiles").select("id", { count: "exact", head: true }),
       supabase.from("decks").select("id", { count: "exact", head: true }),
@@ -113,6 +147,23 @@ export async function GET(req: NextRequest) {
         .select("id, title, course_name, student_name, created_at")
         .order("created_at", { ascending: false })
         .limit(10),
+      supabase
+        .from("analytics_events")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", startOfTodayIso),
+      countEventToday("page_view", startOfTodayIso),
+      countEventToday("deck_generation_started", startOfTodayIso),
+      countEventToday("deck_generation_success", startOfTodayIso),
+      countEventToday("deck_generation_failed", startOfTodayIso),
+      countEventToday("battle_started", startOfTodayIso),
+      countEventToday("battle_finished", startOfTodayIso),
+      countEventToday("feedback_submitted", startOfTodayIso),
+      countEventToday("question_report_submitted", startOfTodayIso),
+      supabase
+        .from("analytics_events")
+        .select("id, user_id, event_name, page_url, metadata, created_at")
+        .order("created_at", { ascending: false })
+        .limit(20),
     ]);
 
     // Collect any query errors so a single failing table doesn't silently
@@ -129,7 +180,17 @@ export async function GET(req: NextRequest) {
       recentFeedbackResult.error,
       recentQuestionReportsResult.error,
       recentDecksResult.error,
-    ].filter((e) => e !== null);
+      eventsTodayResult.error,
+      pageViewsTodayResult.error,
+      deckGenStartedTodayResult.error,
+      deckGenSuccessTodayResult.error,
+      deckGenFailedTodayResult.error,
+      battleStartedTodayResult.error,
+      battleFinishedTodayResult.error,
+      feedbackSubmittedTodayResult.error,
+      questionReportSubmittedTodayResult.error,
+      recentEventsResult.error,
+    ].filter((e) => e !== null && e !== undefined);
 
     if (queryErrors.length > 0) {
       console.error("Admin stats query errors:", queryErrors);
@@ -150,10 +211,22 @@ export async function GET(req: NextRequest) {
         battlesToday: battlesTodayResult.count || 0,
         generationsToday: generationsTodayResult.count || 0,
       },
+      analytics: {
+        eventsToday: eventsTodayResult.count || 0,
+        pageViewsToday: pageViewsTodayResult.count,
+        deckGenerationStartedToday: deckGenStartedTodayResult.count,
+        deckGenerationSuccessToday: deckGenSuccessTodayResult.count,
+        deckGenerationFailedToday: deckGenFailedTodayResult.count,
+        battleStartedToday: battleStartedTodayResult.count,
+        battleFinishedToday: battleFinishedTodayResult.count,
+        feedbackSubmittedToday: feedbackSubmittedTodayResult.count,
+        questionReportSubmittedToday: questionReportSubmittedTodayResult.count,
+      },
       recent: {
         feedback: recentFeedbackResult.data || [],
         questionReports: recentQuestionReportsResult.data || [],
         decks: recentDecksResult.data || [],
+        events: recentEventsResult.data || [],
       },
     });
   } catch (err) {
