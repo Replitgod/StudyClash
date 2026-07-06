@@ -220,9 +220,36 @@ async function generateAndValidate(
 
 export async function POST(req: NextRequest) {
   try {
-    // 1. Read the data sent from the frontend form
+    // 1. Require a logged-in user BEFORE doing anything else — no OpenAI
+    // call, no Supabase insert, nothing costs money until we know who's
+    // asking and whether they're allowed to.
+    const authHeader = req.headers.get("authorization") || "";
+    const accessToken = authHeader.startsWith("Bearer ")
+      ? authHeader.slice("Bearer ".length)
+      : null;
+
+    if (!accessToken) {
+      return NextResponse.json(
+        { error: "Please log in to generate a deck." },
+        { status: 401 }
+      );
+    }
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(accessToken);
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: "Please log in to generate a deck." },
+        { status: 401 }
+      );
+    }
+
+    // 2. Read the data sent from the frontend form
     const body = await req.json();
-    const { studentName, courseName, deckTitle, notes, betaCode } = body;
+    const { studentName, courseName, deckTitle, notes } = body;
 
     if (!studentName || !courseName || !deckTitle || !notes) {
       return NextResponse.json(
@@ -231,37 +258,69 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Gate everything behind the beta access code BEFORE doing any
-    // paid work. This check happens first, on purpose — no OpenAI call,
-    // no Supabase insert, nothing costs money or storage until a valid
-    // code is confirmed. BETA_ACCESS_CODE is a server-only env var
-    // (no NEXT_PUBLIC_ prefix), so it's never exposed to the browser.
-    const expectedCode = process.env.BETA_ACCESS_CODE;
+    // 3. Load the user's profile to find their plan
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("plan")
+      .eq("id", user.id)
+      .single();
 
-    if (!expectedCode) {
-      // Fails safe: if the env var isn't set on the server at all,
-      // treat it as a server misconfiguration rather than letting
-      // everyone through.
+    if (profileError || !profileData) {
       return NextResponse.json(
-        { error: "Beta access is not configured on the server." },
+        { error: "Could not load your account. Please try again." },
         { status: 500 }
       );
     }
 
-    if (!betaCode || typeof betaCode !== "string" || betaCode.trim() !== expectedCode) {
+    // 4. Load the plan's daily limit (null = unlimited)
+    const { data: planData, error: planError } = await supabase
+      .from("membership_plans")
+      .select("daily_limit")
+      .eq("id", profileData.plan)
+      .single();
+
+    if (planError || !planData) {
       return NextResponse.json(
-        { error: "Invalid beta code." },
-        { status: 403 }
+        { error: "Could not load your plan details. Please try again." },
+        { status: 500 }
       );
     }
 
-    // 3. Validate the notes themselves before spending an AI call on them
+    const dailyLimit: number | null = planData.daily_limit;
+
+    // 5. If the plan has a limit (not unlimited), count today's generations
+    if (dailyLimit !== null) {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      const { count, error: countError } = await supabase
+        .from("generation_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", startOfToday.toISOString());
+
+      if (countError) {
+        return NextResponse.json(
+          { error: "Could not check your usage. Please try again." },
+          { status: 500 }
+        );
+      }
+
+      if ((count || 0) >= dailyLimit) {
+        return NextResponse.json(
+          { error: "Daily generation limit reached." },
+          { status: 429 }
+        );
+      }
+    }
+
+    // 6. Validate the notes themselves before spending an AI call on them
     const notesError = validateNotes(notes);
     if (notesError) {
       return NextResponse.json({ error: notesError }, { status: 400 });
     }
 
-    // 4. Generate + validate. If the first attempt fails validation
+    // 7. Generate + validate. If the first attempt fails validation
     // (malformed JSON, wrong count, mismatched correct_answer, wrong
     // difficulty mix, duplicates, etc.), retry exactly once before
     // giving up with a clean error.
@@ -283,7 +342,8 @@ export async function POST(req: NextRequest) {
 
     const questions = result.questions;
 
-    // 5. Save the deck first, so we get a deck_id to attach questions to
+    // 8. Save the deck first, so we get a deck_id to attach questions to.
+    // Linked to the logged-in user via user_id.
     const { data: deckData, error: deckError } = await supabase
       .from("decks")
       .insert({
@@ -291,6 +351,7 @@ export async function POST(req: NextRequest) {
         course_name: courseName,
         title: deckTitle,
         raw_notes: notes,
+        user_id: user.id,
       })
       .select()
       .single();
@@ -301,7 +362,7 @@ export async function POST(req: NextRequest) {
 
     const deckId = deckData.id;
 
-    // 6. Prepare the questions for insertion, linking each to the deck
+    // 9. Prepare the questions for insertion, linking each to the deck
     const questionsToInsert = questions.map((q) => ({
       deck_id: deckId,
       question_text: q.question_text.trim(),
@@ -328,7 +389,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 7. Send the new deck's id back to the frontend
+    // 10. Log this generation so daily limits can be enforced going forward.
+    // This is intentionally not a hard-fail: the deck was already created
+    // successfully, and we don't want a logging hiccup to make the user
+    // think their deck generation failed when it actually succeeded.
+    const { error: logError } = await supabase.from("generation_logs").insert({
+      user_id: user.id,
+      deck_id: deckId,
+    });
+
+    if (logError) {
+      console.error("Failed to insert generation log:", logError.message);
+    }
+
+    // 11. Send the new deck's id back to the frontend
     return NextResponse.json({ deckId });
   } catch (err) {
     const message =
