@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/useAuth";
 
 type Deck = {
   id: string;
@@ -13,18 +14,26 @@ type Deck = {
 };
 
 export default function DecksPage() {
+  const { user, isLoggedIn, isLoading: isAuthLoading } = useAuth();
   const [decks, setDecks] = useState<Deck[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadDecks() {
+      if (!user?.id) {
+        setDecks([]);
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       setLoadError(null);
 
       const { data, error } = await supabase
         .from("decks")
         .select("id, student_name, course_name, title, created_at")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -37,8 +46,19 @@ export default function DecksPage() {
       setIsLoading(false);
     }
 
+    if (isAuthLoading) {
+      setIsLoading(true);
+      return;
+    }
+
+    if (!isLoggedIn || !user) {
+      setDecks([]);
+      setIsLoading(false);
+      return;
+    }
+
     loadDecks();
-  }, []);
+  }, [isAuthLoading, isLoggedIn, user]);
 
   const formatDate = (isoString: string) => {
     const date = new Date(isoString);
@@ -48,6 +68,74 @@ export default function DecksPage() {
       year: "numeric",
     });
   };
+
+  if (isAuthLoading) {
+    return (
+      <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
+          <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
+          <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        </div>
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
+          }}
+        />
+        <div className="relative z-10 flex min-h-screen items-center justify-center px-4">
+          <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-8 text-center backdrop-blur-sm">
+            <svg className="h-10 w-10 animate-spin text-fuchsia-400" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+            </svg>
+            <p className="mt-4 text-sm text-white/50">Checking your account...</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
+          <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
+          <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        </div>
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
+            backgroundSize: "48px 48px",
+          }}
+        />
+        <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm sm:p-8">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-fuchsia-500/10">
+              <svg className="h-6 w-6 text-fuchsia-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              </svg>
+            </div>
+            <h1 className="mt-4 text-xl font-bold text-white">Please sign in to view your decks</h1>
+            <p className="mt-2 text-sm text-white/50">Your decks are private to your account, so you need to be signed in to see them.</p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Link href="/login?redirect=/decks" className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-5 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)]">
+                Log In
+              </Link>
+              <Link href="/signup?redirect=/decks" className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white/90">
+                Sign Up
+              </Link>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
