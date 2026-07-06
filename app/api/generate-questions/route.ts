@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
-import { getSupabaseClient } from "@/lib/supabase";
 
-function getOpenAIClient() {
-  const apiKey = process.env.OPENAI_API_KEY;
+// This client uses the SERVICE ROLE key, which is safe here because
+// this code only ever runs on the server (inside this API route).
+// Never send the service role key to the browser.
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
+  process.env.SUPABASE_SERVICE_ROLE_KEY as string
+);
 
-  if (!apiKey) {
-    throw new Error("OpenAI API key is not configured.");
-  }
-
-  return new OpenAI({ apiKey });
-}
+// The OpenAI key also stays on the server. The frontend never sees it.
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // Shape of a single quiz question returned by the AI
 type GeneratedQuestion = {
@@ -22,39 +25,40 @@ type GeneratedQuestion = {
   difficulty: string;
 };
 
-export async function POST(req: NextRequest) {
-  try {
-    const supabase = getSupabaseClient();
-    const openai = getOpenAIClient();
+const REQUIRED_TOTAL = 15;
+const REQUIRED_EASY = 5;
+const REQUIRED_MEDIUM = 7;
+const REQUIRED_HARD = 3;
+const MIN_NOTES_WORD_COUNT = 30;
 
-    // 1. Read the data sent from the frontend form
-    const body = await req.json();
-    const { studentName, courseName, deckTitle, notes } = body;
-
-    if (!studentName || !courseName || !deckTitle || !notes) {
-      return NextResponse.json(
-        { error: "Missing required fields." },
-        { status: 400 }
-      );
-    }
-
-    // 2. Ask OpenAI to turn the notes into 15 multiple-choice questions.
-    // We ask for strict JSON so it's easy to parse safely.
-    const prompt = `
+function buildPrompt(notes: string): string {
+  return `
 You are a quiz generator for a study app called StudyClash.
 
-Read the notes below and create exactly 15 multiple-choice questions
-that test understanding of the material.
+Read the notes below and create exactly ${REQUIRED_TOTAL} multiple-choice questions
+that test understanding of the material. Every question must be answerable
+using ONLY the information in the notes below. Do not introduce outside facts,
+and do not invent details that are not present in the notes.
 
 Rules for every question:
-- "question_text": a clear question based on the notes
-- "answer_choices": an array of exactly 4 short answer strings
-- "correct_answer": must exactly match one of the 4 answer_choices
-- "explanation": 1-2 sentences explaining why the correct answer is right
-- "topic": a short label for the subtopic this question covers
-- "difficulty": one of "easy", "medium", or "hard"
+- "question_text": a clear question based directly on the notes
+- "answer_choices": an array of EXACTLY 4 short, realistic, plausible answer strings. Wrong choices should be believable, not silly or obviously wrong.
+- "correct_answer": must be an EXACT character-for-character match to one of the 4 strings in "answer_choices"
+- "explanation": 1-2 short sentences explaining why the correct answer is right
+- "topic": a short label (2-4 words) for the subtopic this question covers
+- "difficulty": exactly one of "easy", "medium", or "hard"
 
-Return ONLY valid JSON in this exact shape, with no extra text:
+Difficulty mix (must match exactly):
+- Exactly ${REQUIRED_EASY} questions with difficulty "easy" (basic recall/definitions)
+- Exactly ${REQUIRED_MEDIUM} questions with difficulty "medium" (applying or connecting concepts)
+- Exactly ${REQUIRED_HARD} questions with difficulty "hard" (nuanced or multi-step reasoning)
+
+Other rules:
+- No two questions may test the exact same fact or be reworded duplicates of each other.
+- Every question must be unique in what it tests.
+- If the notes do not contain enough distinct material to support ${REQUIRED_TOTAL} unique, non-overlapping questions, do your best to cover every distinct fact, concept, or detail in the notes without repeating yourself.
+
+Return ONLY valid JSON in this exact shape, with no extra text, no markdown, no code fences:
 {
   "questions": [
     {
@@ -73,42 +77,187 @@ Notes:
 ${notes}
 """
 `;
+}
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      response_format: { type: "json_object" },
-      temperature: 0.5,
-    });
+// Checks the raw notes before we even call the AI. Cheap, fast guard
+// against wasting an API call on notes that can't realistically support
+// 15 unique, meaningful questions.
+function validateNotes(notes: string): string | null {
+  const trimmed = notes.trim();
 
-    const rawContent = completion.choices[0]?.message?.content;
+  if (!trimmed) {
+    return "Notes cannot be empty.";
+  }
 
-    if (!rawContent) {
+  const wordCount = trimmed.split(/\s+/).length;
+  if (wordCount < MIN_NOTES_WORD_COUNT) {
+    return `Your notes are too short to generate a good quiz. Please provide at least ${MIN_NOTES_WORD_COUNT} words of material.`;
+  }
+
+  return null;
+}
+
+// Validates the AI's parsed output. Returns null if valid, or a string
+// describing exactly what's wrong if not.
+function validateQuestions(questions: unknown): string | null {
+  if (!Array.isArray(questions)) {
+    return "AI response was not a list of questions.";
+  }
+
+  if (questions.length !== REQUIRED_TOTAL) {
+    return `Expected exactly ${REQUIRED_TOTAL} questions, got ${questions.length}.`;
+  }
+
+  const seenQuestionTexts = new Set<string>();
+  let easyCount = 0;
+  let mediumCount = 0;
+  let hardCount = 0;
+
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i] as Partial<GeneratedQuestion>;
+    const label = `Question ${i + 1}`;
+
+    if (!q || typeof q !== "object") {
+      return `${label} is not a valid object.`;
+    }
+
+    if (!q.question_text || typeof q.question_text !== "string" || !q.question_text.trim()) {
+      return `${label} is missing question_text.`;
+    }
+
+    if (!Array.isArray(q.answer_choices) || q.answer_choices.length !== 4) {
+      return `${label} must have exactly 4 answer_choices.`;
+    }
+
+    const cleanedChoices = q.answer_choices.map((c) =>
+      typeof c === "string" ? c.trim() : ""
+    );
+
+    if (cleanedChoices.some((c) => !c)) {
+      return `${label} has an empty answer choice.`;
+    }
+
+    const uniqueChoices = new Set(cleanedChoices.map((c) => c.toLowerCase()));
+    if (uniqueChoices.size !== 4) {
+      return `${label} has duplicate answer choices.`;
+    }
+
+    if (
+      !q.correct_answer ||
+      typeof q.correct_answer !== "string" ||
+      !cleanedChoices.includes(q.correct_answer.trim())
+    ) {
+      return `${label} has a correct_answer that does not exactly match one of its answer_choices.`;
+    }
+
+    if (!q.explanation || typeof q.explanation !== "string" || !q.explanation.trim()) {
+      return `${label} is missing an explanation.`;
+    }
+
+    if (!q.topic || typeof q.topic !== "string" || !q.topic.trim()) {
+      return `${label} is missing a topic.`;
+    }
+
+    const difficulty = typeof q.difficulty === "string" ? q.difficulty.toLowerCase().trim() : "";
+    if (!["easy", "medium", "hard"].includes(difficulty)) {
+      return `${label} has an invalid difficulty value.`;
+    }
+
+    if (difficulty === "easy") easyCount++;
+    if (difficulty === "medium") mediumCount++;
+    if (difficulty === "hard") hardCount++;
+
+    const normalizedText = q.question_text.trim().toLowerCase();
+    if (seenQuestionTexts.has(normalizedText)) {
+      return `Duplicate question detected: "${q.question_text.trim()}"`;
+    }
+    seenQuestionTexts.add(normalizedText);
+  }
+
+  if (
+    easyCount !== REQUIRED_EASY ||
+    mediumCount !== REQUIRED_MEDIUM ||
+    hardCount !== REQUIRED_HARD
+  ) {
+    return `Difficulty mix is incorrect. Expected ${REQUIRED_EASY} easy, ${REQUIRED_MEDIUM} medium, ${REQUIRED_HARD} hard — got ${easyCount} easy, ${mediumCount} medium, ${hardCount} hard.`;
+  }
+
+  return null;
+}
+
+// Calls OpenAI once and returns either the validated questions or an
+// error describing what went wrong (parsing failure or validation failure).
+async function generateAndValidate(
+  notes: string
+): Promise<{ questions: GeneratedQuestion[] } | { error: string }> {
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: buildPrompt(notes) }],
+    response_format: { type: "json_object" },
+    temperature: 0.5,
+  });
+
+  const rawContent = completion.choices[0]?.message?.content;
+
+  if (!rawContent) {
+    return { error: "OpenAI did not return any content." };
+  }
+
+  let parsed: { questions?: unknown };
+  try {
+    parsed = JSON.parse(rawContent);
+  } catch {
+    return { error: "Failed to parse AI response as JSON." };
+  }
+
+  const validationError = validateQuestions(parsed.questions);
+  if (validationError) {
+    return { error: validationError };
+  }
+
+  return { questions: parsed.questions as GeneratedQuestion[] };
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    // 1. Read the data sent from the frontend form
+    const body = await req.json();
+    const { studentName, courseName, deckTitle, notes } = body;
+
+    if (!studentName || !courseName || !deckTitle || !notes) {
       return NextResponse.json(
-        { error: "OpenAI did not return any content." },
-        { status: 500 }
+        { error: "Missing required fields." },
+        { status: 400 }
       );
     }
 
-    // 3. Parse the AI's JSON response
-    let parsed: { questions: GeneratedQuestion[] };
-    try {
-      parsed = JSON.parse(rawContent);
-    } catch {
+    // 2. Validate the notes themselves before spending an AI call on them
+    const notesError = validateNotes(notes);
+    if (notesError) {
+      return NextResponse.json({ error: notesError }, { status: 400 });
+    }
+
+    // 3. Generate + validate. If the first attempt fails validation
+    // (malformed JSON, wrong count, mismatched correct_answer, wrong
+    // difficulty mix, duplicates, etc.), retry exactly once before
+    // giving up with a clean error.
+    let result = await generateAndValidate(notes);
+
+    if ("error" in result) {
+      result = await generateAndValidate(notes);
+    }
+
+    if ("error" in result) {
       return NextResponse.json(
-        { error: "Failed to parse AI response as JSON." },
-        { status: 500 }
+        {
+          error:
+            "We couldn't generate a good quiz from these notes. Try adding more detail or clarity to your notes and try again.",
+        },
+        { status: 422 }
       );
     }
 
-    const questions = parsed.questions;
-
-    if (!Array.isArray(questions) || questions.length === 0) {
-      return NextResponse.json(
-        { error: "AI response did not include a valid questions array." },
-        { status: 500 }
-      );
-    }
+    const questions = result.questions;
 
     // 4. Save the deck first, so we get a deck_id to attach questions to
     const { data: deckData, error: deckError } = await supabase
@@ -131,12 +280,12 @@ ${notes}
     // 5. Prepare the questions for insertion, linking each to the deck
     const questionsToInsert = questions.map((q) => ({
       deck_id: deckId,
-      question_text: q.question_text,
-      answer_choices: q.answer_choices,
-      correct_answer: q.correct_answer,
-      explanation: q.explanation,
-      topic: q.topic,
-      difficulty: q.difficulty,
+      question_text: q.question_text.trim(),
+      answer_choices: q.answer_choices.map((c) => c.trim()),
+      correct_answer: q.correct_answer.trim(),
+      explanation: q.explanation.trim(),
+      topic: q.topic.trim(),
+      difficulty: q.difficulty.toLowerCase().trim(),
     }));
 
     const { error: questionsError } = await supabase
@@ -144,6 +293,11 @@ ${notes}
       .insert(questionsToInsert);
 
     if (questionsError) {
+      // The deck was already created but its questions failed to save.
+      // Clean up the orphaned deck so it doesn't show up as a broken,
+      // empty deck in /decks.
+      await supabase.from("decks").delete().eq("id", deckId);
+
       return NextResponse.json(
         { error: questionsError.message },
         { status: 500 }
