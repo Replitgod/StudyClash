@@ -1,10 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
+
+// Reads a "?redirect=" query param directly from window.location instead of
+// using Next.js's useSearchParams() hook. useSearchParams() requires a
+// Suspense boundary around any component that calls it, and forgetting that
+// boundary is a well-known cause of blank/crashed pages specifically in
+// production builds on Vercel, even when everything looks fine in
+// `next dev`. Reading window.location.search directly avoids that entirely.
+// Only internal, single-slash paths are allowed, to guard against
+// open-redirect attacks via a crafted ?redirect= value.
+function getSafeRedirectTarget(fallback: string): string {
+  if (typeof window === "undefined") return fallback;
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get("redirect");
+
+    if (
+      redirect &&
+      redirect.startsWith("/") &&
+      !redirect.startsWith("//") &&
+      !redirect.includes("://")
+    ) {
+      return redirect;
+    }
+  } catch {
+    // Malformed query string — fall through to the default below.
+  }
+
+  return fallback;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,20 +44,6 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [redirectTo, setRedirectTo] = useState("/account");
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const params = new URLSearchParams(window.location.search);
-    const redirectParam = params.get("redirect");
-    const safeRedirect =
-      redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")
-        ? redirectParam
-        : "/account";
-
-    setRedirectTo(safeRedirect);
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +57,9 @@ export default function LoginPage() {
 
     setIsSubmitting(true);
 
+    // Everything below is wrapped in try/catch. A blank white screen is a
+    // far worse outcome than a visible error message, so nothing here is
+    // allowed to throw uncaught.
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -53,33 +72,43 @@ export default function LoginPage() {
         return;
       }
 
-      trackEvent("login_completed", { method: "password" });
+      try {
+        trackEvent("login_completed", { method: "password" });
+      } catch {
+        // Analytics failures should never block a successful login.
+      }
+
+      const target = getSafeRedirectTarget("/account");
 
       // Check whether this account has 2FA enabled and not yet verified
       // for this session. If so, send them to /mfa before letting them
-      // reach anything else — /account, /create, etc.
+      // reach anything else. This check is defensive — if it fails for any
+      // reason, we fail open to the intended destination rather than
+      // leaving the user stuck on a broken login page.
       try {
         const { data: aalData, error: aalError } =
           await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
-        if (aalError) {
-          router.replace(redirectTo);
+        if (
+          !aalError &&
+          aalData?.currentLevel === "aal1" &&
+          aalData?.nextLevel === "aal2"
+        ) {
+          router.push("/mfa");
           return;
         }
-
-        if (aalData.currentLevel === "aal1" && aalData.nextLevel === "aal2") {
-          router.replace("/mfa");
-          return;
-        }
-
-        router.replace(redirectTo);
       } catch {
-        router.replace(redirectTo);
+        // MFA check failed unexpectedly — fall through to the normal
+        // redirect rather than blocking login entirely.
       }
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Unable to log in right now. Please try again.";
-      setErrorMessage(message);
+
+      router.push(target);
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
       setIsSubmitting(false);
     }
   };
@@ -88,25 +117,30 @@ export default function LoginPage() {
     setErrorMessage(null);
     setIsGoogleLoading(true);
 
-    // Note: for OAuth, this only fires the redirect to Google. There's no
-    // "success" callback here — the browser navigates away entirely, then
-    // Supabase redirects back to redirectTo (/account) with a session
-    // already established. login_completed for OAuth isn't tracked from
-    // this file since this page never sees the completed session; it
-    // would need to be tracked from wherever redirectTo lands instead.
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}${redirectTo}`,
-      },
-    });
+    try {
+      const target = getSafeRedirectTarget("/account");
 
-    if (error) {
-      setErrorMessage(error.message);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}${target}`,
+        },
+      });
+
+      if (error) {
+        setErrorMessage(error.message);
+        setIsGoogleLoading(false);
+      }
+      // On success, the browser navigates away to Google's login page,
+      // so there's nothing else to do here.
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Could not start Google sign-in. Please try again."
+      );
       setIsGoogleLoading(false);
     }
-    // On success, the browser navigates away to Google's login page,
-    // so there's nothing else to do here.
   };
 
   const isAnyLoading = isSubmitting || isGoogleLoading;
@@ -273,6 +307,8 @@ export default function LoginPage() {
   );
 }
 
+// Module-level, not defined inside LoginPage — keeps identity stable across
+// re-renders so React never remounts the subtree beneath it.
 function SpinnerIcon() {
   return (
     <svg className="h-4 w-4 flex-shrink-0 animate-spin" fill="none" viewBox="0 0 24 24">

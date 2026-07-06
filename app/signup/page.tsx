@@ -1,10 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
+
+// Reads a "?redirect=" query param directly from window.location instead of
+// using Next.js's useSearchParams() hook. useSearchParams() requires a
+// Suspense boundary around any component that calls it, and forgetting that
+// boundary is a well-known cause of blank/crashed pages specifically in
+// production builds (it can look fine in `next dev` and still break on
+// Vercel). Reading window.location.search directly avoids that entirely.
+// This also guards against open-redirect attacks by only allowing internal,
+// single-slash paths.
+function getSafeRedirectTarget(fallback: string): string {
+  if (typeof window === "undefined") return fallback;
+
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get("redirect");
+
+    if (
+      redirect &&
+      redirect.startsWith("/") &&
+      !redirect.startsWith("//") &&
+      !redirect.includes("://")
+    ) {
+      return redirect;
+    }
+  } catch {
+    // Malformed query string — fall through to the default below.
+  }
+
+  return fallback;
+}
 
 export default function SignupPage() {
   const router = useRouter();
@@ -16,20 +46,6 @@ export default function SignupPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [redirectTo, setRedirectTo] = useState("/account");
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const params = new URLSearchParams(window.location.search);
-    const redirectParam = params.get("redirect");
-    const safeRedirect =
-      redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")
-        ? redirectParam
-        : "/account";
-
-    setRedirectTo(safeRedirect);
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +69,9 @@ export default function SignupPage() {
 
     setIsSubmitting(true);
 
+    // The entire signup flow is wrapped in try/catch. Nothing in here should
+    // ever be allowed to throw uncaught — a blank white screen is far worse
+    // for the user than a visible error message.
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -65,37 +84,49 @@ export default function SignupPage() {
         return;
       }
 
-      // The account was created successfully in either case below — the
-      // only difference is whether email confirmation is required before
-      // the user can actually use the session. Track signup_completed here
-      // since account creation itself succeeded, tagging whether it needed
-      // confirmation so the two paths can be told apart later if needed.
+      if (!data?.user) {
+        setErrorMessage("Something went wrong creating your account. Please try again.");
+        setIsSubmitting(false);
+        return;
+      }
 
       // If Supabase returns an active session right away, email confirmation
       // is not required on this project, and the user is already signed in.
       if (data.session) {
-        trackEvent("signup_completed", {
-          method: "password",
-          requiredEmailConfirmation: false,
-        });
-        router.replace(redirectTo);
+        try {
+          trackEvent("signup_completed", {
+            method: "password",
+            requiredEmailConfirmation: false,
+          });
+        } catch {
+          // Analytics failures should never block a successful signup.
+        }
+
+        const target = getSafeRedirectTarget("/account");
+        router.push(target);
         return;
       }
 
       // Otherwise, this project requires the user to confirm their email
       // before they can sign in. Show a clear message instead of a
       // confusing redirect to a page they can't use yet.
-      trackEvent("signup_completed", {
-        method: "password",
-        requiredEmailConfirmation: true,
-      });
+      try {
+        trackEvent("signup_completed", {
+          method: "password",
+          requiredEmailConfirmation: true,
+        });
+      } catch {
+        // Analytics failures should never block a successful signup.
+      }
 
       setIsSubmitting(false);
       setNeedsEmailConfirmation(true);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "Unable to create your account right now. Please try again.";
-      setErrorMessage(message);
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
       setIsSubmitting(false);
     }
   };
@@ -104,26 +135,30 @@ export default function SignupPage() {
     setErrorMessage(null);
     setIsGoogleLoading(true);
 
-    // Note: same limitation as Google login — this only fires the
-    // redirect to Google. The browser navigates away entirely, so there's
-    // no "success" moment to track signup_completed from here. If this
-    // is a brand-new Google identity, Supabase creates the account
-    // automatically and lands on redirectTo (/account) with a session
-    // already established — signup_completed for that path would need
-    // to be tracked from /account instead, not from this file.
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}${redirectTo}`,
-      },
-    });
+    try {
+      const target = getSafeRedirectTarget("/account");
 
-    if (error) {
-      setErrorMessage(error.message);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}${target}`,
+        },
+      });
+
+      if (error) {
+        setErrorMessage(error.message);
+        setIsGoogleLoading(false);
+      }
+      // On success, the browser navigates away to Google's login page,
+      // so there's nothing else to do here.
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Could not start Google sign-in. Please try again."
+      );
       setIsGoogleLoading(false);
     }
-    // On success, the browser navigates away to Google's login page,
-    // so there's nothing else to do here.
   };
 
   const isAnyLoading = isSubmitting || isGoogleLoading;
@@ -185,12 +220,13 @@ export default function SignupPage() {
                 </svg>
               </div>
               <p className="mt-3 text-sm font-semibold text-white">
-                Check your email
+                Check your email to confirm your account.
               </p>
               <p className="mt-1.5 break-words text-xs text-white/50">
                 We sent a confirmation link to{" "}
-                <span className="text-white/80">{email}</span>. Confirm your
-                email, then log in below.
+                <span className="text-white/80">{email}</span>. Click the
+                link, then log in below. If you don&apos;t see it in a
+                minute, check your spam folder.
               </p>
               <Link
                 href="/login"
@@ -349,6 +385,11 @@ export default function SignupPage() {
   );
 }
 
+// Module-level, not defined inside SignupPage — this keeps its identity
+// stable across every re-render, which matters because a component defined
+// inside another component's body gets recreated on every render, causing
+// React to remount its subtree (the classic "input loses focus after one
+// keystroke" bug). Nothing in this file redefines components on render.
 function SpinnerIcon() {
   return (
     <svg className="h-4 w-4 flex-shrink-0 animate-spin" fill="none" viewBox="0 0 24 24">

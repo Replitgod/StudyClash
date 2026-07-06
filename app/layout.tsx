@@ -1,5 +1,6 @@
 import FeedbackButton from "./components/FeedbackButton";
 import Navigation from "./components/Navigation";
+import { AuthProvider } from "@/lib/useAuth";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -28,11 +29,14 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
-        <Navigation />
-        <main className="flex-1">{children}</main>
-        <FeedbackButton />
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        <AuthProvider>
+          <Navigation />
+          <main className="flex-1">{children}</main>
+          <FeedbackButton />
+        </AuthProvider>
       </body>
     </html>
   );
