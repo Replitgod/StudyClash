@@ -172,6 +172,8 @@ export default function AccountPage() {
       ? Math.min(100, Math.round((decksToday / planInfo.daily_limit) * 100))
       : null;
 
+  const hasGeneratedToday = (decksToday ?? 0) > 0;
+
   return (
     <Background>
       <div className="w-full max-w-md">
@@ -279,8 +281,32 @@ export default function AccountPage() {
                             ? "bg-red-400"
                             : "bg-gradient-to-r from-fuchsia-500 to-cyan-400"
                         }`}
-                        style={{ width: `${usagePercent}%` }}
+                        style={{ width: `${Math.max(usagePercent, 3)}%` }}
                       />
+                    </div>
+                  )}
+
+                  {/* Empty usage state — explains why the count is at zero */}
+                  {!hasGeneratedToday && (
+                    <div className="mt-3 flex items-start gap-2 rounded-xl border border-white/10 bg-black/20 px-3.5 py-3">
+                      <svg
+                        className="mt-0.5 h-4 w-4 flex-shrink-0 text-fuchsia-300"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"
+                        />
+                      </svg>
+                      <p className="text-xs leading-relaxed text-white/50">
+                        Your usage counter starts once you generate your
+                        first deck today. Create a battle deck to see it
+                        tick up.
+                      </p>
                     </div>
                   )}
                 </div>
@@ -291,10 +317,10 @@ export default function AccountPage() {
           {/* Actions */}
           <div className="mt-6 flex flex-col gap-3">
             <Link
-              href="/login?redirect=/create"
+              href="/create"
               className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
             >
-              Create a Battle Deck
+              {hasGeneratedToday ? "Create Another Deck" : "Create Your First Deck"}
             </Link>
             <Link
               href="/pricing"

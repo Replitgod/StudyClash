@@ -29,30 +29,25 @@ export default function Home() {
             AI-POWERED STUDY BATTLES
           </div>
 
-          {/* Title */}
-          <h1 className="text-center text-4xl font-black tracking-tight sm:text-6xl md:text-7xl">
+          {/* Headline */}
+          <h1 className="max-w-4xl text-center text-4xl font-black leading-tight tracking-tight sm:text-6xl md:text-7xl">
             <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-              StudyClash
+              Turn your notes into a 90-second study battle.
             </span>
           </h1>
 
-          {/* Tagline */}
-          <p className="mt-4 text-center text-base font-semibold text-white/90 sm:mt-5 sm:text-xl md:text-2xl">
-            Turn your notes into a 90-second study battle.
-          </p>
-
-          {/* Explanation */}
-          <p className="mt-4 max-w-xl text-center text-sm leading-relaxed text-white/50 sm:text-base">
-            Paste your notes or upload a PDF. Our AI instantly builds a
-            fast-paced multiple-choice battle, scores your run, shows you
-            exactly which topics to review, and gives you a link to challenge
-            your friends on the same deck.
+          {/* Subheadline */}
+          <p className="mt-6 max-w-2xl text-center text-sm leading-relaxed text-white/60 sm:text-base md:text-lg">
+            Paste your notes or upload a PDF. StudyClash&apos;s AI turns them
+            into a fast quiz battle, scores your run, shows you exactly which
+            topics to review, and gives you a link to challenge your friends
+            on the same deck.
           </p>
 
           {/* CTA buttons */}
-          <div className="mt-8 flex w-full max-w-xs flex-col items-stretch gap-3 sm:mt-10 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-4">
+          <div className="mt-9 flex w-full max-w-xs flex-col items-stretch gap-3 sm:mt-10 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-4">
             <Link
-              href="/login?redirect=/create"
+              href="/create"
               className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:w-auto sm:hover:scale-105 sm:text-lg"
             >
               <span className="relative z-10">Create Battle Deck</span>
@@ -78,6 +73,35 @@ export default function Home() {
             >
               View Decks
             </Link>
+          </div>
+
+          {/* Quick feature strip */}
+          <div className="mt-10 flex w-full max-w-3xl flex-wrap items-center justify-center gap-x-6 gap-y-3 sm:mt-12">
+            {[
+              "AI-generated questions",
+              "Weak topic reports",
+              "Live leaderboards",
+              "Challenge links",
+            ].map((feature) => (
+              <div key={feature} className="flex items-center gap-1.5">
+                <svg
+                  className="h-3.5 w-3.5 flex-shrink-0 text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4.5 12.75l6 6 9-13.5"
+                  />
+                </svg>
+                <span className="text-xs font-semibold text-white/50 sm:text-sm">
+                  {feature}
+                </span>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -155,7 +179,7 @@ export default function Home() {
                 ),
                 step: "05",
                 title: "Challenge Friends",
-                desc: "Share a link so friends can play the exact same deck and compete.",
+                desc: "Share a link so friends can play the exact same deck and compete on the leaderboard.",
               },
             ].map((item) => (
               <div
@@ -189,14 +213,14 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ---------- Why It's Different Section ---------- */}
+        {/* ---------- Why It's Better Than Flashcards Section ---------- */}
         <section className="mt-20 w-full max-w-5xl sm:mt-28">
           <div className="text-center">
             <span className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
               Not Just Flashcards
             </span>
             <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">
-              Why StudyClash Hits Different
+              Why It&apos;s Better Than Flashcards
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-sm text-white/50 sm:text-base">
               Flashcards test recall in isolation. StudyClash turns studying
@@ -233,7 +257,7 @@ export default function Home() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
+                    d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25"
                   />
                 ),
                 title: "Tells you what to fix, not just your score",
@@ -248,7 +272,7 @@ export default function Home() {
                   />
                 ),
                 title: "Social by default",
-                desc: "Every deck comes with a shareable challenge link and a leaderboard, so studying turns into friendly competition.",
+                desc: "Every deck comes with a shareable challenge link and a live leaderboard, so studying turns into friendly competition.",
               },
             ].map((item) => (
               <div
@@ -279,7 +303,95 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ---------- Bottom CTA ---------- */}
+        {/* ---------- Built for Students Section ---------- */}
+        <section className="mt-20 w-full max-w-5xl sm:mt-28">
+          <div className="text-center">
+            <span className="text-xs font-bold uppercase tracking-wider text-violet-300">
+              Made For Studying
+            </span>
+            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">
+              Built for Students
+            </h2>
+            <p className="mx-auto mt-3 max-w-lg text-sm text-white/50 sm:text-base">
+              No account setup headaches, no clutter — just your notes turned
+              into something worth studying.
+            </p>
+          </div>
+
+          <div className="mt-10 grid w-full grid-cols-1 gap-4 sm:mt-12 sm:grid-cols-3">
+            {[
+              {
+                icon: (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+                  />
+                ),
+                title: "Works with any subject",
+                desc: "Chemistry, history, law, medicine — if you can write notes on it, StudyClash can quiz you on it.",
+              },
+              {
+                icon: (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+                  />
+                ),
+                title: "PDF or paste — your choice",
+                desc: "Already have a PDF study guide? Upload it directly. Prefer to paste text? That works too.",
+              },
+              {
+                icon: (
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+                  />
+                ),
+                title: "Fair usage, built to last",
+                desc: "Free Beta includes daily generation limits so the app stays fast and available for everyone during the beta.",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center backdrop-blur-sm transition-colors duration-200 hover:border-violet-400/30 hover:bg-white/[0.06] sm:p-6"
+              >
+                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20 text-fuchsia-300">
+                  <svg
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                  >
+                    {item.icon}
+                  </svg>
+                </div>
+                <h3 className="mt-4 text-sm font-bold text-white sm:text-base">
+                  {item.title}
+                </h3>
+                <p className="mt-1.5 text-xs leading-relaxed text-white/50 sm:text-sm">
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <p className="mx-auto mt-6 max-w-lg text-center text-xs text-white/30 sm:text-sm">
+            Need more generations per day? Check out{" "}
+            <Link
+              href="/pricing"
+              className="font-semibold text-fuchsia-300 hover:text-fuchsia-200"
+            >
+              Pro Preview and Founder plans
+            </Link>
+            .
+          </p>
+        </section>
+
+        {/* ---------- Final CTA Section ---------- */}
         <section className="mt-20 flex w-full max-w-2xl flex-col items-center rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm sm:mt-24 sm:p-10">
           <h2 className="text-xl font-black tracking-tight sm:text-2xl md:text-3xl">
             <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
@@ -292,7 +404,7 @@ export default function Home() {
 
           <div className="mt-6 flex w-full max-w-xs flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-4">
             <Link
-              href="/login?redirect=/create"
+              href="/create"
               className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:w-auto sm:hover:scale-105"
             >
               <span className="relative z-10">Create Battle Deck</span>

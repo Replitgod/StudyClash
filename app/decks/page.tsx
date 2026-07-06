@@ -85,14 +85,16 @@ export default function DecksPage() {
           Pick a deck below and jump into a battle.
         </p>
 
-        {/* Create new deck button */}
-        <Link
-          href="/login?redirect=/create"
-          className="group relative mt-6 inline-flex w-full max-w-xs items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:mt-8 sm:w-auto sm:hover:scale-105"
-        >
-          <span className="relative z-10">+ Create New Deck</span>
-          <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover:translate-x-full" />
-        </Link>
+        {/* Create new deck button — only shown when there's a list above it to sit alongside */}
+        {!isLoading && !loadError && decks.length > 0 && (
+          <Link
+            href="/create"
+            className="group relative mt-6 inline-flex w-full max-w-xs items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:mt-8 sm:w-auto sm:hover:scale-105"
+          >
+            <span className="relative z-10">+ Create New Deck</span>
+            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover:translate-x-full" />
+          </Link>
+        )}
 
         {/* Loading state */}
         {isLoading && (
@@ -130,12 +132,56 @@ export default function DecksPage() {
           </div>
         )}
 
-        {/* Empty state */}
+        {/* Empty state — motivates creating the first deck */}
         {!isLoading && !loadError && decks.length === 0 && (
-          <div className="mt-14 flex flex-col items-center px-4 text-center sm:mt-16">
-            <p className="text-white/50">No decks yet.</p>
-            <p className="mt-1 text-sm text-white/30">
-              Create your first battle deck to get started.
+          <div className="mt-12 flex w-full max-w-md flex-col items-center rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-10 text-center backdrop-blur-sm sm:mt-16 sm:px-8 sm:py-12">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20">
+              <svg
+                className="h-7 w-7 text-fuchsia-300"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.8}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 16.5V9.75m0 0l-3 3m3-3l3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"
+                />
+              </svg>
+            </div>
+
+            <h2 className="mt-5 text-lg font-bold text-white sm:text-xl">
+              No battle decks yet
+            </h2>
+            <p className="mt-2 max-w-sm text-sm leading-relaxed text-white/50">
+              Turn your notes or a PDF into a 90-second quiz battle in under
+              a minute — then challenge a friend to beat your score.
+            </p>
+
+            <Link
+              href="/create"
+              className="group relative mt-6 flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:w-auto sm:px-8 sm:hover:scale-105"
+            >
+              <span className="relative z-10">Create Your First Deck</span>
+              <svg
+                className="relative z-10 h-4 w-4 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover:translate-x-full" />
+            </Link>
+
+            <p className="mt-4 text-xs text-white/30">
+              Takes about a minute — paste notes or upload a PDF.
             </p>
           </div>
         )}

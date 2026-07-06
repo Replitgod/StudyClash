@@ -41,6 +41,17 @@ type LeaderboardEntry = {
 
 const CHOICE_LETTERS = ["A", "B", "C", "D"];
 
+// Point values for the streak bonus system.
+const BASE_POINTS_PER_CORRECT = 100;
+const STREAK_BONUS_TIER_1 = 25; // 3+ streak
+const STREAK_BONUS_TIER_2 = 50; // 5+ streak
+
+function calculatePointsForStreak(streak: number): number {
+  if (streak >= 5) return BASE_POINTS_PER_CORRECT + STREAK_BONUS_TIER_2;
+  if (streak >= 3) return BASE_POINTS_PER_CORRECT + STREAK_BONUS_TIER_1;
+  return BASE_POINTS_PER_CORRECT;
+}
+
 // Rank badge labels/styles for the top 3 leaderboard spots
 const RANK_BADGES: Record<number, { label: string; color: string }> = {
   0: { label: "Champion", color: "from-yellow-300 to-amber-500" },
@@ -100,6 +111,12 @@ export default function BattlePage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
+
+  // Streak + points tracking
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [totalScore, setTotalScore] = useState(0);
+  const [lastPointsEarned, setLastPointsEarned] = useState(0);
 
   // Timer (counts up in seconds while the battle is in progress)
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -238,6 +255,19 @@ export default function BattlePage() {
         responseTimeMs,
       },
     ]);
+
+    if (isCorrect) {
+      const newStreak = currentStreak + 1;
+      const pointsEarned = calculatePointsForStreak(newStreak);
+
+      setCurrentStreak(newStreak);
+      setBestStreak((prevBest) => Math.max(prevBest, newStreak));
+      setTotalScore((prevScore) => prevScore + pointsEarned);
+      setLastPointsEarned(pointsEarned);
+    } else {
+      setCurrentStreak(0);
+      setLastPointsEarned(0);
+    }
   };
 
   const handleNext = useCallback(async () => {
@@ -260,7 +290,7 @@ export default function BattlePage() {
       .insert({
         deck_id: deckId,
         player_name: playerName || deck?.student_name || "Player",
-        score: correctCount,
+        score: totalScore,
         total_questions: questions.length,
         correct_answers: correctCount,
         time_taken_seconds: elapsedSeconds,
@@ -289,13 +319,26 @@ export default function BattlePage() {
     trackEvent("battle_finished", {
       deckId,
       matchId: matchData.id,
-      score: correctCount,
+      score: totalScore,
+      correctAnswers: correctCount,
+      bestStreak,
       totalQuestions: questions.length,
       timeTakenSeconds: elapsedSeconds,
     });
 
     router.push(`/results/${matchData.id}`);
-  }, [currentIndex, questions, answers, deckId, deck, playerName, elapsedSeconds, router]);
+  }, [
+    currentIndex,
+    questions,
+    answers,
+    deckId,
+    deck,
+    playerName,
+    totalScore,
+    bestStreak,
+    elapsedSeconds,
+    router,
+  ]);
 
   // ---------- Loading state ----------
   if (isLoading) {
@@ -387,6 +430,14 @@ export default function BattlePage() {
           >
             Start Battle
           </button>
+        </div>
+
+        {/* Scoring rules reminder */}
+        <div className="mt-4 w-full max-w-sm rounded-xl border border-white/5 bg-black/20 px-4 py-3 text-center">
+          <p className="text-[11px] text-white/40">
+            🔥 100 pts per correct · +25 bonus at a 3-streak · +50 bonus at a
+            5-streak
+          </p>
         </div>
 
         {/* Leaderboard */}
@@ -524,12 +575,18 @@ export default function BattlePage() {
   const progressPercent = ((currentIndex + 1) / questions.length) * 100;
   const showFeedback = selectedChoice !== null;
   const answeredCorrectly = selectedChoice === currentQuestion.correct_answer;
+  const bonusForCurrentStreak =
+    currentStreak >= 5
+      ? STREAK_BONUS_TIER_2
+      : currentStreak >= 3
+      ? STREAK_BONUS_TIER_1
+      : 0;
 
   return (
     <Background>
       <div className="w-full max-w-2xl">
         {/* Top bar: progress + timer */}
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-2 sm:mb-6">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-bold uppercase tracking-wider text-white/50">
             Question {currentIndex + 1} of {questions.length}
           </span>
@@ -548,6 +605,55 @@ export default function BattlePage() {
               />
             </svg>
             {formatTime(elapsedSeconds)}
+          </div>
+        </div>
+
+        {/* Score + streak bar */}
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-2 sm:mb-6">
+          <div className="flex items-center gap-1.5 rounded-full border border-fuchsia-400/20 bg-fuchsia-500/10 px-3 py-1">
+            <span className="text-sm font-black text-fuchsia-300">
+              {totalScore}
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-300/70">
+              pts
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {bestStreak > 0 && (
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+                Best: {bestStreak}
+              </span>
+            )}
+            <div
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1 transition-colors duration-200 ${
+                currentStreak >= 5
+                  ? "border-orange-400/40 bg-orange-500/15"
+                  : currentStreak >= 3
+                  ? "border-amber-400/30 bg-amber-500/10"
+                  : "border-white/10 bg-white/5"
+              }`}
+            >
+              <span className="text-sm leading-none">
+                {currentStreak >= 3 ? "🔥" : "⚡"}
+              </span>
+              <span
+                className={`text-sm font-bold ${
+                  currentStreak >= 5
+                    ? "text-orange-300"
+                    : currentStreak >= 3
+                    ? "text-amber-300"
+                    : "text-white/60"
+                }`}
+              >
+                {currentStreak} streak
+              </span>
+              {bonusForCurrentStreak > 0 && (
+                <span className="text-[10px] font-bold text-white/40">
+                  (+{bonusForCurrentStreak})
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -627,13 +733,26 @@ export default function BattlePage() {
                   : "border-red-400/30 bg-red-500/5"
               }`}
             >
-              <p
-                className={`text-xs font-bold uppercase tracking-wider ${
-                  answeredCorrectly ? "text-emerald-300" : "text-red-300"
-                }`}
-              >
-                {answeredCorrectly ? "Correct!" : "Not quite"}
-              </p>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p
+                  className={`text-xs font-bold uppercase tracking-wider ${
+                    answeredCorrectly ? "text-emerald-300" : "text-red-300"
+                  }`}
+                >
+                  {answeredCorrectly ? "Correct!" : "Not quite"}
+                </p>
+
+                {answeredCorrectly && (
+                  <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-300">
+                    +{lastPointsEarned} pts
+                    {lastPointsEarned > BASE_POINTS_PER_CORRECT && (
+                      <span className="text-orange-300">
+                        🔥 streak bonus
+                      </span>
+                    )}
+                  </span>
+                )}
+              </div>
 
               {!answeredCorrectly && (
                 <p className="mt-2 break-words text-white/70">
