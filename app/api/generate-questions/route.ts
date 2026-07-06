@@ -228,13 +228,24 @@ export async function POST(req: NextRequest) {
 
     // 2. Read the data sent from the frontend form
     const body = await req.json();
-    const { studentName, courseName, deckTitle, notes } = body;
+    const { studentName, courseName, deckTitle, notes, betaAccessCode } = body;
 
     if (!studentName || !courseName || !deckTitle || !notes) {
       return NextResponse.json(
         { error: "Missing required fields." },
         { status: 400 }
       );
+    }
+
+    const expectedBetaAccessCode = process.env.NEXT_PUBLIC_BETA_ACCESS_CODE || process.env.BETA_ACCESS_CODE;
+    if (expectedBetaAccessCode) {
+      const trimmedProvidedCode = typeof betaAccessCode === "string" ? betaAccessCode.trim() : "";
+      if (!trimmedProvidedCode || trimmedProvidedCode !== expectedBetaAccessCode) {
+        return NextResponse.json(
+          { error: "Please enter a valid beta access code to generate a deck." },
+          { status: 403 }
+        );
+      }
     }
 
     // 3. Load the user's profile to find their plan

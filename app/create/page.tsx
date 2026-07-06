@@ -49,6 +49,7 @@ export default function CreateDeck() {
   const [courseName, setCourseName] = useState("");
   const [deckTitle, setDeckTitle] = useState("");
   const [notes, setNotes] = useState("");
+  const [betaAccessCode, setBetaAccessCode] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -155,6 +156,15 @@ export default function CreateDeck() {
 
     if (!studentName || !courseName || !deckTitle || !notes) return;
 
+    const expectedBetaCode = process.env.NEXT_PUBLIC_BETA_ACCESS_CODE || process.env.BETA_ACCESS_CODE;
+    if (expectedBetaCode) {
+      const trimmedCode = betaAccessCode.trim();
+      if (!trimmedCode || trimmedCode !== expectedBetaCode) {
+        setErrorMessage("Please enter a valid beta access code to generate a deck.");
+        return;
+      }
+    }
+
     setIsGenerating(true);
     setErrorMessage(null);
     setCurrentStep(0);
@@ -185,6 +195,7 @@ export default function CreateDeck() {
           courseName,
           deckTitle,
           notes,
+          betaAccessCode: betaAccessCode.trim(),
         }),
       });
 
@@ -465,6 +476,28 @@ export default function CreateDeck() {
             rows={10}
             className="w-full min-w-0 resize-y rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base leading-relaxed text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:rows-12 sm:text-sm"
           />
+        </div>
+
+        {/* Beta access code */}
+        <div className="mt-4 flex flex-col gap-2 sm:mt-5">
+          <label
+            htmlFor="betaAccessCode"
+            className="text-xs font-bold uppercase tracking-wider text-white/60"
+          >
+            Beta Access Code
+          </label>
+          <input
+            id="betaAccessCode"
+            type="password"
+            value={betaAccessCode}
+            onChange={(e) => setBetaAccessCode(e.target.value)}
+            placeholder="Enter your beta access code"
+            required={Boolean(process.env.NEXT_PUBLIC_BETA_ACCESS_CODE || process.env.BETA_ACCESS_CODE)}
+            className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+          />
+          <p className="text-xs text-white/40">
+            Deck generation is currently limited to beta users. Enter the access code to continue.
+          </p>
         </div>
 
         {/* Submit button */}
