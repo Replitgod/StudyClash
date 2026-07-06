@@ -52,6 +52,13 @@ type ReviewItem = {
   isCorrect: boolean;
 };
 
+type TopicStat = {
+  topic: string;
+  correct: number;
+  total: number;
+  accuracy: number;
+};
+
 const REPORT_REASONS = [
   "Wrong answer",
   "Confusing question",
@@ -116,6 +123,26 @@ function buildImprovementMessage(topic: string, missedCount: number): string {
     return `Review your notes on ${topic} — one question slipped through here.`;
   }
   return `Review your notes on ${topic} and practice a few more questions on this topic.`;
+}
+
+// Groups review items by topic and computes accuracy per topic.
+function buildTopicStats(reviewItems: ReviewItem[]): TopicStat[] {
+  const statsByTopic = new Map<string, { correct: number; total: number }>();
+
+  for (const item of reviewItems) {
+    const topic = item.question.topic || "General";
+    const entry = statsByTopic.get(topic) || { correct: 0, total: 0 };
+    entry.total += 1;
+    if (item.isCorrect) entry.correct += 1;
+    statsByTopic.set(topic, entry);
+  }
+
+  return Array.from(statsByTopic.entries()).map(([topic, { correct, total }]) => ({
+    topic,
+    correct,
+    total,
+    accuracy: Math.round((correct / total) * 100),
+  }));
 }
 
 export default function ResultsPage() {
@@ -419,6 +446,14 @@ export default function ResultsPage() {
   const wrongAnswers = match.total_questions - match.correct_answers;
   const rank = getRank(accuracyPercent);
 
+  const topicStats = buildTopicStats(reviewItems);
+  const bestTopics = [...topicStats]
+    .sort((a, b) => b.accuracy - a.accuracy || b.total - a.total)
+    .slice(0, 3);
+  const weakestTopics = [...topicStats]
+    .sort((a, b) => a.accuracy - b.accuracy || b.total - a.total)
+    .slice(0, 3);
+
   return (
     <Background>
       <div className="w-full max-w-2xl">
@@ -485,6 +520,156 @@ export default function ResultsPage() {
                   </div>
                 ))}
               </div>
+            )}
+          </div>
+        )}
+
+        {/* Topic Performance: Best vs Weakest */}
+        {hasAnswerData && topicStats.length > 0 && (
+          <div className="mt-6 grid w-full grid-cols-1 gap-4 sm:mt-8 sm:grid-cols-2">
+            {/* Best topics */}
+            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.03] p-4 backdrop-blur-sm sm:p-6">
+              <div className="flex items-center gap-2">
+                <svg
+                  className="h-4 w-4 flex-shrink-0 text-emerald-300"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"
+                  />
+                </svg>
+                <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                  Best Topics
+                </p>
+              </div>
+              <div className="mt-4 flex flex-col gap-2.5">
+                {bestTopics.map((t) => (
+                  <div key={t.topic}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-sm font-semibold text-white/90">
+                        {t.topic}
+                      </p>
+                      <span className="flex-shrink-0 text-xs font-bold text-emerald-300">
+                        {t.accuracy}%
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-emerald-400"
+                        style={{ width: `${t.accuracy}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Weakest topics */}
+            <div className="rounded-2xl border border-red-400/20 bg-red-500/[0.03] p-4 backdrop-blur-sm sm:p-6">
+              <div className="flex items-center gap-2">
+                <svg
+                  className="h-4 w-4 flex-shrink-0 text-red-300"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                  />
+                </svg>
+                <p className="text-xs font-bold uppercase tracking-wider text-red-300">
+                  Weakest Topics
+                </p>
+              </div>
+              <div className="mt-4 flex flex-col gap-2.5">
+                {weakestTopics.map((t) => (
+                  <div key={t.topic}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-sm font-semibold text-white/90">
+                        {t.topic}
+                      </p>
+                      <span className="flex-shrink-0 text-xs font-bold text-red-300">
+                        {t.accuracy}%
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                      <div
+                        className="h-full rounded-full bg-red-400"
+                        style={{ width: `${t.accuracy}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Study These Topics Next — actionable CTA based on missed topics */}
+        {hasAnswerData && (
+          <div className="mt-6 rounded-2xl border border-fuchsia-400/30 bg-gradient-to-br from-fuchsia-500/10 to-violet-500/5 p-4 backdrop-blur-sm sm:mt-8 sm:p-6">
+            <div className="flex items-center gap-2">
+              <svg
+                className="h-4 w-4 flex-shrink-0 text-fuchsia-300"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+                />
+              </svg>
+              <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
+                Study These Topics Next
+              </p>
+            </div>
+
+            {weakTopics && weakTopics.length === 0 ? (
+              <p className="mt-3 text-sm text-emerald-300">
+                Nothing to study — you nailed every topic this round. 🎉
+              </p>
+            ) : (
+              <>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {weakTopics?.map((wt) => (
+                    <span
+                      key={wt.topic}
+                      className="rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-semibold text-white/80"
+                    >
+                      {wt.topic}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs leading-relaxed text-white/50 sm:text-sm">
+                  Go back to your notes on these topics, then play again to
+                  see your accuracy climb.
+                </p>
+                <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
+                  <Link
+                    href={`/battle/${deck.id}`}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-5 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
+                  >
+                    Retry This Deck
+                  </Link>
+                  <Link
+                    href="/create"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white/80 transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10"
+                  >
+                    New Deck From Updated Notes
+                  </Link>
+                </div>
+              </>
             )}
           </div>
         )}

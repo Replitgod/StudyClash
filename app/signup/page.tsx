@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -16,6 +16,20 @@ export default function SignupPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [redirectTo, setRedirectTo] = useState("/account");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const redirectParam = params.get("redirect");
+    const safeRedirect =
+      redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")
+        ? redirectParam
+        : "/account";
+
+    setRedirectTo(safeRedirect);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,44 +53,51 @@ export default function SignupPage() {
 
     setIsSubmitting(true);
 
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim(),
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+      });
 
-    if (error) {
-      setErrorMessage(error.message);
-      setIsSubmitting(false);
-      return;
-    }
+      if (error) {
+        setErrorMessage(error.message);
+        setIsSubmitting(false);
+        return;
+      }
 
-    // The account was created successfully in either case below — the
-    // only difference is whether email confirmation is required before
-    // the user can actually use the session. Track signup_completed here
-    // since account creation itself succeeded, tagging whether it needed
-    // confirmation so the two paths can be told apart later if needed.
+      // The account was created successfully in either case below — the
+      // only difference is whether email confirmation is required before
+      // the user can actually use the session. Track signup_completed here
+      // since account creation itself succeeded, tagging whether it needed
+      // confirmation so the two paths can be told apart later if needed.
 
-    // If Supabase returns an active session right away, email confirmation
-    // is not required on this project, and the user is already signed in.
-    if (data.session) {
+      // If Supabase returns an active session right away, email confirmation
+      // is not required on this project, and the user is already signed in.
+      if (data.session) {
+        trackEvent("signup_completed", {
+          method: "password",
+          requiredEmailConfirmation: false,
+        });
+        router.replace(redirectTo);
+        return;
+      }
+
+      // Otherwise, this project requires the user to confirm their email
+      // before they can sign in. Show a clear message instead of a
+      // confusing redirect to a page they can't use yet.
       trackEvent("signup_completed", {
         method: "password",
-        requiredEmailConfirmation: false,
+        requiredEmailConfirmation: true,
       });
-      router.push("/account");
-      return;
+
+      setIsSubmitting(false);
+      setNeedsEmailConfirmation(true);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Unable to create your account right now. Please try again.";
+      setErrorMessage(message);
+      setIsSubmitting(false);
     }
-
-    // Otherwise, this project requires the user to confirm their email
-    // before they can sign in. Show a clear message instead of a
-    // confusing redirect to a page they can't use yet.
-    trackEvent("signup_completed", {
-      method: "password",
-      requiredEmailConfirmation: true,
-    });
-
-    setIsSubmitting(false);
-    setNeedsEmailConfirmation(true);
   };
 
   const handleGoogleSignup = async () => {
@@ -93,7 +114,7 @@ export default function SignupPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/account`,
+        redirectTo: `${window.location.origin}${redirectTo}`,
       },
     });
 

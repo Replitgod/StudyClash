@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -14,6 +14,20 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [redirectTo, setRedirectTo] = useState("/account");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const redirectParam = params.get("redirect");
+    const safeRedirect =
+      redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")
+        ? redirectParam
+        : "/account";
+
+    setRedirectTo(safeRedirect);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,39 +41,47 @@ export default function LoginPage() {
 
     setIsSubmitting(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-    if (error) {
-      setErrorMessage(error.message);
+      if (error) {
+        setErrorMessage(error.message);
+        setIsSubmitting(false);
+        return;
+      }
+
+      trackEvent("login_completed", { method: "password" });
+
+      // Check whether this account has 2FA enabled and not yet verified
+      // for this session. If so, send them to /mfa before letting them
+      // reach anything else — /account, /create, etc.
+      try {
+        const { data: aalData, error: aalError } =
+          await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+        if (aalError) {
+          router.replace(redirectTo);
+          return;
+        }
+
+        if (aalData.currentLevel === "aal1" && aalData.nextLevel === "aal2") {
+          router.replace("/mfa");
+          return;
+        }
+
+        router.replace(redirectTo);
+      } catch {
+        router.replace(redirectTo);
+      }
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Unable to log in right now. Please try again.";
+      setErrorMessage(message);
       setIsSubmitting(false);
-      return;
     }
-
-    trackEvent("login_completed", { method: "password" });
-
-    // Check whether this account has 2FA enabled and not yet verified
-    // for this session. If so, send them to /mfa before letting them
-    // reach anything else — /account, /create, etc.
-    const { data: aalData, error: aalError } =
-      await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-
-    if (aalError) {
-      // Fail open to /account rather than blocking login entirely over
-      // an assurance-level check we couldn't complete. The account page
-      // and generate-questions route both re-check this independently.
-      router.push("/account");
-      return;
-    }
-
-    if (aalData.currentLevel === "aal1" && aalData.nextLevel === "aal2") {
-      router.push("/mfa");
-      return;
-    }
-
-    router.push("/account");
   };
 
   const handleGoogleLogin = async () => {
@@ -75,7 +97,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/account`,
+        redirectTo: `${window.location.origin}${redirectTo}`,
       },
     });
 
