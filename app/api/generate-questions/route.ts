@@ -222,7 +222,7 @@ export async function POST(req: NextRequest) {
   try {
     // 1. Read the data sent from the frontend form
     const body = await req.json();
-    const { studentName, courseName, deckTitle, notes } = body;
+    const { studentName, courseName, deckTitle, notes, betaCode } = body;
 
     if (!studentName || !courseName || !deckTitle || !notes) {
       return NextResponse.json(
@@ -231,13 +231,37 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Validate the notes themselves before spending an AI call on them
+    // 2. Gate everything behind the beta access code BEFORE doing any
+    // paid work. This check happens first, on purpose — no OpenAI call,
+    // no Supabase insert, nothing costs money or storage until a valid
+    // code is confirmed. BETA_ACCESS_CODE is a server-only env var
+    // (no NEXT_PUBLIC_ prefix), so it's never exposed to the browser.
+    const expectedCode = process.env.BETA_ACCESS_CODE;
+
+    if (!expectedCode) {
+      // Fails safe: if the env var isn't set on the server at all,
+      // treat it as a server misconfiguration rather than letting
+      // everyone through.
+      return NextResponse.json(
+        { error: "Beta access is not configured on the server." },
+        { status: 500 }
+      );
+    }
+
+    if (!betaCode || typeof betaCode !== "string" || betaCode.trim() !== expectedCode) {
+      return NextResponse.json(
+        { error: "Invalid beta code." },
+        { status: 403 }
+      );
+    }
+
+    // 3. Validate the notes themselves before spending an AI call on them
     const notesError = validateNotes(notes);
     if (notesError) {
       return NextResponse.json({ error: notesError }, { status: 400 });
     }
 
-    // 3. Generate + validate. If the first attempt fails validation
+    // 4. Generate + validate. If the first attempt fails validation
     // (malformed JSON, wrong count, mismatched correct_answer, wrong
     // difficulty mix, duplicates, etc.), retry exactly once before
     // giving up with a clean error.
@@ -259,7 +283,7 @@ export async function POST(req: NextRequest) {
 
     const questions = result.questions;
 
-    // 4. Save the deck first, so we get a deck_id to attach questions to
+    // 5. Save the deck first, so we get a deck_id to attach questions to
     const { data: deckData, error: deckError } = await supabase
       .from("decks")
       .insert({
@@ -277,7 +301,7 @@ export async function POST(req: NextRequest) {
 
     const deckId = deckData.id;
 
-    // 5. Prepare the questions for insertion, linking each to the deck
+    // 6. Prepare the questions for insertion, linking each to the deck
     const questionsToInsert = questions.map((q) => ({
       deck_id: deckId,
       question_text: q.question_text.trim(),
@@ -304,7 +328,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 6. Send the new deck's id back to the frontend
+    // 7. Send the new deck's id back to the frontend
     return NextResponse.json({ deckId });
   } catch (err) {
     const message =

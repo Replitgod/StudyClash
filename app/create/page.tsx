@@ -17,6 +17,7 @@ export default function CreateDeck() {
   const [courseName, setCourseName] = useState("");
   const [deckTitle, setDeckTitle] = useState("");
   const [notes, setNotes] = useState("");
+  const [betaCode, setBetaCode] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -101,6 +102,13 @@ export default function CreateDeck() {
 
     if (!studentName || !courseName || !deckTitle || !notes) return;
 
+    // Explicit check so the user gets a clear, specific message instead
+    // of just relying on the browser's native "required" validation.
+    if (!betaCode.trim()) {
+      setErrorMessage("Please enter your beta access code.");
+      return;
+    }
+
     setIsGenerating(true);
     setErrorMessage(null);
     setCurrentStep(0);
@@ -123,6 +131,7 @@ export default function CreateDeck() {
           courseName,
           deckTitle,
           notes,
+          betaCode: betaCode.trim(),
         }),
       });
 
@@ -213,7 +222,46 @@ export default function CreateDeck() {
           onSubmit={handleSubmit}
           className="mt-8 w-full max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:mt-10 sm:p-6 md:p-8"
         >
-          <div className="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2">
+          {/* Beta access code — placed first so it's the first thing a
+              new visitor sees and can't miss it before filling everything
+              else out. */}
+          <div className="flex flex-col gap-2 rounded-xl border border-fuchsia-400/20 bg-fuchsia-500/[0.04] p-4">
+            <label
+              htmlFor="betaCode"
+              className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-fuchsia-300"
+            >
+              <svg
+                className="h-3.5 w-3.5 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"
+                />
+              </svg>
+              Beta Access Code
+            </label>
+            <input
+              id="betaCode"
+              type="text"
+              value={betaCode}
+              onChange={(e) => setBetaCode(e.target.value)}
+              placeholder="Enter your invite code"
+              required
+              autoComplete="off"
+              className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+            />
+            <p className="text-[11px] text-white/40">
+              StudyClash is in private beta. Don&apos;t have a code? Ask
+              whoever invited you.
+            </p>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:mt-5 sm:gap-5 md:grid-cols-2">
             {/* Student name */}
             <div className="flex flex-col gap-2">
               <label
