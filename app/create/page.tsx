@@ -49,6 +49,7 @@ const DECK_TITLE_EXAMPLES = [
   "Cell Biology Unit 2",
 ];
 
+
 const MIN_NOTES_CHARACTERS = 300;
 const LONG_NOTES_CHARACTERS = 15000;
 const LAST_COURSE_STORAGE_KEY = "studyclash_last_course";
@@ -686,7 +687,7 @@ export default function CreateDeck() {
                 onChange={(e) => setDeckTitle(e.target.value)}
                 placeholder={`e.g. ${DECK_TITLE_EXAMPLES[0]}`}
                 required
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 placeholder:text-xs outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
               />
               <p className="text-[11px] text-white/30">
                 Other ideas: {DECK_TITLE_EXAMPLES.slice(1).join(" · ")}
