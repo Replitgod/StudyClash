@@ -69,6 +69,7 @@ function buildPrompt(params: {
   questionType: QuestionType;
   gradeLevel?: string;
   topicFocus?: string;
+  additionalGuidance?: string;
 }): string {
   const {
     notes,
@@ -79,6 +80,7 @@ function buildPrompt(params: {
     questionType,
     gradeLevel,
     topicFocus,
+    additionalGuidance,
   } = params;
 
   const isTrueFalse = questionType === "true_false";
@@ -100,6 +102,10 @@ function buildPrompt(params: {
   const exampleChoices = isTrueFalse
     ? `["True", "False"]`
     : `["...", "...", "...", "..."]`;
+
+  const extraGuidanceBlock = additionalGuidance
+    ? `\nAdditional correction guidance from a prior failed attempt:\n${additionalGuidance}`
+    : "";
 
   return `
 You are a quiz generator for a study app called StudyClash.
@@ -142,6 +148,7 @@ Return ONLY valid JSON in this exact shape, with no extra text, no markdown, no 
     }
   ]
 }
+${extraGuidanceBlock}
 
 Notes:
 """
@@ -176,6 +183,171 @@ type ExpectedShape = {
   choiceCount: number;
   questionType: QuestionType;
 };
+
+function normalizeQuestionText(value: unknown, index: number): string {
+  const text = typeof value === "string" ? value.trim() : "";
+  if (!text) {
+    return `Question ${index + 1} from your notes`;
+  }
+  return text;
+}
+
+function ensureUniqueQuestionTexts(
+  questions: GeneratedQuestion[]
+): GeneratedQuestion[] {
+  const seen = new Set<string>();
+
+  return questions.map((question, index) => {
+    let text = question.question_text.trim();
+    if (!text) {
+      text = `Question ${index + 1} from your notes`;
+    }
+
+    let uniqueText = text;
+    let suffix = 2;
+    while (seen.has(uniqueText.toLowerCase())) {
+      uniqueText = `${text} (${suffix})`;
+      suffix += 1;
+    }
+
+    seen.add(uniqueText.toLowerCase());
+    return { ...question, question_text: uniqueText };
+  });
+}
+
+function normalizeMultipleChoiceAnswerChoices(value: unknown): string[] {
+  const sourceChoices = Array.isArray(value) ? value : [];
+  const cleaned = sourceChoices
+    .map((choice) => (typeof choice === "string" ? choice.trim() : ""))
+    .filter(Boolean);
+
+  const deduped: string[] = [];
+  const seen = new Set<string>();
+
+  for (const choice of cleaned) {
+    const key = choice.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(choice);
+    if (deduped.length === 4) break;
+  }
+
+  while (deduped.length < 4) {
+    deduped.push(`Option ${deduped.length + 1}`);
+  }
+
+  return deduped;
+}
+
+function normalizeTrueFalseChoices(value: unknown, correctAnswer: unknown): {
+  answerChoices: string[];
+  correctAnswer: string;
+} {
+  const rawCorrect =
+    typeof correctAnswer === "string" ? correctAnswer.trim().toLowerCase() : "";
+  const fallbackCorrect = rawCorrect === "false" ? "False" : "True";
+
+  if (Array.isArray(value)) {
+    const normalized = value
+      .map((choice) => (typeof choice === "string" ? choice.trim().toLowerCase() : ""))
+      .filter(Boolean);
+    if (normalized.includes("false") && normalized.includes("true")) {
+      return {
+        answerChoices: ["True", "False"],
+        correctAnswer: rawCorrect === "false" ? "False" : "True",
+      };
+    }
+  }
+
+  return {
+    answerChoices: ["True", "False"],
+    correctAnswer: fallbackCorrect,
+  };
+}
+
+function applyDifficultyMix(
+  questions: GeneratedQuestion[],
+  expected: ExpectedShape
+): GeneratedQuestion[] {
+  const orderedDifficulties = [
+    ...Array(expected.easyCount).fill("easy"),
+    ...Array(expected.mediumCount).fill("medium"),
+    ...Array(expected.hardCount).fill("hard"),
+  ] as Array<"easy" | "medium" | "hard">;
+
+  return questions.map((question, index) => ({
+    ...question,
+    difficulty: orderedDifficulties[index] || "medium",
+  }));
+}
+
+function normalizeQuestionsFromUnknown(
+  questions: unknown,
+  expected: ExpectedShape
+): GeneratedQuestion[] {
+  if (!Array.isArray(questions)) return [];
+
+  const normalized = questions.map((rawQuestion, index) => {
+    const candidate =
+      rawQuestion && typeof rawQuestion === "object"
+        ? (rawQuestion as Record<string, unknown>)
+        : {};
+
+    const questionText = normalizeQuestionText(candidate.question_text, index);
+    const topic =
+      typeof candidate.topic === "string" && candidate.topic.trim()
+        ? candidate.topic.trim()
+        : "General";
+    const explanation =
+      typeof candidate.explanation === "string" && candidate.explanation.trim()
+        ? candidate.explanation.trim()
+        : "Review your notes for why this answer is correct.";
+
+    if (expected.questionType === "true_false") {
+      const tf = normalizeTrueFalseChoices(
+        candidate.answer_choices,
+        candidate.correct_answer
+      );
+
+      return {
+        question_text: questionText,
+        answer_choices: tf.answerChoices,
+        correct_answer: tf.correctAnswer,
+        explanation,
+        topic,
+        difficulty: "medium",
+      };
+    }
+
+    const answerChoices = normalizeMultipleChoiceAnswerChoices(
+      candidate.answer_choices
+    );
+    const rawCorrect =
+      typeof candidate.correct_answer === "string"
+        ? candidate.correct_answer.trim()
+        : "";
+    const correctAnswer = answerChoices.includes(rawCorrect)
+      ? rawCorrect
+      : answerChoices[0];
+
+    return {
+      question_text: questionText,
+      answer_choices: answerChoices,
+      correct_answer: correctAnswer,
+      explanation,
+      topic,
+      difficulty: "medium",
+    };
+  });
+
+  if (normalized.length < expected.total) {
+    return [];
+  }
+
+  const exactCount = normalized.slice(0, expected.total);
+  const uniqueTextQuestions = ensureUniqueQuestionTexts(exactCount);
+  return applyDifficultyMix(uniqueTextQuestions, expected);
+}
 
 // Validates the AI's parsed output against the exact counts/shape we asked
 // for. Returns null if valid, or a string describing exactly what's wrong.
@@ -293,6 +465,8 @@ async function generateAndValidate(
     questionType: QuestionType;
     gradeLevel?: string;
     topicFocus?: string;
+    additionalGuidance?: string;
+    temperature?: number;
   }
 ): Promise<{ questions: GeneratedQuestion[] } | { error: string }> {
   const completion = await openai.chat.completions.create({
@@ -309,11 +483,12 @@ async function generateAndValidate(
           questionType: genParams.questionType,
           gradeLevel: genParams.gradeLevel,
           topicFocus: genParams.topicFocus,
+          additionalGuidance: genParams.additionalGuidance,
         }),
       },
     ],
     response_format: { type: "json_object" },
-    temperature: 0.5,
+    temperature: genParams.temperature ?? 0.5,
   });
 
   const rawContent = completion.choices[0]?.message?.content;
@@ -329,19 +504,46 @@ async function generateAndValidate(
     return { error: "Failed to parse AI response as JSON." };
   }
 
-  const validationError = validateQuestions(parsed.questions, {
+  const expected = {
     total: genParams.totalQuestions,
     easyCount: genParams.easyCount,
     mediumCount: genParams.mediumCount,
     hardCount: genParams.hardCount,
     choiceCount: genParams.choiceCount,
     questionType: genParams.questionType,
-  });
-  if (validationError) {
-    return { error: validationError };
+  };
+
+  const validationError = validateQuestions(parsed.questions, expected);
+  if (!validationError) {
+    return { questions: parsed.questions as GeneratedQuestion[] };
   }
 
-  return { questions: parsed.questions as GeneratedQuestion[] };
+  // When the model gives mostly-correct content but misses strict shape
+  // requirements, normalize the result server-side instead of failing.
+  const normalizedQuestions = normalizeQuestionsFromUnknown(
+    parsed.questions,
+    expected
+  );
+  const normalizedValidationError = validateQuestions(
+    normalizedQuestions,
+    expected
+  );
+
+  if (!normalizedValidationError) {
+    return { questions: normalizedQuestions };
+  }
+
+  const combinedError = `${validationError} | normalization failed: ${normalizedValidationError}`;
+
+  if (combinedError.length > 500) {
+    return { error: `${combinedError.slice(0, 500)}...` };
+  }
+
+  if (validationError) {
+    return { error: combinedError };
+  }
+
+  return { error: "Validation failed unexpectedly." };
 }
 
 export async function POST(req: NextRequest) {
@@ -508,14 +710,31 @@ export async function POST(req: NextRequest) {
     let result = await generateAndValidate(notes, genParams);
 
     if ("error" in result) {
-      result = await generateAndValidate(notes, genParams);
+      result = await generateAndValidate(notes, {
+        ...genParams,
+        additionalGuidance:
+          `Your previous output failed strict validation: ${result.error}. ` +
+          "Return exactly the requested number of questions, exact answer choice count per question type, and an exact easy/medium/hard mix.",
+        temperature: 0.3,
+      });
     }
 
     if ("error" in result) {
+      result = await generateAndValidate(notes, {
+        ...genParams,
+        additionalGuidance:
+          `Second failure reason: ${result.error}. ` +
+          "Do not change schema. Prioritize strict JSON correctness over variety.",
+        temperature: 0.2,
+      });
+    }
+
+    if ("error" in result) {
+      console.error("generate-questions validation failure:", result.error);
       return NextResponse.json(
         {
           error:
-            "We couldn't generate a good quiz from these notes. Try adding more detail or clarity to your notes and try again.",
+            "We couldn't format a stable quiz from this attempt. Your notes may still be fine. Please retry once.",
         },
         { status: 422 }
       );

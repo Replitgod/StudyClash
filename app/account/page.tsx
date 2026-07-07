@@ -51,6 +51,7 @@ export default function AccountPage() {
   const [isLoadingUsage, setIsLoadingUsage] = useState(true);
   const [usageError, setUsageError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
   // Display name editing state
   const [isEditingName, setIsEditingName] = useState(false);
@@ -108,8 +109,24 @@ export default function AccountPage() {
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    await supabase.auth.signOut();
-    router.push("/login");
+    setLogoutError(null);
+
+    try {
+      const { error } = await supabase.auth.signOut();
+
+      if (error) {
+        setLogoutError(error.message);
+        setIsLoggingOut(false);
+        return;
+      }
+
+      router.push("/login");
+    } catch (err) {
+      setLogoutError(
+        err instanceof Error ? err.message : "Failed to log out right now."
+      );
+      setIsLoggingOut(false);
+    }
   };
 
   // If display_name isn't set, fall back to the part of the email before
@@ -458,6 +475,11 @@ export default function AccountPage() {
 
           {/* Actions */}
           <div className="mt-6 flex flex-col gap-3">
+            {logoutError && (
+              <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                {logoutError}
+              </div>
+            )}
             <Link
               href="/create"
               className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"

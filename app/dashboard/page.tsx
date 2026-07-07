@@ -111,7 +111,13 @@ export default function DashboardPage() {
       const startOfTodayIso = startOfToday.toISOString();
 
       try {
-        const [{ data: planData, error: planError }, { data: deckData, error: deckError }, { data: matchData, error: matchError }, { data: generationData, error: generationError }] = await Promise.all([
+        const [
+          { data: planData, error: planError },
+          { data: recentDeckData, error: recentDeckError },
+          { count: totalDeckCount, error: totalDeckCountError },
+          { data: generationData, error: generationError },
+          { data: allDeckIdsData, error: allDeckIdsError },
+        ] = await Promise.all([
           supabase
             .from("membership_plans")
             .select("id, label, daily_limit, description")
@@ -124,75 +130,118 @@ export default function DashboardPage() {
             .order("created_at", { ascending: false })
             .limit(5),
           supabase
-            .from("matches")
-            .select("id, deck_id, player_name, score, correct_answers, total_questions, time_taken_seconds, created_at")
-            .in(
-              "deck_id",
-              (await supabase.from("decks").select("id").eq("user_id", user.id)).data?.map((deck: { id: string }) => deck.id) || []
-            )
-            .order("created_at", { ascending: false })
-            .limit(5),
+            .from("decks")
+            .select("id", { count: "exact", head: true })
+            .eq("user_id", user.id),
           supabase
             .from("generation_logs")
             .select("id")
             .eq("user_id", user.id)
             .gte("created_at", startOfTodayIso),
+          supabase.from("decks").select("id").eq("user_id", user.id),
         ]);
 
         if (planError) {
           throw planError;
         }
 
-        if (deckError) {
-          throw deckError;
-        }
-
-        if (matchError) {
-          throw matchError;
+        if (recentDeckError) {
+          throw recentDeckError;
         }
 
         if (generationError) {
           throw generationError;
         }
 
-        const deckIds = (deckData || []).map((deck: { id: string }) => deck.id);
+        if (totalDeckCountError) {
+          throw totalDeckCountError;
+        }
 
-        if (deckIds.length > 0) {
+        if (allDeckIdsError) {
+          throw allDeckIdsError;
+        }
+
+        const allDeckIds = (allDeckIdsData || []).map((deck: { id: string }) => deck.id);
+
+        let recentMatchesData: MatchSummary[] = [];
+        let totalMatchesCount = 0;
+        let average = 0;
+
+        if (allDeckIds.length > 0) {
+          const [
+            { data: matchData, error: matchError },
+            { data: allMatchStatsData, count: allMatchStatsCount, error: allMatchStatsError },
+          ] = await Promise.all([
+            supabase
+              .from("matches")
+              .select("id, deck_id, player_name, score, correct_answers, total_questions, time_taken_seconds, created_at")
+              .in("deck_id", allDeckIds)
+              .order("created_at", { ascending: false })
+              .limit(5),
+            supabase
+              .from("matches")
+              .select("correct_answers, total_questions", { count: "exact" })
+              .in("deck_id", allDeckIds),
+          ]);
+
+          if (matchError) {
+            throw matchError;
+          }
+
+          if (allMatchStatsError) {
+            throw allMatchStatsError;
+          }
+
+          recentMatchesData = (matchData || []) as MatchSummary[];
+          totalMatchesCount = allMatchStatsCount ?? 0;
+
+          const totalQuestions = (allMatchStatsData || []).reduce(
+            (sum: number, match: { total_questions: number | null }) =>
+              sum + (match.total_questions || 0),
+            0
+          );
+          const correctAnswers = (allMatchStatsData || []).reduce(
+            (sum: number, match: { correct_answers: number | null }) =>
+              sum + (match.correct_answers || 0),
+            0
+          );
+
+          average = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+        }
+
+        const recentDeckIds = (recentDeckData || []).map((deck: { id: string }) => deck.id);
+
+        if (recentDeckIds.length > 0) {
           const { data: deckTitlesData, error: deckTitlesError } = await supabase
             .from("decks")
             .select("id, title")
-            .in("id", deckIds);
+            .in("id", recentDeckIds);
 
           if (!deckTitlesError && deckTitlesData) {
             const titleMap = new Map(deckTitlesData.map((deck: { id: string; title: string }) => [deck.id, deck.title]));
-            const matchesWithDeckTitles = (matchData || []).map((match: { deck_id: string }) => ({
+            const matchesWithDeckTitles = recentMatchesData.map((match: { deck_id: string }) => ({
               ...match,
               deck_title: titleMap.get(match.deck_id) || "Unknown deck",
             }));
             setRecentMatches(matchesWithDeckTitles);
           } else {
-            setRecentMatches(matchData || []);
+            setRecentMatches(recentMatchesData);
           }
         } else {
-          setRecentMatches([]);
+          setRecentMatches(recentMatchesData);
         }
 
-        const deckCount = deckData?.length ?? 0;
-        const battlesCount = matchData?.length ?? 0;
-        const totalQuestions = (matchData || []).reduce((sum: number, match: { total_questions: number | null }) => sum + (match.total_questions || 0), 0);
-        const correctAnswers = (matchData || []).reduce((sum: number, match: { correct_answers: number | null }) => sum + (match.correct_answers || 0), 0);
-        const average = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
         const generationCount = generationData?.length ?? 0;
         const dailyLimit = planData?.daily_limit;
         const remaining = dailyLimit == null ? null : Math.max(0, dailyLimit - generationCount);
 
         setPlanInfo(planData);
-        setTotalDecks(deckCount);
-        setBattlesPlayed(battlesCount);
+        setTotalDecks(totalDeckCount ?? 0);
+        setBattlesPlayed(totalMatchesCount);
         setAverageAccuracy(average);
         setDecksGeneratedToday(generationCount);
         setRemainingGenerationsToday(remaining);
-        setRecentDecks(deckData || []);
+        setRecentDecks(recentDeckData || []);
       } catch (err) {
         const message = err instanceof Error ? err.message : "We could not load your dashboard right now.";
         setLoadError(message);
@@ -249,6 +298,77 @@ export default function DashboardPage() {
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
+
+  const dueRematchDeck = deckInsights.recentlyPlayed.find((deck) => {
+    if (!deck.lastPlayedDate) return false;
+    const playedAt = new Date(deck.lastPlayedDate).getTime();
+    if (Number.isNaN(playedAt)) return false;
+    const daysSincePlayed = (Date.now() - playedAt) / (1000 * 60 * 60 * 24);
+    return daysSincePlayed >= 2;
+  }) || null;
+
+  const weakestDeck = deckInsights.weakest[0] || null;
+
+  const trendDeltaPercent = (() => {
+    if (recentMatches.length < 4) return null;
+
+    const chronological = [...recentMatches].reverse();
+    const midpoint = Math.floor(chronological.length / 2);
+    const older = chronological.slice(0, midpoint);
+    const newer = chronological.slice(midpoint);
+
+    if (older.length === 0 || newer.length === 0) return null;
+
+    const avgAccuracy = (items: MatchSummary[]) => {
+      const values = items
+        .map((match) =>
+          match.total_questions > 0
+            ? (match.correct_answers / match.total_questions) * 100
+            : 0
+        )
+        .filter((value) => Number.isFinite(value));
+
+      if (values.length === 0) return null;
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
+    };
+
+    const olderAvg = avgAccuracy(older);
+    const newerAvg = avgAccuracy(newer);
+
+    if (olderAvg === null || newerAvg === null) return null;
+    return Math.round((newerAvg - olderAvg) * 10) / 10;
+  })();
+
+  const nextAction = (() => {
+    if (weakestDeck) {
+      return {
+        title: "Focus your next battle",
+        message: `You are weakest on ${weakestDeck.title}. Do a rematch to raise that average accuracy.`,
+        href: `/battle/${weakestDeck.id}`,
+        cta: "Practice weakest deck",
+      };
+    }
+
+    if (dueRematchDeck) {
+      return {
+        title: "Keep retention high",
+        message: `${dueRematchDeck.title} is due for rematch. Quick replay now helps lock in memory.`,
+        href: `/battle/${dueRematchDeck.id}`,
+        cta: "Start due rematch",
+      };
+    }
+
+    if (deckInsights.recommendedNextBattle) {
+      return {
+        title: "Recommended next battle",
+        message: deckInsights.recommendedNextBattle.reason,
+        href: `/battle/${deckInsights.recommendedNextBattle.id}`,
+        cta: "Start recommended",
+      };
+    }
+
+    return null;
+  })();
 
   if (isLoading) {
     return (
@@ -333,6 +453,50 @@ export default function DashboardPage() {
             {loadError}
           </div>
         ) : null}
+
+        {(nextAction || trendDeltaPercent !== null) && (
+          <div className="grid gap-4 md:grid-cols-2">
+            {nextAction && (
+              <div className="rounded-2xl border border-cyan-400/25 bg-cyan-500/[0.06] p-5 backdrop-blur-sm">
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300">Do this next</p>
+                <h2 className="mt-2 text-lg font-bold text-white">{nextAction.title}</h2>
+                <p className="mt-2 text-sm text-white/70">{nextAction.message}</p>
+                <Link
+                  href={nextAction.href}
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-fuchsia-500 px-4 py-2.5 text-sm font-bold text-white"
+                >
+                  {nextAction.cta}
+                </Link>
+              </div>
+            )}
+
+            {trendDeltaPercent !== null && (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm">
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">Improvement trend</p>
+                <h2 className="mt-2 text-lg font-bold text-white">Last 5 battles</h2>
+                <p
+                  className={`mt-3 text-3xl font-black ${
+                    trendDeltaPercent > 0
+                      ? "text-emerald-300"
+                      : trendDeltaPercent < 0
+                        ? "text-amber-300"
+                        : "text-white"
+                  }`}
+                >
+                  {trendDeltaPercent > 0 ? "+" : ""}
+                  {trendDeltaPercent}%
+                </p>
+                <p className="mt-2 text-sm text-white/55">
+                  {trendDeltaPercent > 0
+                    ? "Accuracy is trending up versus your earlier recent matches."
+                    : trendDeltaPercent < 0
+                      ? "Accuracy dipped versus earlier recent matches. Run a targeted rematch today."
+                      : "Accuracy is steady. Keep momentum with one more battle."}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm">

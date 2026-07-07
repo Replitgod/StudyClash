@@ -22,6 +22,61 @@ type Deck = {
   student_name: string;
 };
 
+function calculateAccuracy(correctAnswers: number, totalQuestions: number): number {
+  if (totalQuestions <= 0) return 0;
+  return Math.round((correctAnswers / totalQuestions) * 100);
+}
+
+function coerceMatch(value: unknown): Match | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as Record<string, unknown>;
+
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.deck_id !== "string" ||
+    typeof candidate.player_name !== "string" ||
+    typeof candidate.score !== "number" ||
+    typeof candidate.total_questions !== "number" ||
+    typeof candidate.correct_answers !== "number" ||
+    typeof candidate.time_taken_seconds !== "number"
+  ) {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    deck_id: candidate.deck_id,
+    player_name: candidate.player_name,
+    score: candidate.score,
+    total_questions: candidate.total_questions,
+    correct_answers: candidate.correct_answers,
+    time_taken_seconds: candidate.time_taken_seconds,
+  };
+}
+
+function coerceDeck(value: unknown): Deck | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as Record<string, unknown>;
+
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.title !== "string" ||
+    typeof candidate.course_name !== "string" ||
+    typeof candidate.student_name !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    title: candidate.title,
+    course_name: candidate.course_name,
+    student_name: candidate.student_name,
+  };
+}
+
 function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
@@ -53,11 +108,14 @@ export default function ChallengeLandingPage() {
   const [deck, setDeck] = useState<Deck | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadChallenge() {
       setIsLoading(true);
       setLoadError(null);
+      setMatch(null);
+      setDeck(null);
 
       const { data: matchData, error: matchError } = await supabase
         .from("matches")
@@ -71,10 +129,17 @@ export default function ChallengeLandingPage() {
         return;
       }
 
+      const normalizedMatch = coerceMatch(matchData);
+      if (!normalizedMatch) {
+        setLoadError("This challenge is missing required result data.");
+        setIsLoading(false);
+        return;
+      }
+
       const { data: deckData, error: deckError } = await supabase
         .from("decks")
         .select("id, title, course_name, student_name")
-        .eq("id", matchData.deck_id)
+        .eq("id", normalizedMatch.deck_id)
         .single();
 
       if (deckError || !deckData) {
@@ -83,8 +148,15 @@ export default function ChallengeLandingPage() {
         return;
       }
 
-      setMatch(matchData);
-      setDeck(deckData);
+      const normalizedDeck = coerceDeck(deckData);
+      if (!normalizedDeck) {
+        setLoadError("This challenge deck is missing required data.");
+        setIsLoading(false);
+        return;
+      }
+
+      setMatch(normalizedMatch);
+      setDeck(normalizedDeck);
       setIsLoading(false);
     }
 
@@ -123,15 +195,21 @@ export default function ChallengeLandingPage() {
     );
   }
 
-  const challengerAccuracy = Math.round((match.correct_answers / match.total_questions) * 100);
+  const challengerAccuracy = calculateAccuracy(
+    match.correct_answers,
+    match.total_questions
+  );
   const battleLink = `/battle/${deck.id}?challengeFrom=${match.id}&challengeScore=${challengerAccuracy}`;
   const challengeMessage = `I scored ${challengerAccuracy}% on ${deck.title}. Can you beat me?`;
 
   const handleCopyChallenge = async () => {
     try {
       await navigator.clipboard.writeText(`${challengeMessage} ${window.location.origin}${match.id ? `/challenge/${match.id}` : ""}`);
+      setCopyStatus("Challenge message copied.");
+      setTimeout(() => setCopyStatus(null), 2000);
     } catch {
-      // No-op: the button is optional convenience only.
+      setCopyStatus("Unable to copy the challenge message right now.");
+      setTimeout(() => setCopyStatus(null), 2000);
     }
   };
 
@@ -151,6 +229,12 @@ export default function ChallengeLandingPage() {
         <p className="mt-3 break-words text-center text-sm text-white/50">
           {deck.course_name} · Shared by {match.player_name}
         </p>
+
+        {copyStatus && (
+          <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-center text-sm font-semibold text-cyan-200">
+            {copyStatus}
+          </div>
+        )}
 
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
           <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">

@@ -42,6 +42,69 @@ type LeaderboardEntry = {
   time_taken_seconds: number;
 };
 
+type StudyMode =
+  | "battle"
+  | "practice"
+  | "weak_topic"
+  | "review_missed"
+  | "quick_check";
+
+function coerceDeck(value: unknown): Deck | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as Record<string, unknown>;
+
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.title !== "string" ||
+    typeof candidate.course_name !== "string" ||
+    typeof candidate.student_name !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    title: candidate.title,
+    course_name: candidate.course_name,
+    student_name: candidate.student_name,
+  };
+}
+
+function coerceQuestion(value: unknown): Question | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as Record<string, unknown>;
+
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.deck_id !== "string" ||
+    typeof candidate.question_text !== "string" ||
+    !Array.isArray(candidate.answer_choices) ||
+    !candidate.answer_choices.every((choice) => typeof choice === "string") ||
+    typeof candidate.correct_answer !== "string" ||
+    typeof candidate.explanation !== "string" ||
+    typeof candidate.topic !== "string" ||
+    typeof candidate.difficulty !== "string"
+  ) {
+    return null;
+  }
+
+  const answerChoices = candidate.answer_choices as string[];
+  if (answerChoices.length < 2) return null;
+
+  return {
+    id: candidate.id,
+    deck_id: candidate.deck_id,
+    question_text: candidate.question_text,
+    answer_choices: answerChoices,
+    correct_answer: candidate.correct_answer,
+    explanation: candidate.explanation,
+    topic: candidate.topic,
+    difficulty: candidate.difficulty,
+  };
+}
+
 const CHOICE_LETTERS = ["A", "B", "C", "D"];
 
 // Point values for the streak bonus system.
@@ -70,6 +133,39 @@ function getRequestedPracticeTopics(searchParams: URLSearchParams): string[] {
     .split(",")
     .map((topic) => normalizeTopicKey(decodeURIComponent(topic)))
     .filter(Boolean);
+}
+
+function getStudyMode(searchParams: URLSearchParams): StudyMode {
+  const rawMode = (searchParams.get("mode") || "battle").toLowerCase();
+  const allowedModes: StudyMode[] = [
+    "battle",
+    "practice",
+    "weak_topic",
+    "review_missed",
+    "quick_check",
+  ];
+
+  return allowedModes.includes(rawMode as StudyMode)
+    ? (rawMode as StudyMode)
+    : "battle";
+}
+
+function getQuestionLimit(searchParams: URLSearchParams): number | null {
+  const rawLimit = searchParams.get("limit");
+  if (!rawLimit) return null;
+
+  const parsed = Number(rawLimit);
+  if (!Number.isInteger(parsed) || parsed <= 0) return null;
+
+  return Math.min(parsed, 50);
+}
+
+function getStudyModeLabel(mode: StudyMode): string {
+  if (mode === "practice") return "Practice Mode";
+  if (mode === "weak_topic") return "Weak Topic Mode";
+  if (mode === "review_missed") return "Review Missed Mode";
+  if (mode === "quick_check") return "Quick Check Mode";
+  return "Battle Mode";
 }
 
 function getPreferredDisplayName(profile: Profile | null, user: User | null): string {
@@ -132,6 +228,7 @@ export default function BattlePage() {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [practiceTopicsMessage, setPracticeTopicsMessage] = useState<string | null>(null);
 
   // Leaderboard (top 5 scores for this deck)
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -179,6 +276,22 @@ export default function BattlePage() {
     () => getRequestedPracticeTopics(searchParams),
     [searchParams]
   );
+  const requestedStudyMode = useMemo(
+    () => getStudyMode(searchParams),
+    [searchParams]
+  );
+  const requestedQuestionLimit = useMemo(
+    () => getQuestionLimit(searchParams),
+    [searchParams]
+  );
+  const effectiveStudyMode: StudyMode =
+    requestedPracticeTopics.length > 0 && requestedStudyMode === "battle"
+      ? "weak_topic"
+      : requestedStudyMode;
+  const effectiveQuestionLimit =
+    effectiveStudyMode === "quick_check"
+      ? 5
+      : requestedQuestionLimit;
   const accountDisplayName = getPreferredDisplayName(profile, user);
 
   // Load the deck and its questions when the page mounts
@@ -186,6 +299,20 @@ export default function BattlePage() {
     async function loadBattle() {
       setIsLoading(true);
       setLoadError(null);
+      setPracticeTopicsMessage(null);
+      setDeck(null);
+      setQuestions([]);
+      setHasStarted(false);
+      setCurrentIndex(0);
+      setAnswers([]);
+      setSelectedChoice(null);
+      setCurrentStreak(0);
+      setBestStreak(0);
+      setTotalScore(0);
+      setLastPointsEarned(0);
+      setElapsedSeconds(0);
+      setSaveError(null);
+      hasFinishedRef.current = false;
 
       const { data: deckData, error: deckError } = await supabase
         .from("decks")
@@ -195,6 +322,13 @@ export default function BattlePage() {
 
       if (deckError || !deckData) {
         setLoadError(deckError?.message || "This deck could not be found.");
+        setIsLoading(false);
+        return;
+      }
+
+      const normalizedDeck = coerceDeck(deckData);
+      if (!normalizedDeck) {
+        setLoadError("This deck is missing required data and cannot be played safely.");
         setIsLoading(false);
         return;
       }
@@ -212,10 +346,22 @@ export default function BattlePage() {
         return;
       }
 
-      setDeck(deckData);
+      const normalizedQuestions = (questionsData as unknown[])
+        .map((question) => coerceQuestion(question))
+        .filter((question): question is Question => question !== null);
+
+      if (normalizedQuestions.length === 0) {
+        setLoadError(
+          "This battle is missing required question data and cannot be played safely."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      setDeck(normalizedDeck);
       const filteredQuestions =
         requestedPracticeTopics.length > 0
-          ? (questionsData as Question[]).filter((question) =>
+          ? normalizedQuestions.filter((question) =>
               requestedPracticeTopics.some(
                 (topic) => {
                   const questionTopic = normalizeTopicKey(question.topic);
@@ -227,20 +373,32 @@ export default function BattlePage() {
                 }
               )
             )
-          : (questionsData as Question[]);
+          : normalizedQuestions;
 
-      setQuestions(
+      if (requestedPracticeTopics.length > 0 && filteredQuestions.length === 0) {
+        setPracticeTopicsMessage(
+          "None of the saved questions matched those weak topics, so this battle is using the full deck instead."
+        );
+      }
+
+      const baseQuestionSet =
         filteredQuestions.length > 0
           ? filteredQuestions
-          : (questionsData as Question[])
-      );
+          : normalizedQuestions;
+
+      const finalQuestionSet =
+        effectiveQuestionLimit && baseQuestionSet.length > effectiveQuestionLimit
+          ? baseQuestionSet.slice(0, effectiveQuestionLimit)
+          : baseQuestionSet;
+
+      setQuestions(finalQuestionSet);
       setIsLoading(false);
     }
 
     if (deckId) {
       loadBattle();
     }
-  }, [deckId, requestedPracticeTopics]);
+  }, [deckId, requestedPracticeTopics, effectiveQuestionLimit]);
 
   // Load the top 5 scores for this deck's leaderboard.
   // Sorted by highest score first, then fastest time as the tiebreaker.
@@ -260,6 +418,8 @@ export default function BattlePage() {
 
       if (!error && data) {
         setLeaderboard(data);
+      } else {
+        setLeaderboard([]);
       }
 
       setIsLeaderboardLoading(false);
@@ -301,6 +461,7 @@ export default function BattlePage() {
       playerName: finalName,
       totalQuestions: questions.length,
       practiceTopics: requestedPracticeTopics,
+      studyMode: effectiveStudyMode,
       challengeFromMatchId,
     });
   };
@@ -361,21 +522,34 @@ export default function BattlePage() {
 
     const correctCount = answers.filter((a) => a.isCorrect).length;
 
-    const response = await fetch("/api/battle/finish", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        deckId,
-        playerName: playerName || accountDisplayName || deck?.student_name || "Player",
-        score: totalScore,
-        totalQuestions: questions.length,
-        correctAnswers: correctCount,
-        timeTakenSeconds: elapsedSeconds,
-        answers,
-      }),
-    });
+    let response: Response;
+
+    try {
+      response = await fetch("/api/battle/finish", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          deckId,
+          playerName: playerName || accountDisplayName || deck?.student_name || "Player",
+          score: totalScore,
+          totalQuestions: questions.length,
+          correctAnswers: correctCount,
+          timeTakenSeconds: elapsedSeconds,
+          answers,
+        }),
+      });
+    } catch (error) {
+      setSaveError(
+        error instanceof Error
+          ? error.message
+          : "We could not save this battle right now. Please try again."
+      );
+      setIsFinishing(false);
+      hasFinishedRef.current = false;
+      return;
+    }
 
     const contentType = response.headers.get("content-type") || "";
 
@@ -488,6 +662,12 @@ export default function BattlePage() {
   if (!hasStarted) {
     return (
       <Background>
+        {effectiveStudyMode !== "battle" && (
+          <div className="mb-4 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200 backdrop-blur-sm sm:mb-5">
+            {getStudyModeLabel(effectiveStudyMode)}
+          </div>
+        )}
+
         {requestedPracticeTopics.length > 0 && (
           <div className="mb-4 flex max-w-full flex-wrap items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-200 backdrop-blur-sm sm:mb-5">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
@@ -506,6 +686,12 @@ export default function BattlePage() {
         {challengeFromMatchId && challengeBaseScore && (
           <div className="mb-4 w-full max-w-sm rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-center text-xs font-semibold text-cyan-100 backdrop-blur-sm sm:mb-5">
             Challenge mode enabled. Beat the original score of {challengeBaseScore}%.
+          </div>
+        )}
+
+        {practiceTopicsMessage && (
+          <div className="mb-4 w-full max-w-sm rounded-xl border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-center text-xs font-semibold text-amber-100 backdrop-blur-sm sm:mb-5">
+            {practiceTopicsMessage}
           </div>
         )}
 

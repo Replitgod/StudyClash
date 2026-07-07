@@ -23,6 +23,15 @@ type FinishBattlePayload = {
   answers: AnswerPayload[];
 };
 
+function buildAnswerSignature(answer: AnswerPayload): string {
+  return [
+    answer.questionId,
+    answer.selectedAnswer,
+    answer.isCorrect ? "1" : "0",
+    String(Math.round(answer.responseTimeMs)),
+  ].join("|");
+}
+
 function isValidAnswerPayload(value: unknown): value is AnswerPayload {
   if (!value || typeof value !== "object") return false;
 
@@ -31,7 +40,9 @@ function isValidAnswerPayload(value: unknown): value is AnswerPayload {
     typeof candidate.questionId === "string" &&
     typeof candidate.selectedAnswer === "string" &&
     typeof candidate.isCorrect === "boolean" &&
-    typeof candidate.responseTimeMs === "number"
+    typeof candidate.responseTimeMs === "number" &&
+    Number.isFinite(candidate.responseTimeMs) &&
+    candidate.responseTimeMs >= 0
   );
 }
 
@@ -59,6 +70,155 @@ export async function POST(req: NextRequest) {
         { error: "Battle answers were not valid." },
         { status: 400 }
       );
+    }
+
+    if (body.totalQuestions <= 0) {
+      return NextResponse.json(
+        { error: "This battle did not include a valid question count." },
+        { status: 400 }
+      );
+    }
+
+    if (body.answers.length !== body.totalQuestions) {
+      return NextResponse.json(
+        { error: "This battle was not fully completed before submission." },
+        { status: 400 }
+      );
+    }
+
+    const uniqueQuestionIds = new Set(body.answers.map((answer) => answer.questionId));
+
+    if (uniqueQuestionIds.size !== body.answers.length) {
+      return NextResponse.json(
+        { error: "Duplicate answers were detected in this battle." },
+        { status: 400 }
+      );
+    }
+
+    const computedCorrectAnswers = body.answers.filter((answer) => answer.isCorrect).length;
+
+    if (computedCorrectAnswers !== body.correctAnswers) {
+      return NextResponse.json(
+        { error: "Correct-answer totals did not match the submitted answers." },
+        { status: 400 }
+      );
+    }
+
+    const { data: deckData, error: deckError } = await supabase
+      .from("decks")
+      .select("id")
+      .eq("id", body.deckId)
+      .single();
+
+    if (deckError || !deckData) {
+      return NextResponse.json(
+        { error: "This deck could not be found." },
+        { status: 404 }
+      );
+    }
+
+    const { data: questionRows, error: questionsError } = await supabase
+      .from("questions")
+      .select("id, correct_answer")
+      .eq("deck_id", body.deckId)
+      .in("id", Array.from(uniqueQuestionIds));
+
+    if (questionsError || !questionRows) {
+      return NextResponse.json(
+        { error: questionsError?.message || "Failed to validate battle questions." },
+        { status: 500 }
+      );
+    }
+
+    if (questionRows.length !== body.answers.length) {
+      return NextResponse.json(
+        { error: "Some submitted answers did not belong to this deck." },
+        { status: 400 }
+      );
+    }
+
+    const questionById = new Map(
+      questionRows.map((question: { id: string; correct_answer: string }) => [
+        question.id,
+        question,
+      ])
+    );
+
+    for (const answer of body.answers) {
+      const question = questionById.get(answer.questionId);
+
+      if (!question) {
+        return NextResponse.json(
+          { error: "A submitted answer referenced an unknown question." },
+          { status: 400 }
+        );
+      }
+
+      const expectedIsCorrect = answer.selectedAnswer === question.correct_answer;
+      if (expectedIsCorrect !== answer.isCorrect) {
+        return NextResponse.json(
+          { error: "A submitted answer had an invalid correctness flag." },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Deduplicate accidental rapid re-submits of the exact same completed
+    // battle payload (for example, retry taps after transient network lag).
+    const dedupeWindowStart = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+    const { data: duplicateCandidates } = await supabase
+      .from("matches")
+      .select("id, created_at")
+      .eq("deck_id", body.deckId)
+      .eq("player_name", body.playerName)
+      .eq("score", body.score)
+      .eq("total_questions", body.totalQuestions)
+      .eq("correct_answers", body.correctAnswers)
+      .eq("time_taken_seconds", body.timeTakenSeconds)
+      .gte("created_at", dedupeWindowStart)
+      .order("created_at", { ascending: false })
+      .limit(3);
+
+    if (duplicateCandidates && duplicateCandidates.length > 0) {
+      const submittedSignatures = new Set(
+        body.answers.map((answer) => buildAnswerSignature(answer))
+      );
+
+      for (const candidate of duplicateCandidates) {
+        const { data: candidateAnswers, error: candidateAnswersError } = await supabase
+          .from("match_answers")
+          .select("question_id, selected_answer, is_correct, response_time_ms")
+          .eq("match_id", candidate.id);
+
+        if (candidateAnswersError || !candidateAnswers) {
+          continue;
+        }
+
+        if (candidateAnswers.length !== body.answers.length) {
+          continue;
+        }
+
+        const candidateSignatures = new Set(
+          candidateAnswers.map((answer) =>
+            [
+              answer.question_id,
+              answer.selected_answer,
+              answer.is_correct ? "1" : "0",
+              String(Math.round(answer.response_time_ms || 0)),
+            ].join("|")
+          )
+        );
+
+        const isExactDuplicate =
+          submittedSignatures.size === candidateSignatures.size &&
+          Array.from(submittedSignatures).every((signature) =>
+            candidateSignatures.has(signature)
+          );
+
+        if (isExactDuplicate) {
+          return NextResponse.json({ matchId: candidate.id, deduped: true });
+        }
+      }
     }
 
     const { data: matchData, error: matchError } = await supabase
@@ -95,6 +255,8 @@ export async function POST(req: NextRequest) {
         .insert(answerRows);
 
       if (answersError) {
+        await supabase.from("matches").delete().eq("id", matchData.id);
+
         return NextResponse.json(
           { error: answersError.message },
           { status: 500 }

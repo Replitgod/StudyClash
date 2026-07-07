@@ -11,7 +11,17 @@ export type AnalyticsEventName =
   | "battle_started"
   | "battle_finished"
   | "feedback_submitted"
-  | "question_report_submitted";
+  | "question_report_submitted"
+  | "challenge_link_copied"
+  | "challenge_link_copy_failed"
+  | "study_resource_opened"
+  | "results_rematch_clicked"
+  | "results_weak_topics_practice_clicked"
+  | "results_create_new_deck_clicked"
+  | "results_view_leaderboard_clicked"
+  | "results_quick_check_clicked"
+  | "results_practice_mode_clicked"
+  | "results_review_missed_clicked";
 
 // Fire-and-forget analytics logging. This intentionally never throws —
 // a failed analytics insert (network hiccup, RLS misconfiguration, etc.)

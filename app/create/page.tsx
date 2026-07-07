@@ -145,6 +145,26 @@ function readFileAsText(file: File): Promise<string> {
   });
 }
 
+function getGenerationErrorMessage(status: number, fallback?: string): string {
+  if (fallback?.trim()) {
+    return fallback;
+  }
+
+  if (status === 401) {
+    return "Your session expired. Please log in again and retry.";
+  }
+
+  if (status === 429) {
+    return "You have reached your daily generation limit for now.";
+  }
+
+  if (status === 422) {
+    return "We couldn't generate a solid battle from these notes yet. Try adding more detail or clearer structure.";
+  }
+
+  return "Something went wrong. Please try again.";
+}
+
 export default function CreateDeck() {
   const router = useRouter();
   const { user, profile, isLoggedIn, isLoading: isAuthLoading } = useAuth();
@@ -241,6 +261,13 @@ export default function CreateDeck() {
     void Promise.resolve().then(() => setSupportsFolderUpload(isChromiumBased));
   }, []);
 
+  const stopGenerationSteps = () => {
+    if (stepIntervalRef.current) {
+      clearInterval(stepIntervalRef.current);
+      stepIntervalRef.current = null;
+    }
+  };
+
   const handleCourseChange = (value: string) => {
     setCourseOption(value);
     if (value !== "Other") {
@@ -260,6 +287,8 @@ export default function CreateDeck() {
     if (!fileList || fileList.length === 0) return;
 
     setUploadError(null);
+    setUploadedFileName(null);
+    setErrorMessage(null);
 
     if (fileList.length > 1) {
       setUploadError(
@@ -277,7 +306,6 @@ export default function CreateDeck() {
     }
 
     setIsProcessingUpload(true);
-    setUploadedFileName(file.name);
 
     try {
       if (lowerName.endsWith(".pdf")) {
@@ -302,15 +330,27 @@ export default function CreateDeck() {
 
         if (!response.ok) {
           setUploadError(data.error || "Failed to extract text from this PDF.");
-          setIsProcessingUpload(false);
           return;
         }
 
-        setNotes(data.text);
+        const extractedText = typeof data.text === "string" ? data.text.trim() : "";
+        if (!extractedText) {
+          setUploadError("We couldn't extract any usable text from this PDF.");
+          return;
+        }
+
+        setNotes(extractedText);
       } else {
-        const text = await readFileAsText(file);
+        const text = (await readFileAsText(file)).trim();
+        if (!text) {
+          setUploadError("That text file is empty.");
+          return;
+        }
+
         setNotes(text);
       }
+
+      setUploadedFileName(file.name);
     } catch (err) {
       setUploadError(
         err instanceof Error ? err.message : "Failed to process this file."
@@ -327,6 +367,8 @@ export default function CreateDeck() {
     if (!fileList || fileList.length === 0) return;
 
     setUploadError(null);
+    setUploadedFileName(null);
+    setErrorMessage(null);
 
     const txtFiles = Array.from(fileList).filter((f) =>
       f.name.toLowerCase().endsWith(".txt")
@@ -340,9 +382,6 @@ export default function CreateDeck() {
     }
 
     setIsProcessingUpload(true);
-    setUploadedFileName(
-      `${txtFiles.length} .txt file${txtFiles.length > 1 ? "s" : ""} from folder`
-    );
 
     try {
       const sections = await Promise.all(
@@ -354,7 +393,16 @@ export default function CreateDeck() {
         })
       );
 
-      setNotes(sections.join("\n\n\n"));
+      const combinedText = sections.join("\n\n\n").trim();
+      if (!combinedText) {
+        setUploadError("Those text files were empty.");
+        return;
+      }
+
+      setNotes(combinedText);
+      setUploadedFileName(
+        `${txtFiles.length} .txt file${txtFiles.length > 1 ? "s" : ""} from folder`
+      );
     } catch (err) {
       setUploadError(
         err instanceof Error
@@ -404,6 +452,10 @@ export default function CreateDeck() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (isGenerating || isProcessingUpload) {
+      return;
+    }
 
     setErrorMessage(null);
 
@@ -455,6 +507,7 @@ export default function CreateDeck() {
     // Advance through the visual steps on a timer while the real request
     // is in flight. It stops one step before the end so it never claims
     // "Preparing arena" is done before the API call actually finishes.
+    stopGenerationSteps();
     stepIntervalRef.current = setInterval(() => {
       setCurrentStep((prev) =>
         prev < GENERATION_STEPS.length - 1 ? prev + 1 : prev
@@ -486,7 +539,7 @@ export default function CreateDeck() {
       const contentType = response.headers.get("content-type") || "";
 
       if (!contentType.includes("application/json")) {
-        if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
+        stopGenerationSteps();
         setErrorMessage(
           `Server error (status ${response.status}). Please try again.`
         );
@@ -501,8 +554,8 @@ export default function CreateDeck() {
       const data = await response.json();
 
       if (!response.ok) {
-        if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
-        setErrorMessage(data.error || "Something went wrong. Please try again.");
+        stopGenerationSteps();
+        setErrorMessage(getGenerationErrorMessage(response.status, data.error));
         setIsGenerating(false);
         trackEvent("deck_generation_failed", {
           reason: data.error || "unknown_error",
@@ -511,23 +564,39 @@ export default function CreateDeck() {
         return;
       }
 
+      const deckId = data?.deckId;
+      if (!deckId || (typeof deckId !== "string" && typeof deckId !== "number")) {
+        stopGenerationSteps();
+        setErrorMessage("Your deck was generated, but we couldn't open it automatically. Please try again.");
+        setIsGenerating(false);
+        trackEvent("deck_generation_failed", {
+          reason: "missing_deck_id",
+          status: response.status,
+        });
+        return;
+      }
+
       // Success — snap to the final step briefly so the user sees
       // "Preparing arena" complete before the redirect happens.
-      if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
+      stopGenerationSteps();
       setCurrentStep(GENERATION_STEPS.length - 1);
 
       trackEvent("deck_generation_success", {
-        deckId: data.deckId,
+        deckId,
         deckTitle,
         courseName: resolvedCourseName,
       });
 
       setTimeout(() => {
-        router.push(`/battle/${data.deckId}`);
+        router.push(`/battle/${deckId}`);
       }, 500);
     } catch (err) {
-      if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
-      setErrorMessage("Something went wrong. Please try again.");
+      stopGenerationSteps();
+      setErrorMessage(
+        err instanceof Error && err.message.includes("Failed to fetch")
+          ? "Network error. Check your connection and try again."
+          : "Something went wrong. Please try again."
+      );
       setIsGenerating(false);
       trackEvent("deck_generation_failed", {
         reason: "client_exception",
@@ -1018,7 +1087,15 @@ export default function CreateDeck() {
             <textarea
               id="notes"
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={(e) => {
+                setNotes(e.target.value);
+                if (uploadError) {
+                  setUploadError(null);
+                }
+                if (errorMessage) {
+                  setErrorMessage(null);
+                }
+              }}
               placeholder="Paste your class notes, study guide, textbook section, or review sheet here..."
               required
               rows={10}

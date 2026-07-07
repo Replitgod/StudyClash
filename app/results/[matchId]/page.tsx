@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
+import type { AnalyticsEventName } from "@/lib/trackEvent";
 
 type Match = {
   id: string;
@@ -126,6 +127,67 @@ type ReportState = {
   isSubmitted: boolean;
   error: string | null;
 };
+
+function calculateAccuracy(correctAnswers: number, totalQuestions: number): number {
+  if (totalQuestions <= 0) return 0;
+  return Math.round((correctAnswers / totalQuestions) * 100);
+}
+
+function coerceMatch(value: unknown): Match | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as Record<string, unknown>;
+
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.deck_id !== "string" ||
+    typeof candidate.player_name !== "string" ||
+    typeof candidate.score !== "number" ||
+    typeof candidate.total_questions !== "number" ||
+    typeof candidate.correct_answers !== "number" ||
+    typeof candidate.time_taken_seconds !== "number"
+  ) {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    deck_id: candidate.deck_id,
+    player_name: candidate.player_name,
+    user_id:
+      typeof candidate.user_id === "string"
+        ? candidate.user_id
+        : candidate.user_id === null
+          ? null
+          : undefined,
+    score: candidate.score,
+    total_questions: candidate.total_questions,
+    correct_answers: candidate.correct_answers,
+    time_taken_seconds: candidate.time_taken_seconds,
+  };
+}
+
+function coerceDeck(value: unknown): Deck | null {
+  if (!value || typeof value !== "object") return null;
+
+  const candidate = value as Record<string, unknown>;
+
+  if (
+    typeof candidate.id !== "string" ||
+    typeof candidate.title !== "string" ||
+    typeof candidate.course_name !== "string" ||
+    typeof candidate.student_name !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    title: candidate.title,
+    course_name: candidate.course_name,
+    student_name: candidate.student_name,
+  };
+}
 
 // Simple rank tiers based on accuracy percentage
 function getRank(accuracyPercent: number): {
@@ -519,6 +581,14 @@ function buildChallengeMessage(deckTitle: string, accuracyPercent: number): stri
   return `I scored ${accuracyPercent}% on ${deckTitle}. Can you beat me?`;
 }
 
+function safeTrackEvent(name: AnalyticsEventName, payload?: Record<string, unknown>) {
+  try {
+    trackEvent(name, payload);
+  } catch {
+    // Analytics must never block the UI flow.
+  }
+}
+
 export default function ResultsPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -533,6 +603,7 @@ export default function ResultsPage() {
   // Weak topic report state.
   const [weakTopics, setWeakTopics] = useState<WeakTopic[] | null>(null);
   const [hasAnswerData, setHasAnswerData] = useState(false);
+  const [answerDataMessage, setAnswerDataMessage] = useState<string | null>(null);
 
   // Answer review state — every question paired with what was selected.
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
@@ -555,11 +626,20 @@ export default function ResultsPage() {
     Boolean(challengeFromMatchId) &&
     challengeBaseScore !== null &&
     !Number.isNaN(challengeBaseScore);
+  const hasChallengeFallback =
+    Boolean(challengeFromMatchId) && !hasChallengeComparison;
 
   useEffect(() => {
     async function loadResults() {
       setIsLoading(true);
       setLoadError(null);
+      setMatch(null);
+      setDeck(null);
+      setReviewItems([]);
+      setWeakTopics(null);
+      setHasAnswerData(false);
+      setAnswerDataMessage(null);
+      setBattleProgress(null);
 
       // 1. Load the match
       const { data: matchData, error: matchError } = await supabase
@@ -574,11 +654,20 @@ export default function ResultsPage() {
         return;
       }
 
+      const normalizedMatch = coerceMatch(matchData);
+      if (!normalizedMatch) {
+        setLoadError(
+          "This match is missing required result data and cannot be displayed safely."
+        );
+        setIsLoading(false);
+        return;
+      }
+
       // 2. Load the related deck
       const { data: deckData, error: deckError } = await supabase
         .from("decks")
         .select("*")
-        .eq("id", matchData.deck_id)
+        .eq("id", normalizedMatch.deck_id)
         .single();
 
       if (deckError || !deckData) {
@@ -587,16 +676,29 @@ export default function ResultsPage() {
         return;
       }
 
-      setMatch(matchData);
-      setDeck(deckData);
+      const normalizedDeck = coerceDeck(deckData);
+      if (!normalizedDeck) {
+        setLoadError(
+          "This deck is missing required data and cannot be displayed safely."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      setMatch(normalizedMatch);
+      setDeck(normalizedDeck);
 
       // Track that this results page was actually viewed, once the
       // match/deck have loaded successfully.
-      trackEvent("page_view", {
-        page: "results",
-        matchId,
-        deckId: matchData.deck_id,
-      });
+      try {
+        trackEvent("page_view", {
+          page: "results",
+          matchId,
+          deckId: normalizedMatch.deck_id,
+        });
+      } catch {
+        // Analytics should never block results rendering.
+      }
 
       // 3. Load per-question answers from the durable match_answers table.
       // This works even after a refresh, a closed tab, or logging out and
@@ -614,6 +716,9 @@ export default function ResultsPage() {
             "Failed to load match answers:",
             matchAnswersError.message
           );
+          setAnswerDataMessage(
+            "We could not load the answer-by-answer review for this match. Your final score is still available."
+          );
         }
 
         if (
@@ -621,12 +726,16 @@ export default function ResultsPage() {
           matchAnswersData &&
           matchAnswersData.length > 0
         ) {
-          const { data: questionsData } = await supabase
+          const { data: questionsData, error: questionsError } = await supabase
             .from("questions")
             .select("*")
-            .eq("deck_id", matchData.deck_id);
+            .eq("deck_id", normalizedMatch.deck_id);
 
-          if (questionsData) {
+          if (questionsError || !questionsData || questionsData.length === 0) {
+            setAnswerDataMessage(
+              "We found this match, but the saved question review data is incomplete."
+            );
+          } else {
             const questionById = new Map<string, Question>(
               (questionsData as Question[]).map((q) => [q.id, q])
             );
@@ -645,6 +754,16 @@ export default function ResultsPage() {
                 };
               })
               .filter((item): item is ReviewItem => item !== null);
+
+            if (items.length === 0) {
+              setAnswerDataMessage(
+                "We found this match, but the saved answer review details are incomplete."
+              );
+            } else if (items.length < matchAnswersData.length) {
+              setAnswerDataMessage(
+                "Some question details were unavailable, so the answer review below is partial."
+              );
+            }
 
             setReviewItems(items);
 
@@ -682,11 +801,18 @@ export default function ResultsPage() {
               setWeakTopics(topicList);
             }
           }
+        } else if (!matchAnswersError) {
+          setAnswerDataMessage(
+            "This match does not have saved answer-by-answer review data. Your score and leaderboard placement are still available."
+          );
         }
       } catch (err) {
         // If the query fails for any reason, skip these sections silently
         // rather than breaking the whole results page.
         console.error("Failed to load match answers:", err);
+        setAnswerDataMessage(
+          "We could not load the detailed answer review for this match, but the score summary is still available."
+        );
       }
 
       setIsLoading(false);
@@ -724,12 +850,13 @@ export default function ResultsPage() {
   }, [deck]);
 
   useEffect(() => {
-    if (!match || !deck || !hasAnswerData) return;
+    if (!match || !deck) return;
 
     const storageKey = getProgressStorageKey(match);
     const snapshot = loadProgressSnapshot(storageKey);
-    const currentAccuracy = Math.round(
-      (match.correct_answers / match.total_questions) * 100
+    const currentAccuracy = calculateAccuracy(
+      match.correct_answers,
+      match.total_questions
     );
     const averageResponseTimeMs =
       reviewItems.length > 0
@@ -739,8 +866,10 @@ export default function ResultsPage() {
               0
             ) / reviewItems.length
           )
-        : 0;
-    const weakTopic = weakTopics?.[0]?.topic || null;
+        : match.total_questions > 0
+          ? Math.round((match.time_taken_seconds * 1000) / match.total_questions)
+          : 0;
+    const weakTopic = hasAnswerData ? weakTopics?.[0]?.topic || null : null;
     const previousBest = snapshot.bestScoresByDeck[deck.id] || null;
     const previousAttempt = snapshot.lastAttemptsByDeck[deck.id] || null;
     const alreadyAwarded = snapshot.awardedMatchIds.includes(match.id);
@@ -748,7 +877,8 @@ export default function ResultsPage() {
       accuracyPercent: currentAccuracy,
       averageResponseTimeMs,
       totalQuestions: match.total_questions,
-      completedQuestions: reviewItems.length,
+      completedQuestions:
+        reviewItems.length > 0 ? reviewItems.length : match.total_questions,
     });
 
     const nextSnapshot: ProgressSnapshot = {
@@ -821,9 +951,18 @@ export default function ResultsPage() {
     try {
       await navigator.clipboard.writeText(shareMessage);
       setLinkCopied(true);
+      safeTrackEvent("challenge_link_copied", {
+        matchId: match.id,
+        deckId: deck.id,
+        accuracyPercent,
+      });
       setTimeout(() => setLinkCopied(false), 2000);
     } catch {
       setLinkCopied(false);
+      safeTrackEvent("challenge_link_copy_failed", {
+        matchId: match.id,
+        deckId: deck.id,
+      });
     }
   };
 
@@ -936,8 +1075,9 @@ export default function ResultsPage() {
   }
 
   // ---------- Results ----------
-  const accuracyPercent = Math.round(
-    (match.correct_answers / match.total_questions) * 100
+  const accuracyPercent = calculateAccuracy(
+    match.correct_answers,
+    match.total_questions
   );
   const wrongAnswers = match.total_questions - match.correct_answers;
   const rank = getRank(accuracyPercent);
@@ -962,6 +1102,20 @@ export default function ResultsPage() {
     deck.title,
     currentAccuracyPercent
   );
+  const weakTopicQueryValue =
+    weakTopics && weakTopics.length > 0
+      ? encodeURIComponent(weakTopics.map((topic) => topic.topic).join(","))
+      : "";
+  const missedTopicQueryValue = encodeURIComponent(
+    Array.from(
+      new Set(
+        reviewItems
+          .filter((item) => !item.isCorrect)
+          .map((item) => item.question.topic)
+          .filter(Boolean)
+      )
+    ).join(",")
+  );
 
   return (
     <Background>
@@ -982,6 +1136,17 @@ export default function ResultsPage() {
           {deck.title} · {deck.course_name}
         </p>
 
+        {answerDataMessage && (
+          <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-500/[0.06] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
+            <p className="text-xs font-bold uppercase tracking-wider text-amber-300">
+              Review Data Notice
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-white/80 sm:text-base">
+              {answerDataMessage}
+            </p>
+          </div>
+        )}
+
         {hasChallengeComparison && challengeBaseScore !== null && (
           <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.06] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
             <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
@@ -996,6 +1161,17 @@ export default function ResultsPage() {
             </p>
             <p className="mt-1 text-xs text-white/45">
               Original score: {challengeBaseScore}% · Your score: {currentAccuracyPercent}%
+            </p>
+          </div>
+        )}
+
+        {hasChallengeFallback && (
+          <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.06] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
+            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+              Challenge Result
+            </p>
+            <p className="mt-2 text-sm font-medium leading-relaxed text-white/80 sm:text-base">
+              This challenge link did not include a valid score to compare against, but you can still review your run and share a fresh challenge from this result.
             </p>
           </div>
         )}
@@ -1157,6 +1333,15 @@ export default function ResultsPage() {
                             href={resource.url}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={() =>
+                              safeTrackEvent("study_resource_opened", {
+                                matchId: match.id,
+                                deckId: deck.id,
+                                topic: wt.topic,
+                                resourceLabel: resource.label,
+                                resourceUrl: resource.url,
+                              })
+                            }
                             className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-cyan-300 transition-colors duration-150 hover:border-cyan-400/40 hover:bg-white/10"
                           >
                             {resource.label}
@@ -1546,8 +1731,8 @@ export default function ResultsPage() {
 
           {reviewItems.length === 0 ? (
             <p className="mt-4 text-sm text-white/50">
-              No answer review found for this match. Play a new battle to
-              record answers.
+              {answerDataMessage ||
+                "No answer review found for this match. Play a new battle to record answers."}
             </p>
           ) : (
             <div className="mt-5 flex flex-col gap-4">
@@ -1706,9 +1891,15 @@ export default function ResultsPage() {
         </div>
 
         {/* Action buttons */}
-        <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row">
+        <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
           <Link
             href={`/battle/${deck.id}`}
+            onClick={() =>
+              safeTrackEvent("results_rematch_clicked", {
+                matchId: match.id,
+                deckId: deck.id,
+              })
+            }
             className="group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:px-8 sm:hover:scale-[1.02]"
           >
             <span className="relative z-10">Rematch</span>
@@ -1728,19 +1919,71 @@ export default function ResultsPage() {
             <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover:translate-x-full" />
           </Link>
 
+          <Link
+            href={`/battle/${deck.id}?mode=quick_check&limit=5`}
+            onClick={() =>
+              safeTrackEvent("results_quick_check_clicked", {
+                matchId: match.id,
+                deckId: deck.id,
+              })
+            }
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/30 px-6 py-4 text-base font-bold text-white/80 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-white/10 sm:px-8"
+          >
+            Quick Check (5)
+          </Link>
+
+          <Link
+            href={`/battle/${deck.id}?mode=practice`}
+            onClick={() =>
+              safeTrackEvent("results_practice_mode_clicked", {
+                matchId: match.id,
+                deckId: deck.id,
+              })
+            }
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/30 px-6 py-4 text-base font-bold text-white/80 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-white/10 sm:px-8"
+          >
+            Practice Mode
+          </Link>
+
           {weakTopics && weakTopics.length > 0 && (
             <Link
-              href={`/battle/${deck.id}?topics=${encodeURIComponent(
-                weakTopics.map((topic) => topic.topic).join(",")
-              )}`}
+              href={`/battle/${deck.id}?mode=weak_topic&topics=${weakTopicQueryValue}`}
+              onClick={() =>
+                safeTrackEvent("results_weak_topics_practice_clicked", {
+                  matchId: match.id,
+                  deckId: deck.id,
+                  topics: weakTopics.map((topic) => topic.topic),
+                })
+              }
               className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-6 py-4 text-base font-bold text-cyan-200 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-cyan-500/15 sm:px-8"
             >
               Practice Weak Topics
             </Link>
           )}
 
+          {reviewItems.some((item) => !item.isCorrect) && (
+            <Link
+              href={`/battle/${deck.id}?mode=review_missed&topics=${missedTopicQueryValue}`}
+              onClick={() =>
+                safeTrackEvent("results_review_missed_clicked", {
+                  matchId: match.id,
+                  deckId: deck.id,
+                })
+              }
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-amber-400/20 bg-amber-500/10 px-6 py-4 text-base font-bold text-amber-200 backdrop-blur-sm transition-colors duration-150 hover:border-amber-300/40 hover:bg-amber-500/15 sm:px-8"
+            >
+              Review Missed
+            </Link>
+          )}
+
           <Link
             href="/create"
+            onClick={() =>
+              safeTrackEvent("results_create_new_deck_clicked", {
+                matchId: match.id,
+                deckId: deck.id,
+              })
+            }
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-4 text-base font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10 sm:px-8"
           >
             Create New Deck
@@ -1750,6 +1993,12 @@ export default function ResultsPage() {
         {/* View leaderboard */}
         <Link
           href={`/battle/${deck.id}`}
+          onClick={() =>
+            safeTrackEvent("results_view_leaderboard_clicked", {
+              matchId: match.id,
+              deckId: deck.id,
+            })
+          }
           className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-transparent px-6 py-3.5 text-sm font-bold text-white/60 transition-colors duration-150 hover:border-cyan-400/30 hover:text-cyan-300 sm:px-8"
         >
           <svg
