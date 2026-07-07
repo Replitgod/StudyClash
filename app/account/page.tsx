@@ -22,6 +22,45 @@ export default function AccountPage() {
   const [isLoadingUsage, setIsLoadingUsage] = useState(true);
   const [usageError, setUsageError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [isSavingName, setIsSavingName] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (profile?.display_name) {
+      setDisplayName(profile.display_name);
+    }
+  }, [profile?.display_name]);
+
+  const handleSaveName = async () => {
+    if (!user) return;
+
+    if (!displayName.trim()) {
+      setNameError("Name cannot be empty.");
+      return;
+    }
+
+    setIsSavingName(true);
+    setNameError(null);
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ display_name: displayName.trim() })
+        .eq("id", user.id);
+
+      if (error) {
+        setNameError(error.message);
+      } else {
+        setIsEditingName(false);
+      }
+    } catch (err) {
+      setNameError(err instanceof Error ? err.message : "Failed to save name.");
+    } finally {
+      setIsSavingName(false);
+    }
+  };
 
   useEffect(() => {
     async function loadUsageAndPlan() {
@@ -217,6 +256,64 @@ export default function AccountPage() {
                 {user?.email}
               </p>
             </div>
+          </div>
+
+          {/* Display Name */}
+          <div className="mt-5 border-t border-white/10 pt-5">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+                Display Name
+              </p>
+              {!isEditingName && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditingName(true)}
+                  className="text-xs font-semibold text-fuchsia-300 transition-colors hover:text-fuchsia-200"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+            {isEditingName ? (
+              <div className="mt-3 flex flex-col gap-3">
+                <input
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="e.g. Jordan Lee"
+                  className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveName}
+                    disabled={isSavingName}
+                    className="flex-1 rounded-lg bg-fuchsia-500 px-3 py-2 text-xs font-bold text-white transition-opacity disabled:opacity-50"
+                  >
+                    {isSavingName ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingName(false);
+                      setDisplayName(profile?.display_name || "");
+                      setNameError(null);
+                    }}
+                    disabled={isSavingName}
+                    className="flex-1 rounded-lg border border-white/10 px-3 py-2 text-xs font-bold text-white/60 transition-colors hover:text-white/80 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {nameError && (
+                  <p className="text-xs text-red-300">{nameError}</p>
+                )}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm font-semibold text-fuchsia-300">
+                {displayName || "Not set"}
+              </p>
+            )}
           </div>
 
           <div className="mt-5 border-t border-white/10 pt-5">

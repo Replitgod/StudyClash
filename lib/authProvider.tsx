@@ -16,6 +16,7 @@ export type Profile = {
   email: string | null;
   plan: string;
   created_at: string;
+  display_name?: string | null;
 };
 
 type AuthContextValue = {

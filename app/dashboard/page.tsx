@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
+import { authFetch } from "@/lib/authFetch";
 
 type PlanInfo = {
   id: string;
@@ -29,6 +30,29 @@ type MatchSummary = {
   time_taken_seconds: number;
   created_at: string;
   deck_title?: string;
+};
+
+type DeckInsight = {
+  id: string;
+  title: string;
+  courseN: string;
+  matchesPlayed?: number;
+  averageAccuracy?: number;
+  bestScore?: number;
+  lastPlayedDate?: string;
+};
+
+type DeckInsights = {
+  mostPlayed: DeckInsight[];
+  strongest: DeckInsight[];
+  weakest: DeckInsight[];
+  recentlyPlayed: DeckInsight[];
+  recommendedNextBattle: {
+    id: string;
+    title: string;
+    courseN: string;
+    reason: string;
+  } | null;
 };
 
 function Background({ children }: { children: React.ReactNode }) {
@@ -67,6 +91,14 @@ export default function DashboardPage() {
   const [recentMatches, setRecentMatches] = useState<MatchSummary[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [deckInsights, setDeckInsights] = useState<DeckInsights>({
+    mostPlayed: [],
+    strongest: [],
+    weakest: [],
+    recentlyPlayed: [],
+    recommendedNextBattle: null,
+  });
+  const [isLoadingInsights, setIsLoadingInsights] = useState(false);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -176,6 +208,37 @@ export default function DashboardPage() {
       setIsLoadingStats(false);
     }
   }, [isLoggedIn, user, profile, isLoading]);
+
+  // Fetch deck insights (Most Played, Strongest, etc.)
+  useEffect(() => {
+    async function loadDeckInsights() {
+      if (!isLoggedIn || !user) return;
+
+      setIsLoadingInsights(true);
+
+      try {
+        const response = await authFetch("/api/deck-insights", {
+          method: "GET",
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          // Silently fail for insights — not critical
+          console.error("Failed to load deck insights:", data);
+          return;
+        }
+
+        setDeckInsights(data);
+      } catch (err) {
+        console.error("Error fetching deck insights:", err);
+      } finally {
+        setIsLoadingInsights(false);
+      }
+    }
+
+    loadDeckInsights();
+  }, [isLoggedIn, user]);
 
   const formatDate = (isoString: string) => {
     const date = new Date(isoString);
@@ -381,6 +444,269 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+
+          {/* Deck Insights */}
+          {battlesPlayed === 0 ? (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
+              <p className="text-center text-sm text-white/50">
+                Play a battle to unlock deck insights.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Recommended Next Battle */}
+              {deckInsights.recommendedNextBattle && (
+                <div className="rounded-2xl border-2 border-gradient-to-r from-fuchsia-500/30 to-cyan-500/30 bg-gradient-to-br from-fuchsia-500/[0.05] to-cyan-500/[0.05] p-5 backdrop-blur-sm sm:p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300">
+                        Recommended Next Battle
+                      </p>
+                      <h2 className="text-lg font-bold text-white">
+                        {deckInsights.recommendedNextBattle.reason}
+                      </h2>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p className="text-base font-bold text-white">
+                        {deckInsights.recommendedNextBattle.title}
+                      </p>
+                      <p className="mt-1 text-sm text-white/50">
+                        {deckInsights.recommendedNextBattle.courseN}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/battle/${deckInsights.recommendedNextBattle.id}`}
+                      className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-400 px-5 py-2.5 text-sm font-bold text-white transition-transform hover:scale-105"
+                    >
+                      Start Battle
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M13 7l5 5m0 0l-5 5m5-5H6"
+                        />
+                      </svg>
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* Deck Insights Grid */}
+              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                {/* Most Played */}
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
+                  <div className="mb-4">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">
+                      Most Played
+                    </p>
+                    <h3 className="text-lg font-bold text-white">Your go-to decks</h3>
+                  </div>
+                  {deckInsights.mostPlayed.length === 0 ? (
+                    <p className="text-sm text-white/40">No decks played yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {deckInsights.mostPlayed.map((deck) => (
+                        <div
+                          key={deck.id}
+                          className="flex items-center justify-between rounded-lg border border-white/10 bg-black/20 px-3 py-2.5"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-white">
+                              {deck.title}
+                            </p>
+                            <p className="text-xs text-white/40">{deck.courseN}</p>
+                          </div>
+                          <div className="ml-2 flex flex-shrink-0 items-center gap-2">
+                            <span className="rounded-full bg-fuchsia-500/20 px-2 py-1 text-xs font-bold text-fuchsia-300">
+                              {deck.matchesPlayed} plays
+                            </span>
+                            <Link
+                              href={`/battle/${deck.id}`}
+                              className="text-fuchsia-300 hover:text-fuchsia-200"
+                            >
+                              <svg
+                                className="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 5l7 7-7 7"
+                                />
+                              </svg>
+                            </Link>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Strongest */}
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
+                  <div className="mb-4">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">
+                      Strongest
+                    </p>
+                    <h3 className="text-lg font-bold text-white">Your best decks</h3>
+                  </div>
+                  {deckInsights.strongest.length === 0 ? (
+                    <p className="text-sm text-white/40">No decks analyzed yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {deckInsights.strongest.map((deck) => (
+                        <div
+                          key={deck.id}
+                          className="flex items-center justify-between rounded-lg border border-white/10 bg-black/20 px-3 py-2.5"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-white">
+                              {deck.title}
+                            </p>
+                            <p className="text-xs text-white/40">{deck.courseN}</p>
+                            <p className="mt-0.5 text-xs text-emerald-300">
+                              {deck.averageAccuracy}% avg • Best: {deck.bestScore}%
+                            </p>
+                          </div>
+                          <Link
+                            href={`/battle/${deck.id}`}
+                            className="ml-2 flex-shrink-0 text-emerald-300 hover:text-emerald-200"
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Weakest */}
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
+                  <div className="mb-4">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">
+                      Weakest
+                    </p>
+                    <h3 className="text-lg font-bold text-white">Review these</h3>
+                  </div>
+                  {deckInsights.weakest.length === 0 ? (
+                    <p className="text-sm text-white/40">All decks look strong!</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {deckInsights.weakest.map((deck) => (
+                        <div
+                          key={deck.id}
+                          className="flex items-center justify-between rounded-lg border border-amber-400/30 bg-amber-500/[0.05] px-3 py-2.5"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-white">
+                              {deck.title}
+                            </p>
+                            <p className="text-xs text-white/40">{deck.courseN}</p>
+                            <p className="mt-0.5 text-xs text-amber-300">
+                              {deck.averageAccuracy}% avg • {deck.matchesPlayed} matches
+                            </p>
+                          </div>
+                          <Link
+                            href={`/battle/${deck.id}`}
+                            className="ml-2 flex-shrink-0 text-amber-300 hover:text-amber-200"
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Recently Played */}
+                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
+                  <div className="mb-4">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">
+                      Recently Played
+                    </p>
+                    <h3 className="text-lg font-bold text-white">Latest battles</h3>
+                  </div>
+                  {deckInsights.recentlyPlayed.length === 0 ? (
+                    <p className="text-sm text-white/40">No recent matches.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {deckInsights.recentlyPlayed.map((deck) => (
+                        <div
+                          key={deck.id}
+                          className="flex items-center justify-between rounded-lg border border-white/10 bg-black/20 px-3 py-2.5"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-white">
+                              {deck.title}
+                            </p>
+                            <p className="text-xs text-white/40">{deck.courseN}</p>
+                            {deck.lastPlayedDate && (
+                              <p className="mt-0.5 text-xs text-cyan-300">
+                                {formatDate(deck.lastPlayedDate)}
+                              </p>
+                            )}
+                          </div>
+                          <Link
+                            href={`/battle/${deck.id}`}
+                            className="ml-2 flex-shrink-0 text-cyan-300 hover:text-cyan-200"
+                          >
+                            <svg
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </Background>

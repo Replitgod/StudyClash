@@ -59,6 +59,17 @@ type TopicStat = {
   accuracy: number;
 };
 
+type ResourceLink = {
+  label: string;
+  url: string;
+};
+
+type StudyDay = {
+  day: number;
+  title: string;
+  tasks: string[];
+};
+
 const REPORT_REASONS = [
   "Wrong answer",
   "Confusing question",
@@ -143,6 +154,121 @@ function buildTopicStats(reviewItems: ReviewItem[]): TopicStat[] {
     total,
     accuracy: Math.round((correct / total) * 100),
   }));
+}
+
+// Builds a short "what to review" explanation for the Study Plan card,
+// distinct from the Weak Topic Report's shorter message above.
+function buildStudyExplanation(topic: string): string {
+  return `Focus on the core definitions, key facts, and examples related to ${topic}. Re-read the relevant section of your notes, then work back through the missed questions above until the reasoning makes sense without looking at the explanation.`;
+}
+
+// Builds a small, concrete task the user can actually do for a topic.
+function buildMiniTask(topic: string): string {
+  return `Write a 4-5 sentence summary of ${topic} in your own words, then explain it out loud as if teaching a friend.`;
+}
+
+// Builds a curated set of real, safe resource links for a topic. Only
+// stable, real destinations or search URLs built with encodeURIComponent
+// are used — nothing here is a fabricated deep link.
+function buildResourceLinks(topic: string, courseName: string): ResourceLink[] {
+  const encodedTopic = encodeURIComponent(topic);
+  const isApCourse = /\bap\b/i.test(courseName);
+
+  const links: ResourceLink[] = [
+    {
+      label: "Khan Academy",
+      url: `https://www.khanacademy.org/search?page_search_query=${encodedTopic}`,
+    },
+    {
+      label: "Crash Course (YouTube)",
+      url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
+        `Crash Course ${topic}`
+      )}`,
+    },
+    {
+      label: "Quizlet Flashcards",
+      url: `https://quizlet.com/search?query=${encodedTopic}&type=sets`,
+    },
+  ];
+
+  if (isApCourse) {
+    links.push({
+      label: "AP Students (College Board)",
+      url: "https://apstudents.collegeboard.org/",
+    });
+  } else {
+    links.push({
+      label: "Google Search",
+      url: `https://www.google.com/search?q=${encodedTopic}`,
+    });
+  }
+
+  return links;
+}
+
+// Builds a personalized 3-day study plan. If there are weak topics, Day 2
+// specifically calls out the single most-missed topic. If there are none,
+// this produces a lighter maintenance-mode plan instead.
+function buildStudyPlan(weakTopics: WeakTopic[]): StudyDay[] {
+  if (weakTopics.length === 0) {
+    return [
+      {
+        day: 1,
+        title: "Light Review",
+        tasks: [
+          "Skim back through your notes for this deck once, top to bottom.",
+          "Note any part that felt slightly shaky, even if you got it right.",
+        ],
+      },
+      {
+        day: 2,
+        title: "Self-Test",
+        tasks: [
+          "Quiz yourself out loud on 5-10 key facts from your notes without looking.",
+          "Write down anything you hesitated on.",
+        ],
+      },
+      {
+        day: 3,
+        title: "Stay Sharp",
+        tasks: [
+          "Replay this StudyClash deck to confirm you're still at 85%+ accuracy.",
+          "If you have newer notes, generate a fresh deck to keep testing yourself.",
+        ],
+      },
+    ];
+  }
+
+  const topWeakTopic = weakTopics[0].topic;
+
+  return [
+    {
+      day: 1,
+      title: "Understand the Gaps",
+      tasks: [
+        "Reread the explanations for every question you missed in the Answer Review above.",
+        "Watch or read one resource link for your weakest topic.",
+        "Redo the missed questions from memory, without peeking at the explanations.",
+      ],
+    },
+    {
+      day: 2,
+      title: "Targeted Practice",
+      tasks: [
+        `Find and work through 10-15 practice questions specifically on "${topWeakTopic}".`,
+        "Create a one-page mini summary sheet covering your weak topics in your own words.",
+      ],
+    },
+    {
+      day: 3,
+      title: "Retest & Confirm",
+      tasks: [
+        "Replay this StudyClash deck.",
+        "Aim for 85%+ accuracy this time.",
+        "Review anything you still miss, one more time, before moving on.",
+      ],
+    },
+  ];
 }
 
 export default function ResultsPage() {
@@ -454,6 +580,9 @@ export default function ResultsPage() {
     .sort((a, b) => a.accuracy - b.accuracy || b.total - a.total)
     .slice(0, 3);
 
+  const topStudyTopics = (weakTopics || []).slice(0, 4);
+  const studyPlan = buildStudyPlan(weakTopics || []);
+
   return (
     <Background>
       <div className="w-full max-w-2xl">
@@ -521,6 +650,159 @@ export default function ResultsPage() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Study Plan & Resources */}
+        {hasAnswerData && (
+          <div className="mt-6 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/5 to-violet-500/5 p-4 backdrop-blur-sm sm:mt-8 sm:p-6">
+            <div className="flex items-center gap-2">
+              <svg
+                className="h-4 w-4 flex-shrink-0 text-cyan-300"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+                />
+              </svg>
+              <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+                Study Plan &amp; Resources
+              </p>
+            </div>
+
+            {topStudyTopics.length === 0 ? (
+              <p className="mt-3 text-sm font-semibold text-emerald-300">
+                No weak topics found. Keep reviewing to stay sharp.
+              </p>
+            ) : (
+              <p className="mt-3 text-xs text-white/50 sm:text-sm">
+                Here&apos;s a focused plan built from what you missed this
+                round, starting with your weakest topic.
+              </p>
+            )}
+
+            {/* Per-topic study cards */}
+            {topStudyTopics.length > 0 && (
+              <div className="mt-4 flex flex-col gap-4">
+                {topStudyTopics.map((wt) => {
+                  const resources = buildResourceLinks(
+                    wt.topic,
+                    deck.course_name
+                  );
+
+                  return (
+                    <div
+                      key={wt.topic}
+                      className="rounded-xl border border-white/10 bg-black/30 p-4"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="break-words text-sm font-bold text-white/90 sm:text-base">
+                          {wt.topic}
+                        </p>
+                        <span className="flex-shrink-0 rounded-full bg-red-500/10 px-2.5 py-0.5 text-xs font-bold text-red-300">
+                          {wt.missedCount} missed
+                        </span>
+                      </div>
+
+                      <p className="mt-2 break-words text-xs leading-relaxed text-white/60 sm:text-sm">
+                        {buildStudyExplanation(wt.topic)}
+                      </p>
+
+                      {/* Resource links */}
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {resources.map((resource) => (
+                          <a
+                            key={resource.label}
+                            href={resource.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-cyan-300 transition-colors duration-150 hover:border-cyan-400/40 hover:bg-white/10"
+                          >
+                            {resource.label}
+                            <svg
+                              className="h-3 w-3 flex-shrink-0"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2.5}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M10.5 6h-7.5c-.828 0-1.5.672-1.5 1.5v13.5c0 .828.672 1.5 1.5 1.5h13.5c.828 0 1.5-.672 1.5-1.5v-7.5M15 3h6v6M10 14l10.5-10.5"
+                              />
+                            </svg>
+                          </a>
+                        ))}
+                      </div>
+
+                      {/* Mini task */}
+                      <div className="mt-3 flex items-start gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2.5">
+                        <svg
+                          className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-fuchsia-300"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
+                          />
+                        </svg>
+                        <p className="text-xs leading-relaxed text-white/60">
+                          <span className="font-bold text-white/80">
+                            Mini task:
+                          </span>{" "}
+                          {buildMiniTask(wt.topic)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* 3-day study plan */}
+            <div className="mt-5 border-t border-white/10 pt-5">
+              <p className="text-xs font-bold uppercase tracking-wider text-white/50">
+                Your 3-Day Plan
+              </p>
+              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {studyPlan.map((day) => (
+                  <div
+                    key={day.day}
+                    className="rounded-xl border border-white/10 bg-black/20 p-3.5"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-violet-600 text-[11px] font-bold text-white">
+                        {day.day}
+                      </span>
+                      <p className="text-xs font-bold text-white/80 sm:text-sm">
+                        {day.title}
+                      </p>
+                    </div>
+                    <ul className="mt-2.5 flex flex-col gap-1.5">
+                      {day.tasks.map((task, i) => (
+                        <li
+                          key={i}
+                          className="flex items-start gap-1.5 text-[11px] leading-relaxed text-white/50 sm:text-xs"
+                        >
+                          <span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-cyan-300" />
+                          <span className="break-words">{task}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -610,67 +892,6 @@ export default function ResultsPage() {
                 ))}
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Study These Topics Next — actionable CTA based on missed topics */}
-        {hasAnswerData && (
-          <div className="mt-6 rounded-2xl border border-fuchsia-400/30 bg-gradient-to-br from-fuchsia-500/10 to-violet-500/5 p-4 backdrop-blur-sm sm:mt-8 sm:p-6">
-            <div className="flex items-center gap-2">
-              <svg
-                className="h-4 w-4 flex-shrink-0 text-fuchsia-300"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
-                />
-              </svg>
-              <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
-                Study These Topics Next
-              </p>
-            </div>
-
-            {weakTopics && weakTopics.length === 0 ? (
-              <p className="mt-3 text-sm text-emerald-300">
-                Nothing to study — you nailed every topic this round. 🎉
-              </p>
-            ) : (
-              <>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {weakTopics?.map((wt) => (
-                    <span
-                      key={wt.topic}
-                      className="rounded-full border border-white/10 bg-black/30 px-3 py-1.5 text-xs font-semibold text-white/80"
-                    >
-                      {wt.topic}
-                    </span>
-                  ))}
-                </div>
-                <p className="mt-3 text-xs leading-relaxed text-white/50 sm:text-sm">
-                  Go back to your notes on these topics, then play again to
-                  see your accuracy climb.
-                </p>
-                <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
-                  <Link
-                    href={`/battle/${deck.id}`}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-5 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
-                  >
-                    Retry This Deck
-                  </Link>
-                  <Link
-                    href="/create"
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white/80 transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10"
-                  >
-                    New Deck From Updated Notes
-                  </Link>
-                </div>
-              </>
-            )}
           </div>
         )}
 
