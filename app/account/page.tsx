@@ -13,54 +13,51 @@ type PlanInfo = {
   description: string;
 };
 
+// Defined OUTSIDE the page component so it keeps a stable identity across
+// re-renders. Previously this was defined inside AccountPage, which meant
+// every keystroke in the name field re-rendered the page, recreated
+// Background as a "new" component, and caused React to remount the whole
+// subtree underneath it — including the input itself. That's the root
+// cause of the name-editing bug: it looked like typing didn't work at all.
+function Background({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+      </div>
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+        }}
+      />
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-14 sm:px-6 sm:py-20">
+        {children}
+      </div>
+    </main>
+  );
+}
+
 export default function AccountPage() {
   const router = useRouter();
-  const { user, profile, isLoggedIn, isLoading } = useAuth();
+  const { user, profile, isLoggedIn, isLoading, refreshProfile } = useAuth();
 
   const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null);
   const [decksToday, setDecksToday] = useState<number | null>(null);
   const [isLoadingUsage, setIsLoadingUsage] = useState(true);
   const [usageError, setUsageError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [displayName, setDisplayName] = useState("");
+
+  // Display name editing state
   const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState("");
   const [isSavingName, setIsSavingName] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (profile?.display_name) {
-      setDisplayName(profile.display_name);
-    }
-  }, [profile?.display_name]);
-
-  const handleSaveName = async () => {
-    if (!user) return;
-
-    if (!displayName.trim()) {
-      setNameError("Name cannot be empty.");
-      return;
-    }
-
-    setIsSavingName(true);
-    setNameError(null);
-
-    try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ display_name: displayName.trim() })
-        .eq("id", user.id);
-
-      if (error) {
-        setNameError(error.message);
-      } else {
-        setIsEditingName(false);
-      }
-    } catch (err) {
-      setNameError(err instanceof Error ? err.message : "Failed to save name.");
-    } finally {
-      setIsSavingName(false);
-    }
-  };
+  const [nameJustSaved, setNameJustSaved] = useState(false);
 
   useEffect(() => {
     async function loadUsageAndPlan() {
@@ -115,27 +112,66 @@ export default function AccountPage() {
     router.push("/login");
   };
 
-  // ---------- Shared background wrapper ----------
-  const Background = ({ children }: { children: React.ReactNode }) => (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
-      </div>
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-14 sm:px-6 sm:py-20">
-        {children}
-      </div>
-    </main>
-  );
+  // If display_name isn't set, fall back to the part of the email before
+  // the @ sign, so the user always sees *something* reasonable.
+  const emailUsername = user?.email ? user.email.split("@")[0] : "Student";
+  const effectiveDisplayName =
+    (profile?.display_name && profile.display_name.trim()) || emailUsername;
+
+  const handleStartEditName = () => {
+    setNameInput(effectiveDisplayName);
+    setNameError(null);
+    setNameJustSaved(false);
+    setIsEditingName(true);
+  };
+
+  const handleCancelEditName = () => {
+    setIsEditingName(false);
+    setNameError(null);
+  };
+
+  const handleSaveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!user) return;
+
+    const trimmedName = nameInput.trim();
+    if (!trimmedName) {
+      setNameError("Please enter a name.");
+      return;
+    }
+
+    setIsSavingName(true);
+    setNameError(null);
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ display_name: trimmedName })
+        .eq("id", user.id);
+
+      if (error) {
+        setNameError(error.message);
+        setIsSavingName(false);
+        return;
+      }
+
+      // Refreshes the shared auth context's profile, so every page reading
+      // useAuth() (this one, /create, anywhere else) sees the new name
+      // immediately, without needing a full page reload.
+      refreshProfile();
+
+      setIsSavingName(false);
+      setIsEditingName(false);
+      setNameJustSaved(true);
+      setTimeout(() => setNameJustSaved(false), 2500);
+    } catch (err) {
+      setNameError(
+        err instanceof Error ? err.message : "Failed to save your name."
+      );
+      setIsSavingName(false);
+    }
+  };
 
   // ---------- Auth loading state ----------
   if (isLoading) {
@@ -260,58 +296,67 @@ export default function AccountPage() {
 
           {/* Display Name */}
           <div className="mt-5 border-t border-white/10 pt-5">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
                 Display Name
               </p>
-              {!isEditingName && (
-                <button
-                  type="button"
-                  onClick={() => setIsEditingName(true)}
-                  className="text-xs font-semibold text-fuchsia-300 transition-colors hover:text-fuchsia-200"
-                >
-                  Edit
-                </button>
+              {nameJustSaved && (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-300">
+                  ✅ Saved
+                </span>
               )}
             </div>
+
             {isEditingName ? (
-              <div className="mt-3 flex flex-col gap-3">
+              <form
+                onSubmit={handleSaveName}
+                className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-start"
+              >
                 <input
                   type="text"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="e.g. Jordan Lee"
-                  className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/30 outline-none transition-colors focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  placeholder="Enter your name"
+                  autoFocus
+                  disabled={isSavingName}
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 disabled:opacity-50 sm:text-sm"
                 />
                 <div className="flex gap-2">
                   <button
-                    type="button"
-                    onClick={handleSaveName}
+                    type="submit"
                     disabled={isSavingName}
-                    className="flex-1 rounded-lg bg-fuchsia-500 px-3 py-2 text-xs font-bold text-white transition-opacity disabled:opacity-50"
+                    className="flex-1 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-3 text-sm font-bold text-white transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none sm:hover:scale-[1.02]"
                   >
                     {isSavingName ? "Saving..." : "Save"}
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setIsEditingName(false);
-                      setDisplayName(profile?.display_name || "");
-                      setNameError(null);
-                    }}
+                    onClick={handleCancelEditName}
                     disabled={isSavingName}
-                    className="flex-1 rounded-lg border border-white/10 px-3 py-2 text-xs font-bold text-white/60 transition-colors hover:text-white/80 disabled:opacity-50"
+                    className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white/70 transition-colors duration-150 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none"
                   >
                     Cancel
                   </button>
                 </div>
-                {nameError && (
-                  <p className="text-xs text-red-300">{nameError}</p>
-                )}
-              </div>
+              </form>
             ) : (
-              <p className="mt-2 text-sm font-semibold text-fuchsia-300">
-                {displayName || "Not set"}
+              <div className="mt-2 flex items-center justify-between gap-2">
+                <p className="truncate text-sm font-bold text-white/90">
+                  {effectiveDisplayName}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleStartEditName}
+                  className="flex-shrink-0 text-xs font-bold text-fuchsia-300 transition-colors duration-150 hover:text-fuchsia-200"
+                >
+                  Edit Name
+                </button>
+              </div>
+            )}
+
+            {nameError && (
+              <p className="mt-2 break-words text-xs text-red-300">
+                {nameError}
               </p>
             )}
           </div>

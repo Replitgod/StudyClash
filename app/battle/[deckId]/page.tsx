@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/trackEvent";
+import type { User } from "@supabase/supabase-js";
+import type { Profile } from "@/lib/useAuth";
 
 type Question = {
   id: string;
@@ -52,6 +55,33 @@ function calculatePointsForStreak(streak: number): number {
   return BASE_POINTS_PER_CORRECT;
 }
 
+function normalizeTopicKey(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getRequestedPracticeTopics(searchParams: URLSearchParams): string[] {
+  const rawTopics = searchParams.get("topics") || "";
+
+  return rawTopics
+    .split(",")
+    .map((topic) => normalizeTopicKey(decodeURIComponent(topic)))
+    .filter(Boolean);
+}
+
+function getPreferredDisplayName(profile: Profile | null, user: User | null): string {
+  const profileName = profile?.display_name?.trim();
+  if (profileName) return profileName;
+
+  const emailName = user?.email?.split("@")[0]?.trim();
+  if (emailName) return emailName;
+
+  return "";
+}
+
 // Rank badge labels/styles for the top 3 leaderboard spots
 const RANK_BADGES: Record<number, { label: string; color: string }> = {
   0: { label: "Champion", color: "from-yellow-300 to-amber-500" },
@@ -87,7 +117,15 @@ function Background({ children }: { children: React.ReactNode }) {
 export default function BattlePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const deckId = params.deckId as string;
+  const challengeFromMatchId = searchParams.get("challengeFrom");
+  const challengeBaseScore = searchParams.get("challengeScore");
+
+  // Current logged-in user, if any. Battle play stays open to anyone with
+  // the link (no login required) — this only tags the resulting match
+  // with user_id when the player happens to be logged in.
+  const { user, profile } = useAuth();
 
   // Loading the deck + questions
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -105,6 +143,7 @@ export default function BattlePage() {
   // the value once, when "Start Battle" is clicked.
   const nameInputRef = useRef<HTMLInputElement>(null);
   const [playerName, setPlayerName] = useState("");
+  const [isEditingPlayerName, setIsEditingPlayerName] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
 
   // Quiz progress
@@ -123,11 +162,24 @@ export default function BattlePage() {
 
   // Tracks when the current question was first shown, so we can measure
   // how long the player took to answer it (response_time_ms).
-  const questionShownAtRef = useRef<number>(Date.now());
+  const questionStartSecondsRef = useRef(0);
+
+  // Guards handleNext's "finish and save" branch from running more than
+  // once for the same match — e.g. a fast double-click on "Finish Battle"
+  // before the UI has a chance to re-render and hide the button. This is
+  // a synchronous ref check (not React state), so it takes effect
+  // immediately, unlike setState which batches and could let a second
+  // click slip through before the first update is reflected.
+  const hasFinishedRef = useRef(false);
 
   // Saving the finished match
   const [isFinishing, setIsFinishing] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const requestedPracticeTopics = useMemo(
+    () => getRequestedPracticeTopics(searchParams),
+    [searchParams]
+  );
+  const accountDisplayName = getPreferredDisplayName(profile, user);
 
   // Load the deck and its questions when the page mounts
   useEffect(() => {
@@ -161,14 +213,34 @@ export default function BattlePage() {
       }
 
       setDeck(deckData);
-      setQuestions(questionsData);
+      const filteredQuestions =
+        requestedPracticeTopics.length > 0
+          ? (questionsData as Question[]).filter((question) =>
+              requestedPracticeTopics.some(
+                (topic) => {
+                  const questionTopic = normalizeTopicKey(question.topic);
+                  return (
+                    questionTopic === topic ||
+                    questionTopic.includes(topic) ||
+                    topic.includes(questionTopic)
+                  );
+                }
+              )
+            )
+          : (questionsData as Question[]);
+
+      setQuestions(
+        filteredQuestions.length > 0
+          ? filteredQuestions
+          : (questionsData as Question[])
+      );
       setIsLoading(false);
     }
 
     if (deckId) {
       loadBattle();
     }
-  }, [deckId]);
+  }, [deckId, requestedPracticeTopics]);
 
   // Load the top 5 scores for this deck's leaderboard.
   // Sorted by highest score first, then fastest time as the tiebreaker.
@@ -209,13 +281,6 @@ export default function BattlePage() {
     return () => clearInterval(interval);
   }, [hasStarted, isFinishing]);
 
-  // Reset the "question shown at" clock every time we move to a new question
-  useEffect(() => {
-    if (hasStarted) {
-      questionShownAtRef.current = Date.now();
-    }
-  }, [currentIndex, hasStarted]);
-
   const formatTime = (totalSeconds: number) => {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
@@ -224,17 +289,19 @@ export default function BattlePage() {
 
   const handleStart = () => {
     const typedName = nameInputRef.current?.value.trim() || "";
-    // If the challenger left the name field blank, fall back to the
-    // deck creator's name (deck.student_name) — same as before.
-    const finalName = typedName || deck?.student_name || "Player";
+    const defaultBattleName = accountDisplayName || deck?.student_name || "Player";
+    const finalName = typedName || defaultBattleName;
 
     setPlayerName(finalName);
     setHasStarted(true);
+    questionStartSecondsRef.current = elapsedSeconds;
 
     trackEvent("battle_started", {
       deckId,
       playerName: finalName,
       totalQuestions: questions.length,
+      practiceTopics: requestedPracticeTopics,
+      challengeFromMatchId,
     });
   };
 
@@ -243,7 +310,10 @@ export default function BattlePage() {
 
     const currentQuestion = questions[currentIndex];
     const isCorrect = choice === currentQuestion.correct_answer;
-    const responseTimeMs = Date.now() - questionShownAtRef.current;
+    const responseTimeMs = Math.max(
+      0,
+      (elapsedSeconds - questionStartSecondsRef.current) * 1000
+    );
 
     setSelectedChoice(choice);
     setAnswers((prev) => [
@@ -274,51 +344,63 @@ export default function BattlePage() {
     const isLastQuestion = currentIndex === questions.length - 1;
 
     if (!isLastQuestion) {
+      questionStartSecondsRef.current = elapsedSeconds;
       setCurrentIndex((prev) => prev + 1);
       setSelectedChoice(null);
       return;
     }
 
-    // This was the last question — save the finished match
+    // This was the last question — save the finished match. Guarded so
+    // this branch can only ever run once per battle, even if the button
+    // is somehow clicked twice in quick succession.
+    if (hasFinishedRef.current) return;
+    hasFinishedRef.current = true;
+
     setIsFinishing(true);
     setSaveError(null);
 
     const correctCount = answers.filter((a) => a.isCorrect).length;
 
-    const { data: matchData, error: matchError } = await supabase
-      .from("matches")
-      .insert({
-        deck_id: deckId,
-        player_name: playerName || deck?.student_name || "Player",
+    const response = await fetch("/api/battle/finish", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        deckId,
+        playerName: playerName || accountDisplayName || deck?.student_name || "Player",
         score: totalScore,
-        total_questions: questions.length,
-        correct_answers: correctCount,
-        time_taken_seconds: elapsedSeconds,
-      })
-      .select()
-      .single();
+        totalQuestions: questions.length,
+        correctAnswers: correctCount,
+        timeTakenSeconds: elapsedSeconds,
+        answers,
+      }),
+    });
 
-    if (matchError || !matchData) {
-      setSaveError(matchError?.message || "Failed to save your match.");
+    const contentType = response.headers.get("content-type") || "";
+
+    if (!contentType.includes("application/json")) {
+      setSaveError(`Server error (status ${response.status}). Please try again.`);
       setIsFinishing(false);
+      hasFinishedRef.current = false;
       return;
     }
 
-    // No match_answers table exists in the schema, so per-question answers
-    // (including response_time_ms) are saved to sessionStorage instead.
-    // The results page reads this to build the Weak Topic Report.
-    try {
-      sessionStorage.setItem(
-        `studyclash-answers-${matchData.id}`,
-        JSON.stringify(answers)
-      );
-    } catch {
-      // Fails silently if sessionStorage is unavailable — not critical.
+    const result = (await response.json()) as {
+      matchId?: string;
+      error?: string;
+    };
+
+    if (!response.ok || !result.matchId) {
+      setSaveError(result.error || "Failed to save your match.");
+      setIsFinishing(false);
+      hasFinishedRef.current = false;
+      return;
     }
 
     trackEvent("battle_finished", {
       deckId,
-      matchId: matchData.id,
+      matchId: result.matchId,
       score: totalScore,
       correctAnswers: correctCount,
       bestStreak,
@@ -326,18 +408,36 @@ export default function BattlePage() {
       timeTakenSeconds: elapsedSeconds,
     });
 
-    router.push(`/results/${matchData.id}`);
+    const resultSearchParams = new URLSearchParams();
+
+    if (challengeFromMatchId) {
+      resultSearchParams.set("challengeFrom", challengeFromMatchId);
+    }
+
+    if (challengeBaseScore) {
+      resultSearchParams.set("challengeScore", challengeBaseScore);
+    }
+
+    const resultPath = resultSearchParams.toString()
+      ? `/results/${result.matchId}?${resultSearchParams.toString()}`
+      : `/results/${result.matchId}`;
+
+    router.push(resultPath);
   }, [
     currentIndex,
     questions,
     answers,
     deckId,
     deck,
+    accountDisplayName,
     playerName,
     totalScore,
     bestStreak,
     elapsedSeconds,
+    user,
     router,
+    challengeFromMatchId,
+    challengeBaseScore,
   ]);
 
   // ---------- Loading state ----------
@@ -388,10 +488,26 @@ export default function BattlePage() {
   if (!hasStarted) {
     return (
       <Background>
+        {requestedPracticeTopics.length > 0 && (
+          <div className="mb-4 flex max-w-full flex-wrap items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-200 backdrop-blur-sm sm:mb-5">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
+            Practice Weak Topics
+            <span className="normal-case tracking-normal text-white/70">
+              {requestedPracticeTopics.join(" · ")}
+            </span>
+          </div>
+        )}
+
         <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
           BATTLE READY
         </div>
+
+        {challengeFromMatchId && challengeBaseScore && (
+          <div className="mb-4 w-full max-w-sm rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-center text-xs font-semibold text-cyan-100 backdrop-blur-sm sm:mb-5">
+            Challenge mode enabled. Beat the original score of {challengeBaseScore}%.
+          </div>
+        )}
 
         <h1 className="max-w-full text-center text-3xl font-black tracking-tight break-words sm:text-4xl md:text-5xl">
           <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
@@ -403,26 +519,64 @@ export default function BattlePage() {
         </p>
 
         <div className="mt-8 w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:mt-10 sm:p-6">
-          <label
-            htmlFor="challengerName"
-            className="text-xs font-bold uppercase tracking-wider text-white/60"
-          >
-            Playing As (optional)
-          </label>
-          <input
-            id="challengerName"
-            ref={nameInputRef}
-            type="text"
-            defaultValue=""
-            placeholder={deck.student_name}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleStart();
-            }}
-            className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:text-sm"
-          />
-          <p className="mt-1.5 text-[11px] text-white/30">
-            Leave blank to play as {deck.student_name}
-          </p>
+          {accountDisplayName && !isEditingPlayerName ? (
+            <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] px-4 py-3.5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-white/90">
+                    Playing as {accountDisplayName}
+                  </p>
+                  <p className="mt-1 text-[11px] text-white/40">
+                    You&apos;re already logged in, so you don&apos;t need to enter your name again.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingPlayerName(true)}
+                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white/85 transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10"
+                >
+                  Change Name
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <label
+                htmlFor="challengerName"
+                className="text-xs font-bold uppercase tracking-wider text-white/60"
+              >
+                Playing As {accountDisplayName ? "(optional override)" : "(optional)"}
+              </label>
+              <input
+                id="challengerName"
+                ref={nameInputRef}
+                type="text"
+                defaultValue={accountDisplayName || ""}
+                placeholder={accountDisplayName || deck.student_name}
+                autoFocus={isEditingPlayerName}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleStart();
+                }}
+                className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:text-sm"
+              />
+              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-white/30">
+                <span>
+                  {accountDisplayName
+                    ? "Change it only if you want a different name on this battle result."
+                    : `Leave blank to play as ${deck.student_name}`}
+                </span>
+                {accountDisplayName && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingPlayerName(false)}
+                    className="font-bold text-cyan-300 transition-colors duration-150 hover:text-cyan-200"
+                  >
+                    Keep account name
+                  </button>
+                )}
+              </div>
+            </>
+          )}
 
           <button
             onClick={handleStart}
@@ -771,6 +925,12 @@ export default function BattlePage() {
               <p className="mt-2 break-words text-white/60">
                 {currentQuestion.explanation}
               </p>
+            </div>
+          )}
+
+          {saveError && (
+            <div className="mt-5 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200/90">
+              {saveError}
             </div>
           )}
 

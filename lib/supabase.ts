@@ -1,10 +1,10 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
 const supabaseAnonKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY;
 
-let supabaseClient: any = null;
+let supabaseClient: SupabaseClient | null = null;
 
 export function getSupabaseClient() {
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -18,8 +18,8 @@ export function getSupabaseClient() {
   return supabaseClient;
 }
 
-export const supabase = new Proxy({} as any, {
-  get(_target, prop) {
-    return getSupabaseClient()[prop as string];
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_target, prop: keyof SupabaseClient) {
+    return getSupabaseClient()[prop];
   },
 });

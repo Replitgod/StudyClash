@@ -32,7 +32,7 @@ export default function Home() {
           {/* Headline */}
           <h1 className="max-w-4xl text-center text-4xl font-black leading-tight tracking-tight sm:text-6xl md:text-7xl">
             <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-              Turn your notes into a 90-second study battle.
+              Turn your notes into a study battle.
             </span>
           </h1>
 
@@ -65,6 +65,13 @@ export default function Home() {
                 />
               </svg>
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover:translate-x-full" />
+            </Link>
+
+            <Link
+              href="/demo/battle"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-8 py-4 text-base font-bold text-cyan-200 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-cyan-500/15 sm:w-auto sm:text-lg"
+            >
+              Try Demo Battle
             </Link>
 
             <Link
@@ -155,7 +162,7 @@ export default function Home() {
                 ),
                 step: "03",
                 title: "Play the Battle",
-                desc: "Race the clock in a fast, 90-second multiple-choice showdown.",
+                desc: "Race the clock in a fast, battle-style quiz showdown.",
               },
               {
                 icon: (
@@ -239,7 +246,7 @@ export default function Home() {
                   />
                 ),
                 title: "Timed pressure, not passive review",
-                desc: "A 90-second clock keeps you focused and engaged, instead of slowly flipping through a static stack of cards.",
+                desc: "A live timer keeps you focused and engaged, instead of slowly flipping through a static stack of cards.",
               },
               {
                 icon: (

@@ -22,7 +22,7 @@ const PLANS: Plan[] = [
     dailyLimit: "3 deck generations / day",
     features: [
       "AI-generated 15-question decks",
-      "Timed 90-second battles",
+      "Paced quiz battles",
       "Leaderboards & challenge links",
       "Weak Topic Report",
     ],

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
@@ -10,6 +10,7 @@ type Match = {
   id: string;
   deck_id: string;
   player_name: string;
+  user_id?: string | null;
   score: number;
   total_questions: number;
   correct_answers: number;
@@ -34,10 +35,12 @@ type Question = {
   difficulty: string;
 };
 
-type StoredAnswer = {
-  questionId: string;
-  selectedAnswer: string;
-  isCorrect: boolean;
+// Shape of a row read directly from the match_answers table.
+type MatchAnswerRow = {
+  question_id: string;
+  selected_answer: string;
+  is_correct: boolean;
+  response_time_ms?: number | null;
 };
 
 type WeakTopic = {
@@ -50,6 +53,7 @@ type ReviewItem = {
   question: Question;
   selectedAnswer: string;
   isCorrect: boolean;
+  responseTimeMs: number;
 };
 
 type TopicStat = {
@@ -62,6 +66,42 @@ type TopicStat = {
 type ResourceLink = {
   label: string;
   url: string;
+};
+
+type LeaderboardEntry = {
+  id: string;
+  player_name: string;
+  score: number;
+  correct_answers: number;
+  total_questions: number;
+  time_taken_seconds: number;
+};
+
+type DeckAttemptRecord = {
+  score: number;
+  accuracy: number;
+  matchId: string;
+  timestamp: string;
+};
+
+type ProgressSnapshot = {
+  totalXp: number;
+  awardedMatchIds: string[];
+  bestScoresByDeck: Record<string, DeckAttemptRecord>;
+  lastAttemptsByDeck: Record<string, DeckAttemptRecord>;
+};
+
+type BattleProgress = {
+  xpEarned: number;
+  totalXp: number;
+  level: number;
+  xpInLevel: number;
+  xpToNextLevel: number;
+  previousBestScore: number | null;
+  newPersonalBest: boolean;
+  improvementPercent: number | null;
+  progressMessage: string;
+  weakestTopic: string | null;
 };
 
 type StudyDay = {
@@ -156,8 +196,7 @@ function buildTopicStats(reviewItems: ReviewItem[]): TopicStat[] {
   }));
 }
 
-// Builds a short "what to review" explanation for the Study Plan card,
-// distinct from the Weak Topic Report's shorter message above.
+// Builds a short "what to review" explanation for the Study Plan card.
 function buildStudyExplanation(topic: string): string {
   return `Focus on the core definitions, key facts, and examples related to ${topic}. Re-read the relevant section of your notes, then work back through the missed questions above until the reasoning makes sense without looking at the explanation.`;
 }
@@ -167,48 +206,230 @@ function buildMiniTask(topic: string): string {
   return `Write a 4-5 sentence summary of ${topic} in your own words, then explain it out loud as if teaching a friend.`;
 }
 
-// Builds a curated set of real, safe resource links for a topic. Only
-// stable, real destinations or search URLs built with encodeURIComponent
-// are used — nothing here is a fabricated deep link.
+function normalizeProgressScope(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getProgressStorageKey(match: Match): string {
+  const scope = match.user_id
+    ? `user:${match.user_id}`
+    : `player:${normalizeProgressScope(match.player_name || "guest")}`;
+
+  return `studyclash-progression:v1:${scope}`;
+}
+
+function loadProgressSnapshot(storageKey: string): ProgressSnapshot {
+  if (typeof window === "undefined") {
+    return {
+      totalXp: 0,
+      awardedMatchIds: [],
+      bestScoresByDeck: {},
+      lastAttemptsByDeck: {},
+    };
+  }
+
+  try {
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) {
+      return {
+        totalXp: 0,
+        awardedMatchIds: [],
+        bestScoresByDeck: {},
+        lastAttemptsByDeck: {},
+      };
+    }
+
+    const parsed = JSON.parse(raw) as Partial<ProgressSnapshot>;
+    return {
+      totalXp: parsed.totalXp || 0,
+      awardedMatchIds: parsed.awardedMatchIds || [],
+      bestScoresByDeck: parsed.bestScoresByDeck || {},
+      lastAttemptsByDeck: parsed.lastAttemptsByDeck || {},
+    };
+  } catch {
+    return {
+      totalXp: 0,
+      awardedMatchIds: [],
+      bestScoresByDeck: {},
+      lastAttemptsByDeck: {},
+    };
+  }
+}
+
+function saveProgressSnapshot(storageKey: string, snapshot: ProgressSnapshot) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(storageKey, JSON.stringify(snapshot));
+}
+
+function calculateBattleXp(params: {
+  accuracyPercent: number;
+  averageResponseTimeMs: number;
+  totalQuestions: number;
+  completedQuestions: number;
+}): number {
+  const { accuracyPercent, averageResponseTimeMs, totalQuestions, completedQuestions } = params;
+  const completionRate = totalQuestions > 0 ? completedQuestions / totalQuestions : 1;
+  const accuracyBonus = Math.round(accuracyPercent * 6);
+  const completionBonus = Math.round(completionRate * 120);
+  const speedBonus = Math.max(0, 180 - Math.round(averageResponseTimeMs / 1000) * 12);
+
+  return Math.max(50, accuracyBonus + completionBonus + speedBonus);
+}
+
+function calculateLevel(totalXp: number): {
+  level: number;
+  xpInLevel: number;
+  xpToNextLevel: number;
+  progressPercent: number;
+} {
+  const level = Math.floor(totalXp / 500) + 1;
+  const xpInLevel = totalXp % 500;
+
+  return {
+    level,
+    xpInLevel,
+    xpToNextLevel: 500 - xpInLevel,
+    progressPercent: (xpInLevel / 500) * 100,
+  };
+}
+
+function buildProgressMessage(params: {
+  improvementPercent: number | null;
+  weakestTopic: string | null;
+  newPersonalBest: boolean;
+}): string {
+  const { improvementPercent, weakestTopic, newPersonalBest } = params;
+
+  if (improvementPercent !== null && improvementPercent > 0) {
+    return `You improved by ${improvementPercent}% from your last attempt.`;
+  }
+
+  if (improvementPercent !== null && improvementPercent < 0) {
+    const direction = Math.abs(improvementPercent);
+    return `You are ${direction}% below your last attempt. Your weakest topic is ${weakestTopic || "the missed material"}. Practice that next.`;
+  }
+
+  if (newPersonalBest) {
+    return `New personal best on this deck. Keep pushing the score higher.`;
+  }
+
+  if (weakestTopic) {
+    return `Your weakest topic is ${weakestTopic}. Practice that next.`;
+  }
+
+  return `Solid run. Rematch to push your score higher.`;
+}
+
+function normalizeTopicKey(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function resolveKhanAcademyUrl(topic: string): string {
+  const normalizedTopic = normalizeTopicKey(topic);
+
+  const khanTopicRoutes: Array<{ pattern: RegExp; url: string }> = [
+    {
+      pattern: /\blinear equations?\b|\bone variable equations?\b/,
+      url: "https://www.khanacademy.org/math/algebra/x2f8bb11595b61c86:one-variable-linear-equations",
+    },
+    {
+      pattern: /\bquadratic equations?\b|\bquadratics?\b/,
+      url: "https://www.khanacademy.org/math/algebra/x2f8bb11595b61c86:quadratics",
+    },
+    {
+      pattern: /\bphotosynthesis\b/,
+      url: "https://www.khanacademy.org/science/biology/photosynthesis-in-plants",
+    },
+    {
+      pattern: /\bderivative|derivatives\b/,
+      url: "https://www.khanacademy.org/math/calculus-1/cs1-differentiation",
+    },
+    {
+      pattern: /\bintegral|integration\b/,
+      url: "https://www.khanacademy.org/math/calculus-1/cs1-integration",
+    },
+    {
+      pattern: /\bstoichiometry\b/,
+      url: "https://www.khanacademy.org/science/chemistry/chemical-reactions-stoichiome",
+    },
+    {
+      pattern: /\bprobability\b/,
+      url: "https://www.khanacademy.org/math/statistics-probability/probability-library",
+    },
+  ];
+
+  const directMatch = khanTopicRoutes.find(({ pattern }) =>
+    pattern.test(normalizedTopic)
+  );
+
+  if (directMatch) {
+    return directMatch.url;
+  }
+
+  return `https://www.khanacademy.org/search?page_search_query=${encodeURIComponent(
+    topic
+  )}`;
+}
+
+// Builds a curated set of real, safe, topic-specific resource links.
 function buildResourceLinks(topic: string, courseName: string): ResourceLink[] {
-  const encodedTopic = encodeURIComponent(topic);
-  const isApCourse = /\bap\b/i.test(courseName);
+  const cleanTopic = topic.trim();
+  const trimmedCourse = (courseName || "").trim();
+  const topicWithCourseContext = trimmedCourse
+    ? `${cleanTopic} ${trimmedCourse}`
+    : cleanTopic;
+
+  const encodedTopicOnly = encodeURIComponent(cleanTopic);
+  const encodedTopicWithCourse = encodeURIComponent(topicWithCourseContext);
+  const isApCourse = /\bap\b/i.test(trimmedCourse);
 
   const links: ResourceLink[] = [
     {
       label: "Khan Academy",
-      url: `https://www.khanacademy.org/search?page_search_query=${encodedTopic}`,
+      url: resolveKhanAcademyUrl(cleanTopic),
     },
     {
-      label: "Crash Course (YouTube)",
+      label: "YouTube",
       url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
-        `Crash Course ${topic}`
+        `${topicWithCourseContext} lesson walkthrough`
       )}`,
     },
     {
       label: "Quizlet Flashcards",
-      url: `https://quizlet.com/search?query=${encodedTopic}&type=sets`,
+      url: `https://quizlet.com/search?query=${encodedTopicWithCourse}&type=sets`,
+    },
+    {
+      label: "Wikipedia",
+      url: `https://en.wikipedia.org/wiki/Special:Search?search=${encodedTopicOnly}`,
     },
   ];
 
   if (isApCourse) {
     links.push({
       label: "AP Students (College Board)",
-      url: "https://apstudents.collegeboard.org/",
+      url: `https://www.google.com/search?q=${encodeURIComponent(
+        `site:apstudents.collegeboard.org ${cleanTopic}`
+      )}`,
     });
   } else {
     links.push({
-      label: "Google Search",
-      url: `https://www.google.com/search?q=${encodedTopic}`,
+      label: "Google Scholar",
+      url: `https://scholar.google.com/scholar?q=${encodedTopicWithCourse}`,
     });
   }
 
   return links;
 }
 
-// Builds a personalized 3-day study plan. If there are weak topics, Day 2
-// specifically calls out the single most-missed topic. If there are none,
-// this produces a lighter maintenance-mode plan instead.
+// Builds a personalized 3-day study plan.
 function buildStudyPlan(weakTopics: WeakTopic[]): StudyDay[] {
   if (weakTopics.length === 0) {
     return [
@@ -271,8 +492,36 @@ function buildStudyPlan(weakTopics: WeakTopic[]): StudyDay[] {
   ];
 }
 
+function Background({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+      </div>
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+        }}
+      />
+      <div className="relative z-10 flex min-h-screen flex-col items-center px-4 py-10 sm:px-6 sm:py-16">
+        {children}
+      </div>
+    </main>
+  );
+}
+
+function buildChallengeMessage(deckTitle: string, accuracyPercent: number): string {
+  return `I scored ${accuracyPercent}% on ${deckTitle}. Can you beat me?`;
+}
+
 export default function ResultsPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const matchId = params.matchId as string;
 
   const [match, setMatch] = useState<Match | null>(null);
@@ -289,7 +538,23 @@ export default function ResultsPage() {
   const [reviewItems, setReviewItems] = useState<ReviewItem[]>([]);
 
   // Report Bad Question state, keyed by question_id
-  const [reportStates, setReportStates] = useState<Record<string, ReportState>>({});
+  const [reportStates, setReportStates] = useState<
+    Record<string, ReportState>
+  >({});
+
+  const [deckLeaderboard, setDeckLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
+  const [battleProgress, setBattleProgress] = useState<BattleProgress | null>(null);
+  const challengeFromMatchId = searchParams.get("challengeFrom");
+  const challengeScoreParam = searchParams.get("challengeScore");
+  const challengeBaseScore =
+    challengeScoreParam !== null && challengeScoreParam !== ""
+      ? Number(challengeScoreParam)
+      : null;
+  const hasChallengeComparison =
+    Boolean(challengeFromMatchId) &&
+    challengeBaseScore !== null &&
+    !Number.isNaN(challengeBaseScore);
 
   useEffect(() => {
     async function loadResults() {
@@ -333,15 +598,29 @@ export default function ResultsPage() {
         deckId: matchData.deck_id,
       });
 
-      // 3. Try to load per-question answers from sessionStorage.
+      // 3. Load per-question answers from the durable match_answers table.
+      // This works even after a refresh, a closed tab, or logging out and
+      // back in, since it's keyed by match_id in the database rather than
+      // sessionStorage or any other temporary frontend state.
       try {
-        const storedRaw = sessionStorage.getItem(
-          `studyclash-answers-${matchId}`
-        );
+        const { data: matchAnswersData, error: matchAnswersError } =
+          await supabase
+            .from("match_answers")
+            .select("question_id, selected_answer, is_correct, response_time_ms")
+            .eq("match_id", matchId);
 
-        if (storedRaw) {
-          const storedAnswers: StoredAnswer[] = JSON.parse(storedRaw);
+        if (matchAnswersError) {
+          console.error(
+            "Failed to load match answers:",
+            matchAnswersError.message
+          );
+        }
 
+        if (
+          !matchAnswersError &&
+          matchAnswersData &&
+          matchAnswersData.length > 0
+        ) {
           const { data: questionsData } = await supabase
             .from("questions")
             .select("*")
@@ -352,14 +631,17 @@ export default function ResultsPage() {
               (questionsData as Question[]).map((q) => [q.id, q])
             );
 
-            const items: ReviewItem[] = storedAnswers
+            const items: ReviewItem[] = (
+              matchAnswersData as MatchAnswerRow[]
+            )
               .map((answer) => {
-                const question = questionById.get(answer.questionId);
+                const question = questionById.get(answer.question_id);
                 if (!question) return null;
                 return {
                   question,
-                  selectedAnswer: answer.selectedAnswer,
-                  isCorrect: answer.isCorrect,
+                  selectedAnswer: answer.selected_answer,
+                  isCorrect: answer.is_correct,
+                  responseTimeMs: answer.response_time_ms || 0,
                 };
               })
               .filter((item): item is ReviewItem => item !== null);
@@ -367,7 +649,9 @@ export default function ResultsPage() {
             setReviewItems(items);
 
             // Build the Weak Topic Report from the same data
-            const missedAnswers = storedAnswers.filter((a) => !a.isCorrect);
+            const missedAnswers = (
+              matchAnswersData as MatchAnswerRow[]
+            ).filter((a) => !a.is_correct);
 
             if (missedAnswers.length === 0) {
               setHasAnswerData(true);
@@ -377,7 +661,7 @@ export default function ResultsPage() {
 
               for (const answer of missedAnswers) {
                 const topic =
-                  questionById.get(answer.questionId)?.topic || "General";
+                  questionById.get(answer.question_id)?.topic || "General";
                 missedCountByTopic.set(
                   topic,
                   (missedCountByTopic.get(topic) || 0) + 1
@@ -399,8 +683,10 @@ export default function ResultsPage() {
             }
           }
         }
-      } catch {
-        // If parsing fails for any reason, just skip these sections silently.
+      } catch (err) {
+        // If the query fails for any reason, skip these sections silently
+        // rather than breaking the whole results page.
+        console.error("Failed to load match answers:", err);
       }
 
       setIsLoading(false);
@@ -410,6 +696,112 @@ export default function ResultsPage() {
       loadResults();
     }
   }, [matchId]);
+
+  useEffect(() => {
+    async function loadLeaderboard() {
+      if (!deck) return;
+
+      setIsLeaderboardLoading(true);
+
+      const { data, error } = await supabase
+        .from("matches")
+        .select(
+          "id, player_name, score, correct_answers, total_questions, time_taken_seconds"
+        )
+        .eq("deck_id", deck.id)
+        .order("score", { ascending: false })
+        .order("time_taken_seconds", { ascending: true })
+        .limit(5);
+
+      if (!error && data) {
+        setDeckLeaderboard(data as LeaderboardEntry[]);
+      }
+
+      setIsLeaderboardLoading(false);
+    }
+
+    loadLeaderboard();
+  }, [deck]);
+
+  useEffect(() => {
+    if (!match || !deck || !hasAnswerData) return;
+
+    const storageKey = getProgressStorageKey(match);
+    const snapshot = loadProgressSnapshot(storageKey);
+    const currentAccuracy = Math.round(
+      (match.correct_answers / match.total_questions) * 100
+    );
+    const averageResponseTimeMs =
+      reviewItems.length > 0
+        ? Math.round(
+            reviewItems.reduce(
+              (sum, item) => sum + (item.responseTimeMs || 0),
+              0
+            ) / reviewItems.length
+          )
+        : 0;
+    const weakTopic = weakTopics?.[0]?.topic || null;
+    const previousBest = snapshot.bestScoresByDeck[deck.id] || null;
+    const previousAttempt = snapshot.lastAttemptsByDeck[deck.id] || null;
+    const alreadyAwarded = snapshot.awardedMatchIds.includes(match.id);
+    const xpEarned = calculateBattleXp({
+      accuracyPercent: currentAccuracy,
+      averageResponseTimeMs,
+      totalQuestions: match.total_questions,
+      completedQuestions: reviewItems.length,
+    });
+
+    const nextSnapshot: ProgressSnapshot = {
+      totalXp: alreadyAwarded ? snapshot.totalXp : snapshot.totalXp + xpEarned,
+      awardedMatchIds: alreadyAwarded
+        ? snapshot.awardedMatchIds
+        : [...snapshot.awardedMatchIds, match.id],
+      bestScoresByDeck: { ...snapshot.bestScoresByDeck },
+      lastAttemptsByDeck: { ...snapshot.lastAttemptsByDeck },
+    };
+
+    const shouldUpdateBest =
+      !previousBest || match.score > previousBest.score;
+
+    const currentAttempt: DeckAttemptRecord = {
+      score: match.score,
+      accuracy: currentAccuracy,
+      matchId: match.id,
+      timestamp: new Date().toISOString(),
+    };
+
+    nextSnapshot.lastAttemptsByDeck[deck.id] = currentAttempt;
+
+    if (shouldUpdateBest) {
+      nextSnapshot.bestScoresByDeck[deck.id] = currentAttempt;
+    }
+
+    saveProgressSnapshot(storageKey, nextSnapshot);
+
+    const levelInfo = calculateLevel(nextSnapshot.totalXp);
+    const improvementPercent = previousAttempt
+      ? currentAccuracy - previousAttempt.accuracy
+      : null;
+
+    void Promise.resolve().then(() => {
+      setBattleProgress({
+        xpEarned,
+        totalXp: nextSnapshot.totalXp,
+        level: levelInfo.level,
+        xpInLevel: levelInfo.xpInLevel,
+        xpToNextLevel: levelInfo.xpToNextLevel,
+        previousBestScore: previousBest?.score ?? null,
+        newPersonalBest: shouldUpdateBest,
+        improvementPercent,
+        progressMessage: buildProgressMessage({
+          improvementPercent,
+          weakestTopic: weakTopic,
+          newPersonalBest: shouldUpdateBest,
+        }),
+        weakestTopic: weakTopic,
+      });
+    });
+  }, [match, deck, hasAnswerData, reviewItems, weakTopics]);
 
   const formatTime = (totalSeconds: number) => {
     const minutes = Math.floor(totalSeconds / 60);
@@ -423,8 +815,8 @@ export default function ResultsPage() {
     const accuracyPercent = Math.round(
       (match.correct_answers / match.total_questions) * 100
     );
-    const challengeLink = `${window.location.origin}/battle/${deck.id}`;
-    const shareMessage = `I scored ${accuracyPercent}% on ${deck.title} in StudyClash. Beat me: ${challengeLink}`;
+    const challengeLink = `${window.location.origin}/challenge/${match.id}`;
+    const shareMessage = `${buildChallengeMessage(deck.title, accuracyPercent)} ${challengeLink}`;
 
     try {
       await navigator.clipboard.writeText(shareMessage);
@@ -499,28 +891,6 @@ export default function ResultsPage() {
     });
   };
 
-  // ---------- Shared background wrapper ----------
-  const Background = ({ children }: { children: React.ReactNode }) => (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
-      </div>
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
-      <div className="relative z-10 flex min-h-screen flex-col items-center px-4 py-10 sm:px-6 sm:py-16">
-        {children}
-      </div>
-    </main>
-  );
-
   // ---------- Loading state ----------
   if (isLoading) {
     return (
@@ -583,6 +953,16 @@ export default function ResultsPage() {
   const topStudyTopics = (weakTopics || []).slice(0, 4);
   const studyPlan = buildStudyPlan(weakTopics || []);
 
+  const currentAccuracyPercent = accuracyPercent;
+  const challengeGap =
+    hasChallengeComparison && challengeBaseScore !== null
+      ? currentAccuracyPercent - challengeBaseScore
+      : null;
+  const challengePreviewMessage = buildChallengeMessage(
+    deck.title,
+    currentAccuracyPercent
+  );
+
   return (
     <Background>
       <div className="w-full max-w-2xl">
@@ -601,6 +981,62 @@ export default function ResultsPage() {
         <p className="mt-3 break-words text-center text-sm text-white/50">
           {deck.title} · {deck.course_name}
         </p>
+
+        {hasChallengeComparison && challengeBaseScore !== null && (
+          <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.06] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
+            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+              Challenge Result
+            </p>
+            <p className="mt-2 text-sm font-medium leading-relaxed text-white/80 sm:text-base">
+              {challengeGap !== null && challengeGap > 0
+                ? `You beat the original score by ${challengeGap}%.`
+                : challengeGap !== null && challengeGap < 0
+                  ? `You finished ${Math.abs(challengeGap)}% behind the original score.`
+                  : "You matched the original score exactly."}
+            </p>
+            <p className="mt-1 text-xs text-white/45">
+              Original score: {challengeBaseScore}% · Your score: {currentAccuracyPercent}%
+            </p>
+          </div>
+        )}
+
+        {battleProgress && (
+          <div className="mt-5 rounded-2xl border border-fuchsia-400/20 bg-black/20 p-4 backdrop-blur-sm sm:mt-6 sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="max-w-2xl">
+                <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
+                  Progress Message
+                </p>
+                <p className="mt-2 text-sm font-medium leading-relaxed text-white/80 sm:text-base">
+                  {battleProgress.progressMessage}
+                </p>
+                <p className="mt-2 text-xs text-white/45">
+                  Personal best on this deck: {battleProgress.previousBestScore == null ? "none yet" : `${battleProgress.previousBestScore} pts`}
+                  {battleProgress.newPersonalBest ? " · New record!" : ""}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-cyan-200">
+                  +{battleProgress.xpEarned} XP
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-emerald-200">
+                  Level {battleProgress.level}
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-fuchsia-200">
+                  {battleProgress.xpToNextLevel} XP to next level
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-cyan-400 transition-all duration-300"
+                style={{ width: `${battleProgress.xpInLevel / 5}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Weak Topic Report */}
         {hasAnswerData && (
@@ -992,10 +1428,99 @@ export default function ResultsPage() {
                     d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"
                   />
                 </svg>
-                Copy Challenge Link
+                Copy Challenge Message
               </>
             )}
           </button>
+
+          <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-center">
+            <p className="text-xs font-semibold text-white/75 sm:text-sm">
+              {challengePreviewMessage}
+            </p>
+          </div>
+
+          <p className="mt-3 text-center text-xs text-white/35">
+            Challenge link: /challenge/{match.id}
+          </p>
+        </div>
+
+        {/* Deck Leaderboard */}
+        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:mt-8 sm:p-6 md:p-8">
+          <div className="flex items-center gap-2">
+            <svg
+              className="h-4 w-4 flex-shrink-0 text-cyan-300"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"
+              />
+            </svg>
+            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+              Deck Leaderboard
+            </p>
+          </div>
+
+          {isLeaderboardLoading ? (
+            <p className="mt-4 text-sm text-white/45">Loading leaderboard...</p>
+          ) : deckLeaderboard.length === 0 ? (
+            <p className="mt-4 text-sm text-white/45">
+              No scores yet. You can be the first entry.
+            </p>
+          ) : (
+            <div className="mt-4 flex flex-col gap-2.5">
+              {deckLeaderboard.map((entry, index) => {
+                const accuracy = Math.round(
+                  (entry.correct_answers / entry.total_questions) * 100
+                );
+                const isCurrentMatch = entry.id === match.id;
+
+                return (
+                  <div
+                    key={entry.id}
+                    className={`rounded-xl border px-3 py-3 transition-colors duration-150 ${
+                      isCurrentMatch
+                        ? "border-fuchsia-400/30 bg-fuchsia-500/10"
+                        : "border-white/10 bg-black/30"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-2.5">
+                        <span
+                          className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+                            index === 0
+                              ? "bg-gradient-to-br from-yellow-300 to-amber-500 text-black"
+                              : "bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20 text-fuchsia-300"
+                          }`}
+                        >
+                          {index + 1}
+                        </span>
+                        <p className="truncate text-sm font-bold text-white/90">
+                          {entry.player_name}
+                        </p>
+                        {isCurrentMatch && (
+                          <span className="rounded-full bg-fuchsia-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fuchsia-200">
+                            This run
+                          </span>
+                        )}
+                      </div>
+                      <span className="flex-shrink-0 text-sm font-bold text-cyan-300">
+                        {entry.score} pts
+                      </span>
+                    </div>
+
+                    <p className="mt-2 text-[10px] text-white/40">
+                      {accuracy}% accuracy · {formatTime(entry.time_taken_seconds)}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Answer Review */}
@@ -1186,7 +1711,7 @@ export default function ResultsPage() {
             href={`/battle/${deck.id}`}
             className="group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:px-8 sm:hover:scale-[1.02]"
           >
-            <span className="relative z-10">Play Again</span>
+            <span className="relative z-10">Rematch</span>
             <svg
               className="relative z-10 h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
               fill="none"
@@ -1202,6 +1727,17 @@ export default function ResultsPage() {
             </svg>
             <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover:translate-x-full" />
           </Link>
+
+          {weakTopics && weakTopics.length > 0 && (
+            <Link
+              href={`/battle/${deck.id}?topics=${encodeURIComponent(
+                weakTopics.map((topic) => topic.topic).join(",")
+              )}`}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-6 py-4 text-base font-bold text-cyan-200 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-cyan-500/15 sm:px-8"
+            >
+              Practice Weak Topics
+            </Link>
+          )}
 
           <Link
             href="/create"

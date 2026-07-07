@@ -80,28 +80,6 @@ export default function LoginPage() {
 
       const target = getSafeRedirectTarget("/account");
 
-      // Check whether this account has 2FA enabled and not yet verified
-      // for this session. If so, send them to /mfa before letting them
-      // reach anything else. This check is defensive — if it fails for any
-      // reason, we fail open to the intended destination rather than
-      // leaving the user stuck on a broken login page.
-      try {
-        const { data: aalData, error: aalError } =
-          await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-
-        if (
-          !aalError &&
-          aalData?.currentLevel === "aal1" &&
-          aalData?.nextLevel === "aal2"
-        ) {
-          router.push("/mfa");
-          return;
-        }
-      } catch {
-        // MFA check failed unexpectedly — fall through to the normal
-        // redirect rather than blocking login entirely.
-      }
-
       router.push(target);
     } catch (err) {
       setErrorMessage(

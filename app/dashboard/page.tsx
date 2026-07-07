@@ -98,7 +98,6 @@ export default function DashboardPage() {
     recentlyPlayed: [],
     recommendedNextBattle: null,
   });
-  const [isLoadingInsights, setIsLoadingInsights] = useState(false);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -205,7 +204,7 @@ export default function DashboardPage() {
     if (isLoggedIn && user && profile) {
       loadDashboard();
     } else if (!isLoading) {
-      setIsLoadingStats(false);
+      void Promise.resolve().then(() => setIsLoadingStats(false));
     }
   }, [isLoggedIn, user, profile, isLoading]);
 
@@ -213,8 +212,6 @@ export default function DashboardPage() {
   useEffect(() => {
     async function loadDeckInsights() {
       if (!isLoggedIn || !user) return;
-
-      setIsLoadingInsights(true);
 
       try {
         const response = await authFetch("/api/deck-insights", {
@@ -232,8 +229,6 @@ export default function DashboardPage() {
         setDeckInsights(data);
       } catch (err) {
         console.error("Error fetching deck insights:", err);
-      } finally {
-        setIsLoadingInsights(false);
       }
     }
 
@@ -282,6 +277,9 @@ export default function DashboardPage() {
             <h1 className="mt-4 text-xl font-bold text-white">Sign in to see your dashboard</h1>
             <p className="mt-2 text-sm text-white/50">Track your decks, matches, and daily generation usage from one place.</p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Link href="/demo/battle" className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-5 py-3 text-sm font-bold text-cyan-200">
+                Try Demo Battle
+              </Link>
               <Link href="/login?redirect=/dashboard" className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-5 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)]">
                 Log In
               </Link>
@@ -315,6 +313,9 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row">
+            <Link href="/demo/battle" className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-sm font-bold text-cyan-200 text-center">
+              Try Demo Battle
+            </Link>
             <Link href="/create" className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] text-center">
               Create Deck
             </Link>

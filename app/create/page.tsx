@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
-import { supabase } from "@/lib/supabase";
+import type { User } from "@supabase/supabase-js";
+import type { Profile } from "@/lib/useAuth";
 
 const GENERATION_STEPS = [
   "Reading notes",
@@ -43,16 +44,48 @@ const COURSE_OPTIONS = [
   "Other",
 ];
 
-const DECK_TITLE_EXAMPLES = [
-  "What would you like to name your deck for future reference?",
-  "SAT Grammar Practice",
-  "Cell Biology Unit 2",
+const GRADE_LEVEL_OPTIONS = [
+  "Elementary (K-5)",
+  "Middle School (6-8)",
+  "High School (9-12)",
+  "AP / Advanced",
+  "College / University",
+  "Other",
 ];
 
+const DIFFICULTY_OPTIONS = [
+  { value: "mixed", label: "Mixed (Recommended)" },
+  { value: "easy", label: "Easy" },
+  { value: "medium", label: "Medium" },
+  { value: "hard", label: "Hard" },
+];
+
+const QUESTION_COUNT_OPTIONS = [5, 10, 15, 20, 25];
+
+const QUESTION_TYPE_OPTIONS = [
+  { value: "multiple_choice", label: "Multiple Choice" },
+  { value: "true_false", label: "True / False" },
+];
+
+const DECK_TITLE_EXAMPLES = [
+  "Cell Biology Unit 2",
+  "SAT Grammar Practice",
+  "AP Human Geography Urban Models",
+];
 
 const MIN_NOTES_CHARACTERS = 300;
 const LONG_NOTES_CHARACTERS = 15000;
 const LAST_COURSE_STORAGE_KEY = "studyclash_last_course";
+
+function getPreferredDisplayName(profile: Profile | null, user: User | null): string {
+  const profileName = profile?.display_name?.trim();
+  if (profileName) return profileName;
+
+  const emailName = user?.email?.split("@")[0]?.trim();
+  if (emailName) return emailName;
+
+  return "";
+}
 
 // Defined OUTSIDE the page component (module scope), NOT inside CreateDeck.
 // Keeping it here means it has a stable identity across re-renders — if it
@@ -114,17 +147,24 @@ function readFileAsText(file: File): Promise<string> {
 
 export default function CreateDeck() {
   const router = useRouter();
-  const { isLoggedIn, isLoading: isAuthLoading, user, profile } = useAuth();
+  const { user, profile, isLoggedIn, isLoading: isAuthLoading } = useAuth();
 
   const [studentName, setStudentName] = useState("");
-  const [isEditingName, setIsEditingName] = useState(false);
+  const [isEditingStudentName, setIsEditingStudentName] = useState(false);
   const [courseOption, setCourseOption] = useState("");
   const [customCourse, setCustomCourse] = useState("");
   const [deckTitle, setDeckTitle] = useState("");
   const [notes, setNotes] = useState("");
-  const [betaAccessCode, setBetaAccessCode] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Guided generation fields. None of these are stored on the deck itself —
+  // they only shape the OpenAI prompt and validation at generation time.
+  const [topicFocus, setTopicFocus] = useState("");
+  const [gradeLevel, setGradeLevel] = useState("");
+  const [difficultyMode, setDifficultyMode] = useState("mixed");
+  const [questionCount, setQuestionCount] = useState("15");
+  const [questionType, setQuestionType] = useState("multiple_choice");
 
   // Tracks which step of the loading sequence to visually highlight.
   // This is a cosmetic progress indicator — the actual work still
@@ -177,25 +217,13 @@ export default function CreateDeck() {
     }
   }, [isAuthLoading, isLoggedIn]);
 
-  // Auto-populate student name from profile.display_name if available
-  useEffect(() => {
-    if (profile?.display_name) {
-      setStudentName(profile.display_name);
-      setIsEditingName(false);
-    } else if (user?.email && !studentName) {
-      // Fallback to email username before @
-      const emailUsername = user.email.split("@")[0];
-      setStudentName(emailUsername);
-    }
-  }, [profile, user, studentName]);
-
   // Preselect the user's last chosen course, if any. Notes are
   // intentionally never saved to localStorage.
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(LAST_COURSE_STORAGE_KEY);
       if (saved && COURSE_OPTIONS.includes(saved)) {
-        setCourseOption(saved);
+        void Promise.resolve().then(() => setCourseOption(saved));
       }
     } catch {
       // localStorage can be unavailable (e.g. private browsing) — fine to
@@ -210,7 +238,7 @@ export default function CreateDeck() {
     if (typeof navigator === "undefined") return;
     const ua = navigator.userAgent;
     const isChromiumBased = /Chrome|Chromium|Edg\//.test(ua);
-    setSupportsFolderUpload(isChromiumBased);
+    void Promise.resolve().then(() => setSupportsFolderUpload(isChromiumBased));
   }, []);
 
   const handleCourseChange = (value: string) => {
@@ -382,18 +410,18 @@ export default function CreateDeck() {
     const resolvedCourseName =
       courseOption === "Other" ? customCourse.trim() : courseOption;
 
-    if (!studentName.trim()) {
+    if (!resolvedStudentName) {
       setErrorMessage("Please enter your name.");
       return;
     }
 
     if (!courseOption) {
-      setErrorMessage("Please choose a course.");
+      setErrorMessage("Please choose a subject.");
       return;
     }
 
     if (courseOption === "Other" && !customCourse.trim()) {
-      setErrorMessage("Please enter your course name.");
+      setErrorMessage("Please enter your subject name.");
       return;
     }
 
@@ -409,11 +437,6 @@ export default function CreateDeck() {
       return;
     }
 
-    if (!betaAccessCode.trim()) {
-      setErrorMessage("Please enter the beta access code to generate a deck.");
-      return;
-    }
-
     setIsGenerating(true);
     setCurrentStep(0);
 
@@ -422,6 +445,11 @@ export default function CreateDeck() {
       courseName: resolvedCourseName,
       notesCharacterCount: notes.trim().length,
       usedFileUpload: !!uploadedFileName,
+      topicFocus: topicFocus.trim() || null,
+      gradeLevel: gradeLevel || null,
+      difficultyMode,
+      questionCount: Number(questionCount),
+      questionType,
     });
 
     // Advance through the visual steps on a timer while the real request
@@ -439,11 +467,15 @@ export default function CreateDeck() {
       const response = await authFetch("/api/generate-questions", {
         method: "POST",
         body: JSON.stringify({
-          studentName,
+          studentName: resolvedStudentName,
           courseName: resolvedCourseName,
           deckTitle,
           notes,
-          betaAccessCode: betaAccessCode.trim(),
+          topicFocus: topicFocus.trim() || undefined,
+          gradeLevel: gradeLevel || undefined,
+          difficulty: difficultyMode,
+          questionCount: Number(questionCount),
+          questionType,
         }),
       });
 
@@ -484,18 +516,6 @@ export default function CreateDeck() {
       if (stepIntervalRef.current) clearInterval(stepIntervalRef.current);
       setCurrentStep(GENERATION_STEPS.length - 1);
 
-      // If user just entered their name for the first time, save it to profile.display_name
-      if (!profile?.display_name && studentName.trim() && user) {
-        try {
-          await supabase
-            .from("profiles")
-            .update({ display_name: studentName.trim() })
-            .eq("id", user.id);
-        } catch {
-          // Non-critical if saving display_name fails — continue to redirect
-        }
-      }
-
       trackEvent("deck_generation_success", {
         deckId: data.deckId,
         deckTitle,
@@ -519,6 +539,8 @@ export default function CreateDeck() {
   const notesCharCount = notes.length;
   const isNotesShort = notes.length > 0 && notes.trim().length < MIN_NOTES_CHARACTERS;
   const isNotesLong = notes.trim().length > LONG_NOTES_CHARACTERS;
+  const accountDisplayName = getPreferredDisplayName(profile, user);
+  const resolvedStudentName = studentName.trim() || accountDisplayName;
 
   // ---------- Auth loading OR redirecting state ----------
   if (isAuthLoading || !isLoggedIn) {
@@ -564,24 +586,28 @@ export default function CreateDeck() {
         </span>
       </h1>
       <p className="mt-3 max-w-md text-center text-sm text-white/50 sm:text-base">
-        Choose a course, add your notes, and we&apos;ll turn them into a
-        90-second quiz battle.
+        Pick your subject, tell us how you want it built, and we&apos;ll turn
+        your notes into a quick practice round.
       </p>
+
+      <div className="mt-5 w-full max-w-2xl rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.05] px-4 py-3 text-sm text-cyan-100/90 backdrop-blur-sm sm:px-5">
+        Fastest path: choose your subject, name the deck, paste or upload your notes, and keep the defaults unless you want to fine-tune the battle.
+      </div>
 
       {/* Form card */}
       <form
         onSubmit={handleSubmit}
         className="mt-8 w-full max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:mt-10 sm:p-6 md:p-8"
       >
-        {/* ---------- Section 1: Choose Course ---------- */}
-        <SectionHeader step={1} title="Choose Course" />
+        {/* ---------- Section 1: Choose Subject ---------- */}
+        <SectionHeader step={1} title="Choose Subject" />
 
         <div className="flex flex-col gap-2">
           <label
             htmlFor="courseOption"
             className="text-xs font-bold uppercase tracking-wider text-white/60"
           >
-            Course
+            Subject
           </label>
           <select
             id="courseOption"
@@ -591,7 +617,7 @@ export default function CreateDeck() {
             className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
           >
             <option value="" disabled>
-              Select a course...
+              Select a subject...
             </option>
             {COURSE_OPTIONS.map((option) => (
               <option key={option} value={option}>
@@ -607,7 +633,7 @@ export default function CreateDeck() {
               htmlFor="customCourse"
               className="text-xs font-bold uppercase tracking-wider text-white/60"
             >
-              Course Name
+              Subject Name
             </label>
             <input
               id="customCourse"
@@ -627,27 +653,35 @@ export default function CreateDeck() {
 
           <div className="grid grid-cols-1 gap-4 sm:gap-5">
             <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <label
-                  htmlFor="studentName"
-                  className="text-xs font-bold uppercase tracking-wider text-white/60"
-                >
-                  Your Name
-                </label>
-                {profile?.display_name && !isEditingName && (
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingName(true)}
-                    className="text-xs font-semibold text-fuchsia-300 transition-colors hover:text-fuchsia-200"
-                  >
-                    Edit name
-                  </button>
-                )}
-              </div>
-              {profile?.display_name && !isEditingName ? (
-                <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5">
-                  <span className="text-base text-white">Creating as</span>
-                  <span className="font-bold text-fuchsia-300">{profile.display_name}</span>
+              <label
+                htmlFor="studentName"
+                className="text-xs font-bold uppercase tracking-wider text-white/60"
+              >
+                Your Name
+              </label>
+
+              {accountDisplayName && !isEditingStudentName ? (
+                <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] px-4 py-3.5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-white/90">
+                        Using your account name: {accountDisplayName}
+                      </p>
+                      <p className="mt-1 text-xs text-white/45">
+                        You don&apos;t need to type it again unless you want a different display name on this deck.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentName(accountDisplayName);
+                        setIsEditingStudentName(true);
+                      }}
+                      className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white/85 transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10"
+                    >
+                      Edit Name
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -656,19 +690,30 @@ export default function CreateDeck() {
                     type="text"
                     value={studentName}
                     onChange={(e) => setStudentName(e.target.value)}
-                    placeholder="e.g. Jordan Lee"
-                    required={!profile?.display_name}
+                    placeholder={accountDisplayName || "e.g. Jordan Lee"}
+                    required={!accountDisplayName}
+                    autoFocus={isEditingStudentName}
                     className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
                   />
-                  {isEditingName && (
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingName(false)}
-                      className="text-xs font-semibold text-white/40 transition-colors hover:text-white/60"
-                    >
-                      Cancel
-                    </button>
-                  )}
+                  <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/35">
+                    <span>
+                      {accountDisplayName
+                        ? "Change it here if you want a different name on this deck."
+                        : "This name appears on the deck and battle results."}
+                    </span>
+                    {accountDisplayName && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStudentName("");
+                          setIsEditingStudentName(false);
+                        }}
+                        className="font-bold text-cyan-300 transition-colors duration-150 hover:text-cyan-200"
+                      >
+                        Use account name instead
+                      </button>
+                    )}
+                  </div>
                 </>
               )}
             </div>
@@ -687,18 +732,135 @@ export default function CreateDeck() {
                 onChange={(e) => setDeckTitle(e.target.value)}
                 placeholder={`e.g. ${DECK_TITLE_EXAMPLES[0]}`}
                 required
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 placeholder:text-xs outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
               />
               <p className="text-[11px] text-white/30">
-                Other ideas: {DECK_TITLE_EXAMPLES.slice(1).join(" · ")}
+                Make it short and specific so it&apos;s easy to find later. Other ideas: {DECK_TITLE_EXAMPLES.slice(1).join(" · ")}
               </p>
             </div>
           </div>
         </div>
 
-        {/* ---------- Section 3: Add Notes or Upload Files ---------- */}
+        {/* ---------- Section 3: Customize Your Battle ---------- */}
         <div className="mt-6 border-t border-white/10 pt-6 sm:mt-8 sm:pt-8">
-          <SectionHeader step={3} title="Add Notes or Upload Files" />
+          <SectionHeader step={3} title="Customize Your Battle" />
+          <p className="-mt-1 mb-4 text-xs text-white/40">
+            Optional — pick what fits, or leave the defaults as-is.
+          </p>
+
+          <div className="flex flex-col gap-2">
+            <label
+              htmlFor="topicFocus"
+              className="text-xs font-bold uppercase tracking-wider text-white/60"
+            >
+              Topic Focus (optional)
+            </label>
+            <input
+              id="topicFocus"
+              type="text"
+              value={topicFocus}
+              onChange={(e) => setTopicFocus(e.target.value)}
+              placeholder="e.g. Cell structure and function — leave blank to cover everything in your notes"
+              className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+            />
+            <p className="text-[11px] text-white/30">
+              Leave this blank if you want the battle to cover everything from your notes.
+            </p>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="gradeLevel"
+                className="text-xs font-bold uppercase tracking-wider text-white/60"
+              >
+                Grade Level (optional)
+              </label>
+              <select
+                id="gradeLevel"
+                value={gradeLevel}
+                onChange={(e) => setGradeLevel(e.target.value)}
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+              >
+                <option value="">No preference</option>
+                {GRADE_LEVEL_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="difficultyMode"
+                className="text-xs font-bold uppercase tracking-wider text-white/60"
+              >
+                Difficulty
+              </label>
+              <select
+                id="difficultyMode"
+                value={difficultyMode}
+                onChange={(e) => setDifficultyMode(e.target.value)}
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+              >
+                {DIFFICULTY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="questionCount"
+                className="text-xs font-bold uppercase tracking-wider text-white/60"
+              >
+                Number of Questions
+              </label>
+              <select
+                id="questionCount"
+                value={questionCount}
+                onChange={(e) => setQuestionCount(e.target.value)}
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+              >
+                {QUESTION_COUNT_OPTIONS.map((count) => (
+                  <option key={count} value={count}>
+                    {count} questions
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="questionType"
+                className="text-xs font-bold uppercase tracking-wider text-white/60"
+              >
+                Question Type
+              </label>
+              <select
+                id="questionType"
+                value={questionType}
+                onChange={(e) => setQuestionType(e.target.value)}
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+              >
+                {QUESTION_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* ---------- Section 4: Add Notes or Upload Files ---------- */}
+        <div className="mt-6 border-t border-white/10 pt-6 sm:mt-8 sm:pt-8">
+          <SectionHeader step={4} title="Add Notes or Upload Files" />
 
           {/* Drag-and-drop upload area */}
           <div
@@ -776,7 +938,10 @@ export default function CreateDeck() {
                   onChange={handleFolderInputChange}
                   disabled={isProcessingUpload}
                   className="hidden"
-                  {...({ webkitdirectory: "", directory: "" } as Record<string, string>)}
+                  {...({ webkitdirectory: "", directory: "" } as Record<
+                    string,
+                    string
+                  >)}
                 />
               </>
             )}
@@ -787,6 +952,10 @@ export default function CreateDeck() {
               </p>
             )}
           </div>
+
+          <p className="mt-3 text-[11px] text-white/30">
+            Tip: chapter summaries, study guides, and well-organized class notes usually generate the best questions.
+          </p>
 
           {/* Upload status / errors */}
           {isProcessingUpload && (
@@ -867,31 +1036,6 @@ export default function CreateDeck() {
                 longer and will focus on the most important sections.
               </p>
             )}
-          </div>
-        </div>
-
-        {/* ---------- Section 4: Beta Access Code ---------- */}
-        <div className="mt-6 border-t border-white/10 pt-6 sm:mt-8 sm:pt-8">
-          <SectionHeader step={4} title="Beta Access Code" />
-          <div className="flex flex-col gap-2">
-            <label
-              htmlFor="betaAccessCode"
-              className="text-xs font-bold uppercase tracking-wider text-white/60"
-            >
-              Access Code
-            </label>
-            <input
-              id="betaAccessCode"
-              type="text"
-              value={betaAccessCode}
-              onChange={(e) => setBetaAccessCode(e.target.value)}
-              placeholder="Enter your beta access code"
-              autoComplete="off"
-              className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
-            />
-            <p className="text-[11px] text-white/30">
-              StudyClash is in private beta. Enter your access code to generate a deck.
-            </p>
           </div>
         </div>
 

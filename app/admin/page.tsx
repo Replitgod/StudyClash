@@ -71,6 +71,50 @@ type AdminData = {
   };
 };
 
+type TutorStudyLink = {
+  label: string;
+  url: string;
+};
+
+type TutorWeakTopic = {
+  topic: string;
+  missedCount: number;
+  studyLinks: TutorStudyLink[];
+};
+
+type TutorBattle = {
+  id: string;
+  deckTitle: string;
+  courseName: string;
+  score: number;
+  accuracy: number;
+  timeTakenSeconds: number;
+  createdAt: string;
+};
+
+type TutorStudent = {
+  id: string;
+  name: string;
+  email: string | null;
+  totalBattles: number;
+  latestScore: number;
+  latestAccuracy: number;
+  bestScore: number;
+  trendLabel: string;
+  parentSummary: string;
+  recommendedNextSteps: string[];
+  practicedDecks: string[];
+  weakTopics: TutorWeakTopic[];
+  recentBattles: TutorBattle[];
+  lastActiveAt: string;
+};
+
+type TutorDashboardData = {
+  students: TutorStudent[];
+  activeStudents: number;
+  emptyMessage: string;
+};
+
 // Defined OUTSIDE the page component so it keeps a stable identity across
 // re-renders, preventing the whole subtree from remounting on state changes.
 function Background({ children }: { children: React.ReactNode }) {
@@ -104,6 +148,18 @@ function formatDateTime(isoString: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+function formatTime(seconds: number): string {
+  const totalSeconds = Math.max(0, Math.round(seconds));
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainingSeconds = totalSeconds % 60;
+
+  if (minutes === 0) {
+    return `${remainingSeconds}s`;
+  }
+
+  return `${minutes}m ${String(remainingSeconds).padStart(2, "0")}s`;
 }
 
 // Small readable labels for raw event_name values, e.g. "battle_started"
@@ -143,12 +199,49 @@ function EmptyPanelState({
   );
 }
 
+function formatRelativeTime(isoString: string): string {
+  const diffMs = Date.now() - new Date(isoString).getTime();
+  const diffMinutes = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMinutes < 1) return "just now";
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
+}
+
+function buildParentReportCopy(student: TutorStudent): string {
+  return [
+    `Student: ${student.name}`,
+    `Latest score: ${student.latestScore} pts`,
+    `Accuracy: ${student.latestAccuracy}%`,
+    `Best score: ${student.bestScore} pts`,
+    `Trend: ${student.trendLabel}`,
+    `Recent decks: ${student.practicedDecks.join(", ") || "No recent deck activity yet"}`,
+    `Weak topics: ${student.weakTopics.map((topic) => `${topic.topic} (${topic.missedCount})`).join(", ") || "No obvious weak topics"}`,
+    `Recommended next steps:`,
+    ...(student.recommendedNextSteps.length
+      ? student.recommendedNextSteps.map((step) => `- ${step}`)
+      : ["- Review recent battles together"]),
+  ].join("\n");
+}
+
 export default function AdminPage() {
   const { isLoggedIn, isLoading: isAuthLoading } = useAuth();
 
   const [data, setData] = useState<AdminData | null>(null);
+  const [tutorDashboard, setTutorDashboard] = useState<TutorDashboardData | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
+  const [isLoadingTutorDashboard, setIsLoadingTutorDashboard] = useState(true);
   const [accessError, setAccessError] = useState<string | null>(null);
+  const [tutorError, setTutorError] = useState<string | null>(null);
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
+  const [copyStatus, setCopyStatus] = useState<string | null>(null);
+
+  const selectedTutorStudent = tutorDashboard?.students.find(
+    (student) => student.id === selectedStudentId
+  ) || tutorDashboard?.students[0] || null;
 
   useEffect(() => {
     async function loadStats() {
@@ -189,6 +282,59 @@ export default function AdminPage() {
       loadStats();
     }
   }, [isLoggedIn]);
+
+  useEffect(() => {
+    async function loadTutorDashboard() {
+      setIsLoadingTutorDashboard(true);
+      setTutorError(null);
+
+      try {
+        const response = await authFetch("/api/admin/tutor-dashboard", {
+          method: "GET",
+        });
+
+        const contentType = response.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) {
+          setTutorError(`Server error (status ${response.status}).`);
+          setIsLoadingTutorDashboard(false);
+          return;
+        }
+
+        const json = await response.json();
+
+        if (!response.ok) {
+          setTutorError(json.error || "Failed to load tutor dashboard.");
+          setIsLoadingTutorDashboard(false);
+          return;
+        }
+
+        setTutorDashboard(json);
+        setIsLoadingTutorDashboard(false);
+      } catch (err) {
+        setTutorError(
+          err instanceof Error ? err.message : "Failed to load tutor dashboard."
+        );
+        setIsLoadingTutorDashboard(false);
+      }
+    }
+
+    if (isLoggedIn) {
+      loadTutorDashboard();
+    }
+  }, [isLoggedIn]);
+
+  const handleCopyParentReport = async (student: TutorStudent) => {
+    const reportCopy = buildParentReportCopy(student);
+
+    try {
+      await navigator.clipboard.writeText(reportCopy);
+      setCopyStatus(`Copied ${student.name}'s report`);
+      setTimeout(() => setCopyStatus(null), 2000);
+    } catch {
+      setCopyStatus("Unable to copy report right now");
+      setTimeout(() => setCopyStatus(null), 2000);
+    }
+  };
 
   // ---------- Auth loading state ----------
   if (isAuthLoading) {
@@ -487,7 +633,7 @@ export default function AdminPage() {
                     {deck.title}
                   </p>
                   <p className="mt-1 truncate text-xs text-white/40">
-                    {deck.course_name} · {deck.student_name}
+                    {deck.course_name} -+ {deck.student_name}
                   </p>
                   <p className="mt-1 text-[10px] text-white/30">
                     {formatDateTime(deck.created_at)}
@@ -594,6 +740,168 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {/* Tutor Center Progress Dashboard */}
+      <div className="mt-10 w-full sm:mt-12">
+        <div className="flex items-center gap-2">
+          <svg
+            className="h-4 w-4 flex-shrink-0 text-fuchsia-300"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M17 20h5v-2a4 4 0 00-5-3.874M9 20H4v-2a4 4 0 015-3.874m0 0a4 4 0 110-7.752m0 7.752A4 4 0 0012 12m0 0a4 4 0 100-7.752m0 7.752A4 4 0 0012 12m0 0a4 4 0 117.658 1.5"
+            />
+          </svg>
+          <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
+            Tutor Center Progress Dashboard
+          </p>
+        </div>
+
+        <p className="mt-2 max-w-2xl text-sm text-white/45">
+          Built for tutoring centers and parent updates: student activity, weak topics, improvement trends, and a clean report layout you can screenshot or share.
+        </p>
+
+        {copyStatus && (
+          <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-200">
+            {copyStatus}
+          </div>
+        )}
+
+        {isLoadingTutorDashboard ? (
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-sm text-sm text-white/45">
+            Loading student progress...
+          </div>
+        ) : tutorError ? (
+          <div className="mt-4 rounded-2xl border border-red-400/30 bg-red-500/10 p-6 text-sm text-red-200/80 backdrop-blur-sm">
+            {tutorError}
+          </div>
+        ) : !tutorDashboard || tutorDashboard.students.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm text-sm text-white/45">
+            {tutorDashboard?.emptyMessage || "Once students start battling, their progress will appear here."}
+          </div>
+        ) : (
+          <div className="mt-4 grid gap-5 lg:grid-cols-[300px_1fr]">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
+              <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Students</p>
+              <div className="mt-4 flex flex-col gap-3">
+                {tutorDashboard.students.map((student) => (
+                  <button
+                    key={student.id}
+                    type="button"
+                    onClick={() => setSelectedStudentId(student.id)}
+                    className={`rounded-xl border px-4 py-3 text-left transition-colors duration-150 ${student.id === selectedTutorStudent?.id ? "border-fuchsia-400/30 bg-fuchsia-500/10" : "border-white/10 bg-black/20 hover:border-cyan-400/30 hover:bg-white/[0.04]"}`}
+                  >
+                    <p className="text-sm font-bold text-white/90">{student.name}</p>
+                    <p className="mt-1 text-[11px] text-white/40">
+                      {student.latestScore} pts · {student.latestAccuracy}% accuracy · {formatRelativeTime(student.lastActiveAt)}
+                    </p>
+                    <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-white/45">
+                      {student.trendLabel}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {selectedTutorStudent && (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">Parent-Friendly Report</p>
+                    <h2 className="mt-1 text-2xl font-black tracking-tight text-white">{selectedTutorStudent.name}</h2>
+                    <p className="mt-1 text-sm text-white/45">Screenshot-ready summary for parents and tutors.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyParentReport(selectedTutorStudent)}
+                    className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-bold text-cyan-200"
+                  >
+                    Copy Report
+                  </button>
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Latest Score</p><p className="mt-2 text-2xl font-black text-fuchsia-300">{selectedTutorStudent.latestScore} pts</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Accuracy</p><p className="mt-2 text-2xl font-black text-emerald-300">{selectedTutorStudent.latestAccuracy}%</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Best Score</p><p className="mt-2 text-2xl font-black text-violet-300">{selectedTutorStudent.bestScore} pts</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Trend</p><p className="mt-2 text-lg font-bold text-cyan-300">{selectedTutorStudent.trendLabel}</p></div>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-white/45">What the student practiced</p>
+                  <p className="mt-2 text-sm leading-relaxed text-white/70">{selectedTutorStudent.parentSummary}</p>
+                  <p className="mt-3 text-xs text-white/40">Recent decks: {selectedTutorStudent.practicedDecks.join(", ") || "No recent decks yet"}</p>
+                </div>
+
+                <div className="mt-5 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-white/45">Recent Battles</p>
+                    <div className="mt-4 flex flex-col gap-2.5">
+                      {selectedTutorStudent.recentBattles.map((battle) => (
+                        <div key={battle.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-bold text-white/90">{battle.deckTitle}</p>
+                              <p className="mt-1 truncate text-[11px] text-white/40">{battle.courseName}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-bold text-cyan-300">{battle.score} pts</p>
+                              <p className="text-[11px] text-white/40">{battle.accuracy}% accuracy</p>
+                            </div>
+                          </div>
+                          <div className="mt-2 flex items-center justify-between text-[10px] text-white/30">
+                            <span>{formatRelativeTime(battle.createdAt)}</span>
+                            <span>{formatTime(battle.timeTakenSeconds)}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                    <p className="text-xs font-bold uppercase tracking-wider text-white/45">Weak Topics</p>
+                    <div className="mt-4 flex flex-col gap-3">
+                      {selectedTutorStudent.weakTopics.map((topic) => (
+                        <div key={topic.topic} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-bold text-white/90">{topic.topic}</p>
+                            <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-red-300">{topic.missedCount} missed</span>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {topic.studyLinks.map((link) => (
+                              <a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-semibold text-cyan-300">
+                                {link.label}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                      <p className="text-xs font-bold uppercase tracking-wider text-white/45">Recommended Next Steps</p>
+                      <ul className="mt-2 flex flex-col gap-1.5 text-sm text-white/70">
+                        {selectedTutorStudent.recommendedNextSteps.map((step) => (
+                          <li key={step} className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-cyan-300" /><span>{step}</span></li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-fuchsia-400/20 bg-fuchsia-500/[0.03] p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">Improvement over time</p>
+                  <p className="mt-2 text-sm text-white/70">{selectedTutorStudent.trendLabel} based on the latest battles. Use rematches to reinforce weak topics and measure the next score change.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* Latest analytics events */}
       <div className="mt-10 w-full sm:mt-12">
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
@@ -642,12 +950,12 @@ export default function AdminPage() {
                       </span>
                     </div>
                     <p className="col-span-4 truncate text-[11px] text-white/50">
-                      {event.page_url || "—"}
+                      {event.page_url || "G��"}
                     </p>
                     <p className="col-span-3 truncate text-[11px] text-white/40">
                       {event.metadata
                         ? JSON.stringify(event.metadata)
-                        : "—"}
+                        : "G��"}
                     </p>
                     <p className="col-span-2 text-[10px] text-white/30">
                       {formatDateTime(event.created_at)}

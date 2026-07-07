@@ -22,8 +22,10 @@ export default function DecksPage() {
   useEffect(() => {
     async function loadDecks() {
       if (!user?.id) {
-        setDecks([]);
-        setIsLoading(false);
+        void Promise.resolve().then(() => {
+          setDecks([]);
+          setIsLoading(false);
+        });
         return;
       }
 
@@ -47,13 +49,14 @@ export default function DecksPage() {
     }
 
     if (isAuthLoading) {
-      setIsLoading(true);
       return;
     }
 
     if (!isLoggedIn || !user) {
-      setDecks([]);
-      setIsLoading(false);
+      void Promise.resolve().then(() => {
+        setDecks([]);
+        setIsLoading(false);
+      });
       return;
     }
 
