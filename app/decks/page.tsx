@@ -13,6 +13,12 @@ type Deck = {
   created_at: string;
 };
 
+const DEMO_DECK = {
+  title: "SAT Math Demo Deck",
+  course_name: "SAT Math / Algebra",
+  student_name: "Demo Student",
+};
+
 export default function DecksPage() {
   const { user, isLoggedIn, isLoading: isAuthLoading } = useAuth();
   const [decks, setDecks] = useState<Deck[]>([]);
@@ -126,7 +132,10 @@ export default function DecksPage() {
             </div>
             <h1 className="mt-4 text-xl font-bold text-white">Please sign in to view your decks</h1>
             <p className="mt-2 text-sm text-white/50">Your decks are private to your account, so you need to be signed in to see them.</p>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
+              <Link href="/demo/battle" className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-5 py-3 text-sm font-bold text-cyan-200">
+                Try Demo Deck
+              </Link>
               <Link href="/login?redirect=/decks" className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-5 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)]">
                 Log In
               </Link>
@@ -251,6 +260,13 @@ export default function DecksPage() {
             </p>
 
             <Link
+              href="/demo/battle"
+              className="mt-4 w-full rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-6 py-3.5 text-sm font-bold text-cyan-200 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-cyan-500/15 sm:w-auto"
+            >
+              Try Demo Deck First
+            </Link>
+
+            <Link
               href="/create"
               className="group relative mt-6 flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:w-auto sm:px-8 sm:hover:scale-105"
             >
@@ -280,6 +296,56 @@ export default function DecksPage() {
         {/* Deck grid */}
         {!isLoading && !loadError && decks.length > 0 && (
           <div className="mt-10 grid w-full grid-cols-1 gap-4 sm:mt-12 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+            <div className="group flex flex-col justify-between rounded-2xl border border-cyan-400/25 bg-cyan-500/[0.06] p-5 backdrop-blur-sm transition-colors duration-200 hover:border-cyan-300/40 hover:bg-cyan-500/[0.1] sm:p-6">
+              <div className="min-w-0">
+                <span className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+                  {DEMO_DECK.course_name}
+                </span>
+                <h3 className="mt-2 break-words text-lg font-bold leading-snug text-white">
+                  {DEMO_DECK.title}
+                </h3>
+
+                <div className="mt-4 flex items-center gap-2 text-xs text-cyan-100/80">
+                  <svg
+                    className="h-4 w-4 flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                    />
+                  </svg>
+                  <span className="truncate">{DEMO_DECK.student_name}</span>
+                </div>
+              </div>
+
+              <div className="mt-6 flex flex-col gap-2.5">
+                <Link
+                  href="/demo/battle"
+                  className="group/btn relative flex items-center justify-center gap-2 overflow-hidden rounded-xl border border-cyan-300/40 bg-cyan-500/20 px-6 py-3.5 text-sm font-bold text-cyan-100 transition-transform duration-200 active:scale-95 sm:py-3 sm:hover:scale-[1.02]"
+                >
+                  <span className="relative z-10">Play Demo Battle</span>
+                  <svg
+                    className="relative z-10 h-4 w-4 flex-shrink-0 transition-transform duration-200 group-hover/btn:translate-x-1"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
+                  </svg>
+                </Link>
+              </div>
+            </div>
+
             {decks.map((deck) => (
               <div
                 key={deck.id}

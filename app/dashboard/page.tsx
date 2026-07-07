@@ -219,7 +219,7 @@ export default function DashboardPage() {
 
           if (!deckTitlesError && deckTitlesData) {
             const titleMap = new Map(deckTitlesData.map((deck: { id: string; title: string }) => [deck.id, deck.title]));
-            const matchesWithDeckTitles = recentMatchesData.map((match: { deck_id: string }) => ({
+            const matchesWithDeckTitles = recentMatchesData.map((match) => ({
               ...match,
               deck_title: titleMap.get(match.deck_id) || "Unknown deck",
             }));
