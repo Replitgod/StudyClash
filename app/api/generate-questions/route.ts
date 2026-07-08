@@ -41,6 +41,26 @@ const ALLOWED_QUESTION_TYPES: QuestionType[] = [
   "true_false",
 ];
 
+function parseAllowedBetaCodes(rawValue: string): string[] {
+  return rawValue
+    .split(",")
+    .map((code) => code.trim())
+    .filter(Boolean);
+}
+
+function isBetaAccessCodeValid(submittedCode: string): boolean {
+  const rawCodes =
+    process.env.BETA_ACCESS_CODES || process.env.BETA_ACCESS_CODE || "";
+  const allowedCodes = parseAllowedBetaCodes(rawCodes);
+
+  // If no beta codes are configured, skip enforcement for local/dev safety.
+  if (allowedCodes.length === 0) {
+    return true;
+  }
+
+  return allowedCodes.some((allowed) => allowed === submittedCode.trim());
+}
+
 // Splits a total question count into easy/medium/hard counts. For "mixed",
 // this mirrors the app's original 5:7:3 ratio (out of 15) scaled to
 // whichever total the user picked. For a single selected difficulty, every
@@ -582,6 +602,7 @@ export async function POST(req: NextRequest) {
       courseName,
       deckTitle,
       notes,
+      betaAccessCode,
       topicFocus,
       gradeLevel,
       difficulty,
@@ -593,6 +614,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Missing required fields." },
         { status: 400 }
+      );
+    }
+
+    if (typeof betaAccessCode !== "string" || !betaAccessCode.trim()) {
+      return NextResponse.json(
+        { error: "Beta access code is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!isBetaAccessCodeValid(betaAccessCode)) {
+      return NextResponse.json(
+        { error: "Invalid beta access code." },
+        { status: 403 }
       );
     }
 

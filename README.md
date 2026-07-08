@@ -34,3 +34,18 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Beta Access Code Setup
+
+To gate deck generation during beta, set one of these environment variables:
+
+- `BETA_ACCESS_CODE`: single allowed code.
+- `BETA_ACCESS_CODES`: comma-separated list of allowed codes.
+
+Example:
+
+```bash
+BETA_ACCESS_CODES=TEAM2026,EARLYBIRD,PARTNER-ALPHA
+```
+
+When codes are configured, users must enter a valid beta code on the Create Deck page before a battle deck can be generated.

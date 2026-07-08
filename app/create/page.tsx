@@ -76,6 +76,7 @@ const DECK_TITLE_EXAMPLES = [
 const MIN_NOTES_CHARACTERS = 300;
 const LONG_NOTES_CHARACTERS = 15000;
 const LAST_COURSE_STORAGE_KEY = "studyclash_last_course";
+const BETA_ACCESS_CODE_STORAGE_KEY = "studyclash_beta_access_code";
 
 function getPreferredDisplayName(profile: Profile | null, user: User | null): string {
   const profileName = profile?.display_name?.trim();
@@ -158,6 +159,10 @@ function getGenerationErrorMessage(status: number, fallback?: string): string {
     return "You have reached your daily generation limit for now.";
   }
 
+  if (status === 403) {
+    return "Invalid beta access code. Please check your code and try again.";
+  }
+
   if (status === 422) {
     return "We couldn't generate a solid battle from these notes yet. Try adding more detail or clearer structure.";
   }
@@ -177,6 +182,7 @@ export default function CreateDeck() {
   const [notes, setNotes] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [betaAccessCode, setBetaAccessCode] = useState("");
 
   // Guided generation fields. None of these are stored on the deck itself —
   // they only shape the OpenAI prompt and validation at generation time.
@@ -244,6 +250,13 @@ export default function CreateDeck() {
       const saved = window.localStorage.getItem(LAST_COURSE_STORAGE_KEY);
       if (saved && COURSE_OPTIONS.includes(saved)) {
         void Promise.resolve().then(() => setCourseOption(saved));
+      }
+
+      const savedBetaCode = window.localStorage.getItem(
+        BETA_ACCESS_CODE_STORAGE_KEY
+      );
+      if (savedBetaCode) {
+        void Promise.resolve().then(() => setBetaAccessCode(savedBetaCode));
       }
     } catch {
       // localStorage can be unavailable (e.g. private browsing) — fine to
@@ -489,6 +502,20 @@ export default function CreateDeck() {
       return;
     }
 
+    if (!betaAccessCode.trim()) {
+      setErrorMessage("Please enter your beta access code.");
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        BETA_ACCESS_CODE_STORAGE_KEY,
+        betaAccessCode.trim()
+      );
+    } catch {
+      // Non-critical if this fails.
+    }
+
     setIsGenerating(true);
     setCurrentStep(0);
 
@@ -529,6 +556,7 @@ export default function CreateDeck() {
           difficulty: difficultyMode,
           questionCount: Number(questionCount),
           questionType,
+          betaAccessCode: betaAccessCode.trim(),
         }),
       });
 
@@ -1119,6 +1147,28 @@ export default function CreateDeck() {
         {/* ---------- Section 5: Generate Battle ---------- */}
         <div className="mt-6 border-t border-white/10 pt-6 sm:mt-8 sm:pt-8">
           <SectionHeader step={5} title="Generate Battle" />
+
+          <div className="mb-4 flex flex-col gap-2">
+            <label
+              htmlFor="betaAccessCode"
+              className="text-xs font-bold uppercase tracking-wider text-white/60"
+            >
+              Beta Access Code
+            </label>
+            <input
+              id="betaAccessCode"
+              type="text"
+              value={betaAccessCode}
+              onChange={(e) => setBetaAccessCode(e.target.value)}
+              placeholder="Enter your beta code"
+              required
+              autoComplete="off"
+              className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+            />
+            <p className="text-[11px] text-white/30">
+              Required during beta to control AI usage.
+            </p>
+          </div>
 
           <button
             type="submit"
