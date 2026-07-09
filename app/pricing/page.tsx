@@ -33,8 +33,8 @@ const PLANS: Plan[] = [
   {
     id: "pro_individual",
     name: "Pro Individual",
-    price: "$8-$12/mo",
-    tagline: "For serious daily prep",
+    price: "$0 Pilot",
+    tagline: "Free during pilot for feedback partners",
     dailyLimit: "Unlimited uploads and battles",
     features: [
       "Everything in Free Beta",
@@ -47,8 +47,8 @@ const PLANS: Plan[] = [
   {
     id: "team_pass",
     name: "Team/Guild Pass",
-    price: "$30-$50/mo",
-    tagline: "For study groups up to 10",
+    price: "$0 Pilot",
+    tagline: "Free during pilot for small groups",
     dailyLimit: "Shared unlimited group usage",
     features: [
       "Private un-expiring leaderboards",
@@ -60,8 +60,8 @@ const PLANS: Plan[] = [
   {
     id: "exam_tunnel",
     name: "High-Stakes Exam Tunnel",
-    price: "$29-$99/mo",
-    tagline: "MCAT / LSAT / NCLEX / AP",
+    price: "$0 Pilot",
+    tagline: "Free pilot access for exam-track testers",
     dailyLimit: "Premium board-style generation",
     features: [
       "Exam-format tuned prompts",
@@ -131,7 +131,7 @@ export default function PricingPage() {
         {/* Badge */}
         <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
-          BETA PRICING
+          PILOT PRICING
         </div>
 
         {/* Title */}
@@ -141,8 +141,8 @@ export default function PricingPage() {
           </span>
         </h1>
         <p className="mt-3 max-w-lg text-center text-sm text-white/50 sm:text-base">
-          StudyClash is in private beta. All plans are free for now — payments
-          are coming soon.
+          StudyClash is still in pilot. Pricing is intentionally free right now
+          so we can gather strong tester feedback while we iterate.
         </p>
 
         {/* Plan cards */}
@@ -259,12 +259,12 @@ export default function PricingPage() {
         {/* Bottom note */}
         <div className="mt-10 flex w-full max-w-2xl flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center backdrop-blur-sm sm:mt-12 sm:p-6">
           <p className="text-sm font-semibold text-white/80">
-            Payments coming soon
+            Pilot access is free for now
           </p>
           <p className="text-xs text-white/40">
-            Every plan is free during the beta. Higher tiers are granted
-            manually while we build out billing — reach out if you&apos;d
-            like early access to Pro Preview or Founder.
+            We are prioritizing learning and product quality before final pricing.
+            Premium plans are enabled as pilot invites while we improve StudyClash
+            with tester feedback.
           </p>
           {!isLoggedIn && (
             <Link
