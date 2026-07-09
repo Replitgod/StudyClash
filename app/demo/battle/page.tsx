@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import GigglesCoach from "@/app/components/GigglesCoach";
+import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 type DemoQuestion = {
 	id: string;
@@ -135,7 +137,7 @@ function Background({ children }: { children: React.ReactNode }) {
 					backgroundSize: "48px 48px",
 				}}
 			/>
-			<div className="relative z-10 flex min-h-screen flex-col items-center px-4 py-10 sm:px-6 sm:py-16">
+			<div className={`relative z-10 flex min-h-screen flex-col items-center px-4 py-10 sm:px-6 sm:py-16 ${FLOATING_ACTION.mobileBottomPadding}`}>
 				{children}
 			</div>
 		</main>
@@ -400,9 +402,48 @@ export default function DemoBattlePage() {
 	const studyTopics = weakTopics.length > 0 ? topicStats.filter((topic) => weakTopics.some((weakTopic) => weakTopic.topic === topic.topic)) : topicStats.slice(0, 3);
 	const studyPlan = buildStudyPlan(studyTopics);
 
+	const demoMissedQuestions = answers
+		.filter((answer) => !answer.isCorrect)
+		.map((answer) => {
+			const question = DEMO_QUESTIONS.find((item) => item.id === answer.questionId);
+			if (!question) return null;
+
+			return {
+				questionText: question.question_text,
+				selectedAnswer: answer.selectedAnswer,
+				correctAnswer: question.correct_answer,
+				topic: question.topic,
+				explanation: question.explanation,
+			};
+		})
+		.filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+	const demoMistakeDna = demoMissedQuestions.map((item) => ({
+		topic: item.topic,
+		selectedAnswer: item.selectedAnswer,
+		correctAnswer: item.correctAnswer,
+		misunderstoodConcept: item.questionText,
+		mistakeType: "concept_gap",
+	}));
+
+	const demoMasteryProgress = topicStats.map((topic) => ({
+		label: topic.topic,
+		value: topic.accuracy,
+		details: `${topic.correct}/${topic.total} correct`,
+	}));
+
+	const demoCurrentQuestion = demoMissedQuestions[0]
+		? {
+				questionText: demoMissedQuestions[0].questionText,
+				selectedAnswer: demoMissedQuestions[0].selectedAnswer,
+				correctAnswer: demoMissedQuestions[0].correctAnswer,
+				explanation: demoMissedQuestions[0].explanation,
+		  }
+		: undefined;
+
 	return (
 		<Background>
-			<div className="w-full max-w-4xl">
+			<div className="w-full max-w-5xl">
 				{phase === "intro" && (
 					<section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm sm:p-8">
 						<div className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-200">
@@ -742,6 +783,21 @@ export default function DemoBattlePage() {
 								Go to Dashboard
 							</Link>
 						</div>
+
+						<GigglesCoach
+							deckTitle={DEMO_DECK.title}
+							courseName={DEMO_DECK.course_name}
+							playerName={DEMO_DECK.student_name}
+							weakTopics={weakTopics.map((topic) => topic.topic)}
+							missedQuestions={demoMissedQuestions}
+							mistakeDna={demoMistakeDna}
+							battleScore={totalScore}
+							accuracyPercent={accuracyPercent}
+							previousRematches={0}
+							masteryProgress={demoMasteryProgress}
+							currentQuestion={demoCurrentQuestion}
+							contextLabel="Demo Results"
+						/>
 					</section>
 				)}
 			</div>
