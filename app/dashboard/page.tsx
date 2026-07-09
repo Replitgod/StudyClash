@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
+import GigglesCoach from "@/app/components/GigglesCoach";
 
 type PlanInfo = {
   id: string;
@@ -91,6 +92,7 @@ export default function DashboardPage() {
   const [recentMatches, setRecentMatches] = useState<MatchSummary[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [renderTimestampMs] = useState(() => Date.now());
   const [deckInsights, setDeckInsights] = useState<DeckInsights>({
     mostPlayed: [],
     strongest: [],
@@ -303,7 +305,7 @@ export default function DashboardPage() {
     if (!deck.lastPlayedDate) return false;
     const playedAt = new Date(deck.lastPlayedDate).getTime();
     if (Number.isNaN(playedAt)) return false;
-    const daysSincePlayed = (Date.now() - playedAt) / (1000 * 60 * 60 * 24);
+    const daysSincePlayed = (renderTimestampMs - playedAt) / (1000 * 60 * 60 * 24);
     return daysSincePlayed >= 2;
   }) || null;
 
@@ -369,6 +371,69 @@ export default function DashboardPage() {
 
     return null;
   })();
+
+  const arenaTier = (() => {
+    if (battlesPlayed >= 40 && averageAccuracy >= 88) return "Grandmaster";
+    if (battlesPlayed >= 20 && averageAccuracy >= 78) return "Contender";
+    if (battlesPlayed >= 8 && averageAccuracy >= 68) return "Challenger";
+    if (battlesPlayed >= 3) return "Rookie";
+    return "Unranked";
+  })();
+
+  const clashPathPulse = (() => {
+    if (battlesPlayed === 0) {
+      return {
+        title: "Run your first battle",
+        detail: "ClashPath activates after your first finished battle and builds your weak-topic roadmap.",
+        href: "/decks",
+        cta: "Choose a deck",
+      };
+    }
+
+    if (nextAction) {
+      return {
+        title: nextAction.title,
+        detail: nextAction.message,
+        href: nextAction.href,
+        cta: nextAction.cta,
+      };
+    }
+
+    return {
+      title: "Keep your streak moving",
+      detail: "Play one focused rematch today to lock in retention and raise your arena tier.",
+      href: "/decks",
+      cta: "Start a battle",
+    };
+  })();
+
+  const coachDeckId =
+    deckInsights.recommendedNextBattle?.id ||
+    weakestDeck?.id ||
+    deckInsights.recentlyPlayed[0]?.id ||
+    undefined;
+
+  const coachWeakTopics = deckInsights.weakest
+    .slice(0, 4)
+    .map((deck) => deck.title);
+
+  const coachMasteryProgress = [
+    {
+      label: "Overall Accuracy",
+      value: averageAccuracy,
+      details: `Across ${battlesPlayed} battles`,
+    },
+    ...deckInsights.strongest.slice(0, 2).map((deck) => ({
+      label: `Strong: ${deck.title}`,
+      value: deck.averageAccuracy,
+      details: `Best ${deck.bestScore || 0}%`,
+    })),
+    ...deckInsights.weakest.slice(0, 2).map((deck) => ({
+      label: `Weak: ${deck.title}`,
+      value: deck.averageAccuracy,
+      details: `${deck.matchesPlayed || 0} matches`,
+    })),
+  ];
 
   if (isLoading) {
     return (
@@ -442,6 +507,28 @@ export default function DashboardPage() {
             <Link href="/decks" className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white/90 text-center">
               View My Decks
             </Link>
+            <Link href="/mastery-map" className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-3 text-sm font-bold text-cyan-100 text-center">
+              Mastery Map
+            </Link>
+            <Link href="/clashrank" className="rounded-xl border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm font-bold text-amber-100 text-center">
+              ClashRank
+            </Link>
+            {coachDeckId && (
+              <Link
+                href={`/battle/${coachDeckId}?mode=rival`}
+                className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-3 text-sm font-bold text-cyan-100 text-center"
+              >
+                Study Rival
+              </Link>
+            )}
+            {coachDeckId && (
+              <Link
+                href={`/battle/${coachDeckId}?mode=boss`}
+                className="rounded-xl border border-fuchsia-400/25 bg-fuchsia-500/10 px-4 py-3 text-sm font-bold text-fuchsia-100 text-center"
+              >
+                Boss Battle
+              </Link>
+            )}
             <Link href="/pricing" className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-sm font-bold text-cyan-200 text-center">
               Pricing
             </Link>
@@ -497,6 +584,44 @@ export default function DashboardPage() {
             )}
           </div>
         )}
+
+        <div className="rounded-2xl border border-fuchsia-400/25 bg-gradient-to-br from-fuchsia-500/[0.08] to-cyan-500/[0.06] p-5 backdrop-blur-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300">
+                ClashPath Command Center
+              </p>
+              <h2 className="mt-2 text-lg font-bold text-white">{clashPathPulse.title}</h2>
+              <p className="mt-2 max-w-2xl text-sm text-white/70">{clashPathPulse.detail}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-right">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">
+                Arena Tier
+              </p>
+              <p className="mt-1 text-base font-black text-cyan-200">{arenaTier}</p>
+            </div>
+          </div>
+
+          <Link
+            href={clashPathPulse.href}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-400 px-4 py-2.5 text-sm font-bold text-white"
+          >
+            {clashPathPulse.cta}
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M13 7l5 5m0 0l-5 5m5-5H6"
+              />
+            </svg>
+          </Link>
+        </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm">
@@ -874,6 +999,20 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      <GigglesCoach
+        deckId={coachDeckId}
+        deckTitle={coachDeckId ? "Recommended deck context" : "Dashboard study context"}
+        courseName="StudyClash Dashboard"
+        playerName={profile?.display_name || user?.email || "Student"}
+        weakTopics={coachWeakTopics}
+        missedQuestions={[]}
+        battleScore={undefined}
+        accuracyPercent={averageAccuracy}
+        previousRematches={Math.max(0, battlesPlayed - 1)}
+        masteryProgress={coachMasteryProgress}
+        contextLabel="Dashboard"
+      />
     </Background>
   );
 }

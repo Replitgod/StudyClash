@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/trackEvent";
+import GigglesCoach from "@/app/components/GigglesCoach";
 import type { User } from "@supabase/supabase-js";
 import type { Profile } from "@/lib/useAuth";
 
@@ -47,7 +48,112 @@ type StudyMode =
   | "practice"
   | "weak_topic"
   | "review_missed"
-  | "quick_check";
+  | "quick_check"
+  | "boss"
+  | "rival";
+
+type TopicAccuracyStat = {
+  topic: string;
+  correct: number;
+  total: number;
+  accuracy: number;
+};
+
+type BossReadiness = {
+  unlocked: boolean;
+  bossName: string;
+  requiredScore: number;
+  requiredAccuracy: number;
+  weakTopics: string[];
+  strongTopics: string[];
+  practiceAdvice: string;
+  attempts: number;
+  nextRecommendedBoss: string;
+};
+
+type RivalRank = "Rookie" | "Grinder" | "Scholar" | "Genius" | "Legend";
+
+type RivalTier = {
+  rank: RivalRank;
+  rivalName: string;
+  accuracyFloor: number;
+  accuracyCeil: number;
+  baseResponseMs: number;
+  responseVarianceMs: number;
+  unlockMinBattles: number;
+  unlockMinAccuracy: number;
+};
+
+type RivalReadiness = {
+  rivalName: string;
+  rank: RivalRank;
+  targetAccuracy: number;
+  expectedResponseMs: number;
+  weakTopics: string[];
+  strongTopics: string[];
+  playerAverageAccuracy: number;
+  attempts: number;
+  unlockedRanks: RivalRank[];
+  nextUnlock: {
+    rank: RivalRank;
+    requirement: string;
+  } | null;
+  rivalStrengths: string[];
+  playerNeedsImprovement: string[];
+};
+
+const RIVAL_TIERS: RivalTier[] = [
+  {
+    rank: "Rookie",
+    rivalName: "Rex Rookie",
+    accuracyFloor: 52,
+    accuracyCeil: 68,
+    baseResponseMs: 8200,
+    responseVarianceMs: 2200,
+    unlockMinBattles: 0,
+    unlockMinAccuracy: 0,
+  },
+  {
+    rank: "Grinder",
+    rivalName: "Gia Grinder",
+    accuracyFloor: 62,
+    accuracyCeil: 76,
+    baseResponseMs: 7100,
+    responseVarianceMs: 1700,
+    unlockMinBattles: 3,
+    unlockMinAccuracy: 55,
+  },
+  {
+    rank: "Scholar",
+    rivalName: "Soren Scholar",
+    accuracyFloor: 70,
+    accuracyCeil: 84,
+    baseResponseMs: 5900,
+    responseVarianceMs: 1300,
+    unlockMinBattles: 6,
+    unlockMinAccuracy: 66,
+  },
+  {
+    rank: "Genius",
+    rivalName: "Gwen Genius",
+    accuracyFloor: 78,
+    accuracyCeil: 92,
+    baseResponseMs: 4900,
+    responseVarianceMs: 1000,
+    unlockMinBattles: 10,
+    unlockMinAccuracy: 78,
+  },
+  {
+    rank: "Legend",
+    rivalName: "Lux Legend",
+    accuracyFloor: 86,
+    accuracyCeil: 97,
+    baseResponseMs: 3800,
+    responseVarianceMs: 800,
+    unlockMinBattles: 15,
+    unlockMinAccuracy: 88,
+  },
+];
 
 function coerceDeck(value: unknown): Deck | null {
   if (!value || typeof value !== "object") return null;
@@ -126,6 +232,144 @@ function normalizeTopicKey(input: string): string {
     .trim();
 }
 
+function normalizeTopicLabel(input: string): string {
+  const trimmed = (input || "General").trim();
+  return trimmed || "General";
+}
+
+function shuffleArray<T>(items: T[]): T[] {
+  const clone = [...items];
+  for (let i = clone.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = clone[i];
+    clone[i] = clone[j];
+    clone[j] = temp;
+  }
+  return clone;
+}
+
+function buildTopicAccuracyStats(args: {
+  answers: AnswerRecord[];
+  questionById: Map<string, Question>;
+}): TopicAccuracyStat[] {
+  const { answers, questionById } = args;
+  const topicMap = new Map<string, { correct: number; total: number }>();
+
+  for (const answer of answers) {
+    const question = questionById.get(answer.questionId);
+    if (!question) continue;
+
+    const topic = normalizeTopicLabel(question.topic);
+    const bucket = topicMap.get(topic) || { correct: 0, total: 0 };
+    bucket.total += 1;
+    if (answer.isCorrect) bucket.correct += 1;
+    topicMap.set(topic, bucket);
+  }
+
+  return Array.from(topicMap.entries()).map(([topic, values]) => ({
+    topic,
+    correct: values.correct,
+    total: values.total,
+    accuracy: values.total > 0 ? Math.round((values.correct / values.total) * 100) : 0,
+  }));
+}
+
+function pickQuestionsByTopic(topics: string[], questions: Question[], count: number): Question[] {
+  if (topics.length === 0 || count <= 0) return [];
+
+  const normalizedTopics = topics.map((topic) => normalizeTopicKey(topic));
+  const pool = questions.filter((question) => {
+    const questionTopic = normalizeTopicKey(question.topic);
+    return normalizedTopics.some(
+      (topic) =>
+        questionTopic === topic ||
+        questionTopic.includes(topic) ||
+        topic.includes(questionTopic)
+    );
+  });
+
+  return shuffleArray(pool).slice(0, count);
+}
+
+function buildBossQuestionSet(args: {
+  questions: Question[];
+  weakTopics: string[];
+  strongTopics: string[];
+  limit: number;
+}): Question[] {
+  const { questions, weakTopics, strongTopics, limit } = args;
+
+  const weakQuestions = pickQuestionsByTopic(weakTopics, questions, Math.ceil(limit * 0.45));
+  const strongQuestions = pickQuestionsByTopic(strongTopics, questions, Math.ceil(limit * 0.3));
+  const challengeQuestions = shuffleArray(
+    questions.filter((question) => question.difficulty.toLowerCase() === "hard")
+  ).slice(0, Math.ceil(limit * 0.35));
+
+  const selected = new Map<string, Question>();
+  for (const question of [...weakQuestions, ...strongQuestions, ...challengeQuestions]) {
+    selected.set(question.id, question);
+  }
+
+  if (selected.size < limit) {
+    for (const question of shuffleArray(questions)) {
+      selected.set(question.id, question);
+      if (selected.size >= limit) break;
+    }
+  }
+
+  return Array.from(selected.values()).slice(0, limit);
+}
+
+function buildRivalQuestionSet(args: {
+  questions: Question[];
+  weakTopics: string[];
+  strongTopics: string[];
+  limit: number;
+}): Question[] {
+  const { questions, weakTopics, strongTopics, limit } = args;
+
+  const weakQuestions = pickQuestionsByTopic(weakTopics, questions, Math.ceil(limit * 0.6));
+  const strongQuestions = pickQuestionsByTopic(strongTopics, questions, Math.ceil(limit * 0.2));
+  const challengeQuestions = shuffleArray(
+    questions.filter((question) => question.difficulty.toLowerCase() !== "easy")
+  ).slice(0, Math.ceil(limit * 0.2));
+
+  const selected = new Map<string, Question>();
+  for (const question of [...weakQuestions, ...strongQuestions, ...challengeQuestions]) {
+    selected.set(question.id, question);
+  }
+
+  if (selected.size < limit) {
+    for (const question of shuffleArray(questions)) {
+      selected.set(question.id, question);
+      if (selected.size >= limit) break;
+    }
+  }
+
+  return Array.from(selected.values()).slice(0, limit);
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function parseRivalRank(input: string | null): RivalRank | null {
+  if (!input) return null;
+  const normalized = input.trim().toLowerCase();
+  const found = RIVAL_TIERS.find((tier) => tier.rank.toLowerCase() === normalized);
+  return found ? found.rank : null;
+}
+
+function seededUnitInterval(seed: string): number {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) % 1000003;
+  }
+
+  const value = Math.sin(hash) * 10000;
+  return value - Math.floor(value);
+}
+
 function getRequestedPracticeTopics(searchParams: URLSearchParams): string[] {
   const rawTopics = searchParams.get("topics") || "";
 
@@ -143,6 +387,8 @@ function getStudyMode(searchParams: URLSearchParams): StudyMode {
     "weak_topic",
     "review_missed",
     "quick_check",
+    "boss",
+    "rival",
   ];
 
   return allowedModes.includes(rawMode as StudyMode)
@@ -165,6 +411,8 @@ function getStudyModeLabel(mode: StudyMode): string {
   if (mode === "weak_topic") return "Weak Topic Mode";
   if (mode === "review_missed") return "Review Missed Mode";
   if (mode === "quick_check") return "Quick Check Mode";
+  if (mode === "boss") return "Boss Battle";
+  if (mode === "rival") return "Study Rival Mode";
   return "Battle Mode";
 }
 
@@ -217,6 +465,7 @@ export default function BattlePage() {
   const deckId = params.deckId as string;
   const challengeFromMatchId = searchParams.get("challengeFrom");
   const challengeBaseScore = searchParams.get("challengeScore");
+  const requestedRivalRank = parseRivalRank(searchParams.get("rivalRank"));
 
   // Current logged-in user, if any. Battle play stays open to anyone with
   // the link (no login required) — this only tags the resulting match
@@ -272,6 +521,15 @@ export default function BattlePage() {
   // Saving the finished match
   const [isFinishing, setIsFinishing] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [bossReadiness, setBossReadiness] = useState<BossReadiness | null>(null);
+  const [isBossLoading, setIsBossLoading] = useState(false);
+  const [rivalReadiness, setRivalReadiness] = useState<RivalReadiness | null>(null);
+  const [rivalAnswers, setRivalAnswers] = useState<AnswerRecord[]>([]);
+  const [rivalCurrentStreak, setRivalCurrentStreak] = useState(0);
+  const [rivalBestStreak, setRivalBestStreak] = useState(0);
+  const [rivalScore, setRivalScore] = useState(0);
+  const [isRivalResolving, setIsRivalResolving] = useState(false);
+  const rivalResolveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestedPracticeTopics = useMemo(
     () => getRequestedPracticeTopics(searchParams),
     [searchParams]
@@ -291,6 +549,10 @@ export default function BattlePage() {
   const effectiveQuestionLimit =
     effectiveStudyMode === "quick_check"
       ? 5
+      : effectiveStudyMode === "boss"
+        ? 12
+      : effectiveStudyMode === "rival"
+        ? 10
       : requestedQuestionLimit;
   const accountDisplayName = getPreferredDisplayName(profile, user);
 
@@ -312,6 +574,18 @@ export default function BattlePage() {
       setLastPointsEarned(0);
       setElapsedSeconds(0);
       setSaveError(null);
+      setBossReadiness(null);
+      setIsBossLoading(false);
+      setRivalReadiness(null);
+      setRivalAnswers([]);
+      setRivalCurrentStreak(0);
+      setRivalBestStreak(0);
+      setRivalScore(0);
+      setIsRivalResolving(false);
+      if (rivalResolveTimerRef.current) {
+        clearTimeout(rivalResolveTimerRef.current);
+        rivalResolveTimerRef.current = null;
+      }
       hasFinishedRef.current = false;
 
       const { data: deckData, error: deckError } = await supabase
@@ -359,6 +633,272 @@ export default function BattlePage() {
       }
 
       setDeck(normalizedDeck);
+
+      if (effectiveStudyMode === "boss") {
+        setIsBossLoading(true);
+
+        const playerIdentity =
+          accountDisplayName || normalizedDeck.student_name || "Player";
+
+        const { data: previousMatches } = await supabase
+          .from("matches")
+          .select("id")
+          .eq("deck_id", deckId)
+          .eq("player_name", playerIdentity)
+          .order("created_at", { ascending: false })
+          .limit(40);
+
+        const previousMatchIds = (previousMatches || []).map((entry) => entry.id);
+        const attempts = previousMatchIds.length;
+        const requiredAccuracy = 70;
+        const requiredScore = Math.round((effectiveQuestionLimit || 12) * 95);
+
+        let topicStats: TopicAccuracyStat[] = [];
+
+        if (previousMatchIds.length > 0) {
+          const { data: previousAnswers } = await supabase
+            .from("match_answers")
+            .select("question_id, selected_answer, is_correct, response_time_ms")
+            .in("match_id", previousMatchIds);
+
+          const questionById = new Map(
+            normalizedQuestions.map((question) => [question.id, question])
+          );
+
+          const normalizedAnswers: AnswerRecord[] = (previousAnswers || [])
+            .map((answer) => {
+              const question = questionById.get(answer.question_id);
+              if (!question) return null;
+
+              return {
+                questionId: answer.question_id,
+                selectedAnswer: answer.selected_answer,
+                isCorrect: !!answer.is_correct,
+                responseTimeMs: Number(answer.response_time_ms || 0),
+              };
+            })
+            .filter((answer): answer is AnswerRecord => answer !== null);
+
+          topicStats = buildTopicAccuracyStats({
+            answers: normalizedAnswers,
+            questionById,
+          });
+        }
+
+        const weakTopics = topicStats
+          .filter((topic) => topic.total >= 2 && topic.accuracy < requiredAccuracy)
+          .sort((a, b) => a.accuracy - b.accuracy || b.total - a.total)
+          .map((topic) => topic.topic)
+          .slice(0, 4);
+
+        const strongTopics = topicStats
+          .filter((topic) => topic.total >= 2 && topic.accuracy >= 80)
+          .sort((a, b) => b.accuracy - a.accuracy || b.total - a.total)
+          .map((topic) => topic.topic)
+          .slice(0, 4);
+
+        const bossFocusTopic = weakTopics[0] || normalizedDeck.course_name || "Core Concepts";
+        const nextRecommendedBoss =
+          weakTopics[1] || strongTopics[0] || normalizedDeck.course_name || "Mastery";
+
+        const unlocked = attempts >= 3 && weakTopics.length > 0;
+
+        const practiceAdvice = !unlocked
+          ? attempts < 3
+            ? "Complete at least 3 regular battles on this deck to unlock the boss."
+            : "Missed-topic practice is too shallow. Run a weak-topic rematch first."
+          : "Boss unlocked. Focus on pace and precision: weak topics first, then challenge questions.";
+
+        const bossMeta: BossReadiness = {
+          unlocked,
+          bossName: `${normalizedDeck.course_name} Boss: ${bossFocusTopic}`,
+          requiredScore,
+          requiredAccuracy,
+          weakTopics,
+          strongTopics,
+          practiceAdvice,
+          attempts,
+          nextRecommendedBoss: `${normalizedDeck.course_name} Boss: ${nextRecommendedBoss}`,
+        };
+
+        setBossReadiness(bossMeta);
+
+        const bossQuestionSet = buildBossQuestionSet({
+          questions: normalizedQuestions,
+          weakTopics,
+          strongTopics,
+          limit: effectiveQuestionLimit || 12,
+        });
+
+        setQuestions(
+          bossQuestionSet.length > 0
+            ? bossQuestionSet
+            : normalizedQuestions.slice(0, effectiveQuestionLimit || 12)
+        );
+        setIsBossLoading(false);
+        setIsLoading(false);
+        return;
+      }
+
+      if (effectiveStudyMode === "rival") {
+        const playerIdentity =
+          accountDisplayName || normalizedDeck.student_name || "Player";
+
+        const { data: previousMatches } = await supabase
+          .from("matches")
+          .select("id, correct_answers, total_questions")
+          .eq("deck_id", deckId)
+          .eq("player_name", playerIdentity)
+          .order("created_at", { ascending: false })
+          .limit(60);
+
+        const previousMatchIds = (previousMatches || []).map((entry) => entry.id);
+        const attempts = previousMatchIds.length;
+
+        let topicStats: TopicAccuracyStat[] = [];
+        let playerAverageAccuracy = 0;
+
+        if ((previousMatches || []).length > 0) {
+          const totalCorrect = (previousMatches || []).reduce(
+            (sum, matchEntry) => sum + Number(matchEntry.correct_answers || 0),
+            0
+          );
+          const totalQuestions = (previousMatches || []).reduce(
+            (sum, matchEntry) => sum + Number(matchEntry.total_questions || 0),
+            0
+          );
+          playerAverageAccuracy =
+            totalQuestions > 0 ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+        }
+
+        if (previousMatchIds.length > 0) {
+          const { data: previousAnswers } = await supabase
+            .from("match_answers")
+            .select("question_id, selected_answer, is_correct, response_time_ms")
+            .in("match_id", previousMatchIds);
+
+          const questionById = new Map(
+            normalizedQuestions.map((question) => [question.id, question])
+          );
+
+          const normalizedAnswers: AnswerRecord[] = (previousAnswers || [])
+            .map((answer) => {
+              const question = questionById.get(answer.question_id);
+              if (!question) return null;
+
+              return {
+                questionId: answer.question_id,
+                selectedAnswer: answer.selected_answer,
+                isCorrect: !!answer.is_correct,
+                responseTimeMs: Number(answer.response_time_ms || 0),
+              };
+            })
+            .filter((answer): answer is AnswerRecord => answer !== null);
+
+          topicStats = buildTopicAccuracyStats({
+            answers: normalizedAnswers,
+            questionById,
+          });
+        }
+
+        const weakTopics = topicStats
+          .filter((topic) => topic.total >= 2)
+          .sort((a, b) => a.accuracy - b.accuracy || b.total - a.total)
+          .map((topic) => topic.topic)
+          .slice(0, 5);
+
+        const strongTopics = topicStats
+          .filter((topic) => topic.total >= 2)
+          .sort((a, b) => b.accuracy - a.accuracy || b.total - a.total)
+          .map((topic) => topic.topic)
+          .slice(0, 5);
+
+        const unlockedRanks = RIVAL_TIERS.filter(
+          (tier) =>
+            attempts >= tier.unlockMinBattles &&
+            playerAverageAccuracy >= tier.unlockMinAccuracy
+        ).map((tier) => tier.rank);
+
+        if (!unlockedRanks.includes("Rookie")) {
+          unlockedRanks.push("Rookie");
+        }
+
+        const highestUnlockedRank =
+          RIVAL_TIERS
+            .slice()
+            .reverse()
+            .find((tier) => unlockedRanks.includes(tier.rank))?.rank || "Rookie";
+
+        const selectedRank =
+          requestedRivalRank && unlockedRanks.includes(requestedRivalRank)
+            ? requestedRivalRank
+            : highestUnlockedRank;
+
+        const selectedTier =
+          RIVAL_TIERS.find((tier) => tier.rank === selectedRank) || RIVAL_TIERS[0];
+
+        const nextUnlockTier = RIVAL_TIERS.find(
+          (tier) => !unlockedRanks.includes(tier.rank)
+        );
+
+        const targetAccuracy = clampNumber(
+          Math.round(playerAverageAccuracy * 0.55 + selectedTier.accuracyFloor * 0.45),
+          selectedTier.accuracyFloor,
+          selectedTier.accuracyCeil
+        );
+
+        const expectedResponseMs = clampNumber(
+          Math.round(selectedTier.baseResponseMs - (playerAverageAccuracy - 50) * 22),
+          2200,
+          selectedTier.baseResponseMs + selectedTier.responseVarianceMs
+        );
+
+        const rivalStrengths = [
+          ...(strongTopics.slice(0, 2).map((topic) => `${topic} precision`)),
+          "Fast answer pacing",
+        ].slice(0, 3);
+
+        const playerNeedsImprovement =
+          weakTopics.length > 0
+            ? weakTopics.slice(0, 3)
+            : ["Consistency", "Hard-question accuracy"];
+
+        setRivalReadiness({
+          rivalName: selectedTier.rivalName,
+          rank: selectedTier.rank,
+          targetAccuracy,
+          expectedResponseMs,
+          weakTopics,
+          strongTopics,
+          playerAverageAccuracy,
+          attempts,
+          unlockedRanks,
+          nextUnlock: nextUnlockTier
+            ? {
+                rank: nextUnlockTier.rank,
+                requirement: `${nextUnlockTier.unlockMinBattles}+ battles and ${nextUnlockTier.unlockMinAccuracy}% average accuracy`,
+              }
+            : null,
+          rivalStrengths,
+          playerNeedsImprovement,
+        });
+
+        const rivalQuestions = buildRivalQuestionSet({
+          questions: normalizedQuestions,
+          weakTopics,
+          strongTopics,
+          limit: effectiveQuestionLimit || 10,
+        });
+
+        setQuestions(
+          rivalQuestions.length > 0
+            ? rivalQuestions
+            : normalizedQuestions.slice(0, effectiveQuestionLimit || 10)
+        );
+        setIsLoading(false);
+        return;
+      }
+
       const filteredQuestions =
         requestedPracticeTopics.length > 0
           ? normalizedQuestions.filter((question) =>
@@ -398,7 +938,14 @@ export default function BattlePage() {
     if (deckId) {
       loadBattle();
     }
-  }, [deckId, requestedPracticeTopics, effectiveQuestionLimit]);
+  }, [
+    deckId,
+    requestedPracticeTopics,
+    effectiveQuestionLimit,
+    effectiveStudyMode,
+    accountDisplayName,
+    requestedRivalRank,
+  ]);
 
   // Load the top 5 scores for this deck's leaderboard.
   // Sorted by highest score first, then fastest time as the tiebreaker.
@@ -441,6 +988,14 @@ export default function BattlePage() {
     return () => clearInterval(interval);
   }, [hasStarted, isFinishing]);
 
+  useEffect(() => {
+    return () => {
+      if (rivalResolveTimerRef.current) {
+        clearTimeout(rivalResolveTimerRef.current);
+      }
+    };
+  }, []);
+
   const formatTime = (totalSeconds: number) => {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
@@ -452,6 +1007,10 @@ export default function BattlePage() {
     const defaultBattleName = accountDisplayName || deck?.student_name || "Player";
     const finalName = typedName || defaultBattleName;
 
+    if (effectiveStudyMode === "boss" && bossReadiness && !bossReadiness.unlocked) {
+      return;
+    }
+
     setPlayerName(finalName);
     setHasStarted(true);
     questionStartSecondsRef.current = elapsedSeconds;
@@ -462,6 +1021,9 @@ export default function BattlePage() {
       totalQuestions: questions.length,
       practiceTopics: requestedPracticeTopics,
       studyMode: effectiveStudyMode,
+      bossName: bossReadiness?.bossName,
+      rivalName: rivalReadiness?.rivalName,
+      rivalRank: rivalReadiness?.rank,
       challengeFromMatchId,
     });
   };
@@ -499,9 +1061,98 @@ export default function BattlePage() {
       setCurrentStreak(0);
       setLastPointsEarned(0);
     }
+
+    if (effectiveStudyMode !== "rival" || !rivalReadiness) {
+      return;
+    }
+
+    setIsRivalResolving(true);
+    if (rivalResolveTimerRef.current) {
+      clearTimeout(rivalResolveTimerRef.current);
+      rivalResolveTimerRef.current = null;
+    }
+
+    const difficulty = currentQuestion.difficulty.toLowerCase();
+    const topicKey = normalizeTopicKey(currentQuestion.topic);
+    const baseChance = rivalReadiness.targetAccuracy / 100;
+    const difficultyDelta =
+      difficulty === "hard" ? -0.1 : difficulty === "easy" ? 0.08 : 0;
+    const weakTopicBoost = rivalReadiness.weakTopics.some(
+      (topic) => normalizeTopicKey(topic) === topicKey
+    )
+      ? 0.06
+      : 0;
+    const strongTopicBoost = rivalReadiness.strongTopics.some(
+      (topic) => normalizeTopicKey(topic) === topicKey
+    )
+      ? 0.04
+      : 0;
+    const rivalCorrectChance = clampNumber(
+      baseChance + difficultyDelta + weakTopicBoost + strongTopicBoost,
+      0.2,
+      0.98
+    );
+
+    const jitterSeed = `${currentQuestion.id}:jitter:${answers.length}:${elapsedSeconds}`;
+    const responseJitter =
+      (seededUnitInterval(jitterSeed) - 0.5) * 2 * (rivalReadiness.expectedResponseMs * 0.2);
+    const rivalResponseTimeMs = Math.round(
+      clampNumber(
+        rivalReadiness.expectedResponseMs + responseJitter,
+        1800,
+        rivalReadiness.expectedResponseMs * 1.7
+      )
+    );
+    const revealDelay = Math.round(
+      clampNumber(rivalResponseTimeMs * 0.35, 600, 2800)
+    );
+
+    rivalResolveTimerRef.current = setTimeout(() => {
+      const correctnessSeed = `${currentQuestion.id}:correct:${answers.length}:${totalScore}`;
+      const rivalIsCorrect = seededUnitInterval(correctnessSeed) < rivalCorrectChance;
+      const wrongChoices = currentQuestion.answer_choices.filter(
+        (answerChoice) => answerChoice !== currentQuestion.correct_answer
+      );
+      const wrongChoiceSeed = `${currentQuestion.id}:wrong:${currentStreak}:${rivalCurrentStreak}`;
+      const wrongChoiceIndex = Math.floor(
+        seededUnitInterval(wrongChoiceSeed) * Math.max(1, wrongChoices.length)
+      );
+      const rivalSelectedAnswer = rivalIsCorrect
+        ? currentQuestion.correct_answer
+        : wrongChoices[wrongChoiceIndex] || currentQuestion.correct_answer;
+
+      setRivalAnswers((prev) => [
+        ...prev,
+        {
+          questionId: currentQuestion.id,
+          selectedAnswer: rivalSelectedAnswer,
+          isCorrect: rivalIsCorrect,
+          responseTimeMs: rivalResponseTimeMs,
+        },
+      ]);
+
+      if (rivalIsCorrect) {
+        setRivalCurrentStreak((prevStreak) => {
+          const nextStreak = prevStreak + 1;
+          const points = calculatePointsForStreak(nextStreak);
+          setRivalScore((prevScore) => prevScore + points);
+          setRivalBestStreak((prevBest) => Math.max(prevBest, nextStreak));
+          return nextStreak;
+        });
+      } else {
+        setRivalCurrentStreak(0);
+      }
+
+      setIsRivalResolving(false);
+      rivalResolveTimerRef.current = null;
+    }, revealDelay);
   };
 
   const handleNext = useCallback(async () => {
+    if (effectiveStudyMode === "rival" && isRivalResolving) {
+      return;
+    }
+
     const isLastQuestion = currentIndex === questions.length - 1;
 
     if (!isLastQuestion) {
@@ -580,6 +1231,10 @@ export default function BattlePage() {
       bestStreak,
       totalQuestions: questions.length,
       timeTakenSeconds: elapsedSeconds,
+      studyMode: effectiveStudyMode,
+      rivalScore,
+      rivalRank: rivalReadiness?.rank,
+      rivalName: rivalReadiness?.rivalName,
     });
 
     const resultSearchParams = new URLSearchParams();
@@ -590,6 +1245,33 @@ export default function BattlePage() {
 
     if (challengeBaseScore) {
       resultSearchParams.set("challengeScore", challengeBaseScore);
+    }
+
+    if (effectiveStudyMode === "boss" && bossReadiness) {
+      resultSearchParams.set("mode", "boss");
+      resultSearchParams.set("bossName", bossReadiness.bossName);
+      resultSearchParams.set("bossTargetScore", String(bossReadiness.requiredScore));
+      resultSearchParams.set("bossTargetAccuracy", String(bossReadiness.requiredAccuracy));
+      resultSearchParams.set("bossWeakTopics", bossReadiness.weakTopics.join("|"));
+      resultSearchParams.set("bossStrongTopics", bossReadiness.strongTopics.join("|"));
+      resultSearchParams.set("nextBoss", bossReadiness.nextRecommendedBoss);
+    }
+
+    if (effectiveStudyMode === "rival" && rivalReadiness) {
+      const rivalCorrect = rivalAnswers.filter((answer) => answer.isCorrect).length;
+      const rivalAccuracy =
+        rivalAnswers.length > 0
+          ? Math.round((rivalCorrect / rivalAnswers.length) * 100)
+          : 0;
+
+      resultSearchParams.set("mode", "rival");
+      resultSearchParams.set("rivalName", rivalReadiness.rivalName);
+      resultSearchParams.set("rivalRank", rivalReadiness.rank);
+      resultSearchParams.set("rivalScore", String(rivalScore));
+      resultSearchParams.set("rivalAccuracy", String(rivalAccuracy));
+      resultSearchParams.set("rivalTargetAccuracy", String(rivalReadiness.targetAccuracy));
+      resultSearchParams.set("rivalWeakTopics", rivalReadiness.weakTopics.join("|"));
+      resultSearchParams.set("rivalStrengths", rivalReadiness.rivalStrengths.join("|"));
     }
 
     const resultPath = resultSearchParams.toString()
@@ -608,10 +1290,15 @@ export default function BattlePage() {
     totalScore,
     bestStreak,
     elapsedSeconds,
-    user,
     router,
     challengeFromMatchId,
     challengeBaseScore,
+    effectiveStudyMode,
+    isRivalResolving,
+    bossReadiness,
+    rivalAnswers,
+    rivalScore,
+    rivalReadiness,
   ]);
 
   // ---------- Loading state ----------
@@ -695,6 +1382,100 @@ export default function BattlePage() {
           </div>
         )}
 
+        {effectiveStudyMode === "boss" && (
+          <div className="mb-4 w-full max-w-xl rounded-2xl border border-fuchsia-400/25 bg-gradient-to-r from-fuchsia-500/10 via-black/30 to-cyan-500/10 px-4 py-3.5 sm:mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-fuchsia-200">
+                Boss Battle Protocol
+              </p>
+              {isBossLoading ? (
+                <span className="text-[11px] font-semibold text-white/55">
+                  Checking unlock status...
+                </span>
+              ) : bossReadiness?.unlocked ? (
+                <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                  Unlocked
+                </span>
+              ) : (
+                <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-300">
+                  Locked
+                </span>
+              )}
+            </div>
+
+            <p className="mt-2 text-sm font-semibold text-white/90">
+              {bossReadiness?.bossName || `${deck.course_name} Boss`}
+            </p>
+            <p className="mt-1 text-xs text-white/65">
+              Defeat condition: {bossReadiness?.requiredScore || Math.round((effectiveQuestionLimit || 12) * 95)}+ points and {bossReadiness?.requiredAccuracy || 70}%+ accuracy.
+            </p>
+            <p className="mt-2 text-xs text-white/55">
+              {bossReadiness?.practiceAdvice || "Build weak-topic reps to unlock this high-stakes review battle."}
+            </p>
+
+            {bossReadiness && bossReadiness.weakTopics.length > 0 && (
+              <p className="mt-2 text-xs text-red-200/85">
+                Weak focus: {bossReadiness.weakTopics.join(" · ")}
+              </p>
+            )}
+
+            {bossReadiness && bossReadiness.strongTopics.length > 0 && (
+              <p className="mt-1 text-xs text-emerald-200/85">
+                Strong topics: {bossReadiness.strongTopics.join(" · ")}
+              </p>
+            )}
+          </div>
+        )}
+
+        {effectiveStudyMode === "rival" && rivalReadiness && (
+          <div className="mb-4 w-full max-w-xl rounded-2xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/12 via-black/30 to-fuchsia-500/10 px-4 py-3.5 sm:mb-6">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-200">
+                Study Rival Protocol
+              </p>
+              <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fuchsia-200">
+                Rank {rivalReadiness.rank}
+              </span>
+            </div>
+
+            <p className="mt-2 text-sm font-semibold text-white/90">
+              {rivalReadiness.rivalName}
+            </p>
+
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="rounded-lg border border-white/10 bg-black/25 px-2.5 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Rival Acc</p>
+                <p className="mt-1 text-xs font-bold text-white">{rivalReadiness.targetAccuracy}%</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/25 px-2.5 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Rival Speed</p>
+                <p className="mt-1 text-xs font-bold text-white">~{Math.round(rivalReadiness.expectedResponseMs / 1000)}s</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/25 px-2.5 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Your Avg</p>
+                <p className="mt-1 text-xs font-bold text-white">{rivalReadiness.playerAverageAccuracy}%</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/25 px-2.5 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Battles</p>
+                <p className="mt-1 text-xs font-bold text-white">{rivalReadiness.attempts}</p>
+              </div>
+            </div>
+
+            <p className="mt-2 text-xs text-red-200/85">
+              Weak-topic focus: {rivalReadiness.weakTopics.length > 0 ? rivalReadiness.weakTopics.slice(0, 3).join(" · ") : "Building baseline focus from this run."}
+            </p>
+            <p className="mt-1 text-xs text-emerald-200/85">
+              Rival strengths: {rivalReadiness.rivalStrengths.join(" · ")}
+            </p>
+
+            {rivalReadiness.nextUnlock && (
+              <p className="mt-2 text-xs text-cyan-100/90">
+                Unlock next rival ({rivalReadiness.nextUnlock.rank}): {rivalReadiness.nextUnlock.requirement}
+              </p>
+            )}
+          </div>
+        )}
+
         <h1 className="max-w-full text-center text-3xl font-black tracking-tight break-words sm:text-4xl md:text-5xl">
           <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
             {deck.title}
@@ -766,10 +1547,25 @@ export default function BattlePage() {
 
           <button
             onClick={handleStart}
+            disabled={
+              effectiveStudyMode === "boss" &&
+              !!bossReadiness &&
+              !bossReadiness.unlocked
+            }
             className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
           >
-            Start Battle
+            {effectiveStudyMode === "boss"
+              ? "Start Boss Battle"
+              : effectiveStudyMode === "rival"
+                ? "Start Rival Battle"
+                : "Start Battle"}
           </button>
+
+          {effectiveStudyMode === "boss" && bossReadiness && !bossReadiness.unlocked && (
+            <p className="mt-2 text-center text-xs text-amber-200/80">
+              Boss is locked. Complete more weak-topic practice first.
+            </p>
+          )}
         </div>
 
         {/* Scoring rules reminder */}
@@ -922,9 +1718,193 @@ export default function BattlePage() {
       ? STREAK_BONUS_TIER_1
       : 0;
 
+  const questionById = new Map(questions.map((question) => [question.id, question]));
+  const answeredCount = answers.length;
+  const liveCorrectCount = answers.filter((answer) => answer.isCorrect).length;
+  const liveAccuracyPercent =
+    answeredCount > 0 ? Math.round((liveCorrectCount / answeredCount) * 100) : 0;
+  const liveMissedQuestions = answers
+    .filter((answer) => !answer.isCorrect)
+    .map((answer) => {
+      const question = questionById.get(answer.questionId);
+      if (!question) return null;
+
+      return {
+        questionText: question.question_text,
+        selectedAnswer: answer.selectedAnswer,
+        correctAnswer: question.correct_answer,
+        topic: question.topic,
+        explanation: question.explanation,
+      };
+    })
+    .filter((item): item is {
+      questionText: string;
+      selectedAnswer: string;
+      correctAnswer: string;
+      topic: string;
+      explanation: string;
+    } => item !== null);
+
+  const liveWeakTopicCounts = new Map<string, number>();
+  for (const item of liveMissedQuestions) {
+    liveWeakTopicCounts.set(item.topic, (liveWeakTopicCounts.get(item.topic) || 0) + 1);
+  }
+
+  const liveWeakTopics = Array.from(liveWeakTopicCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([topic]) => topic)
+    .slice(0, 5);
+
+  const liveMistakeDna = answers
+    .filter((answer) => !answer.isCorrect)
+    .map((answer) => {
+      const question = questionById.get(answer.questionId);
+      if (!question) return null;
+
+      const quickMiss = answer.responseTimeMs <= 5000 && question.difficulty.toLowerCase() !== "hard";
+      const slowMiss = answer.responseTimeMs >= 15000;
+      const likelyMisread = /all|none|except|not|always|never|both/i.test(answer.selectedAnswer);
+      const mistakeType = quickMiss
+        ? "careless_error"
+        : slowMiss
+          ? "speed_trap"
+          : likelyMisread
+            ? "misread_question"
+            : question.difficulty.toLowerCase() === "hard"
+              ? "concept_gap"
+              : "guessing_pattern";
+
+      return {
+        questionId: answer.questionId,
+        topic: question.topic,
+        selectedAnswer: answer.selectedAnswer,
+        correctAnswer: question.correct_answer,
+        misunderstoodConcept: question.question_text,
+        mistakeType,
+      };
+    })
+    .filter((item) => item !== null);
+
+  const topicStatsMap = new Map<string, { correct: number; total: number }>();
+  for (const answer of answers) {
+    const question = questionById.get(answer.questionId);
+    if (!question) continue;
+
+    const topic = question.topic || "General";
+    const bucket = topicStatsMap.get(topic) || { correct: 0, total: 0 };
+    bucket.total += 1;
+    if (answer.isCorrect) bucket.correct += 1;
+    topicStatsMap.set(topic, bucket);
+  }
+
+  const liveMasteryProgress = Array.from(topicStatsMap.entries())
+    .map(([topic, stats]) => ({
+      label: topic,
+      value: stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0,
+      details: `${stats.correct}/${stats.total} correct`,
+    }))
+    .slice(0, 6);
+
+  const rivalAnsweredCount = rivalAnswers.length;
+  const rivalCorrectCount = rivalAnswers.filter((answer) => answer.isCorrect).length;
+  const rivalAccuracyPercent =
+    rivalAnsweredCount > 0 ? Math.round((rivalCorrectCount / rivalAnsweredCount) * 100) : 0;
+  const rivalProgressPercent =
+    questions.length > 0 ? Math.round((rivalAnsweredCount / questions.length) * 100) : 0;
+
+  const rivalTopicStatsMap = new Map<string, { correct: number; total: number }>();
+  for (const rivalAnswer of rivalAnswers) {
+    const question = questionById.get(rivalAnswer.questionId);
+    if (!question) continue;
+
+    const topic = question.topic || "General";
+    const bucket = rivalTopicStatsMap.get(topic) || { correct: 0, total: 0 };
+    bucket.total += 1;
+    if (rivalAnswer.isCorrect) bucket.correct += 1;
+    rivalTopicStatsMap.set(topic, bucket);
+  }
+
+  const rivalBetterTopics = Array.from(rivalTopicStatsMap.entries())
+    .map(([topic, rivalStats]) => {
+      const playerStats = topicStatsMap.get(topic) || { correct: 0, total: 0 };
+      const rivalTopicAccuracy =
+        rivalStats.total > 0 ? Math.round((rivalStats.correct / rivalStats.total) * 100) : 0;
+      const playerTopicAccuracy =
+        playerStats.total > 0 ? Math.round((playerStats.correct / playerStats.total) * 100) : 0;
+
+      return {
+        topic,
+        gap: rivalTopicAccuracy - playerTopicAccuracy,
+      };
+    })
+    .filter((entry) => entry.gap >= 12)
+    .sort((a, b) => b.gap - a.gap)
+    .map((entry) => entry.topic)
+    .slice(0, 3);
+
+  const liveRivalOutcome =
+    totalScore > rivalScore
+      ? "You are leading"
+      : rivalScore > totalScore
+        ? "Rival is leading"
+        : "Tie";
+
   return (
     <Background>
       <div className="w-full max-w-2xl">
+        {effectiveStudyMode === "boss" && bossReadiness && (
+          <div className="mb-3 flex items-center justify-between rounded-xl border border-fuchsia-400/25 bg-fuchsia-500/10 px-3.5 py-2.5">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-200">
+              {bossReadiness.bossName}
+            </p>
+            <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-cyan-200">
+              Goal {bossReadiness.requiredScore}+ pts
+            </span>
+          </div>
+        )}
+
+        {effectiveStudyMode === "rival" && rivalReadiness && (
+          <div className="mb-3 rounded-xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/[0.1] via-black/25 to-fuchsia-500/[0.08] px-3.5 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">
+                Study Rival Arena
+              </p>
+              <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-fuchsia-200">
+                {rivalReadiness.rivalName} · {rivalReadiness.rank}
+              </span>
+            </div>
+
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="rounded-lg border border-white/10 bg-black/20 px-2.5 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Student Score</p>
+                <p className="mt-1 text-sm font-bold text-white">{totalScore}</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/20 px-2.5 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Rival Score</p>
+                <p className="mt-1 text-sm font-bold text-white">{rivalScore}</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/20 px-2.5 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Live Progress</p>
+                <p className="mt-1 text-sm font-bold text-white">{progressPercent.toFixed(0)}% / {rivalProgressPercent}%</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/20 px-2.5 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Win/Loss</p>
+                <p className="mt-1 text-sm font-bold text-white">{liveRivalOutcome}</p>
+              </div>
+            </div>
+
+            <p className="mt-2 text-xs text-white/75">
+              Rival better at: {rivalBetterTopics.length > 0 ? rivalBetterTopics.join(" · ") : rivalReadiness.rivalStrengths.join(" · ")}
+            </p>
+            <p className="mt-1 text-xs text-amber-200/90">
+              Improve next: {rivalReadiness.playerNeedsImprovement.join(" · ")}
+            </p>
+            <p className="mt-1 text-xs text-white/65">
+              Rival streak: {rivalCurrentStreak} (best {rivalBestStreak})
+            </p>
+          </div>
+        )}
+
         {/* Top bar: progress + timer */}
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <span className="text-xs font-bold uppercase tracking-wider text-white/50">
@@ -1111,6 +2091,14 @@ export default function BattlePage() {
               <p className="mt-2 break-words text-white/60">
                 {currentQuestion.explanation}
               </p>
+
+              {effectiveStudyMode === "rival" && (
+                <p className="mt-2 text-xs text-cyan-200/85">
+                  {isRivalResolving
+                    ? `${rivalReadiness?.rivalName || "Rival"} is locking in an answer...`
+                    : `${rivalReadiness?.rivalName || "Rival"} accuracy: ${rivalAccuracyPercent}% · target ${rivalReadiness?.targetAccuracy || 0}%`}
+                </p>
+              )}
             </div>
           )}
 
@@ -1124,11 +2112,14 @@ export default function BattlePage() {
           {showFeedback && (
             <button
               onClick={handleNext}
+              disabled={effectiveStudyMode === "rival" && isRivalResolving}
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:px-8 sm:hover:scale-[1.02]"
             >
-              {currentIndex === questions.length - 1
-                ? "Finish Battle"
-                : "Next Question"}
+              {effectiveStudyMode === "rival" && isRivalResolving
+                ? "Rival Answering..."
+                : currentIndex === questions.length - 1
+                  ? "Finish Battle"
+                  : "Next Question"}
               <svg
                 className="h-5 w-5 flex-shrink-0"
                 fill="none"
@@ -1146,6 +2137,23 @@ export default function BattlePage() {
           )}
         </div>
       </div>
+
+      {answers.length > 0 && (
+        <GigglesCoach
+          deckId={deck.id}
+          deckTitle={deck.title}
+          courseName={deck.course_name}
+          playerName={playerName || accountDisplayName || deck.student_name}
+          weakTopics={liveWeakTopics}
+          missedQuestions={liveMissedQuestions}
+          mistakeDna={liveMistakeDna}
+          battleScore={totalScore}
+          accuracyPercent={liveAccuracyPercent}
+          previousRematches={0}
+          masteryProgress={liveMasteryProgress}
+          contextLabel="Battle"
+        />
+      )}
     </Background>
   );
 }

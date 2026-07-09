@@ -32,16 +32,16 @@ export default function Home() {
           {/* Headline */}
           <h1 className="max-w-4xl text-center text-4xl font-black leading-tight tracking-tight sm:text-6xl md:text-7xl">
             <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-              Turn your notes into a study battle.
+              Train in the arena. Build mastery with ClashPath.
             </span>
           </h1>
 
           {/* Subheadline */}
           <p className="mt-6 max-w-2xl text-center text-sm leading-relaxed text-white/60 sm:text-base md:text-lg">
-            Paste your notes or upload a PDF. StudyClash&apos;s AI turns them
-            into a fast quiz battle, scores your run, shows you exactly which
-            topics to review, and gives you a link to challenge your friends
-            on the same deck.
+            StudyClash is not passive review. Battle through AI-generated
+            questions, expose weak skills, and let ClashPath map your next
+            best move after every run with mastery percentages, mistake
+            diagnosis, and targeted rematches.
           </p>
 
           {/* CTA buttons */}
@@ -86,9 +86,9 @@ export default function Home() {
           <div className="mt-10 flex w-full max-w-3xl flex-wrap items-center justify-center gap-x-6 gap-y-3 sm:mt-12">
             {[
               "AI-generated questions",
-              "Weak topic reports",
+              "ClashPath mastery maps",
+              "Weakness rematch modes",
               "Live leaderboards",
-              "Challenge links",
             ].map((feature) => (
               <div key={feature} className="flex items-center gap-1.5">
                 <svg
@@ -122,7 +122,7 @@ export default function Home() {
               How It Works
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-sm text-white/50 sm:text-base">
-              From raw notes to a finished battle in under a minute.
+              From notes to an adaptive mastery path in under a minute.
             </p>
           </div>
 
@@ -174,7 +174,7 @@ export default function Home() {
                 ),
                 step: "04",
                 title: "Review Weak Topics",
-                desc: "See exactly which topics tripped you up and what to restudy.",
+                desc: "ClashPath marks mastered, close, and weak topics with mastery percentages.",
               },
               {
                 icon: (
@@ -186,7 +186,7 @@ export default function Home() {
                 ),
                 step: "05",
                 title: "Challenge Friends",
-                desc: "Share a link so friends can play the exact same deck and compete on the leaderboard.",
+                desc: "Share the same battle and race your ratings on the leaderboard.",
               },
             ].map((item) => (
               <div
@@ -227,11 +227,11 @@ export default function Home() {
               Not Just Flashcards
             </span>
             <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">
-              Why It&apos;s Better Than Flashcards
+              Why It&apos;s A Training Arena
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-sm text-white/50 sm:text-base">
-              Flashcards test recall in isolation. StudyClash turns studying
-              into a competitive, social, self-correcting loop.
+              Flashcards are static recall. StudyClash is adaptive competition
+              with AI coaching, progression pressure, and skill recovery loops.
             </p>
           </div>
 

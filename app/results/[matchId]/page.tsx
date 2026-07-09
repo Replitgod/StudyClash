@@ -1,11 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
 import type { AnalyticsEventName } from "@/lib/trackEvent";
+import GigglesCoach from "@/app/components/GigglesCoach";
+import {
+  buildClashPathReport,
+  type ClashPathAttempt,
+  type ClashPathQuestionResult,
+  type ClashPathReport,
+} from "@/lib/clashpath";
+import {
+  buildMistakeBreakdowns,
+  getMistakeTypeLabel,
+  type MistakeBreakdown,
+  type MistakeHistoryStats,
+} from "@/lib/mistakeBreakdown";
 
 type Match = {
   id: string;
@@ -38,6 +51,22 @@ type Question = {
 
 // Shape of a row read directly from the match_answers table.
 type MatchAnswerRow = {
+  question_id: string;
+  selected_answer: string;
+  is_correct: boolean;
+  response_time_ms?: number | null;
+};
+
+type HistoricalMatchRow = {
+  id: string;
+  correct_answers: number;
+  total_questions: number;
+  time_taken_seconds: number;
+  created_at: string;
+};
+
+type HistoricalMatchAnswerRow = {
+  match_id: string;
   question_id: string;
   selected_answer: string;
   is_correct: boolean;
@@ -90,7 +119,16 @@ type ProgressSnapshot = {
   awardedMatchIds: string[];
   bestScoresByDeck: Record<string, DeckAttemptRecord>;
   lastAttemptsByDeck: Record<string, DeckAttemptRecord>;
+  bossAwardedMatchIds: string[];
+  bossBadges: string[];
 };
+
+type BossMistakeDnaStat = {
+  type: string;
+  count: number;
+};
+
+const BOSS_BONUS_XP = 250;
 
 type BattleProgress = {
   xpEarned: number;
@@ -291,6 +329,8 @@ function loadProgressSnapshot(storageKey: string): ProgressSnapshot {
       awardedMatchIds: [],
       bestScoresByDeck: {},
       lastAttemptsByDeck: {},
+      bossAwardedMatchIds: [],
+      bossBadges: [],
     };
   }
 
@@ -302,6 +342,8 @@ function loadProgressSnapshot(storageKey: string): ProgressSnapshot {
         awardedMatchIds: [],
         bestScoresByDeck: {},
         lastAttemptsByDeck: {},
+        bossAwardedMatchIds: [],
+        bossBadges: [],
       };
     }
 
@@ -311,6 +353,8 @@ function loadProgressSnapshot(storageKey: string): ProgressSnapshot {
       awardedMatchIds: parsed.awardedMatchIds || [],
       bestScoresByDeck: parsed.bestScoresByDeck || {},
       lastAttemptsByDeck: parsed.lastAttemptsByDeck || {},
+      bossAwardedMatchIds: parsed.bossAwardedMatchIds || [],
+      bossBadges: parsed.bossBadges || [],
     };
   } catch {
     return {
@@ -318,6 +362,8 @@ function loadProgressSnapshot(storageKey: string): ProgressSnapshot {
       awardedMatchIds: [],
       bestScoresByDeck: {},
       lastAttemptsByDeck: {},
+      bossAwardedMatchIds: [],
+      bossBadges: [],
     };
   }
 }
@@ -325,6 +371,27 @@ function loadProgressSnapshot(storageKey: string): ProgressSnapshot {
 function saveProgressSnapshot(storageKey: string, snapshot: ProgressSnapshot) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(storageKey, JSON.stringify(snapshot));
+}
+
+function parseDelimitedList(value: string | null): string[] {
+  if (!value) return [];
+  return value
+    .split("|")
+    .map((item) => decodeURIComponent(item).trim())
+    .filter(Boolean);
+}
+
+function buildBossMistakeDnaStats(items: MistakeBreakdown[]): BossMistakeDnaStat[] {
+  const byType = new Map<string, number>();
+
+  for (const item of items) {
+    const label = getMistakeTypeLabel(item.confidenceRating);
+    byType.set(label, (byType.get(label) || 0) + 1);
+  }
+
+  return Array.from(byType.entries())
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 function calculateBattleXp(params: {
@@ -589,6 +656,66 @@ function safeTrackEvent(name: AnalyticsEventName, payload?: Record<string, unkno
   }
 }
 
+function getConfidenceStyle(confidence: MistakeBreakdown["confidenceRating"]): {
+  border: string;
+  bg: string;
+  text: string;
+} {
+  if (confidence === "careless_mistake" || confidence === "careless_error") {
+    return {
+      border: "border-amber-400/30",
+      bg: "bg-amber-500/10",
+      text: "text-amber-200",
+    };
+  }
+
+  if (confidence === "concept_gap") {
+    return {
+      border: "border-red-400/30",
+      bg: "bg-red-500/10",
+      text: "text-red-200",
+    };
+  }
+
+  if (confidence === "slow_response" || confidence === "speed_trap") {
+    return {
+      border: "border-cyan-400/30",
+      bg: "bg-cyan-500/10",
+      text: "text-cyan-200",
+    };
+  }
+
+  if (confidence === "misread_question") {
+    return {
+      border: "border-orange-400/30",
+      bg: "bg-orange-500/10",
+      text: "text-orange-200",
+    };
+  }
+
+  if (confidence === "repeated_weakness") {
+    return {
+      border: "border-rose-400/30",
+      bg: "bg-rose-500/10",
+      text: "text-rose-200",
+    };
+  }
+
+  if (confidence === "almost_mastered") {
+    return {
+      border: "border-emerald-400/30",
+      bg: "bg-emerald-500/10",
+      text: "text-emerald-200",
+    };
+  }
+
+  return {
+    border: "border-fuchsia-400/30",
+    bg: "bg-fuchsia-500/10",
+    text: "text-fuchsia-200",
+  };
+}
+
 export default function ResultsPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -616,8 +743,31 @@ export default function ResultsPage() {
   const [deckLeaderboard, setDeckLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
   const [battleProgress, setBattleProgress] = useState<BattleProgress | null>(null);
+  const [clashPathReport, setClashPathReport] = useState<ClashPathReport | null>(null);
+  const [isClashPathLoading, setIsClashPathLoading] = useState(false);
+  const [mistakeHistory, setMistakeHistory] = useState<MistakeHistoryStats>({
+    topicMisses: {},
+    selectedOptionRepeats: {},
+  });
+  const [isSavingMistakes, setIsSavingMistakes] = useState(false);
   const challengeFromMatchId = searchParams.get("challengeFrom");
   const challengeScoreParam = searchParams.get("challengeScore");
+  const modeParam = (searchParams.get("mode") || "").toLowerCase();
+  const isBossBattle = modeParam === "boss";
+  const isRivalBattle = modeParam === "rival";
+  const bossName = searchParams.get("bossName") || "Boss Battle";
+  const bossTargetScore = Number(searchParams.get("bossTargetScore") || "0");
+  const bossTargetAccuracy = Number(searchParams.get("bossTargetAccuracy") || "0");
+  const bossWeakTopicsFromParams = parseDelimitedList(searchParams.get("bossWeakTopics"));
+  const bossStrongTopicsFromParams = parseDelimitedList(searchParams.get("bossStrongTopics"));
+  const nextBossFromParams = searchParams.get("nextBoss") || "";
+  const rivalName = searchParams.get("rivalName") || "Study Rival";
+  const rivalRank = searchParams.get("rivalRank") || "Rookie";
+  const rivalScore = Number(searchParams.get("rivalScore") || "0");
+  const rivalAccuracy = Number(searchParams.get("rivalAccuracy") || "0");
+  const rivalTargetAccuracy = Number(searchParams.get("rivalTargetAccuracy") || "0");
+  const rivalWeakTopics = parseDelimitedList(searchParams.get("rivalWeakTopics"));
+  const rivalStrengths = parseDelimitedList(searchParams.get("rivalStrengths"));
   const challengeBaseScore =
     challengeScoreParam !== null && challengeScoreParam !== ""
       ? Number(challengeScoreParam)
@@ -640,6 +790,8 @@ export default function ResultsPage() {
       setHasAnswerData(false);
       setAnswerDataMessage(null);
       setBattleProgress(null);
+      setClashPathReport(null);
+      setMistakeHistory({ topicMisses: {}, selectedOptionRepeats: {} });
 
       // 1. Load the match
       const { data: matchData, error: matchError } = await supabase
@@ -873,13 +1025,25 @@ export default function ResultsPage() {
     const previousBest = snapshot.bestScoresByDeck[deck.id] || null;
     const previousAttempt = snapshot.lastAttemptsByDeck[deck.id] || null;
     const alreadyAwarded = snapshot.awardedMatchIds.includes(match.id);
-    const xpEarned = calculateBattleXp({
+    const baseXpEarned = calculateBattleXp({
       accuracyPercent: currentAccuracy,
       averageResponseTimeMs,
       totalQuestions: match.total_questions,
       completedQuestions:
         reviewItems.length > 0 ? reviewItems.length : match.total_questions,
     });
+    const targetScore = Number.isFinite(bossTargetScore) ? bossTargetScore : 0;
+    const targetAccuracy = Number.isFinite(bossTargetAccuracy) ? bossTargetAccuracy : 0;
+    const didDefeatBoss =
+      isBossBattle &&
+      match.score >= targetScore &&
+      currentAccuracy >= targetAccuracy;
+    const bossAlreadyAwarded = snapshot.bossAwardedMatchIds.includes(match.id);
+    const bossXpBonus = didDefeatBoss && !bossAlreadyAwarded ? BOSS_BONUS_XP : 0;
+    const xpEarned = baseXpEarned + bossXpBonus;
+    const bossBadgeName = didDefeatBoss
+      ? `${bossName} Slayer`
+      : "";
 
     const nextSnapshot: ProgressSnapshot = {
       totalXp: alreadyAwarded ? snapshot.totalXp : snapshot.totalXp + xpEarned,
@@ -888,6 +1052,14 @@ export default function ResultsPage() {
         : [...snapshot.awardedMatchIds, match.id],
       bestScoresByDeck: { ...snapshot.bestScoresByDeck },
       lastAttemptsByDeck: { ...snapshot.lastAttemptsByDeck },
+      bossAwardedMatchIds:
+        didDefeatBoss && !bossAlreadyAwarded
+          ? [...snapshot.bossAwardedMatchIds, match.id]
+          : snapshot.bossAwardedMatchIds,
+      bossBadges:
+        didDefeatBoss && bossBadgeName && !snapshot.bossBadges.includes(bossBadgeName)
+          ? [...snapshot.bossBadges, bossBadgeName]
+          : snapshot.bossBadges,
     };
 
     const shouldUpdateBest =
@@ -931,7 +1103,283 @@ export default function ResultsPage() {
         weakestTopic: weakTopic,
       });
     });
-  }, [match, deck, hasAnswerData, reviewItems, weakTopics]);
+  }, [
+    match,
+    deck,
+    hasAnswerData,
+    reviewItems,
+    weakTopics,
+    isBossBattle,
+    bossTargetScore,
+    bossTargetAccuracy,
+    bossName,
+  ]);
+
+  useEffect(() => {
+    if (!match || !deck) return;
+
+    const currentMatch = match;
+    const currentDeck = deck;
+
+    let cancelled = false;
+
+    async function buildClashPath() {
+      setIsClashPathLoading(true);
+
+      const currentQuestions: ClashPathQuestionResult[] = reviewItems.map((item) => ({
+        topic: item.question.topic || "General",
+        difficulty: (item.question.difficulty || "").toLowerCase(),
+        isCorrect: item.isCorrect,
+        responseTimeMs: item.responseTimeMs || 0,
+        selectedAnswer: item.selectedAnswer,
+        correctAnswer: item.question.correct_answer,
+      }));
+
+      const currentAverageResponseTimeMs =
+        currentQuestions.length > 0
+          ? Math.round(
+              currentQuestions.reduce(
+                (sum, question) => sum + question.responseTimeMs,
+                0
+              ) / currentQuestions.length
+            )
+          : currentMatch.total_questions > 0
+            ? Math.round(
+                (currentMatch.time_taken_seconds * 1000) /
+                  currentMatch.total_questions
+              )
+            : 0;
+
+      const currentAttempt: ClashPathAttempt = {
+        accuracyPercent: calculateAccuracy(
+          currentMatch.correct_answers,
+          currentMatch.total_questions
+        ),
+        avgResponseTimeMs: currentAverageResponseTimeMs,
+        questions: currentQuestions,
+      };
+
+      try {
+        const { data: previousMatches, error: previousMatchesError } = await supabase
+          .from("matches")
+          .select("id, correct_answers, total_questions, time_taken_seconds, created_at")
+          .eq("deck_id", currentDeck.id)
+          .eq("player_name", currentMatch.player_name)
+          .neq("id", currentMatch.id)
+          .order("created_at", { ascending: true })
+          .limit(8);
+
+        if (previousMatchesError || !previousMatches || previousMatches.length === 0) {
+          if (!cancelled) {
+            setClashPathReport(
+              buildClashPathReport({
+                deckId: currentDeck.id,
+                currentAttempt,
+                historicalAttempts: [],
+              })
+            );
+          }
+          return;
+        }
+
+        const previousMatchIds = previousMatches.map((entry) => entry.id);
+
+        const [questionResult, previousAnswerResult] = await Promise.all([
+          supabase
+            .from("questions")
+            .select("id, topic, difficulty, correct_answer")
+            .eq("deck_id", currentDeck.id),
+          supabase
+            .from("match_answers")
+            .select("match_id, question_id, selected_answer, is_correct, response_time_ms")
+            .in("match_id", previousMatchIds),
+        ]);
+
+        if (questionResult.error || previousAnswerResult.error) {
+          if (!cancelled) {
+            setClashPathReport(
+              buildClashPathReport({
+                deckId: currentDeck.id,
+                currentAttempt,
+                historicalAttempts: [],
+              })
+            );
+          }
+          return;
+        }
+
+        const questionById = new Map(
+          (questionResult.data || []).map((question) => [question.id, question])
+        );
+
+        const groupedAnswers = new Map<string, ClashPathQuestionResult[]>();
+
+        for (const answer of (previousAnswerResult.data || []) as HistoricalMatchAnswerRow[]) {
+          const questionMeta = questionById.get(answer.question_id);
+          if (!questionMeta) continue;
+
+          const bucket = groupedAnswers.get(answer.match_id) || [];
+          bucket.push({
+            topic: questionMeta.topic || "General",
+            difficulty: (questionMeta.difficulty || "").toLowerCase(),
+            isCorrect: answer.is_correct,
+            responseTimeMs: answer.response_time_ms || 0,
+            selectedAnswer: answer.selected_answer,
+            correctAnswer: questionMeta.correct_answer,
+          });
+          groupedAnswers.set(answer.match_id, bucket);
+        }
+
+        const historicalAttempts: ClashPathAttempt[] = (
+          previousMatches as HistoricalMatchRow[]
+        )
+          .map((entry) => {
+            const questions = groupedAnswers.get(entry.id) || [];
+            const avgResponseTimeMs =
+              questions.length > 0
+                ? Math.round(
+                    questions.reduce(
+                      (sum, question) => sum + question.responseTimeMs,
+                      0
+                    ) / questions.length
+                  )
+                : entry.total_questions > 0
+                  ? Math.round((entry.time_taken_seconds * 1000) / entry.total_questions)
+                  : 0;
+
+            return {
+              accuracyPercent: calculateAccuracy(
+                entry.correct_answers,
+                entry.total_questions
+              ),
+              avgResponseTimeMs,
+              createdAt: entry.created_at,
+              questions,
+            };
+          })
+          .filter((entry) => entry.questions.length > 0);
+
+        if (!cancelled) {
+          setClashPathReport(
+            buildClashPathReport({
+              deckId: currentDeck.id,
+              currentAttempt,
+              historicalAttempts,
+            })
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsClashPathLoading(false);
+        }
+      }
+    }
+
+    void buildClashPath();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [deck, match, reviewItems]);
+
+  useEffect(() => {
+    if (!deck || !match) return;
+
+    const currentDeck = deck;
+    const currentMatch = match;
+
+    let cancelled = false;
+
+    async function loadMistakeHistory() {
+      try {
+        const response = await fetch(
+          `/api/mistake-breakdown?deckId=${encodeURIComponent(
+            currentDeck.id
+          )}&playerName=${encodeURIComponent(currentMatch.player_name)}`
+        );
+        const data = await response.json();
+
+        if (cancelled) return;
+
+        setMistakeHistory({
+          topicMisses:
+            data?.topicMisses && typeof data.topicMisses === "object"
+              ? data.topicMisses
+              : {},
+          selectedOptionRepeats:
+            data?.selectedOptionRepeats &&
+            typeof data.selectedOptionRepeats === "object"
+              ? data.selectedOptionRepeats
+              : {},
+        });
+      } catch {
+        if (cancelled) return;
+        setMistakeHistory({ topicMisses: {}, selectedOptionRepeats: {} });
+      }
+    }
+
+    void loadMistakeHistory();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [deck, match]);
+
+  const mistakeBreakdowns = useMemo(() => {
+    if (!deck || reviewItems.length === 0) return [];
+
+    return buildMistakeBreakdowns({
+      deckId: deck.id,
+      reviewItems: reviewItems.map((item) => ({
+        questionId: item.question.id,
+        questionText: item.question.question_text,
+        topic: item.question.topic,
+        difficulty: item.question.difficulty,
+        selectedAnswer: item.selectedAnswer,
+        correctAnswer: item.question.correct_answer,
+        explanation: item.question.explanation,
+        responseTimeMs: item.responseTimeMs || 0,
+        isCorrect: item.isCorrect,
+      })),
+      history: mistakeHistory,
+    });
+  }, [deck, reviewItems, mistakeHistory]);
+
+  useEffect(() => {
+    if (!deck || !match || mistakeBreakdowns.length === 0) return;
+
+    const currentDeck = deck;
+    const currentMatch = match;
+
+    let cancelled = false;
+
+    async function saveMistakeBreakdowns() {
+      setIsSavingMistakes(true);
+
+      try {
+        await fetch("/api/mistake-breakdown", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            deckId: currentDeck.id,
+            matchId: currentMatch.id,
+            playerName: currentMatch.player_name,
+            records: mistakeBreakdowns,
+          }),
+        });
+      } finally {
+        if (!cancelled) {
+          setIsSavingMistakes(false);
+        }
+      }
+    }
+
+    void saveMistakeBreakdowns();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [deck, match, mistakeBreakdowns]);
 
   const formatTime = (totalSeconds: number) => {
     const minutes = Math.floor(totalSeconds / 60);
@@ -1094,6 +1542,67 @@ export default function ResultsPage() {
   const studyPlan = buildStudyPlan(weakTopics || []);
 
   const currentAccuracyPercent = accuracyPercent;
+  const rivalRanks: Array<"Rookie" | "Grinder" | "Scholar" | "Genius" | "Legend"> = [
+    "Rookie",
+    "Grinder",
+    "Scholar",
+    "Genius",
+    "Legend",
+  ];
+  const rivalRankIndex = rivalRanks.findIndex((rankName) => rankName === rivalRank);
+  const nextRivalRank =
+    rivalRankIndex >= 0 && rivalRankIndex < rivalRanks.length - 1
+      ? rivalRanks[rivalRankIndex + 1]
+      : null;
+  const didBeatRival =
+    isRivalBattle &&
+    (match.score > rivalScore ||
+      (match.score === rivalScore && currentAccuracyPercent >= rivalAccuracy));
+  const rivalWinLoss = didBeatRival ? "Win" : "Loss";
+  const rivalGap = match.score - rivalScore;
+  const rivalBetterAt =
+    rivalWeakTopics.length > 0
+      ? rivalWeakTopics.slice(0, 3)
+      : (weakTopics || []).slice(0, 3).map((topic) => topic.topic);
+  const studentNeedsImprove =
+    (weakTopics || []).slice(0, 3).map((topic) => topic.topic).length > 0
+      ? (weakTopics || []).slice(0, 3).map((topic) => topic.topic)
+      : ["Consistency", "Hard-question accuracy"];
+  const unlockNextRivalMessage = nextRivalRank
+    ? `Reach ${Math.max(65, currentAccuracyPercent + 4)}%+ accuracy over your next few rival runs to unlock ${nextRivalRank}.`
+    : "You have unlocked every rival rank. Keep rematching to dominate the leaderboard.";
+  const resolvedBossWeakTopics =
+    bossWeakTopicsFromParams.length > 0
+      ? bossWeakTopicsFromParams
+      : (weakTopics || []).map((topic) => topic.topic).slice(0, 4);
+  const resolvedBossStrongTopics =
+    bossStrongTopicsFromParams.length > 0
+      ? bossStrongTopicsFromParams
+      : bestTopics.map((topic) => topic.topic).slice(0, 4);
+  const hasBossTargets = bossTargetScore > 0 && bossTargetAccuracy > 0;
+  const didDefeatBoss =
+    isBossBattle &&
+    hasBossTargets &&
+    match.score >= bossTargetScore &&
+    currentAccuracyPercent >= bossTargetAccuracy;
+  const bossMistakeDnaStats = buildBossMistakeDnaStats(mistakeBreakdowns);
+  const bossMasteryGained = didDefeatBoss
+    ? Math.max(
+        6,
+        Math.round(
+          (currentAccuracyPercent - Math.max(0, bossTargetAccuracy - 15)) / 2
+        )
+      )
+    : Math.max(
+        2,
+        Math.round(
+          (currentAccuracyPercent - Math.max(0, bossTargetAccuracy - 30)) / 6
+        )
+      );
+  const bossPracticeTargets = (weakTopics || []).slice(0, 3).map((topic) => topic.topic);
+  const nextRecommendedBoss =
+    nextBossFromParams ||
+    `${deck.course_name} Boss: ${(weakTopics || [])[0]?.topic || bestTopics[0]?.topic || "Mixed Mastery"}`;
   const challengeGap =
     hasChallengeComparison && challengeBaseScore !== null
       ? currentAccuracyPercent - challengeBaseScore
@@ -1116,6 +1625,32 @@ export default function ResultsPage() {
       )
     ).join(",")
   );
+  const coachWeakTopics = (weakTopics || []).map((topic) => topic.topic);
+  const coachMissedQuestions = reviewItems
+    .filter((item) => !item.isCorrect)
+    .map((item) => ({
+      questionText: item.question.question_text,
+      selectedAnswer: item.selectedAnswer,
+      correctAnswer: item.question.correct_answer,
+      topic: item.question.topic,
+      explanation: item.question.explanation,
+    }));
+  const coachMistakeDna = mistakeBreakdowns.map((item) => ({
+    questionId: item.questionId,
+    topic: item.topic,
+    selectedAnswer: item.selectedAnswer,
+    correctAnswer: item.correctAnswer,
+    misunderstoodConcept: item.misunderstoodConcept,
+    mistakeType: item.confidenceRating,
+  }));
+  const coachMasteryProgress = clashPathReport
+    ? clashPathReport.topicInsights.slice(0, 6).map((topic) => ({
+        label: topic.topic,
+        value: topic.masteryPercent,
+        details: `Status: ${topic.status}`,
+      }))
+    : [];
+  const coachPreviousRematches = Math.max(0, deckLeaderboard.length - 1);
 
   return (
     <Background>
@@ -1135,6 +1670,167 @@ export default function ResultsPage() {
         <p className="mt-3 break-words text-center text-sm text-white/50">
           {deck.title} · {deck.course_name}
         </p>
+
+        {isBossBattle && (
+          <div className="mt-5 rounded-2xl border border-fuchsia-400/25 bg-gradient-to-r from-fuchsia-500/[0.1] via-black/30 to-cyan-500/[0.08] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-fuchsia-200">
+                  Boss Battle Result
+                </p>
+                <h2 className="mt-1 text-lg font-black text-white sm:text-xl">
+                  {bossName}
+                </h2>
+              </div>
+              <span
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider ${
+                  didDefeatBoss
+                    ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
+                    : "border-red-400/30 bg-red-500/15 text-red-200"
+                }`}
+              >
+                {didDefeatBoss ? "Boss Defeated" : "Boss Survived"}
+              </span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Score</p>
+                <p className="mt-1 text-sm font-bold text-white">{match.score}</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Accuracy</p>
+                <p className="mt-1 text-sm font-bold text-white">{currentAccuracyPercent}%</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Time</p>
+                <p className="mt-1 text-sm font-bold text-white">{formatTime(match.time_taken_seconds)}</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Mastery Gained</p>
+                <p className="mt-1 text-sm font-bold text-cyan-200">+{bossMasteryGained}%</p>
+              </div>
+            </div>
+
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="rounded-lg border border-red-400/20 bg-red-500/[0.08] px-3 py-2.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-red-200">Weak Topics</p>
+                <p className="mt-1 text-xs text-white/80">
+                  {resolvedBossWeakTopics.length > 0 ? resolvedBossWeakTopics.join(" · ") : "No weak topics recorded."}
+                </p>
+              </div>
+              <div className="rounded-lg border border-emerald-400/20 bg-emerald-500/[0.08] px-3 py-2.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-200">Strong Topics</p>
+                <p className="mt-1 text-xs text-white/80">
+                  {resolvedBossStrongTopics.length > 0 ? resolvedBossStrongTopics.join(" · ") : "No strong topics recorded."}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3 rounded-lg border border-white/10 bg-black/25 px-3 py-2.5">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-white/55">Mistake DNA</p>
+              <p className="mt-1 text-xs text-white/80">
+                {bossMistakeDnaStats.length > 0
+                  ? bossMistakeDnaStats.map((item) => `${item.type}: ${item.count}`).join(" · ")
+                  : "No mistake DNA captured for this boss run."}
+              </p>
+            </div>
+
+            {!didDefeatBoss && (
+              <div className="mt-3 rounded-lg border border-amber-400/20 bg-amber-500/[0.08] px-3 py-2.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-amber-200">
+                  Practice Before Retry
+                </p>
+                <p className="mt-1 text-xs text-white/85">
+                  Focus on {bossPracticeTargets.length > 0 ? bossPracticeTargets.join(" and ") : "your weakest concepts"}, then run one weak-topic rematch and one quick-check before re-challenging this boss.
+                </p>
+              </div>
+            )}
+
+            {didDefeatBoss && (
+              <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-500/[0.08] px-3 py-2.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-200">
+                  Victory Rewards
+                </p>
+                <p className="mt-1 text-xs text-white/85">
+                  +{BOSS_BONUS_XP} bonus XP, boss badge unlocked, and mastery progress advanced.
+                </p>
+              </div>
+            )}
+
+            <p className="mt-3 text-xs text-cyan-100/90">
+              Next recommended boss: {nextRecommendedBoss}
+            </p>
+          </div>
+        )}
+
+        {isRivalBattle && (
+          <div className="mt-5 rounded-2xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/[0.1] via-black/30 to-fuchsia-500/[0.08] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-200">
+                  Study Rival Result
+                </p>
+                <h2 className="mt-1 text-lg font-black text-white sm:text-xl">
+                  {rivalName} · {rivalRank}
+                </h2>
+              </div>
+              <span
+                className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider ${
+                  didBeatRival
+                    ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
+                    : "border-red-400/30 bg-red-500/15 text-red-200"
+                }`}
+              >
+                {rivalWinLoss}
+              </span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Student Score</p>
+                <p className="mt-1 text-sm font-bold text-white">{match.score}</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">AI Rival Score</p>
+                <p className="mt-1 text-sm font-bold text-white">{rivalScore}</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Score Gap</p>
+                <p className="mt-1 text-sm font-bold text-white">{rivalGap >= 0 ? "+" : ""}{rivalGap}</p>
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Rival Accuracy</p>
+                <p className="mt-1 text-sm font-bold text-white">{rivalAccuracy}%</p>
+              </div>
+            </div>
+
+            <p className="mt-3 text-xs text-cyan-100/90">
+              Rival target accuracy: {rivalTargetAccuracy > 0 ? `${rivalTargetAccuracy}%` : "Adaptive"}
+            </p>
+
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="rounded-lg border border-fuchsia-400/20 bg-fuchsia-500/[0.08] px-3 py-2.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-fuchsia-200">Rival Better At</p>
+                <p className="mt-1 text-xs text-white/85">
+                  {rivalBetterAt.length > 0 ? rivalBetterAt.join(" · ") : "No dominant rival lane detected."}
+                </p>
+              </div>
+              <div className="rounded-lg border border-amber-400/20 bg-amber-500/[0.08] px-3 py-2.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-amber-200">Improve Next</p>
+                <p className="mt-1 text-xs text-white/85">{studentNeedsImprove.join(" · ")}</p>
+              </div>
+            </div>
+
+            {rivalStrengths.length > 0 && (
+              <p className="mt-3 text-xs text-emerald-100/90">
+                Rival strengths: {rivalStrengths.join(" · ")}
+              </p>
+            )}
+
+            <p className="mt-3 text-xs text-white/80">{unlockNextRivalMessage}</p>
+          </div>
+        )}
 
         {answerDataMessage && (
           <div className="mt-5 rounded-2xl border border-amber-400/20 bg-amber-500/[0.06] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
@@ -1213,6 +1909,185 @@ export default function ResultsPage() {
             </div>
           </div>
         )}
+
+        <div className="mt-6 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/5 to-fuchsia-500/5 p-4 backdrop-blur-sm sm:mt-8 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+                ClashPath
+              </p>
+              <h2 className="mt-1 text-lg font-bold text-white sm:text-xl">
+                Personalized Mastery Path
+              </h2>
+            </div>
+            {clashPathReport && (
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-cyan-200">
+                Clash Rating {clashPathReport.clashRating}
+              </span>
+            )}
+          </div>
+
+          {isClashPathLoading ? (
+            <p className="mt-4 text-sm text-white/50">
+              Building your ClashPath from battle patterns...
+            </p>
+          ) : !clashPathReport ? (
+            <p className="mt-4 text-sm text-white/50">
+              ClashPath could not be generated for this run.
+            </p>
+          ) : (
+            <>
+              <p className="mt-3 text-sm text-white/70">
+                {clashPathReport.improvementSummary}
+              </p>
+              <p className="mt-1 text-xs text-white/45">
+                Arena state: {clashPathReport.masteryMapLabel}
+              </p>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/[0.06] p-3.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">
+                    1. Mastered
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-white/90">
+                    {clashPathReport.masteredTopics.length === 0
+                      ? "None yet"
+                      : clashPathReport.masteredTopics
+                          .slice(0, 3)
+                          .map((topic) => `${topic.topic} (${topic.masteryPercent}%)`)
+                          .join(" · ")}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-amber-400/25 bg-amber-500/[0.06] p-3.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-amber-300">
+                    2. Close To Mastery
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-white/90">
+                    {clashPathReport.closeTopics.length === 0
+                      ? "No near-mastery lane"
+                      : clashPathReport.closeTopics
+                          .slice(0, 3)
+                          .map((topic) => `${topic.topic} (${topic.masteryPercent}%)`)
+                          .join(" · ")}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-red-400/25 bg-red-500/[0.06] p-3.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-red-300">
+                    3. Weak Lanes
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-white/90">
+                    {clashPathReport.weakTopics.length === 0
+                      ? "No weak lane detected"
+                      : clashPathReport.weakTopics
+                          .slice(0, 3)
+                          .map((topic) => `${topic.topic} (${topic.masteryPercent}%)`)
+                          .join(" · ")}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-3.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-white/55">
+                  4. Why You Are Missing Questions
+                </p>
+                {clashPathReport.whyMistakes.length === 0 ? (
+                  <p className="mt-2 text-sm text-white/70">
+                    No dominant mistake pattern found in this run.
+                  </p>
+                ) : (
+                  <div className="mt-2 flex flex-col gap-2">
+                    {clashPathReport.whyMistakes.slice(0, 4).map((reason) => (
+                      <div
+                        key={reason.id}
+                        className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2"
+                      >
+                        <p className="text-xs font-bold text-cyan-200">{reason.title}</p>
+                        <p className="mt-0.5 text-xs text-white/60">{reason.detail}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-cyan-400/25 bg-cyan-500/[0.06] p-3.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-cyan-300">
+                    5. Next Best Battle
+                  </p>
+                  <p className="mt-2 text-sm text-white/80">
+                    {clashPathReport.nextBestBattle.reason}
+                  </p>
+                  <Link
+                    href={clashPathReport.nextBestBattle.href}
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-cyan-500 to-fuchsia-500 px-3.5 py-2 text-xs font-bold text-white"
+                  >
+                    {clashPathReport.nextBestBattle.label}
+                    <svg
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M13 7l5 5m0 0l-5 5m5-5H6"
+                      />
+                    </svg>
+                  </Link>
+                </div>
+
+                <div className="rounded-xl border border-fuchsia-400/25 bg-fuchsia-500/[0.06] p-3.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-fuchsia-300">
+                    7. Next Best Move
+                  </p>
+                  <p className="mt-2 text-sm text-white/80">
+                    {clashPathReport.nextBestMove}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-3.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-white/55">
+                  6. Topic Mastery Map
+                </p>
+                {clashPathReport.topicInsights.length === 0 ? (
+                  <p className="mt-2 text-sm text-white/60">
+                    Topic mastery will appear once answer-level review data is available.
+                  </p>
+                ) : (
+                  <div className="mt-3 flex flex-col gap-2.5">
+                    {clashPathReport.topicInsights.map((topic) => (
+                      <div key={topic.topic}>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-sm font-semibold text-white/90">
+                            {topic.topic}
+                          </p>
+                          <span className="text-xs font-bold text-cyan-200">
+                            {topic.masteryPercent}%
+                          </span>
+                        </div>
+                        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                          <div
+                            className={`h-full rounded-full ${
+                              topic.status === "mastered"
+                                ? "bg-emerald-400"
+                                : topic.status === "close"
+                                  ? "bg-amber-400"
+                                  : "bg-red-400"
+                            }`}
+                            style={{ width: `${topic.masteryPercent}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Weak Topic Report */}
         {hasAnswerData && (
@@ -1738,6 +2613,12 @@ export default function ResultsPage() {
             <div className="mt-5 flex flex-col gap-4">
               {reviewItems.map((item, index) => {
                 const reportState = getReportState(item.question.id);
+                const mistakeBreakdown = mistakeBreakdowns.find(
+                  (entry) => entry.questionId === item.question.id
+                );
+                const confidenceStyle = mistakeBreakdown
+                  ? getConfidenceStyle(mistakeBreakdown.confidenceRating)
+                  : null;
 
                 return (
                   <div
@@ -1803,6 +2684,108 @@ export default function ResultsPage() {
                     <div className="mt-3 break-words rounded-lg border border-white/10 bg-black/20 px-3.5 py-2.5 text-xs text-white/60 sm:text-sm">
                       {item.question.explanation}
                     </div>
+
+                    {!item.isCorrect && mistakeBreakdown && confidenceStyle && (
+                      <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] p-3.5">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-cyan-300">
+                          Mistake Breakdown
+                        </p>
+
+                        <div className="mt-2 rounded-lg border border-white/10 bg-black/20 px-3 py-2.5">
+                          <p className="text-[11px] font-bold text-white/55">
+                            1. Selected answer
+                          </p>
+                          <p className="mt-1 text-xs text-red-200">
+                            {mistakeBreakdown.selectedAnswer}
+                          </p>
+                          <p className="mt-2 text-[11px] font-bold text-white/55">
+                            2. Correct answer
+                          </p>
+                          <p className="mt-1 text-xs text-emerald-200">
+                            {mistakeBreakdown.correctAnswer}
+                          </p>
+                        </div>
+
+                        <div className="mt-2 space-y-2">
+                          <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2.5">
+                            <p className="text-[11px] font-bold text-white/55">
+                              3. Why your answer was tempting but wrong
+                            </p>
+                            <p className="mt-1 text-xs text-white/75">
+                              {mistakeBreakdown.temptingButWrongReason}
+                            </p>
+                          </div>
+                          <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2.5">
+                            <p className="text-[11px] font-bold text-white/55">
+                              4. Why the correct answer is right
+                            </p>
+                            <p className="mt-1 text-xs text-white/75">
+                              {mistakeBreakdown.correctWhyReason}
+                            </p>
+                          </div>
+                          <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2.5">
+                            <p className="text-[11px] font-bold text-white/55">
+                              5. Exact concept misunderstood
+                            </p>
+                            <p className="mt-1 text-xs text-white/75">
+                              {mistakeBreakdown.misunderstoodConcept}
+                            </p>
+                          </div>
+                          <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2.5">
+                            <p className="text-[11px] font-bold text-white/55">
+                              6. Simpler explanation
+                            </p>
+                            <p className="mt-1 text-xs text-white/75">
+                              {mistakeBreakdown.simplerExplanation}
+                            </p>
+                          </div>
+                          <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2.5">
+                            <p className="text-[11px] font-bold text-white/55">
+                              7. Memory trick
+                            </p>
+                            <p className="mt-1 text-xs text-white/75">
+                              {mistakeBreakdown.memoryTrick}
+                            </p>
+                          </div>
+                          <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2.5">
+                            <p className="text-[11px] font-bold text-white/55">
+                              8. Mini follow-up question
+                            </p>
+                            <p className="mt-1 text-xs text-white/75">
+                              {mistakeBreakdown.miniFollowUpQuestion}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                          <span
+                            className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${confidenceStyle.border} ${confidenceStyle.bg} ${confidenceStyle.text}`}
+                          >
+                            9. Confidence Rating: {getMistakeTypeLabel(mistakeBreakdown.confidenceRating)}
+                          </span>
+
+                          <Link
+                            href={mistakeBreakdown.fixWeaknessHref}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/30 bg-cyan-500/15 px-3 py-1.5 text-[11px] font-bold text-cyan-200 transition-colors hover:bg-cyan-500/25"
+                          >
+                            Fix This Weakness
+                            <svg
+                              className="h-3.5 w-3.5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2.5}
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M13 7l5 5m0 0l-5 5m5-5H6"
+                              />
+                            </svg>
+                          </Link>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Report Bad Question */}
                     <div className="mt-4 border-t border-white/10 pt-3">
@@ -1890,19 +2873,47 @@ export default function ResultsPage() {
           )}
         </div>
 
+        {isSavingMistakes && mistakeBreakdowns.length > 0 && (
+          <p className="mt-3 text-center text-xs text-white/35">
+            Saving mistake pattern data for future battles...
+          </p>
+        )}
+
+        <GigglesCoach
+          deckId={deck.id}
+          matchId={match.id}
+          deckTitle={deck.title}
+          courseName={deck.course_name}
+          playerName={match.player_name}
+          weakTopics={coachWeakTopics}
+          missedQuestions={coachMissedQuestions}
+          mistakeDna={coachMistakeDna}
+          battleScore={match.score}
+          accuracyPercent={currentAccuracyPercent}
+          previousRematches={coachPreviousRematches}
+          masteryProgress={coachMasteryProgress}
+          contextLabel="Results"
+        />
+
         {/* Action buttons */}
         <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
           <Link
-            href={`/battle/${deck.id}`}
+            href={
+              isRivalBattle
+                ? `/battle/${deck.id}?mode=rival&rivalRank=${encodeURIComponent(rivalRank)}`
+                : `/battle/${deck.id}`
+            }
             onClick={() =>
               safeTrackEvent("results_rematch_clicked", {
                 matchId: match.id,
                 deckId: deck.id,
+                mode: isRivalBattle ? "rival" : "battle",
+                rivalRank: isRivalBattle ? rivalRank : undefined,
               })
             }
             className="group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:px-8 sm:hover:scale-[1.02]"
           >
-            <span className="relative z-10">Rematch</span>
+            <span className="relative z-10">{isRivalBattle ? "Rematch Rival" : "Rematch"}</span>
             <svg
               className="relative z-10 h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
               fill="none"
@@ -1943,6 +2954,33 @@ export default function ResultsPage() {
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/30 px-6 py-4 text-base font-bold text-white/80 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-white/10 sm:px-8"
           >
             Practice Mode
+          </Link>
+
+          <Link
+            href={`/battle/${deck.id}?mode=rival${rivalRank ? `&rivalRank=${encodeURIComponent(rivalRank)}` : ""}`}
+            onClick={() =>
+              safeTrackEvent("results_rival_battle_clicked", {
+                matchId: match.id,
+                deckId: deck.id,
+                rivalRank,
+              })
+            }
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-cyan-400/25 bg-cyan-500/12 px-6 py-4 text-base font-bold text-cyan-100 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-cyan-500/20 sm:px-8"
+          >
+            Study Rival
+          </Link>
+
+          <Link
+            href={`/battle/${deck.id}?mode=boss`}
+            onClick={() =>
+              safeTrackEvent("results_boss_battle_clicked", {
+                matchId: match.id,
+                deckId: deck.id,
+              })
+            }
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-fuchsia-400/25 bg-fuchsia-500/12 px-6 py-4 text-base font-bold text-fuchsia-100 backdrop-blur-sm transition-colors duration-150 hover:border-fuchsia-300/40 hover:bg-fuchsia-500/20 sm:px-8"
+          >
+            Boss Battle
           </Link>
 
           {weakTopics && weakTopics.length > 0 && (

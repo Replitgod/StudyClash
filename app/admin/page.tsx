@@ -112,6 +112,22 @@ type TutorStudent = {
 type TutorDashboardData = {
   students: TutorStudent[];
   activeStudents: number;
+  classWeaknessClusters: Array<{
+    topic: string;
+    totalMisses: number;
+    studentCount: number;
+    affectedStudents: string[];
+  }>;
+  reteachRecommendations: Array<{
+    topic: string;
+    urgency: "high" | "medium" | "low";
+    recommendation: string;
+  }>;
+  proofOfImprovement: {
+    improvingStudents: number;
+    holdingStudents: number;
+    strugglingStudents: number;
+  };
   emptyMessage: string;
 };
 
@@ -784,7 +800,68 @@ export default function AdminPage() {
             {tutorDashboard?.emptyMessage || "Once students start battling, their progress will appear here."}
           </div>
         ) : (
-          <div className="mt-4 grid gap-5 lg:grid-cols-[300px_1fr]">
+          <div className="mt-4 space-y-5">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.05] p-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Improving Students</p>
+                <p className="mt-2 text-2xl font-black text-emerald-200">{tutorDashboard.proofOfImprovement.improvingStudents}</p>
+              </div>
+              <div className="rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.05] p-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-300">Holding Steady</p>
+                <p className="mt-2 text-2xl font-black text-cyan-200">{tutorDashboard.proofOfImprovement.holdingStudents}</p>
+              </div>
+              <div className="rounded-2xl border border-amber-400/20 bg-amber-500/[0.05] p-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300">Needs Intervention</p>
+                <p className="mt-2 text-2xl font-black text-amber-200">{tutorDashboard.proofOfImprovement.strugglingStudents}</p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
+                <p className="text-xs font-bold uppercase tracking-wider text-violet-300">Class Weakness Clusters</p>
+                {tutorDashboard.classWeaknessClusters.length === 0 ? (
+                  <p className="mt-3 text-sm text-white/45">No class weakness patterns yet.</p>
+                ) : (
+                  <div className="mt-4 flex flex-col gap-2.5">
+                    {tutorDashboard.classWeaknessClusters.slice(0, 6).map((cluster) => (
+                      <div key={cluster.topic} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-bold text-white/90">{cluster.topic}</p>
+                          <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-red-300">{cluster.totalMisses} misses</span>
+                        </div>
+                        <p className="mt-1 text-[11px] text-white/45">{cluster.studentCount} students affected</p>
+                        <p className="mt-1 truncate text-[10px] text-white/35">{cluster.affectedStudents.join(", ")}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
+                <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">Reteach Recommendations</p>
+                {tutorDashboard.reteachRecommendations.length === 0 ? (
+                  <p className="mt-3 text-sm text-white/45">No reteach recommendations available yet.</p>
+                ) : (
+                  <div className="mt-4 flex flex-col gap-2.5">
+                    {tutorDashboard.reteachRecommendations.map((recommendation) => (
+                      <div key={recommendation.topic} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm font-bold text-white/90">{recommendation.topic}</p>
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${recommendation.urgency === "high" ? "bg-red-500/15 text-red-300" : recommendation.urgency === "medium" ? "bg-amber-500/15 text-amber-300" : "bg-cyan-500/15 text-cyan-300"}`}
+                          >
+                            {recommendation.urgency}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-[11px] leading-relaxed text-white/55">{recommendation.recommendation}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
               <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Students</p>
               <div className="mt-4 flex flex-col gap-3">
@@ -898,6 +975,7 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+            </div>
           </div>
         )}
       </div>
@@ -950,12 +1028,12 @@ export default function AdminPage() {
                       </span>
                     </div>
                     <p className="col-span-4 truncate text-[11px] text-white/50">
-                      {event.page_url || "G��"}
+                      {event.page_url || "--"}
                     </p>
                     <p className="col-span-3 truncate text-[11px] text-white/40">
                       {event.metadata
                         ? JSON.stringify(event.metadata)
-                        : "G��"}
+                        : "--"}
                     </p>
                     <p className="col-span-2 text-[10px] text-white/30">
                       {formatDateTime(event.created_at)}

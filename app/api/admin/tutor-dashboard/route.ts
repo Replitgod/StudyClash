@@ -52,6 +52,22 @@ function formatTrend(delta: number): string {
   return `Holding steady (${delta >= 0 ? "+" : ""}${delta}%)`;
 }
 
+function buildReteachRecommendation(
+  topic: string,
+  totalMisses: number,
+  studentCount: number
+): string {
+  if (studentCount >= 4 || totalMisses >= 12) {
+    return `Run a full reteach session on ${topic} with a guided walkthrough, then assign a weak-topic rematch.`;
+  }
+
+  if (studentCount >= 2 || totalMisses >= 6) {
+    return `Use a short mini-lesson on ${topic} and follow it with targeted practice questions.`;
+  }
+
+  return `Keep ${topic} in light review and verify retention with one quick-check battle.`;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization") || "";
@@ -147,6 +163,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         students: [],
         activeStudents: 0,
+        classWeaknessClusters: [],
+        reteachRecommendations: [],
+        proofOfImprovement: {
+          improvingStudents: 0,
+          holdingStudents: 0,
+          strugglingStudents: 0,
+        },
         emptyMessage:
           "No student battle data yet. Once students start playing, their progress dashboard will appear here.",
       });
@@ -453,9 +476,78 @@ export async function GET(req: NextRequest) {
           new Date(left.lastActiveAt).getTime()
       );
 
+    const classWeaknessMap = new Map<
+      string,
+      { topic: string; totalMisses: number; students: Set<string> }
+    >();
+
+    for (const student of students) {
+      for (const weakTopic of student.weakTopics) {
+        const existing = classWeaknessMap.get(weakTopic.topic) || {
+          topic: weakTopic.topic,
+          totalMisses: 0,
+          students: new Set<string>(),
+        };
+
+        existing.totalMisses += weakTopic.missedCount;
+        existing.students.add(student.name);
+        classWeaknessMap.set(weakTopic.topic, existing);
+      }
+    }
+
+    const classWeaknessClusters = Array.from(classWeaknessMap.values())
+      .map((cluster) => ({
+        topic: cluster.topic,
+        totalMisses: cluster.totalMisses,
+        studentCount: cluster.students.size,
+        affectedStudents: Array.from(cluster.students).slice(0, 5),
+      }))
+      .sort((left, right) => {
+        if (right.studentCount !== left.studentCount) {
+          return right.studentCount - left.studentCount;
+        }
+
+        return right.totalMisses - left.totalMisses;
+      })
+      .slice(0, 8);
+
+    const reteachRecommendations = classWeaknessClusters
+      .slice(0, 5)
+      .map((cluster) => ({
+        topic: cluster.topic,
+        urgency: cluster.studentCount >= 4 || cluster.totalMisses >= 12 ? "high" : cluster.studentCount >= 2 || cluster.totalMisses >= 6 ? "medium" : "low",
+        recommendation: buildReteachRecommendation(
+          cluster.topic,
+          cluster.totalMisses,
+          cluster.studentCount
+        ),
+      }));
+
+    const proofOfImprovement = students.reduce(
+      (acc, student) => {
+        if (student.trendDelta > 5) {
+          acc.improvingStudents += 1;
+        } else if (student.trendDelta < -5) {
+          acc.strugglingStudents += 1;
+        } else {
+          acc.holdingStudents += 1;
+        }
+
+        return acc;
+      },
+      {
+        improvingStudents: 0,
+        holdingStudents: 0,
+        strugglingStudents: 0,
+      }
+    );
+
     return NextResponse.json({
       students,
       activeStudents: students.length,
+      classWeaknessClusters,
+      reteachRecommendations,
+      proofOfImprovement,
       emptyMessage:
         "No student battle data yet. Once students start playing, their progress dashboard will appear here.",
     });
