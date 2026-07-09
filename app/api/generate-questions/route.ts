@@ -58,6 +58,84 @@ const FREE_DAILY_PDF_CAP = 2;
 const CACHE_VECTOR_DIMENSIONS = 128;
 const VECTOR_CACHE_CANDIDATE_LIMIT = 120;
 const VECTOR_CACHE_MIN_SIMILARITY = 0.9;
+const MAX_NOTES_CHARACTERS = 120_000;
+const USER_BURST_WINDOW_SECONDS = 60;
+const USER_BURST_LIMIT_FREE = 2;
+const USER_BURST_LIMIT_PAID = 6;
+const IP_BURST_WINDOW_SECONDS = 60;
+const IP_BURST_LIMIT_FREE = 6;
+const IP_BURST_LIMIT_PAID = 20;
+const MAX_COMPLETION_TOKENS_DEFAULT = 2200;
+
+function isGenerationDisabledByKillSwitch(): boolean {
+  const raw = (process.env.GENERATION_KILL_SWITCH || "").trim().toLowerCase();
+  return raw === "1" || raw === "true" || raw === "on";
+}
+
+function parsePositiveInt(value: string | undefined, fallback: number): number {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return fallback;
+  return Math.floor(n);
+}
+
+function getClientIp(req: NextRequest): string {
+  const forwarded = req.headers.get("x-forwarded-for") || "";
+  const firstForwarded = forwarded
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)[0];
+
+  const candidates = [
+    firstForwarded,
+    req.headers.get("x-real-ip") || "",
+    req.headers.get("cf-connecting-ip") || "",
+    req.headers.get("x-vercel-forwarded-for") || "",
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate) return candidate;
+  }
+
+  return "unknown";
+}
+
+function hashClientIp(ip: string): string {
+  return createHash("sha256").update(ip).digest("hex");
+}
+
+async function verifyTurnstileToken(args: {
+  token: string;
+  remoteIp: string;
+}): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) {
+    return true;
+  }
+
+  const form = new URLSearchParams();
+  form.set("secret", secret);
+  form.set("response", args.token);
+  if (args.remoteIp && args.remoteIp !== "unknown") {
+    form.set("remoteip", args.remoteIp);
+  }
+
+  try {
+    const response = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: form.toString(),
+      }
+    );
+
+    if (!response.ok) return false;
+    const json = (await response.json()) as { success?: boolean };
+    return !!json.success;
+  } catch {
+    return false;
+  }
+}
 
 function parseAllowedBetaCodes(rawValue: string): string[] {
   return rawValue
@@ -631,6 +709,11 @@ async function generateAndValidate(
     temperature?: number;
   }
 ): Promise<{ questions: GeneratedQuestion[] } | { error: string }> {
+  const maxCompletionTokens = parsePositiveInt(
+    process.env.OPENAI_MAX_COMPLETION_TOKENS,
+    MAX_COMPLETION_TOKENS_DEFAULT
+  );
+
   const completion = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
@@ -653,6 +736,7 @@ async function generateAndValidate(
     ],
     response_format: { type: "json_object" },
     temperature: genParams.temperature ?? 0.5,
+    max_completion_tokens: maxCompletionTokens,
   });
 
   const rawContent = completion.choices[0]?.message?.content;
@@ -739,6 +823,24 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (isGenerationDisabledByKillSwitch()) {
+      return NextResponse.json(
+        { error: "Generation is temporarily paused. Please try again later." },
+        { status: 503 }
+      );
+    }
+
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { error: "Generation is not configured right now." },
+        { status: 503 }
+      );
+    }
+
+    const clientIp = getClientIp(req);
+    const clientIpHash = hashClientIp(clientIp);
+    const userAgent = (req.headers.get("user-agent") || "").slice(0, 512);
+
     // 2. Read the data sent from the frontend form
     const body = await req.json();
     const {
@@ -755,6 +857,7 @@ export async function POST(req: NextRequest) {
       uploadKind,
       examTrack,
       examMode,
+      turnstileToken,
     } = body;
 
     const normalizedUploadKind = normalizeUploadKind(uploadKind);
@@ -764,6 +867,42 @@ export async function POST(req: NextRequest) {
         { error: "Missing required fields." },
         { status: 400 }
       );
+    }
+
+    if (typeof notes !== "string" || notes.trim().length > MAX_NOTES_CHARACTERS) {
+      return NextResponse.json(
+        {
+          error:
+            "Notes are too large for one request. Please shorten or split them into smaller sections.",
+        },
+        { status: 413 }
+      );
+    }
+
+    const turnstileRequired =
+      (process.env.TURNSTILE_REQUIRED || "").trim().toLowerCase() === "true";
+    const trimmedTurnstileToken =
+      typeof turnstileToken === "string" ? turnstileToken.trim() : "";
+
+    if (turnstileRequired && !trimmedTurnstileToken) {
+      return NextResponse.json(
+        { error: "Bot verification is required before generating." },
+        { status: 403 }
+      );
+    }
+
+    if (trimmedTurnstileToken) {
+      const verified = await verifyTurnstileToken({
+        token: trimmedTurnstileToken,
+        remoteIp: clientIp,
+      });
+
+      if (!verified) {
+        return NextResponse.json(
+          { error: "Bot verification failed. Please try again." },
+          { status: 403 }
+        );
+      }
     }
 
     // 3. Load the user's profile to find their plan
@@ -798,9 +937,49 @@ export async function POST(req: NextRequest) {
     const activePlanId = String(profileData.plan || "free_beta");
     const isFreePlan = FREE_PLAN_IDS.has(activePlanId);
     const isPriorityPlan = PRIORITY_PLAN_IDS.has(activePlanId);
+    const userBurstLimit = isFreePlan ? USER_BURST_LIMIT_FREE : USER_BURST_LIMIT_PAID;
+    const ipBurstLimit = isFreePlan ? IP_BURST_LIMIT_FREE : IP_BURST_LIMIT_PAID;
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const startOfTodayIso = startOfToday.toISOString();
+
+    const userBurstSince = new Date(Date.now() - USER_BURST_WINDOW_SECONDS * 1000).toISOString();
+    const { count: userBurstCount, error: userBurstError } = await supabase
+      .from("generation_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", userBurstSince);
+
+    if (userBurstError) {
+      return NextResponse.json(
+        { error: "Could not check request rate right now. Please try again." },
+        { status: 500 }
+      );
+    }
+
+    if ((userBurstCount || 0) >= userBurstLimit) {
+      return NextResponse.json(
+        { error: "Too many generation attempts. Please wait a minute and retry." },
+        { status: 429 }
+      );
+    }
+
+    const ipBurstSince = new Date(Date.now() - IP_BURST_WINDOW_SECONDS * 1000).toISOString();
+    const { count: ipBurstCount, error: ipBurstError } = await supabase
+      .from("generation_logs")
+      .select("id", { count: "exact", head: true })
+      .eq("ip_hash", clientIpHash)
+      .gte("created_at", ipBurstSince);
+
+    if (!ipBurstError && (ipBurstCount || 0) >= ipBurstLimit) {
+      return NextResponse.json(
+        {
+          error:
+            "Too many generation attempts from this network. Please wait a minute and retry.",
+        },
+        { status: 429 }
+      );
+    }
 
     if (isFreePlan) {
       if (typeof betaAccessCode !== "string" || !betaAccessCode.trim()) {
@@ -1195,12 +1374,18 @@ export async function POST(req: NextRequest) {
       source_kind: normalizedUploadKind,
       is_priority: isPriorityPlan,
       plan_id_snapshot: activePlanId,
+      ip_hash: clientIpHash,
+      user_agent_snapshot: userAgent || null,
+      notes_char_count: notes.trim().length,
     });
 
     if (logError) {
       const fallback = await supabase.from("generation_logs").insert({
         user_id: user.id,
         deck_id: deckId,
+        source_kind: normalizedUploadKind,
+        is_priority: isPriorityPlan,
+        plan_id_snapshot: activePlanId,
       });
       logError = fallback.error;
     }
