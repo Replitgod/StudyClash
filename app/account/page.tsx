@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
+import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 type PlanInfo = {
   id: string;
@@ -35,7 +36,7 @@ function Background({ children }: { children: React.ReactNode }) {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-14 sm:px-6 sm:py-20">
+      <div className={`relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-14 sm:px-6 sm:py-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {children}
       </div>
     </main>

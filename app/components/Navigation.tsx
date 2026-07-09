@@ -6,9 +6,28 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
 
+function VyraMiniIcon() {
+  return (
+    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-cyan-300/35 bg-gradient-to-br from-cyan-400/25 to-emerald-500/20 shadow-[0_0_14px_-8px_rgba(34,211,238,0.8)]">
+      <svg
+        className="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <circle cx="12" cy="12" r="9" stroke="#67E8F9" strokeWidth="1.4" />
+        <circle cx="9" cy="11" r="1.2" fill="#22D3EE" />
+        <circle cx="15" cy="11" r="1.2" fill="#6EE7B7" />
+        <path d="M9 14.3c1 .8 2 .8 3 .8s2 0 3-.8" stroke="#D1FAE5" strokeWidth="1.3" strokeLinecap="round" />
+      </svg>
+    </span>
+  );
+}
+
 const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Demo", href: "/demo/battle" },
+  { label: "Contact", href: "/contact" },
   { label: "Exams", href: "/exams" },
   { label: "Classroom", href: "/classroom" },
   { label: "Create", href: "/create" },
@@ -49,8 +68,9 @@ export default function Navigation() {
         <Link
           href="/"
           onClick={closeMobileMenu}
-          className="flex-shrink-0 text-lg font-black tracking-tight"
+          className="flex flex-shrink-0 items-center gap-2 text-lg font-black tracking-tight"
         >
+          <VyraMiniIcon />
           <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
             StudyClash
           </span>

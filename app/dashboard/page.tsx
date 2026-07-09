@@ -107,7 +107,7 @@ function Background({ children }: { children: React.ReactNode }) {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-10 sm:px-6 sm:py-16">
+      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-10 pb-28 sm:px-6 sm:py-16 sm:pb-24">
         {children}
       </div>
     </main>
@@ -1508,6 +1508,15 @@ export default function DashboardPage() {
         accuracyPercent={averageAccuracy}
         previousRematches={Math.max(0, battlesPlayed - 1)}
         masteryProgress={coachMasteryProgress}
+        recentBattleHistory={recentMatches.slice(0, 6).map((match) => ({
+          score: match.score,
+          accuracyPercent:
+            match.total_questions > 0
+              ? Math.round((match.correct_answers / match.total_questions) * 100)
+              : undefined,
+          deckTitle: match.deck_title,
+          createdAt: match.created_at,
+        }))}
         contextLabel="Dashboard"
       />
     </Background>

@@ -370,15 +370,23 @@ export default function SignupPage() {
         </div>
 
         {!needsEmailConfirmation && (
-          <p className="mt-6 text-center text-sm text-white/40">
-            Already have an account?{" "}
-            <Link
-              href="/login"
-              className="font-semibold text-fuchsia-300 hover:text-fuchsia-200"
-            >
-              Log in
-            </Link>
-          </p>
+          <>
+            <p className="mt-6 text-center text-sm text-white/40">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="font-semibold text-fuchsia-300 hover:text-fuchsia-200"
+              >
+                Log in
+              </Link>
+            </p>
+            <p className="mt-3 text-center text-xs text-white/35">
+              By creating an account, you agree to our{" "}
+              <Link href="/terms" className="text-cyan-200 hover:text-cyan-100">Terms</Link>
+              {" "}and{" "}
+              <Link href="/privacy" className="text-cyan-200 hover:text-cyan-100">Privacy Policy</Link>.
+            </p>
+          </>
         )}
       </div>
     </main>

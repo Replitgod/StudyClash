@@ -21,7 +21,7 @@ export default function Home() {
         }}
       />
 
-      <div className="relative z-10 flex w-full flex-col items-center px-4 py-14 sm:px-6 sm:py-20">
+      <div className="relative z-10 flex w-full flex-col items-center px-4 py-14 pb-28 sm:px-6 sm:py-20 sm:pb-24">
         {/* ---------- Hero Section ---------- */}
         <section className="flex w-full flex-col items-center">
           {/* Badge */}
@@ -39,11 +39,14 @@ export default function Home() {
 
           {/* Subheadline */}
           <p className="mt-6 max-w-2xl text-center text-sm leading-relaxed text-white/60 sm:text-base md:text-lg">
-            StudyClash is not passive review. Battle through AI-generated
-            questions, expose weak skills, and let ClashPath map your next
-            best move after every run with mastery percentages, mistake
-            diagnosis, and targeted rematches.
+            Upload notes, play a timed quiz, see exactly what you missed, and
+            get your next best study move. New users can start the demo in
+            under 60 seconds with no setup.
           </p>
+
+          <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-center text-xs font-semibold text-cyan-100 sm:text-sm">
+            New here? Tap <span className="font-black">Try Demo Battle</span> to understand StudyClash in under 30 seconds.
+          </div>
 
           {/* CTA buttons */}
           <div className="mt-9 flex w-full max-w-xs flex-col items-stretch gap-3 sm:mt-10 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-4">
@@ -447,6 +450,13 @@ export default function Home() {
             </Link>
           </div>
         </section>
+
+        <footer className="mt-12 flex w-full max-w-5xl flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-white/10 pt-5 text-xs text-white/45 sm:text-sm">
+          <Link href="/privacy" className="hover:text-white/80">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-white/80">Terms of Use</Link>
+          <Link href="/contact" className="hover:text-white/80">Contact</Link>
+          <Link href="/pricing" className="hover:text-white/80">Pricing</Link>
+        </footer>
       </div>
 
       <GigglesCoach contextLabel="Website" />

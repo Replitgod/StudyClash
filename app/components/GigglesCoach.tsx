@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { authFetch } from "@/lib/authFetch";
+import { FLOATING_ACTION, UI_Z_INDEX } from "@/lib/uiLayout";
 
 type CoachAction =
   | "ask"
@@ -12,7 +13,7 @@ type CoachAction =
   | "mistake_mode"
   | "study_plan"
   | "rematch_mode"
-  | "explain_text";
+  | "next_topic";
 
 type CoachMode =
   | "explain"
@@ -23,8 +24,10 @@ type CoachMode =
   | "rematch";
 
 type CoachMessage = {
+  id: string;
   role: "user" | "assistant";
   content: string;
+  createdAt: number;
 };
 
 type MissedQuestion = {
@@ -50,6 +53,20 @@ type MasteryProgressEntry = {
   details?: string;
 };
 
+type CurrentQuestionContext = {
+  questionText?: string;
+  selectedAnswer?: string;
+  correctAnswer?: string;
+  explanation?: string;
+};
+
+type BattleHistoryEntry = {
+  score?: number;
+  accuracyPercent?: number;
+  deckTitle?: string;
+  createdAt?: string;
+};
+
 type GigglesCoachProps = {
   deckId?: string;
   matchId?: string;
@@ -65,6 +82,9 @@ type GigglesCoachProps = {
   masteryProgress?: MasteryProgressEntry[];
   contextLabel?: string;
   openByDefault?: boolean;
+  currentQuestion?: CurrentQuestionContext;
+  recentBattleHistory?: BattleHistoryEntry[];
+  layout?: "floating" | "docked";
 };
 
 function buildWeakTopicHref(deckId: string, weakTopics: string[]): string {
@@ -74,53 +94,105 @@ function buildWeakTopicHref(deckId: string, weakTopics: string[]): string {
   )}`;
 }
 
-function getModeLabel(mode: CoachMode): string {
-  if (mode === "explain") return "Explain Mode";
-  if (mode === "hint") return "Hint Mode";
-  if (mode === "quiz") return "Quiz Mode";
-  if (mode === "mistake") return "Mistake Mode";
-  if (mode === "plan") return "Plan Mode";
-  return "Rematch Mode";
+function createMessage(role: "user" | "assistant", content: string): CoachMessage {
+  return {
+    id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    role,
+    content,
+    createdAt: Date.now(),
+  };
 }
 
-function buildInitialCoachMessage(hasBattleData: boolean): string {
+function initialMessage(hasBattleData: boolean): string {
   if (!hasBattleData) {
-    return "Play one battle, then I can map your weak topics.";
+    return "Play a battle first, and I'll analyze your weak topics. You can also ask me about a topic directly.";
   }
 
-  return "VYRA ready. I will coach your next best move from your battle data.";
+  return "VYRA is ready. Ask for hints, mistake analysis, quiz mode, or your next best study action.";
 }
 
-function GigglesAvatar({ size = 36 }: { size?: number }) {
+function VYRAAvatar({ size = 36 }: { size?: number }) {
   return (
     <div
-      className="relative flex items-center justify-center rounded-full border border-cyan-300/40 bg-gradient-to-br from-cyan-400/20 via-[#1a1742] to-fuchsia-500/25 shadow-[0_0_22px_-4px_rgba(34,211,238,0.7)]"
+      className="relative flex items-center justify-center rounded-full border border-cyan-300/35 bg-gradient-to-br from-cyan-400/20 via-[#0d1b2a] to-emerald-500/20 shadow-[0_0_26px_-10px_rgba(34,211,238,0.8)]"
       style={{ width: size, height: size }}
     >
       <svg
-        className="h-[72%] w-[72%]"
+        className="h-[74%] w-[74%]"
         viewBox="0 0 64 64"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
-        <circle cx="32" cy="32" r="28" fill="url(#giggles-face)" stroke="#67E8F9" strokeOpacity="0.55" strokeWidth="2" />
-        <rect x="18" y="19" width="28" height="20" rx="10" fill="#0A1329" stroke="#93C5FD" strokeOpacity="0.7" strokeWidth="1.8" />
-        <circle cx="26" cy="29" r="3.3" fill="#22D3EE" />
-        <circle cx="38" cy="29" r="3.3" fill="#A78BFA" />
-        <path d="M25 36c2.1 2.2 4.4 3.2 7 3.2 2.6 0 4.9-1 7-3.2" stroke="#E9D5FF" strokeWidth="2" strokeLinecap="round" />
-        <path d="M32 11v5" stroke="#67E8F9" strokeWidth="2" strokeLinecap="round" />
+        <circle cx="32" cy="32" r="28" fill="url(#vyra-core)" stroke="#67E8F9" strokeOpacity="0.45" strokeWidth="2" />
+        <rect x="17" y="20" width="30" height="19" rx="9.5" fill="#081222" stroke="#93C5FD" strokeOpacity="0.7" strokeWidth="1.8" />
+        <circle cx="26" cy="29" r="3.2" fill="#22D3EE" />
+        <circle cx="38" cy="29" r="3.2" fill="#6EE7B7" />
+        <path d="M25 35.8c2.4 2.2 4.8 3.3 7 3.3 2.2 0 4.6-1.1 7-3.3" stroke="#D1FAE5" strokeWidth="2" strokeLinecap="round" />
+        <path d="M32 11v5.4" stroke="#67E8F9" strokeWidth="2" strokeLinecap="round" />
         <circle cx="32" cy="9" r="2" fill="#67E8F9" />
         <defs>
-          <linearGradient id="giggles-face" x1="8" y1="10" x2="54" y2="54" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#164E63" />
-            <stop offset="0.55" stopColor="#1E1B4B" />
-            <stop offset="1" stopColor="#581C87" />
+          <linearGradient id="vyra-core" x1="8" y1="10" x2="54" y2="54" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#083344" />
+            <stop offset="0.58" stopColor="#0f172a" />
+            <stop offset="1" stopColor="#14532d" />
           </linearGradient>
         </defs>
       </svg>
     </div>
   );
 }
+
+const QUICK_ACTIONS: Array<{
+  label: string;
+  action: CoachAction;
+  mode: CoachMode;
+  message: string;
+  primary?: boolean;
+}> = [
+  {
+    label: "Explain this easier",
+    action: "explain_easier",
+    mode: "explain",
+    message: "Explain this easier in simple words, linked to my weak topics.",
+  },
+  {
+    label: "Quiz me",
+    action: "quiz_me",
+    mode: "quiz",
+    message: "Quiz me on my weakest topic. Ask one question at a time.",
+  },
+  {
+    label: "Give me a hint",
+    action: "hint_mode",
+    mode: "hint",
+    message: "Give me a hint first and do not reveal the final answer yet.",
+  },
+  {
+    label: "Why was I wrong?",
+    action: "mistake_mode",
+    mode: "mistake",
+    message: "Why was I wrong? Break down one missed question using my data.",
+  },
+  {
+    label: "Make a study plan",
+    action: "study_plan",
+    mode: "plan",
+    message: "Make a short study plan from my weak topics and Mistake DNA.",
+  },
+  {
+    label: "Create weak-topic rematch",
+    action: "rematch_mode",
+    mode: "rematch",
+    message: "Create a weak-topic rematch setup with exact mode and focus topics.",
+    primary: true,
+  },
+  {
+    label: "What should I study next?",
+    action: "next_topic",
+    mode: "plan",
+    message: "What should I study next right now and why?",
+  },
+];
 
 export default function GigglesCoach(props: GigglesCoachProps) {
   const {
@@ -138,12 +210,19 @@ export default function GigglesCoach(props: GigglesCoachProps) {
     masteryProgress = [],
     contextLabel,
     openByDefault = false,
+    currentQuestion,
+    recentBattleHistory = [],
+    layout = "floating",
   } = props;
+
+  const isDocked = layout === "docked";
 
   const hasBattleData =
     weakTopics.length > 0 ||
     missedQuestions.length > 0 ||
     mistakeDna.length > 0 ||
+    !!currentQuestion?.questionText ||
+    recentBattleHistory.length > 0 ||
     typeof battleScore === "number" ||
     typeof accuracyPercent === "number";
 
@@ -159,12 +238,7 @@ export default function GigglesCoach(props: GigglesCoachProps) {
 
   const [messages, setMessages] = useState<CoachMessage[]>(() => {
     if (typeof window === "undefined") {
-      return [
-        {
-          role: "assistant",
-          content: buildInitialCoachMessage(hasBattleData),
-        },
-      ];
+      return [createMessage("assistant", initialMessage(hasBattleData))];
     }
 
     try {
@@ -172,12 +246,7 @@ export default function GigglesCoach(props: GigglesCoachProps) {
         window.sessionStorage.getItem(storageKey) ||
         window.sessionStorage.getItem(legacyStorageKey);
       if (!raw) {
-        return [
-          {
-            role: "assistant",
-            content: buildInitialCoachMessage(hasBattleData),
-          },
-        ];
+        return [createMessage("assistant", initialMessage(hasBattleData))];
       }
 
       const parsed = JSON.parse(raw) as { messages?: CoachMessage[] };
@@ -190,30 +259,21 @@ export default function GigglesCoach(props: GigglesCoachProps) {
           )
         : [];
 
-      if (restored.length === 0) {
-        return [
-          {
-            role: "assistant",
-            content: buildInitialCoachMessage(hasBattleData),
-          },
-        ];
-      }
-
-      return restored.slice(-20);
+      return restored.length > 0
+        ? restored.slice(-30)
+        : [createMessage("assistant", initialMessage(hasBattleData))];
     } catch {
-      return [
-        {
-          role: "assistant",
-          content: buildInitialCoachMessage(hasBattleData),
-        },
-      ];
+      return [createMessage("assistant", initialMessage(hasBattleData))];
     }
   });
+
   const [input, setInput] = useState("");
-  const [selectedMode, setSelectedMode] = useState<CoachMode>("explain");
-  const [isOpen, setIsOpen] = useState(() => openByDefault);
+  const [isOpen, setIsOpen] = useState(() => openByDefault || isDocked);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedMode, setSelectedMode] = useState<CoachMode>("explain");
+
+  const listEndRef = useRef<HTMLDivElement | null>(null);
 
   const rematchHref = useMemo(
     () => (deckId ? buildWeakTopicHref(deckId, weakTopics) : null),
@@ -221,39 +281,38 @@ export default function GigglesCoach(props: GigglesCoachProps) {
   );
 
   useEffect(() => {
-    if (messages.length === 0) return;
-    window.sessionStorage.setItem(storageKey, JSON.stringify({ messages: messages.slice(-20) }));
+    if (typeof window === "undefined" || messages.length === 0) return;
+    window.sessionStorage.setItem(storageKey, JSON.stringify({ messages: messages.slice(-30) }));
     window.sessionStorage.removeItem(legacyStorageKey);
   }, [legacyStorageKey, messages, storageKey]);
+
+  useEffect(() => {
+    if (!listEndRef.current) return;
+    listEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, isSending, isOpen]);
 
   async function sendCoachMessage(params: {
     action: CoachAction;
     mode?: CoachMode;
     userMessage: string;
-    appendUserMessage?: boolean;
   }) {
-    const { action, mode = selectedMode, userMessage, appendUserMessage = true } = params;
+    const { action, mode = selectedMode, userMessage } = params;
+    const trimmed = userMessage.trim();
+    if (!trimmed) return;
 
-    if (!userMessage.trim()) return;
-
-    const nextMessages = appendUserMessage
-      ? [...messages, { role: "user" as const, content: userMessage.trim() }]
-      : messages;
-
-    if (appendUserMessage) {
-      setMessages(nextMessages);
-    }
-
+    const userEntry = createMessage("user", trimmed);
+    const nextMessages = [...messages, userEntry];
+    setMessages(nextMessages);
     setIsSending(true);
     setError(null);
 
     try {
-      const response = await authFetch("/api/study-coach", {
+      const response = await authFetch("/api/vyra-chat", {
         method: "POST",
         body: JSON.stringify({
           action,
           mode,
-          message: userMessage,
+          message: trimmed,
           deckId,
           matchId,
           deckTitle,
@@ -266,26 +325,31 @@ export default function GigglesCoach(props: GigglesCoachProps) {
           accuracyPercent,
           previousRematches,
           masteryProgress,
-          chatHistory: nextMessages.slice(-10),
+          currentQuestion,
+          recentBattleHistory,
+          chatHistory: nextMessages.slice(-12).map((entry) => ({
+            role: entry.role,
+            content: entry.content,
+          })),
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-          setError(data?.error || "VYRA could not respond right now.");
+        setError(data?.error || "VYRA could not analyze this right now. Try again, or ask about a specific question.");
         return;
       }
 
       const reply =
-        typeof data?.reply === "string" && data.reply.trim()
+        typeof data?.reply === "string" && data.reply.trim().length > 0
           ? data.reply.trim()
-          : "I could not generate a good coaching response yet. Try again.";
+          : "I could not generate a strong response yet. Try another angle.";
 
-      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
+      setMessages((prev) => [...prev, createMessage("assistant", reply)]);
       setInput("");
     } catch {
-        setError("VYRA could not respond right now.");
+      setError("VYRA could not analyze this right now. Try again, or ask about a specific question.");
     } finally {
       setIsSending(false);
     }
@@ -293,63 +357,169 @@ export default function GigglesCoach(props: GigglesCoachProps) {
 
   async function handleAskSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await sendCoachMessage({ action: "ask", userMessage: input });
+    await sendCoachMessage({ action: "ask", mode: selectedMode, userMessage: input });
   }
 
-  async function triggerExplainEasier() {
-    const source = input.trim() || "Explain one concept I missed in simple words.";
+  async function handleQuickAction(entry: (typeof QUICK_ACTIONS)[number]) {
+    setSelectedMode(entry.mode);
     await sendCoachMessage({
-      action: "explain_easier",
-      mode: "explain",
-      userMessage: `Explain this easier: ${source}`,
-      appendUserMessage: true,
+      action: entry.action,
+      mode: entry.mode,
+      userMessage: entry.message,
     });
   }
 
-  async function triggerQuizMe() {
-    await sendCoachMessage({
-      action: "quiz_me",
-      mode: "quiz",
-      userMessage:
-        "Quiz me on weak topics. Ask one question at a time and wait for my answer.",
-    });
-  }
+  const desktopPanelClass = `fixed right-0 top-0 z-50 hidden h-full w-full max-w-[460px] border-l border-cyan-300/15 bg-[#040a12]/95 shadow-[-26px_0_72px_-36px_rgba(16,185,129,0.55)] backdrop-blur-xl transition-transform duration-300 ease-out md:block ${
+    isOpen ? "translate-x-0" : "pointer-events-none translate-x-full"
+  }`;
 
-  async function triggerHint() {
-    await sendCoachMessage({
-      action: "hint_mode",
-      mode: "hint",
-      userMessage:
-        "Give me a hint for one of my missed questions without revealing the final answer.",
-    });
-  }
+  const mobilePanelClass = `fixed inset-x-0 bottom-0 z-50 h-[88dvh] rounded-t-3xl border border-cyan-300/20 bg-[#040a12]/95 p-3 shadow-[0_-24px_70px_-30px_rgba(16,185,129,0.6)] backdrop-blur-xl transition-transform duration-300 ease-out ${
+    isDocked ? "xl:hidden" : "md:hidden"
+  } ${isOpen ? "translate-y-0" : "pointer-events-none translate-y-full"}`;
 
-  async function triggerMistakeMode() {
-    await sendCoachMessage({
-      action: "mistake_mode",
-      mode: "mistake",
-      userMessage:
-        "Why was I wrong? Break down one missed question and include one mini follow-up.",
-    });
-  }
+  const launcherClass = isDocked
+    ? `${FLOATING_ACTION.base} ${FLOATING_ACTION.right} flex items-center gap-2 rounded-full border border-cyan-300/40 bg-[#06121f]/90 px-3.5 py-2.5 text-sm font-semibold text-cyan-100 shadow-[0_0_34px_-16px_rgba(34,211,238,0.85)] backdrop-blur transition duration-200 hover:scale-[1.02] xl:hidden`
+    : `${FLOATING_ACTION.base} ${FLOATING_ACTION.right} flex items-center gap-2 rounded-full border border-cyan-300/40 bg-[#06121f]/90 px-3.5 py-2.5 text-sm font-semibold text-cyan-100 shadow-[0_0_34px_-16px_rgba(34,211,238,0.85)] backdrop-blur transition duration-200 hover:scale-[1.02] ${FLOATING_ACTION.desktopRightRail}`;
 
-  async function triggerStudyPlan() {
-    await sendCoachMessage({
-      action: "study_plan",
-      mode: "plan",
-      userMessage:
-        "Create a concise plan from my mistakes, weak topics, and timing issues.",
-    });
-  }
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-expanded={isOpen}
+        aria-label="Toggle VYRA AI coach"
+        className={`${launcherClass} ${isOpen ? "pointer-events-none opacity-0" : "opacity-100"}`}
+        style={{ zIndex: UI_Z_INDEX.floatingAction }}
+      >
+        <VYRAAvatar size={34} />
+        <span className="text-xs font-black uppercase tracking-[0.2em] md:[writing-mode:vertical-rl] md:[text-orientation:mixed]">
+          VYRA
+        </span>
+      </button>
 
-  async function triggerRematchMode() {
-    await sendCoachMessage({
-      action: "rematch_mode",
-      mode: "rematch",
-      userMessage:
-        "Create a weak-topic rematch with exact mode, topics, and limit. Explain why.",
-    });
-  }
+      {isOpen && !isDocked && (
+        <button
+          aria-label="Close VYRA panel"
+          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 z-40 bg-black/45 backdrop-blur-[1px]"
+          style={{ zIndex: UI_Z_INDEX.vyraPanel - 1 }}
+        />
+      )}
+
+      {isDocked ? (
+        <aside className="hidden w-full max-w-[440px] xl:block">
+          <div
+            className="sticky top-20 h-[calc(100dvh-6rem)] rounded-2xl border border-cyan-300/15 bg-[#040a12]/95 p-3 shadow-[-26px_0_72px_-36px_rgba(16,185,129,0.45)] backdrop-blur-xl"
+            style={{ zIndex: UI_Z_INDEX.vyraPanel }}
+          >
+            <ChatPanel
+              isSending={isSending}
+              messages={messages}
+              input={input}
+              setInput={setInput}
+              onSubmit={handleAskSubmit}
+              error={error}
+              rematchHref={rematchHref}
+              contextLabel={contextLabel}
+              deckTitle={deckTitle}
+              courseName={courseName}
+              selectedMode={selectedMode}
+              setSelectedMode={setSelectedMode}
+              onQuickAction={handleQuickAction}
+              hasBattleData={hasBattleData}
+              closePanel={() => setIsOpen(false)}
+              listEndRef={listEndRef}
+              showCloseButton={false}
+            />
+          </div>
+        </aside>
+      ) : (
+        <aside className={desktopPanelClass} style={{ zIndex: UI_Z_INDEX.vyraPanel }}>
+          <ChatPanel
+            isSending={isSending}
+            messages={messages}
+            input={input}
+            setInput={setInput}
+            onSubmit={handleAskSubmit}
+            error={error}
+            rematchHref={rematchHref}
+            contextLabel={contextLabel}
+            deckTitle={deckTitle}
+            courseName={courseName}
+            selectedMode={selectedMode}
+            setSelectedMode={setSelectedMode}
+            onQuickAction={handleQuickAction}
+            hasBattleData={hasBattleData}
+            closePanel={() => setIsOpen(false)}
+            listEndRef={listEndRef}
+            showCloseButton
+          />
+        </aside>
+      )}
+
+      <aside className={mobilePanelClass} style={{ zIndex: UI_Z_INDEX.vyraPanel }}>
+        <ChatPanel
+          isSending={isSending}
+          messages={messages}
+          input={input}
+          setInput={setInput}
+          onSubmit={handleAskSubmit}
+          error={error}
+          rematchHref={rematchHref}
+          contextLabel={contextLabel}
+          deckTitle={deckTitle}
+          courseName={courseName}
+          selectedMode={selectedMode}
+          setSelectedMode={setSelectedMode}
+          onQuickAction={handleQuickAction}
+          hasBattleData={hasBattleData}
+          closePanel={() => setIsOpen(false)}
+          listEndRef={listEndRef}
+          showCloseButton
+        />
+      </aside>
+    </>
+  );
+}
+
+function ChatPanel(props: {
+  isSending: boolean;
+  messages: CoachMessage[];
+  input: string;
+  setInput: (value: string) => void;
+  onSubmit: (e: React.FormEvent) => Promise<void>;
+  error: string | null;
+  rematchHref: string | null;
+  contextLabel?: string;
+  deckTitle?: string;
+  courseName?: string;
+  selectedMode: CoachMode;
+  setSelectedMode: (mode: CoachMode) => void;
+  onQuickAction: (entry: (typeof QUICK_ACTIONS)[number]) => Promise<void>;
+  hasBattleData: boolean;
+  closePanel: () => void;
+  listEndRef: React.RefObject<HTMLDivElement | null>;
+  showCloseButton?: boolean;
+}) {
+  const {
+    isSending,
+    messages,
+    input,
+    setInput,
+    onSubmit,
+    error,
+    rematchHref,
+    contextLabel,
+    deckTitle,
+    courseName,
+    selectedMode,
+    setSelectedMode,
+    onQuickAction,
+    hasBattleData,
+    closePanel,
+    listEndRef,
+    showCloseButton = true,
+  } = props;
 
   const modeButtons: Array<{ mode: CoachMode; label: string }> = [
     { mode: "explain", label: "Explain" },
@@ -360,190 +530,146 @@ export default function GigglesCoach(props: GigglesCoachProps) {
     { mode: "rematch", label: "Rematch" },
   ];
 
-  const panelClass = `fixed right-0 top-0 z-50 h-full w-full max-w-[420px] border-l border-white/10 bg-[#070912]/95 shadow-[-16px_0_52px_-24px_rgba(34,211,238,0.5)] backdrop-blur-xl transition-transform duration-300 ease-out ${
-    isOpen ? "translate-x-0" : "pointer-events-none translate-x-full"
-  }`;
-
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        aria-expanded={isOpen}
-        aria-label="Toggle VYRA AI coach"
-        className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] right-4 z-40 flex items-center gap-2 rounded-full border border-cyan-300/35 bg-[#081022]/90 px-3.5 py-2.5 text-sm font-semibold text-cyan-100 shadow-[0_0_30px_-12px_rgba(34,211,238,0.8)] backdrop-blur transition hover:scale-[1.02] md:bottom-auto md:right-4 md:top-1/2 md:-translate-y-1/2 md:flex-col md:gap-1.5 md:rounded-2xl md:px-2.5 md:py-3"
-      >
-        <GigglesAvatar size={34} />
-        <span className="text-xs font-black uppercase tracking-[0.2em] md:[writing-mode:vertical-rl] md:[text-orientation:mixed]">
-          VYRA
-        </span>
-      </button>
+    <div className="flex h-full flex-col">
+      <div className="mb-2 flex items-start justify-between gap-3 rounded-2xl border border-cyan-300/25 bg-gradient-to-r from-cyan-500/15 via-[#0d1b2a] to-emerald-500/15 px-3.5 py-3">
+        <div className="flex items-center gap-2.5">
+          <VYRAAvatar />
+          <div>
+            <p className="text-sm font-bold text-white">VYRA AI Coach</p>
+            <p className="text-[11px] uppercase tracking-wider text-cyan-200/80">Personal study assistant</p>
+          </div>
+        </div>
+        {showCloseButton && (
+          <button
+            type="button"
+            onClick={closePanel}
+            className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-semibold text-white/75"
+          >
+            Close
+          </button>
+        )}
+      </div>
 
-      {isOpen && (
-        <button
-          aria-label="Close VYRA panel"
-          onClick={() => setIsOpen(false)}
-          className="fixed inset-0 z-40 bg-black/45 backdrop-blur-[1px]"
-        />
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-white/45">
+        {contextLabel || deckTitle || "Study Context"}
+        {courseName ? ` · ${courseName}` : ""}
+        {` · ${selectedMode}`}
+      </p>
+
+      <div className="mb-2 flex flex-wrap gap-1.5">
+        {modeButtons.map((entry) => (
+          <button
+            key={entry.mode}
+            type="button"
+            onClick={() => setSelectedMode(entry.mode)}
+            className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+              selectedMode === entry.mode
+                ? "border-cyan-300/45 bg-cyan-400/15 text-cyan-100"
+                : "border-white/10 bg-white/5 text-white/65 hover:bg-white/10"
+            }`}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="mb-2 grid grid-cols-2 gap-2">
+        {QUICK_ACTIONS.map((entry) => (
+          <button
+            key={entry.label}
+            type="button"
+            onClick={() => void onQuickAction(entry)}
+            disabled={isSending}
+            className={`rounded-xl border px-2.5 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
+              entry.primary
+                ? "border-cyan-400/35 bg-cyan-500/15 text-cyan-100 hover:bg-cyan-500/25"
+                : "border-white/10 bg-white/5 text-white/85 hover:bg-white/10"
+            }`}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </div>
+
+      {rematchHref && (
+        <Link
+          href={rematchHref}
+          className="mb-2 inline-flex items-center justify-center rounded-xl border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-xs font-bold text-emerald-100"
+        >
+          Start Weak-Topic Rematch
+        </Link>
       )}
 
-      <aside className={panelClass}>
-        <div className="flex h-full flex-col p-4 md:p-4.5">
-          <div className="mb-3 flex items-start justify-between gap-3 rounded-2xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/15 via-[#111430] to-fuchsia-500/15 px-3.5 py-3">
-            <div className="flex items-center gap-2.5">
-              <GigglesAvatar />
-              <div>
-                <p className="text-sm font-bold text-white">VYRA AI Coach</p>
-                <p className="text-[11px] uppercase tracking-wider text-cyan-200/80">Your battle coach</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-semibold text-white/75"
-            >
-              Close
-            </button>
+      <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-3">
+        {messages.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center text-center">
+            <VYRAAvatar size={42} />
+            <p className="mt-3 text-sm font-semibold text-white/85">
+              Ask VYRA about your mistakes, weak topics, or what to study next.
+            </p>
           </div>
-
-          <div className="mb-3 flex flex-wrap gap-1.5">
-            {modeButtons.map((entry) => (
-              <button
-                key={entry.mode}
-                type="button"
-                onClick={() => setSelectedMode(entry.mode)}
-                className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                  selectedMode === entry.mode
-                    ? "border-cyan-300/45 bg-cyan-400/15 text-cyan-100"
-                    : "border-white/10 bg-white/5 text-white/65 hover:bg-white/10"
+        ) : (
+          <div className="flex flex-col gap-3">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`max-w-[96%] whitespace-pre-wrap break-words rounded-xl px-3 py-2.5 text-sm leading-relaxed ${
+                  message.role === "assistant"
+                    ? "self-start border border-cyan-400/20 bg-cyan-500/[0.08] text-white/90"
+                    : "self-end border border-emerald-400/20 bg-emerald-500/[0.08] text-white/90"
                 }`}
               >
-                {entry.label}
-              </button>
-            ))}
-          </div>
-
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-white/40">
-            {contextLabel || deckTitle || "Study Context"} · {getModeLabel(selectedMode)}
-          </p>
-
-          <div className="mb-3 grid grid-cols-2 gap-2.5">
-            <button
-              onClick={triggerExplainEasier}
-              disabled={isSending}
-              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Explain this easier
-            </button>
-            <button
-              onClick={triggerHint}
-              disabled={isSending}
-              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Give me a hint
-            </button>
-            <button
-              onClick={triggerQuizMe}
-              disabled={isSending}
-              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Quiz me
-            </button>
-            <button
-              onClick={triggerMistakeMode}
-              disabled={isSending}
-              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Why was I wrong?
-            </button>
-            <button
-              onClick={triggerRematchMode}
-              disabled={isSending}
-              className="rounded-xl border border-cyan-400/35 bg-cyan-500/15 px-3 py-2 text-xs font-semibold text-cyan-200 transition-colors hover:bg-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Create rematch
-            </button>
-            <button
-              onClick={triggerStudyPlan}
-              disabled={isSending}
-              className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Next study step
-            </button>
-          </div>
-
-          {rematchHref && (
-            <Link
-              href={rematchHref}
-              className="mb-3 inline-flex items-center justify-center rounded-xl border border-fuchsia-400/30 bg-fuchsia-500/15 px-3 py-2 text-xs font-bold text-fuchsia-100"
-            >
-              Start Weak-Topic Rematch
-            </Link>
-          )}
-
-          <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-3">
-            {messages.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center text-center">
-                <GigglesAvatar size={42} />
-                <p className="mt-3 text-sm font-semibold text-white/85">
-                  Play a battle first, and I&apos;ll analyze your weak topics.
-                </p>
+                {message.content}
               </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {messages.map((message, index) => (
-                  <div
-                    key={`${message.role}-${index}`}
-                    className={`max-w-[96%] whitespace-pre-wrap break-words rounded-xl px-3 py-2.5 text-sm leading-relaxed ${
-                      message.role === "assistant"
-                        ? "self-start border border-cyan-400/20 bg-cyan-500/[0.08] text-white/90"
-                        : "self-end border border-fuchsia-400/20 bg-fuchsia-500/[0.08] text-white/90"
-                    }`}
-                  >
-                    {message.content}
-                  </div>
-                ))}
+            ))}
 
-                {isSending && (
-                  <div className="self-start rounded-xl border border-cyan-400/25 bg-cyan-500/[0.08] px-3 py-2 text-sm text-white/80">
-                    <div className="flex items-center gap-2">
-                      <GigglesAvatar size={20} />
-                      <span>VYRA is analyzing your mistakes...</span>
-                      <span className="inline-flex items-center gap-1">
-                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
-                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300 [animation-delay:120ms]" />
-                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300 [animation-delay:240ms]" />
-                      </span>
-                    </div>
-                  </div>
-                )}
+            {isSending && (
+              <div className="self-start rounded-xl border border-cyan-400/25 bg-cyan-500/[0.08] px-3 py-2 text-sm text-white/80">
+                <div className="flex items-center gap-2">
+                  <VYRAAvatar size={20} />
+                  <span>VYRA is analyzing...</span>
+                  <span className="inline-flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300 [animation-delay:120ms]" />
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300 [animation-delay:240ms]" />
+                  </span>
+                </div>
               </div>
             )}
+
+            <div ref={listEndRef} />
           </div>
+        )}
+      </div>
 
-          {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
+      {!hasBattleData && (
+        <p className="mt-2 text-xs text-cyan-100/70">
+          Tip: complete one battle for fully personalized coaching context.
+        </p>
+      )}
 
-          <form onSubmit={handleAskSubmit} className="mt-3 flex gap-2">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={
-                hasBattleData
-                  ? "Ask about your mistakes, weak topics, or next move..."
-                  : "Choose a deck or play a battle first, then ask..."
-              }
-              className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-400/40"
-            />
-            <button
-              type="submit"
-              disabled={isSending || !input.trim()}
-              className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-500 px-3.5 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Send
-            </button>
-          </form>
-        </div>
-      </aside>
-    </>
+      {error && <p className="mt-2 text-xs text-red-300">{error}</p>}
+
+      <form onSubmit={(e) => void onSubmit(e)} className="mt-3 flex gap-2">
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={
+            hasBattleData
+              ? "Ask VYRA anything about your study progress..."
+              : "Choose a deck, topic, or missed question to begin..."
+          }
+          className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-400/40"
+        />
+        <button
+          type="submit"
+          disabled={isSending || !input.trim()}
+          className="rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-3.5 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Send
+        </button>
+      </form>
+    </div>
   );
 }

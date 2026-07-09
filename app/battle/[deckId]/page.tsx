@@ -452,7 +452,7 @@ function Background({ children }: { children: React.ReactNode }) {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-10 sm:px-6 sm:py-16">
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-10 pb-28 sm:px-6 sm:py-14 sm:pb-24 xl:pb-14">
         {children}
       </div>
     </main>
@@ -1996,7 +1996,9 @@ export default function BattlePage() {
 
   return (
     <Background>
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-[1440px]">
+        <div className="grid items-start gap-4 xl:gap-6 2xl:gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="w-full max-w-3xl xl:max-w-none">
         {effectiveStudyMode === "boss" && bossReadiness && (
           <div className="mb-3 flex items-center justify-between rounded-xl border border-fuchsia-400/25 bg-fuchsia-500/10 px-3.5 py-2.5">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-200">
@@ -2131,7 +2133,7 @@ export default function BattlePage() {
         </div>
 
         {/* Question card */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:p-6 md:p-8">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:p-6 lg:p-7 xl:p-8">
           <span className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
             {currentQuestion.topic}
           </span>
@@ -2171,7 +2173,7 @@ export default function BattlePage() {
                   key={i}
                   onClick={() => handleSelectAnswer(choice)}
                   disabled={showFeedback}
-                  className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-all duration-200 disabled:cursor-default sm:py-3 sm:text-base ${choiceStyles}`}
+                  className={`flex min-h-[3.3rem] w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-all duration-200 disabled:cursor-default sm:min-h-[3.5rem] sm:py-3.5 sm:text-base ${choiceStyles}`}
                 >
                   <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 text-xs font-bold text-white/70">
                     {CHOICE_LETTERS[i]}
@@ -2281,24 +2283,31 @@ export default function BattlePage() {
             </button>
           )}
         </div>
-      </div>
+          </div>
 
-      {answers.length > 0 && (
-        <GigglesCoach
-          deckId={deck.id}
-          deckTitle={deck.title}
-          courseName={deck.course_name}
-          playerName={playerName || accountDisplayName || deck.student_name}
-          weakTopics={liveWeakTopics}
-          missedQuestions={liveMissedQuestions}
-          mistakeDna={liveMistakeDna}
-          battleScore={totalScore}
-          accuracyPercent={liveAccuracyPercent}
-          previousRematches={0}
-          masteryProgress={liveMasteryProgress}
-          contextLabel="Battle"
-        />
-      )}
+          <GigglesCoach
+            deckId={deck.id}
+            deckTitle={deck.title}
+            courseName={deck.course_name}
+            playerName={playerName || accountDisplayName || deck.student_name}
+            weakTopics={liveWeakTopics}
+            missedQuestions={liveMissedQuestions}
+            mistakeDna={liveMistakeDna}
+            battleScore={totalScore}
+            accuracyPercent={liveAccuracyPercent}
+            previousRematches={0}
+            masteryProgress={liveMasteryProgress}
+            currentQuestion={{
+              questionText: currentQuestion.question_text,
+              selectedAnswer: selectedChoice || undefined,
+              correctAnswer: currentQuestion.correct_answer,
+              explanation: currentQuestion.explanation,
+            }}
+            contextLabel="Battle"
+            layout="docked"
+          />
+        </div>
+      </div>
     </Background>
   );
 }

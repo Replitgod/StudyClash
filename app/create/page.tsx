@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
+import { FLOATING_ACTION } from "@/lib/uiLayout";
 import type { User } from "@supabase/supabase-js";
 import type { Profile } from "@/lib/useAuth";
 
@@ -144,7 +145,7 @@ function Background({ children }: { children: React.ReactNode }) {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="relative z-10 flex min-h-screen flex-col items-center px-4 py-10 sm:px-6 sm:py-20">
+      <div className={`relative z-10 flex min-h-screen flex-col items-center px-4 py-10 sm:px-6 sm:py-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {children}
       </div>
     </main>
@@ -205,9 +206,28 @@ function getGenerationErrorMessage(status: number, fallback?: string): string {
   return "Something went wrong. Please try again.";
 }
 
+function getInitialExamSelection(): { track: string; mode: string } {
+  if (typeof window === "undefined") {
+    return { track: "none", mode: "" };
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const track = (params.get("track") || "").trim().toLowerCase();
+
+  if (!EXAM_MODE_OPTIONS[track]) {
+    return { track: "none", mode: "" };
+  }
+
+  return {
+    track,
+    mode: EXAM_MODE_OPTIONS[track][0]?.value || "",
+  };
+}
+
 export default function CreateDeck() {
   const router = useRouter();
   const { user, profile, isLoggedIn, isLoading: isAuthLoading } = useAuth();
+  const initialExamSelection = getInitialExamSelection();
 
   const [studentName, setStudentName] = useState("");
   const [isEditingStudentName, setIsEditingStudentName] = useState(false);
@@ -226,8 +246,8 @@ export default function CreateDeck() {
   const [difficultyMode, setDifficultyMode] = useState("mixed");
   const [questionCount, setQuestionCount] = useState("15");
   const [questionType, setQuestionType] = useState("multiple_choice");
-  const [examTrack, setExamTrack] = useState("none");
-  const [examMode, setExamMode] = useState("");
+  const [examTrack, setExamTrack] = useState(initialExamSelection.track);
+  const [examMode, setExamMode] = useState(initialExamSelection.mode);
 
   // Tracks which step of the loading sequence to visually highlight.
   // This is a cosmetic progress indicator — the actual work still
@@ -309,18 +329,6 @@ export default function CreateDeck() {
     const ua = navigator.userAgent;
     const isChromiumBased = /Chrome|Chromium|Edg\//.test(ua);
     void Promise.resolve().then(() => setSupportsFolderUpload(isChromiumBased));
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const track = (params.get("track") || "").trim().toLowerCase();
-
-    if (!EXAM_MODE_OPTIONS[track]) return;
-
-    setExamTrack(track);
-    const defaultMode = EXAM_MODE_OPTIONS[track][0]?.value || "";
-    setExamMode(defaultMode);
   }, []);
 
   const stopGenerationSteps = () => {

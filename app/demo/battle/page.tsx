@@ -419,6 +419,10 @@ export default function DemoBattlePage() {
 							This SAT Math / Algebra sample deck shows the exact tutoring-center experience: answer questions, see your score, review weak topics, and jump straight into topic-specific study links.
 						</p>
 
+						<p className="mx-auto mt-3 max-w-xl rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-center text-xs font-semibold text-cyan-100 sm:text-sm">
+							No account needed. Tap Start Demo Battle and answer 6 questions to see the full loop.
+						</p>
+
 						<div className="mt-8 grid gap-4 md:grid-cols-3">
 							{[
 								{ title: "1. Start instantly", text: "No upload, no deck setup, no login required." },

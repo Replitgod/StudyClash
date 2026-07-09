@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
+import { FLOATING_ACTION, UI_Z_INDEX } from "@/lib/uiLayout";
 
 export default function FeedbackButton() {
   const [isOpen, setIsOpen] = useState(false);
@@ -74,8 +75,9 @@ export default function FeedbackButton() {
       {/* Floating button */}
       <button
         onClick={handleOpen}
-        className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-4 z-40 flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-3 text-sm font-bold text-white shadow-[0_0_30px_-8px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:bottom-6 sm:left-auto sm:right-6 sm:hover:scale-105"
-        aria-label="Send feedback"
+        className={`${FLOATING_ACTION.base} ${FLOATING_ACTION.left} flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-3 text-sm font-bold text-white shadow-[0_0_30px_-8px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-105`}
+        style={{ zIndex: UI_Z_INDEX.floatingAction }}
+        aria-label="Send feedback or report a wrong question"
       >
         <svg
           className="h-4 w-4 flex-shrink-0"
@@ -96,12 +98,13 @@ export default function FeedbackButton() {
       {/* Modal overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 flex items-end justify-center bg-black/70 p-2 backdrop-blur-sm sm:items-center sm:p-4"
+          style={{ zIndex: UI_Z_INDEX.modal }}
           onClick={handleClose}
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-md rounded-t-2xl border border-white/10 bg-[#0a0a12] p-5 shadow-[0_0_60px_-15px_rgba(217,70,239,0.4)] sm:rounded-2xl sm:p-6"
+            className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#0a0a12] p-5 shadow-[0_0_60px_-15px_rgba(217,70,239,0.4)] sm:rounded-2xl sm:p-6"
           >
             {/* Header */}
             <div className="flex items-center justify-between">

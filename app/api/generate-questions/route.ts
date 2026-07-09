@@ -1067,8 +1067,11 @@ export async function POST(req: NextRequest) {
       }
 
       if ((count || 0) >= dailyLimit) {
+        const message = isFreePlan
+          ? "Daily generation limit reached for Free Beta. Upgrade on Pricing for higher limits."
+          : "Daily generation limit reached.";
         return NextResponse.json(
-          { error: "Daily generation limit reached." },
+          { error: message },
           { status: 429 }
         );
       }

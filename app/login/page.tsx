@@ -280,6 +280,13 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
+
+        <p className="mt-3 text-center text-xs text-white/35">
+          By continuing, you agree to our{" "}
+          <Link href="/terms" className="text-cyan-200 hover:text-cyan-100">Terms</Link>
+          {" "}and{" "}
+          <Link href="/privacy" className="text-cyan-200 hover:text-cyan-100">Privacy Policy</Link>.
+        </p>
       </div>
     </main>
   );

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
+import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 type AdminStats = {
   totalUsers: number;
@@ -169,7 +170,7 @@ function Background({ children }: { children: React.ReactNode }) {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center px-4 py-10 sm:px-6 sm:py-16">
+      <div className={`relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center px-4 py-10 sm:px-6 sm:py-16 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {children}
       </div>
     </main>

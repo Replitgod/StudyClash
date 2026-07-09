@@ -637,7 +637,7 @@ function Background({ children }: { children: React.ReactNode }) {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="relative z-10 flex min-h-screen flex-col items-center px-4 py-10 sm:px-6 sm:py-16">
+      <div className="relative z-10 flex min-h-screen flex-col items-center px-4 py-10 pb-28 sm:px-6 sm:py-14 sm:pb-24 md:pb-20">
         {children}
       </div>
     </main>
@@ -1407,6 +1407,7 @@ export default function ResultsPage() {
       setTimeout(() => setLinkCopied(false), 2000);
     } catch {
       setLinkCopied(false);
+      setLoadError("Could not copy challenge message. Please copy the challenge link manually.");
       safeTrackEvent("challenge_link_copy_failed", {
         matchId: match.id,
         deckId: deck.id,
@@ -1668,7 +1669,7 @@ export default function ResultsPage() {
 
   return (
     <Background>
-      <div className="w-full max-w-2xl">
+      <div className="w-full max-w-5xl">
         {/* Badge */}
         <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
@@ -2406,7 +2407,7 @@ export default function ResultsPage() {
         )}
 
         {/* Score card */}
-        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:mt-8 sm:p-6 md:p-8">
+        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:mt-8 sm:p-6 lg:p-7 xl:p-8">
           {/* Big score */}
           <div className="text-center">
             <span className="text-5xl font-black bg-gradient-to-r from-fuchsia-400 to-cyan-400 bg-clip-text text-transparent sm:text-6xl md:text-7xl">
@@ -2801,7 +2802,7 @@ export default function ResultsPage() {
                       </div>
                     )}
 
-                    {/* Report Bad Question */}
+                    {/* Report Wrong Question */}
                     <div className="mt-4 border-t border-white/10 pt-3">
                       {reportState.isSubmitted ? (
                         <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
@@ -2870,7 +2871,7 @@ export default function ResultsPage() {
                               d="M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5"
                             />
                           </svg>
-                          Report Bad Question
+                          Report Wrong Question
                         </button>
                       )}
 
@@ -2906,6 +2907,23 @@ export default function ResultsPage() {
           accuracyPercent={currentAccuracyPercent}
           previousRematches={coachPreviousRematches}
           masteryProgress={coachMasteryProgress}
+          currentQuestion={
+            coachMissedQuestions.length > 0
+              ? {
+                  questionText: coachMissedQuestions[0].questionText,
+                  selectedAnswer: coachMissedQuestions[0].selectedAnswer,
+                  correctAnswer: coachMissedQuestions[0].correctAnswer,
+                  explanation: coachMissedQuestions[0].explanation,
+                }
+              : undefined
+          }
+          recentBattleHistory={deckLeaderboard.slice(0, 6).map((entry) => ({
+            score: entry.score,
+            accuracyPercent:
+              entry.total_questions > 0
+                ? Math.round((entry.correct_answers / entry.total_questions) * 100)
+                : undefined,
+          }))}
           contextLabel="Results"
         />
 

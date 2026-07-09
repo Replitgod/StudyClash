@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
+import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 type Plan = {
   id: string;
@@ -126,7 +127,7 @@ export default function PricingPage() {
         }}
       />
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center px-4 py-14 sm:px-6 sm:py-20">
+      <div className={`relative z-10 mx-auto flex min-h-screen w-full max-w-6xl flex-col items-center px-4 py-14 sm:px-6 sm:py-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {/* Badge */}
         <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
