@@ -28,6 +28,7 @@ type GeneratedQuestion = {
 
 type QuestionType = "multiple_choice" | "true_false";
 type DifficultyMode = "mixed" | "easy" | "medium" | "hard";
+type ExamTrack = "lsat" | "mcat" | "nclex" | "ap";
 
 const MIN_NOTES_WORD_COUNT = 30;
 const ALLOWED_QUESTION_COUNTS = [5, 10, 15, 20, 25];
@@ -106,6 +107,8 @@ function buildPrompt(params: {
   questionType: QuestionType;
   gradeLevel?: string;
   topicFocus?: string;
+  examTrack?: ExamTrack;
+  examMode?: string;
   additionalGuidance?: string;
 }): string {
   const {
@@ -117,6 +120,8 @@ function buildPrompt(params: {
     questionType,
     gradeLevel,
     topicFocus,
+    examTrack,
+    examMode,
     additionalGuidance,
   } = params;
 
@@ -144,8 +149,18 @@ function buildPrompt(params: {
     ? `\nAdditional correction guidance from a prior failed attempt:\n${additionalGuidance}`
     : "";
 
+  const examGuidanceBlock = buildExamGuidanceBlock({
+    examTrack,
+    examMode,
+    questionType,
+  });
+
+  const explanationRule = examTrack
+    ? `- "explanation": 2-4 concise sentences. Include why the correct answer is right AND why at least one strong distractor is wrong.`
+    : `- "explanation": 1-2 short sentences explaining why the correct answer is right`;
+
   return `
-You are a quiz generator for a study app called StudyClash.
+You are a ${examTrack ? "high-stakes exam" : "quiz"} generator for a study app called StudyClash.
 
 Read the notes below and create exactly ${totalQuestions} ${
     isTrueFalse ? "true/false" : "multiple-choice"
@@ -153,12 +168,12 @@ Read the notes below and create exactly ${totalQuestions} ${
 that test understanding of the material. Every question must be answerable
 using ONLY the information in the notes below. Do not introduce outside facts,
 and do not invent details that are not present in the notes.
-${gradeLevelLine}${topicFocusLine}
+${gradeLevelLine}${topicFocusLine}${examGuidanceBlock}
 
 Rules for every question:
 - "question_text": a clear question based directly on the notes
 ${choiceInstructions}
-- "explanation": 1-2 short sentences explaining why the correct answer is right
+${explanationRule}
 - "topic": a short label (2-4 words) for the subtopic this question covers
 - "difficulty": exactly one of "easy", "medium", or "hard"
 
@@ -210,6 +225,114 @@ function validateNotes(notes: string): string | null {
   }
 
   return null;
+}
+
+function buildExamGuidanceBlock(args: {
+  examTrack?: ExamTrack;
+  examMode?: string;
+  questionType: QuestionType;
+}): string {
+  const { examTrack, examMode, questionType } = args;
+  if (!examTrack) return "";
+
+  const modeLine = examMode
+    ? `\nExam mode selected: ${examMode.replace(/_/g, " ")}.`
+    : "";
+
+  const modeSpecificGuidance = buildExamModeSpecificGuidance(examTrack, examMode);
+
+  if (examTrack === "lsat") {
+    return `\nGenerate LSAT-style prompts with argument structure focus.${modeLine}
+- Prioritize logical flaw, inference, assumption, strengthen, and weaken analysis.
+- Use short argument stimuli and dense reading-comprehension style passages from the notes.
+- Keep choices subtle and close to each other in plausibility.
+- Topic labels should use LSAT taxonomy terms like "flaw", "assumption", "inference", "main point", "strengthen", "weaken".
+- When possible, create linked mini-sets by reusing the same stimulus for 2-4 consecutive questions and prefix question_text with a marker like "[Stimulus A]".
+${modeSpecificGuidance}`;
+  }
+
+  if (examTrack === "mcat") {
+    return `\nGenerate MCAT-style prompts with scientific reasoning emphasis.${modeLine}
+- Favor passage-informed analysis and data interpretation over isolated fact recall.
+- Simulate passage blocks by generating 2-5 related questions that share a common scientific setup and prefix question_text with markers like "[Passage A]".
+- Topic labels should use MCAT section taxonomy terms like "C/P", "CARS", "B/B", "P/S".
+- Explanations should be reasoning-first and reference what clue in the passage/stem supports the answer.
+${modeSpecificGuidance}`;
+  }
+
+  if (examTrack === "nclex") {
+    return `\nGenerate NCLEX-style prompts focused on clinical judgment and safety.${modeLine}
+- Use realistic patient-case vignettes anchored to the notes.
+- Prioritize safety, prioritization, delegation, and next-best-action decision pathways.
+- Topic labels should use taxonomy terms like "priority", "safety", "pharmacology", "delegation", "assessment".
+- When possible, create linked mini-sets by reusing one patient scenario for 2-4 consecutive questions and prefix question_text with markers like "[Case A]".
+${modeSpecificGuidance}`;
+  }
+
+  return `\nGenerate AP exam-style prompts.${modeLine}
+- Prioritize concept application and evidence-based reasoning tied to standards in the notes.
+- Include a mix of stimulus-based interpretation and analytical questioning.
+- Topic labels should align to AP-unit style categories from the notes.
+- Use ${questionType === "true_false" ? "clear claim testing" : "high-quality distractors"} appropriate for AP prep.
+- When possible, create linked mini-sets by reusing one source excerpt, chart, or scenario for 2-4 consecutive questions and prefix question_text with markers like "[Stimulus A]".
+${modeSpecificGuidance}`;
+}
+
+function buildExamModeSpecificGuidance(
+  examTrack: ExamTrack,
+  examMode?: string
+): string {
+  if (!examMode) return "";
+
+  if (examTrack === "lsat") {
+    if (examMode === "lsat_logical_reasoning") {
+      return "- Mode focus: Logical Reasoning. Emphasize assumption, flaw, strengthen, weaken, and inference stems.";
+    }
+    if (examMode === "lsat_reading_comprehension") {
+      return "- Mode focus: Reading Comprehension. Emphasize author viewpoint, structure, main point, and passage detail questions.";
+    }
+    return "- Mode focus: Mixed LSAT. Balance Logical Reasoning and Reading Comprehension style prompts.";
+  }
+
+  if (examTrack === "mcat") {
+    if (examMode === "mcat_cp") {
+      return "- Mode focus: C/P. Emphasize chemistry/physics reasoning, units, trends, and mechanism-level interpretation from the notes.";
+    }
+    if (examMode === "mcat_cars") {
+      return "- Mode focus: CARS. Emphasize passage logic, author intent, tone, and inference without outside science facts.";
+    }
+    if (examMode === "mcat_bb") {
+      return "- Mode focus: B/B. Emphasize biological systems, pathways, and experimental interpretation from the notes.";
+    }
+    if (examMode === "mcat_ps") {
+      return "- Mode focus: P/S. Emphasize behavioral concepts, study interpretation, and applied scenario analysis.";
+    }
+    return "- Mode focus: Mixed MCAT. Balance C/P, CARS, B/B, and P/S style thinking patterns.";
+  }
+
+  if (examTrack === "nclex") {
+    if (examMode === "nclex_fundamentals") {
+      return "- Mode focus: Fundamentals. Emphasize core nursing principles, safety checks, and first-line actions.";
+    }
+    if (examMode === "nclex_med_surg") {
+      return "- Mode focus: Med-Surg. Emphasize acute care prioritization, monitoring, and intervention sequencing.";
+    }
+    if (examMode === "nclex_pharmacology") {
+      return "- Mode focus: Pharmacology. Emphasize medication safety, side-effect recognition, and contraindication logic from the notes.";
+    }
+    if (examMode === "nclex_maternal_peds") {
+      return "- Mode focus: Maternal/Peds. Emphasize age-appropriate care, maternal risk signals, and family safety priorities.";
+    }
+    return "- Mode focus: Mixed NCLEX. Balance patient safety, prioritization, and clinical judgment.";
+  }
+
+  if (examMode === "ap_stimulus") {
+    return "- Mode focus: Stimulus-Based Analysis. Emphasize interpreting excerpts, visuals, data displays, and evidence use.";
+  }
+  if (examMode === "ap_free_response") {
+    return "- Mode focus: Free-Response Prep. Emphasize claim-evidence-reasoning style prompts and analytical depth.";
+  }
+  return "- Mode focus: Mixed AP. Balance quick recall with analysis and evidence-based reasoning.";
 }
 
 type ExpectedShape = {
@@ -502,6 +625,8 @@ async function generateAndValidate(
     questionType: QuestionType;
     gradeLevel?: string;
     topicFocus?: string;
+    examTrack?: ExamTrack;
+    examMode?: string;
     additionalGuidance?: string;
     temperature?: number;
   }
@@ -520,6 +645,8 @@ async function generateAndValidate(
           questionType: genParams.questionType,
           gradeLevel: genParams.gradeLevel,
           topicFocus: genParams.topicFocus,
+          examTrack: genParams.examTrack,
+          examMode: genParams.examMode,
           additionalGuidance: genParams.additionalGuidance,
         }),
       },
@@ -626,6 +753,8 @@ export async function POST(req: NextRequest) {
       questionCount,
       questionType,
       uploadKind,
+      examTrack,
+      examMode,
     } = body;
 
     const normalizedUploadKind = normalizeUploadKind(uploadKind);
@@ -634,20 +763,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Missing required fields." },
         { status: 400 }
-      );
-    }
-
-    if (typeof betaAccessCode !== "string" || !betaAccessCode.trim()) {
-      return NextResponse.json(
-        { error: "Beta access code is required." },
-        { status: 400 }
-      );
-    }
-
-    if (!isBetaAccessCodeValid(betaAccessCode)) {
-      return NextResponse.json(
-        { error: "Invalid beta access code." },
-        { status: 403 }
       );
     }
 
@@ -686,6 +801,22 @@ export async function POST(req: NextRequest) {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const startOfTodayIso = startOfToday.toISOString();
+
+    if (isFreePlan) {
+      if (typeof betaAccessCode !== "string" || !betaAccessCode.trim()) {
+        return NextResponse.json(
+          { error: "Beta access code is required." },
+          { status: 400 }
+        );
+      }
+
+      if (!isBetaAccessCodeValid(betaAccessCode)) {
+        return NextResponse.json(
+          { error: "Invalid beta access code." },
+          { status: 403 }
+        );
+      }
+    }
 
     if (isFreePlan) {
       const trimmedPlayerName = String(studentName || "").trim();
@@ -791,6 +922,8 @@ export async function POST(req: NextRequest) {
 
     const sanitizedTopicFocus =
       typeof topicFocus === "string" ? topicFocus.trim().slice(0, 200) : "";
+    const sanitizedExamTrack = normalizeExamTrack(examTrack);
+    const sanitizedExamMode = normalizeExamMode(examMode);
 
     const { easy, medium, hard } = computeDifficultyDistribution(
       sanitizedQuestionCount,
@@ -806,6 +939,8 @@ export async function POST(req: NextRequest) {
       questionType: sanitizedQuestionType,
       gradeLevel: sanitizedGradeLevel,
       topicFocus: sanitizedTopicFocus,
+      examTrack: sanitizedExamTrack || "",
+      examMode: sanitizedExamMode,
     });
 
     // 6. Validate the notes themselves before spending an AI call on them
@@ -827,6 +962,8 @@ export async function POST(req: NextRequest) {
       questionType: sanitizedQuestionType,
       gradeLevel: sanitizedGradeLevel || undefined,
       topicFocus: sanitizedTopicFocus || undefined,
+      examTrack: sanitizedExamTrack || undefined,
+      examMode: sanitizedExamMode || undefined,
     };
 
     let questions: GeneratedQuestion[] | null = null;
@@ -1087,6 +1224,21 @@ function normalizeUploadKind(value: unknown): UploadKind {
   return allowed.includes(raw as UploadKind) ? (raw as UploadKind) : "manual";
 }
 
+function normalizeExamTrack(value: unknown): ExamTrack | null {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim().toLowerCase();
+  if (normalized === "lsat") return "lsat";
+  if (normalized === "mcat") return "mcat";
+  if (normalized === "nclex") return "nclex";
+  if (normalized === "ap") return "ap";
+  return null;
+}
+
+function normalizeExamMode(value: unknown): string {
+  if (typeof value !== "string") return "";
+  return value.trim().toLowerCase().slice(0, 64);
+}
+
 function buildSourceHash(notes: string): string {
   const normalized = notes.trim().replace(/\s+/g, " ");
   return createHash("sha256").update(normalized).digest("hex");
@@ -1160,10 +1312,23 @@ function buildGenerationCacheKey(args: {
   questionType: QuestionType;
   gradeLevel: string;
   topicFocus: string;
+  examTrack: string;
+  examMode: string;
 }): string {
-  const { sourceHash, questionCount, difficultyMode, questionType, gradeLevel, topicFocus } = args;
+  const {
+    sourceHash,
+    questionCount,
+    difficultyMode,
+    questionType,
+    gradeLevel,
+    topicFocus,
+    examTrack,
+    examMode,
+  } = args;
   const normalizedGrade = gradeLevel.trim().toLowerCase();
   const normalizedFocus = topicFocus.trim().toLowerCase();
+  const normalizedTrack = examTrack.trim().toLowerCase();
+  const normalizedMode = examMode.trim().toLowerCase();
   return [
     sourceHash,
     String(questionCount),
@@ -1171,5 +1336,7 @@ function buildGenerationCacheKey(args: {
     questionType,
     normalizedGrade,
     normalizedFocus,
+    normalizedTrack,
+    normalizedMode,
   ].join("|");
 }

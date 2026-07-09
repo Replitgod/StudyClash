@@ -87,7 +87,7 @@ export default async function ExamTrackPage({
               href={`/create?track=${encodeURIComponent(track)}`}
               className="flex-1 rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-500 px-4 py-3 text-center text-sm font-bold text-white"
             >
-              Build {detail.title} Deck
+              Start {track.toUpperCase()} Drill
             </Link>
             <Link
               href="/pricing"

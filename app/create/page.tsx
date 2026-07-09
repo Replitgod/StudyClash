@@ -67,6 +67,41 @@ const QUESTION_TYPE_OPTIONS = [
   { value: "true_false", label: "True / False" },
 ];
 
+const EXAM_TRACK_OPTIONS = [
+  { value: "none", label: "No exam track" },
+  { value: "lsat", label: "LSAT" },
+  { value: "mcat", label: "MCAT" },
+  { value: "nclex", label: "NCLEX" },
+  { value: "ap", label: "AP Exams" },
+];
+
+const EXAM_MODE_OPTIONS: Record<string, Array<{ value: string; label: string }>> = {
+  lsat: [
+    { value: "lsat_mixed", label: "LSAT Mixed" },
+    { value: "lsat_logical_reasoning", label: "Logical Reasoning (LR)" },
+    { value: "lsat_reading_comprehension", label: "Reading Comprehension (RC)" },
+  ],
+  mcat: [
+    { value: "mcat_mixed", label: "MCAT Mixed" },
+    { value: "mcat_cp", label: "Chemical/Physical Foundations" },
+    { value: "mcat_cars", label: "CARS" },
+    { value: "mcat_bb", label: "Biological/Biochemical Foundations" },
+    { value: "mcat_ps", label: "Psychological/Social Foundations" },
+  ],
+  nclex: [
+    { value: "nclex_mixed", label: "NCLEX Mixed" },
+    { value: "nclex_fundamentals", label: "Fundamentals" },
+    { value: "nclex_med_surg", label: "Med-Surg" },
+    { value: "nclex_pharmacology", label: "Pharmacology" },
+    { value: "nclex_maternal_peds", label: "Maternal/Peds" },
+  ],
+  ap: [
+    { value: "ap_mixed", label: "AP Mixed" },
+    { value: "ap_stimulus", label: "Stimulus-Based Analysis" },
+    { value: "ap_free_response", label: "Free-Response Prep" },
+  ],
+};
+
 const DECK_TITLE_EXAMPLES = [
   "Cell Biology Unit 2",
   "SAT Grammar Practice",
@@ -191,6 +226,8 @@ export default function CreateDeck() {
   const [difficultyMode, setDifficultyMode] = useState("mixed");
   const [questionCount, setQuestionCount] = useState("15");
   const [questionType, setQuestionType] = useState("multiple_choice");
+  const [examTrack, setExamTrack] = useState("none");
+  const [examMode, setExamMode] = useState("");
 
   // Tracks which step of the loading sequence to visually highlight.
   // This is a cosmetic progress indicator — the actual work still
@@ -274,6 +311,18 @@ export default function CreateDeck() {
     void Promise.resolve().then(() => setSupportsFolderUpload(isChromiumBased));
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const track = (params.get("track") || "").trim().toLowerCase();
+
+    if (!EXAM_MODE_OPTIONS[track]) return;
+
+    setExamTrack(track);
+    const defaultMode = EXAM_MODE_OPTIONS[track][0]?.value || "";
+    setExamMode(defaultMode);
+  }, []);
+
   const stopGenerationSteps = () => {
     if (stepIntervalRef.current) {
       clearInterval(stepIntervalRef.current);
@@ -291,6 +340,17 @@ export default function CreateDeck() {
     } catch {
       // Non-critical if this fails.
     }
+  };
+
+  const handleExamTrackChange = (value: string) => {
+    setExamTrack(value);
+    if (value === "none") {
+      setExamMode("");
+      return;
+    }
+
+    const defaults = EXAM_MODE_OPTIONS[value] || [];
+    setExamMode(defaults[0]?.value || "");
   };
 
   // Handles a single regular upload (PDF or .txt), from either the file
@@ -472,25 +532,34 @@ export default function CreateDeck() {
 
     setErrorMessage(null);
 
-    const resolvedCourseName =
-      courseOption === "Other" ? customCourse.trim() : courseOption;
+    const resolvedCourseName = isExamDrillFlow
+      ? selectedExamTrackLabel
+      : courseOption === "Other"
+        ? customCourse.trim()
+        : courseOption;
+    const selectedExamModeLabel =
+      (EXAM_MODE_OPTIONS[examTrack] || []).find((option) => option.value === examMode)?.label ||
+      "Mixed";
+    const resolvedDeckTitle = isExamDrillFlow
+      ? deckTitle.trim() || `${selectedExamTrackLabel} ${selectedExamModeLabel} Drill`
+      : deckTitle.trim();
 
     if (!resolvedStudentName) {
       setErrorMessage("Please enter your name.");
       return;
     }
 
-    if (!courseOption) {
+    if (!isExamDrillFlow && !courseOption) {
       setErrorMessage("Please choose a subject.");
       return;
     }
 
-    if (courseOption === "Other" && !customCourse.trim()) {
+    if (!isExamDrillFlow && courseOption === "Other" && !customCourse.trim()) {
       setErrorMessage("Please enter your subject name.");
       return;
     }
 
-    if (!deckTitle.trim()) {
+    if (!isExamDrillFlow && !deckTitle.trim()) {
       setErrorMessage("Please give your deck a title.");
       return;
     }
@@ -502,33 +571,37 @@ export default function CreateDeck() {
       return;
     }
 
-    if (!betaAccessCode.trim()) {
+    if (requiresBetaAccessCode && !betaAccessCode.trim()) {
       setErrorMessage("Please enter your beta access code.");
       return;
     }
 
-    try {
-      window.localStorage.setItem(
-        BETA_ACCESS_CODE_STORAGE_KEY,
-        betaAccessCode.trim()
-      );
-    } catch {
-      // Non-critical if this fails.
+    if (betaAccessCode.trim()) {
+      try {
+        window.localStorage.setItem(
+          BETA_ACCESS_CODE_STORAGE_KEY,
+          betaAccessCode.trim()
+        );
+      } catch {
+        // Non-critical if this fails.
+      }
     }
 
     setIsGenerating(true);
     setCurrentStep(0);
 
     trackEvent("deck_generation_started", {
-      deckTitle,
+      deckTitle: resolvedDeckTitle,
       courseName: resolvedCourseName,
       notesCharacterCount: notes.trim().length,
       usedFileUpload: !!uploadedFileName,
       topicFocus: topicFocus.trim() || null,
-      gradeLevel: gradeLevel || null,
+      gradeLevel: isExamDrillFlow ? null : gradeLevel || null,
       difficultyMode,
       questionCount: Number(questionCount),
       questionType,
+      examTrack: examTrack === "none" ? null : examTrack,
+      examMode: examTrack === "none" ? null : examMode || null,
     });
 
     // Advance through the visual steps on a timer while the real request
@@ -549,13 +622,15 @@ export default function CreateDeck() {
         body: JSON.stringify({
           studentName: resolvedStudentName,
           courseName: resolvedCourseName,
-          deckTitle,
+          deckTitle: resolvedDeckTitle,
           notes,
           topicFocus: topicFocus.trim() || undefined,
-          gradeLevel: gradeLevel || undefined,
+          gradeLevel: isExamDrillFlow ? undefined : gradeLevel || undefined,
           difficulty: difficultyMode,
           questionCount: Number(questionCount),
           questionType,
+          examTrack: examTrack === "none" ? undefined : examTrack,
+          examMode: examTrack === "none" ? undefined : examMode || undefined,
           uploadKind: uploadedFileName
             ? uploadedFileName.toLowerCase().endsWith(".pdf")
               ? "pdf"
@@ -563,7 +638,7 @@ export default function CreateDeck() {
                 ? "text"
                 : "folder_text"
             : "manual",
-          betaAccessCode: betaAccessCode.trim(),
+          betaAccessCode: betaAccessCode.trim() || undefined,
         }),
       });
 
@@ -618,7 +693,7 @@ export default function CreateDeck() {
 
       trackEvent("deck_generation_success", {
         deckId,
-        deckTitle,
+        deckTitle: resolvedDeckTitle,
         courseName: resolvedCourseName,
       });
 
@@ -645,6 +720,35 @@ export default function CreateDeck() {
   const isNotesLong = notes.trim().length > LONG_NOTES_CHARACTERS;
   const accountDisplayName = getPreferredDisplayName(profile, user);
   const resolvedStudentName = studentName.trim() || accountDisplayName;
+  const requiresBetaAccessCode = (profile?.plan || "free_beta") === "free_beta";
+  const isExamDrillFlow = examTrack !== "none";
+  const selectedExamModeLabel =
+    (EXAM_MODE_OPTIONS[examTrack] || []).find((option) => option.value === examMode)?.label ||
+    "Mixed";
+  const selectedExamTrackLabel =
+    EXAM_TRACK_OPTIONS.find((option) => option.value === examTrack)?.label || "Exam";
+  const topBadgeLabel = isExamDrillFlow ? `${selectedExamTrackLabel.toUpperCase()} DRILL` : "NEW DECK";
+  const pageTitle = isExamDrillFlow
+    ? `Build Your ${selectedExamTrackLabel} Drill`
+    : "Build Your Battle";
+  const pageSubtitle = isExamDrillFlow
+    ? `Pick your subject, tune your ${selectedExamTrackLabel} settings, and we will turn your notes into an exam-style drill.`
+    : "Pick your subject, tell us how you want it built, and we'll turn your notes into a quick practice round.";
+  const section3Title = isExamDrillFlow ? "Customize Your Drill" : "Customize Your Battle";
+  const section5Title = isExamDrillFlow ? "Generate Drill" : "Generate Battle";
+  const generatingLabel = isExamDrillFlow ? "Generating Drill..." : "Generating Battle...";
+  const submitLabel = isExamDrillFlow
+    ? `Generate ${selectedExamTrackLabel} Drill`
+    : "Generate Battle Deck";
+  const overlayTitle = isExamDrillFlow ? "Building Your Drill" : "Building Your Battle";
+  const fastPathLabel = isExamDrillFlow
+    ? "Fastest path: pick your exam mode, paste or upload your notes, and generate your drill."
+    : "Fastest path: choose your subject, name the deck, paste or upload your notes, and keep the defaults unless you want to fine-tune the battle.";
+  const stepSubject = 1;
+  const stepName = isExamDrillFlow ? 1 : 2;
+  const stepCustomize = isExamDrillFlow ? 2 : 3;
+  const stepNotes = isExamDrillFlow ? 3 : 4;
+  const stepGenerate = isExamDrillFlow ? 4 : 5;
 
   // ---------- Auth loading OR redirecting state ----------
   if (isAuthLoading || !isLoggedIn) {
@@ -680,22 +784,21 @@ export default function CreateDeck() {
       {/* Badge */}
       <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
-        NEW DECK
+        {topBadgeLabel}
       </div>
 
       {/* Title */}
       <h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
         <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-          Build Your Battle
+          {pageTitle}
         </span>
       </h1>
       <p className="mt-3 max-w-md text-center text-sm text-white/50 sm:text-base">
-        Pick your subject, tell us how you want it built, and we&apos;ll turn
-        your notes into a quick practice round.
+        {pageSubtitle}
       </p>
 
       <div className="mt-5 w-full max-w-2xl rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.05] px-4 py-3 text-sm text-cyan-100/90 backdrop-blur-sm sm:px-5">
-        Fastest path: choose your subject, name the deck, paste or upload your notes, and keep the defaults unless you want to fine-tune the battle.
+        {fastPathLabel}
       </div>
 
       {/* Form card */}
@@ -703,57 +806,61 @@ export default function CreateDeck() {
         onSubmit={handleSubmit}
         className="mt-8 w-full max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:mt-10 sm:p-6 md:p-8"
       >
-        {/* ---------- Section 1: Choose Subject ---------- */}
-        <SectionHeader step={1} title="Choose Subject" />
+        {!isExamDrillFlow && (
+          <>
+            {/* ---------- Section 1: Choose Subject ---------- */}
+            <SectionHeader step={stepSubject} title="Choose Subject" />
 
-        <div className="flex flex-col gap-2">
-          <label
-            htmlFor="courseOption"
-            className="text-xs font-bold uppercase tracking-wider text-white/60"
-          >
-            Subject
-          </label>
-          <select
-            id="courseOption"
-            value={courseOption}
-            onChange={(e) => handleCourseChange(e.target.value)}
-            required
-            className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
-          >
-            <option value="" disabled>
-              Select a subject...
-            </option>
-            {COURSE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="courseOption"
+                className="text-xs font-bold uppercase tracking-wider text-white/60"
+              >
+                Subject
+              </label>
+              <select
+                id="courseOption"
+                value={courseOption}
+                onChange={(e) => handleCourseChange(e.target.value)}
+                required
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+              >
+                <option value="" disabled>
+                  Select a subject...
+                </option>
+                {COURSE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        {courseOption === "Other" && (
-          <div className="mt-3 flex flex-col gap-2">
-            <label
-              htmlFor="customCourse"
-              className="text-xs font-bold uppercase tracking-wider text-white/60"
-            >
-              Subject Name
-            </label>
-            <input
-              id="customCourse"
-              type="text"
-              value={customCourse}
-              onChange={(e) => setCustomCourse(e.target.value)}
-              placeholder="e.g. Organic Chemistry II"
-              required
-              className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
-            />
-          </div>
+            {courseOption === "Other" && (
+              <div className="mt-3 flex flex-col gap-2">
+                <label
+                  htmlFor="customCourse"
+                  className="text-xs font-bold uppercase tracking-wider text-white/60"
+                >
+                  Subject Name
+                </label>
+                <input
+                  id="customCourse"
+                  type="text"
+                  value={customCourse}
+                  onChange={(e) => setCustomCourse(e.target.value)}
+                  placeholder="e.g. Organic Chemistry II"
+                  required
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                />
+              </div>
+            )}
+          </>
         )}
 
         {/* ---------- Section 2: Name Your Deck ---------- */}
         <div className="mt-6 border-t border-white/10 pt-6 sm:mt-8 sm:pt-8">
-          <SectionHeader step={2} title="Name Your Deck" />
+          <SectionHeader step={stepName} title={isExamDrillFlow ? "Identity" : "Name Your Deck"} />
 
           <div className="grid grid-cols-1 gap-4 sm:gap-5">
             <div className="flex flex-col gap-2">
@@ -822,32 +929,43 @@ export default function CreateDeck() {
               )}
             </div>
 
-            <div className="flex flex-col gap-2">
-              <label
-                htmlFor="deckTitle"
-                className="text-xs font-bold uppercase tracking-wider text-white/60"
-              >
-                Deck Title
-              </label>
-              <input
-                id="deckTitle"
-                type="text"
-                value={deckTitle}
-                onChange={(e) => setDeckTitle(e.target.value)}
-                placeholder={`e.g. ${DECK_TITLE_EXAMPLES[0]}`}
-                required
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
-              />
-              <p className="text-[11px] text-white/30">
-                Make it short and specific so it&apos;s easy to find later. Other ideas: {DECK_TITLE_EXAMPLES.slice(1).join(" · ")}
-              </p>
-            </div>
+            {isExamDrillFlow ? (
+              <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] px-4 py-3.5">
+                <p className="text-sm font-semibold text-white/90">
+                  Drill title auto-generated: {selectedExamTrackLabel} {selectedExamModeLabel} Drill
+                </p>
+                <p className="mt-1 text-xs text-white/45">
+                  You can start immediately. Subject and title are auto-set for exam tracks.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="deckTitle"
+                  className="text-xs font-bold uppercase tracking-wider text-white/60"
+                >
+                  Deck Title
+                </label>
+                <input
+                  id="deckTitle"
+                  type="text"
+                  value={deckTitle}
+                  onChange={(e) => setDeckTitle(e.target.value)}
+                  placeholder={`e.g. ${DECK_TITLE_EXAMPLES[0]}`}
+                  required
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                />
+                <p className="text-[11px] text-white/30">
+                  Make it short and specific so it&apos;s easy to find later. Other ideas: {DECK_TITLE_EXAMPLES.slice(1).join(" · ")}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* ---------- Section 3: Customize Your Battle ---------- */}
+        {/* ---------- Section 3: Customize ---------- */}
         <div className="mt-6 border-t border-white/10 pt-6 sm:mt-8 sm:pt-8">
-          <SectionHeader step={3} title="Customize Your Battle" />
+          <SectionHeader step={stepCustomize} title={section3Title} />
           <p className="-mt-1 mb-4 text-xs text-white/40">
             Optional — pick what fits, or leave the defaults as-is.
           </p>
@@ -875,25 +993,74 @@ export default function CreateDeck() {
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
             <div className="flex flex-col gap-2">
               <label
-                htmlFor="gradeLevel"
+                htmlFor="examTrack"
                 className="text-xs font-bold uppercase tracking-wider text-white/60"
               >
-                Grade Level (optional)
+                Exam Track (optional)
               </label>
               <select
-                id="gradeLevel"
-                value={gradeLevel}
-                onChange={(e) => setGradeLevel(e.target.value)}
+                id="examTrack"
+                value={examTrack}
+                onChange={(e) => handleExamTrackChange(e.target.value)}
                 className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
               >
-                <option value="">No preference</option>
-                {GRADE_LEVEL_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}
+                {EXAM_TRACK_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>
             </div>
+
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="examMode"
+                className="text-xs font-bold uppercase tracking-wider text-white/60"
+              >
+                Exam Mode
+              </label>
+              <select
+                id="examMode"
+                value={examMode}
+                onChange={(e) => setExamMode(e.target.value)}
+                disabled={examTrack === "none"}
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 disabled:cursor-not-allowed disabled:opacity-60 sm:py-3 sm:text-sm"
+              >
+                {examTrack === "none" ? (
+                  <option value="">Select an exam track first</option>
+                ) : (
+                  (EXAM_MODE_OPTIONS[examTrack] || []).map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            {!isExamDrillFlow && (
+              <div className="flex flex-col gap-2">
+                <label
+                  htmlFor="gradeLevel"
+                  className="text-xs font-bold uppercase tracking-wider text-white/60"
+                >
+                  Grade Level (optional)
+                </label>
+                <select
+                  id="gradeLevel"
+                  value={gradeLevel}
+                  onChange={(e) => setGradeLevel(e.target.value)}
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                >
+                  <option value="">No preference</option>
+                  {GRADE_LEVEL_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div className="flex flex-col gap-2">
               <label
@@ -964,7 +1131,7 @@ export default function CreateDeck() {
 
         {/* ---------- Section 4: Add Notes or Upload Files ---------- */}
         <div className="mt-6 border-t border-white/10 pt-6 sm:mt-8 sm:pt-8">
-          <SectionHeader step={4} title="Add Notes or Upload Files" />
+          <SectionHeader step={stepNotes} title="Add Notes or Upload Files" />
 
           {/* Drag-and-drop upload area */}
           <div
@@ -1151,29 +1318,35 @@ export default function CreateDeck() {
           </div>
         </div>
 
-        {/* ---------- Section 5: Generate Battle ---------- */}
+        {/* ---------- Section 5: Generate ---------- */}
         <div className="mt-6 border-t border-white/10 pt-6 sm:mt-8 sm:pt-8">
-          <SectionHeader step={5} title="Generate Battle" />
+          <SectionHeader step={stepGenerate} title={section5Title} />
 
           <div className="mb-4 flex flex-col gap-2">
             <label
               htmlFor="betaAccessCode"
               className="text-xs font-bold uppercase tracking-wider text-white/60"
             >
-              Beta Access Code
+              Beta Access Code {requiresBetaAccessCode ? "(Free Beta only)" : "(optional)"}
             </label>
             <input
               id="betaAccessCode"
               type="text"
               value={betaAccessCode}
               onChange={(e) => setBetaAccessCode(e.target.value)}
-              placeholder="Enter your beta access code"
-              required
+              placeholder={
+                requiresBetaAccessCode
+                  ? "Enter your beta access code"
+                  : "Only needed if your account is on Free Beta"
+              }
+              required={requiresBetaAccessCode}
               autoComplete="off"
               className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
             />
             <p className="text-[9px] text-white/30">
-              Your beta access code was sent to you by the owner if you wanted to try this app.
+              {requiresBetaAccessCode
+                ? "Your beta access code was sent to you by the owner if you wanted to try this app."
+                : "Your account can generate without a code. Free Beta users still need one."}
             </p>
           </div>
 
@@ -1203,11 +1376,11 @@ export default function CreateDeck() {
                     d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                   />
                 </svg>
-                <span className="relative z-10">Generating Battle...</span>
+                <span className="relative z-10">{generatingLabel}</span>
               </>
             ) : (
               <>
-                <span className="relative z-10">Generate Battle Deck</span>
+                <span className="relative z-10">{submitLabel}</span>
                 <svg
                   className="relative z-10 h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
                   fill="none"
@@ -1278,7 +1451,7 @@ export default function CreateDeck() {
 
             <h2 className="mt-5 text-center text-lg font-black tracking-tight sm:text-xl">
               <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                Building Your Battle
+                {overlayTitle}
               </span>
             </h2>
             <p className="mt-1 text-center text-xs text-white/40">
