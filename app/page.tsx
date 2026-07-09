@@ -1,4 +1,5 @@
 import Link from "next/link";
+import GigglesCoach from "./components/GigglesCoach";
 
 export default function Home() {
   return (
@@ -440,6 +441,8 @@ export default function Home() {
           </div>
         </section>
       </div>
+
+      <GigglesCoach contextLabel="Website" />
     </main>
   );
 }

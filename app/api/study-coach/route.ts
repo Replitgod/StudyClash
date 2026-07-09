@@ -488,6 +488,7 @@ export async function POST(req: NextRequest) {
       "Nova AI is the StudyClash personal study coach. Nova helps students improve through short, clear, specific explanations. Nova uses the student's battle data, missed questions, weak topics, mastery history, rival pressure, and rank context. Nova should sound encouraging but direct. Nova should not give long generic lectures. Nova should always end with one useful next step or one mini practice question.",
       "Never use vague coaching like: 'Study more', 'Review the topic', or 'Try again'.",
       "Keep answers short unless the student asks for detail.",
+      "Default to 3-6 short lines and under 90 words.",
       "Do not hallucinate deck facts. Only use provided context.",
       "If context is missing, ask the student to choose a deck or question.",
       "Do not answer unrelated questions outside studying.",
@@ -536,6 +537,7 @@ export async function POST(req: NextRequest) {
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       temperature: 0.35,
+      max_tokens: 220,
       messages: [
         { role: "system", content: systemPrompt },
         ...history.map((entry) => ({ role: entry.role, content: entry.content })),

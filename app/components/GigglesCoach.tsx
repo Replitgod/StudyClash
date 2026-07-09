@@ -85,10 +85,10 @@ function getModeLabel(mode: CoachMode): string {
 
 function buildInitialCoachMessage(hasBattleData: boolean): string {
   if (!hasBattleData) {
-    return "Play a battle first, and I'll analyze your weak topics.";
+    return "Play one battle, then I can map your weak topics.";
   }
 
-    return "I am Nova AI. I loaded your StudyClash context and will coach with specific, battle-based guidance.";
+  return "Nova AI ready. I will coach your next best move from your battle data.";
 }
 
 function GigglesAvatar({ size = 36 }: { size?: number }) {
@@ -303,7 +303,7 @@ export default function GigglesCoach(props: GigglesCoachProps) {
       action: "quiz_me",
       mode: "quiz",
       userMessage:
-        "Quiz me from my weak topics. Ask one question at a time. Wait for my answer before revealing correctness.",
+        "Quiz me on weak topics. Ask one question at a time and wait for my answer.",
     });
   }
 
@@ -321,7 +321,7 @@ export default function GigglesCoach(props: GigglesCoachProps) {
       action: "mistake_mode",
       mode: "mistake",
       userMessage:
-        "Why was I wrong? Break down one missed question using wrong-vs-right analysis and include one mini follow-up question.",
+        "Why was I wrong? Break down one missed question and include one mini follow-up.",
     });
   }
 
@@ -330,7 +330,7 @@ export default function GigglesCoach(props: GigglesCoachProps) {
       action: "study_plan",
       mode: "plan",
       userMessage:
-        "Create a concise study plan based on my mistakes, weak topics, and response-time issues.",
+        "Create a concise plan from my mistakes, weak topics, and timing issues.",
     });
   }
 
@@ -339,7 +339,7 @@ export default function GigglesCoach(props: GigglesCoachProps) {
       action: "rematch_mode",
       mode: "rematch",
       userMessage:
-        "Create weak-topic rematch guidance with exact mode/topics/limit and explain why this is my next best action.",
+        "Create a weak-topic rematch with exact mode, topics, and limit. Explain why.",
     });
   }
 
@@ -417,7 +417,7 @@ export default function GigglesCoach(props: GigglesCoachProps) {
             {contextLabel || deckTitle || "Study Context"} · {getModeLabel(selectedMode)}
           </p>
 
-          <div className="mb-3 grid grid-cols-2 gap-2">
+          <div className="mb-3 grid grid-cols-2 gap-2.5">
             <button
               onClick={triggerExplainEasier}
               disabled={isSending}
@@ -451,14 +451,14 @@ export default function GigglesCoach(props: GigglesCoachProps) {
               disabled={isSending}
               className="rounded-xl border border-cyan-400/35 bg-cyan-500/15 px-3 py-2 text-xs font-semibold text-cyan-200 transition-colors hover:bg-cyan-500/25 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Create weak-topic rematch
+              Create rematch
             </button>
             <button
               onClick={triggerStudyPlan}
               disabled={isSending}
               className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              What should I study next?
+              Next study step
             </button>
           </div>
 
@@ -480,11 +480,11 @@ export default function GigglesCoach(props: GigglesCoachProps) {
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col gap-2.5">
+              <div className="flex flex-col gap-3">
                 {messages.map((message, index) => (
                   <div
                     key={`${message.role}-${index}`}
-                    className={`max-w-[92%] rounded-xl px-3 py-2.5 text-sm leading-relaxed ${
+                    className={`max-w-[96%] whitespace-pre-wrap break-words rounded-xl px-3 py-2.5 text-sm leading-relaxed ${
                       message.role === "assistant"
                         ? "self-start border border-cyan-400/20 bg-cyan-500/[0.08] text-white/90"
                         : "self-end border border-fuchsia-400/20 bg-fuchsia-500/[0.08] text-white/90"
