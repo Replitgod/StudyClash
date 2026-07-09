@@ -57,7 +57,7 @@ export default async function ExamTrackPage({
 
       <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-4xl flex-col px-4 py-14 sm:px-6 sm:py-20">
         <Link href="/exams" className="w-fit text-sm font-semibold text-cyan-300">
-          <- Back to exam tunnels
+          &larr; Back to exam tunnels
         </Link>
 
         <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
