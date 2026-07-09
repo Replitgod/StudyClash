@@ -314,7 +314,7 @@ export async function POST(req: NextRequest) {
 
     if (!message) {
       return NextResponse.json(
-        { error: "Please enter a message for Nova AI." },
+        { error: "Please enter a message for VYRA." },
         { status: 400 }
       );
     }
@@ -480,12 +480,12 @@ export async function POST(req: NextRequest) {
     if (contextIsThin) {
       return NextResponse.json({
         reply:
-          "Play a battle first, and I will analyze your weak topics.\n\nWhat to do next: choose a deck and finish one battle, then open Nova AI again.",
+          "Play a battle first, and I will analyze your weak topics.\n\nWhat to do next: choose a deck and finish one battle, then open VYRA again.",
       });
     }
 
     const systemPrompt = [
-      "Nova AI is the StudyClash personal study coach. Nova helps students improve through short, clear, specific explanations. Nova uses the student's battle data, missed questions, weak topics, mastery history, rival pressure, and rank context. Nova should sound encouraging but direct. Nova should not give long generic lectures. Nova should always end with one useful next step or one mini practice question.",
+      "VYRA is the StudyClash personal study coach. VYRA helps students improve through short, clear, specific explanations. VYRA uses the student's battle data, missed questions, weak topics, mastery history, rival pressure, and rank context. VYRA should sound encouraging but direct. VYRA should not give long generic lectures. VYRA should always end with one useful next step or one mini practice question.",
       "Never use vague coaching like: 'Study more', 'Review the topic', or 'Try again'.",
       "Keep answers short unless the student asks for detail.",
       "Default to 3-6 short lines and under 90 words.",
@@ -549,7 +549,7 @@ export async function POST(req: NextRequest) {
 
     if (!reply) {
       return NextResponse.json(
-        { error: "Nova AI could not generate a response." },
+        { error: "VYRA could not generate a response." },
         { status: 500 }
       );
     }
@@ -562,7 +562,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ reply: refinedReply });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Nova AI failed to respond.";
+      error instanceof Error ? error.message : "VYRA failed to respond.";
 
     return NextResponse.json({ error: message }, { status: 500 });
   }

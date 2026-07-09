@@ -114,8 +114,8 @@ function standardDeviation(values: number[]): number {
   return Math.sqrt(variance);
 }
 
-function rankForScore(score: number): string {
-  let current = CLASH_RANKS[0].label;
+function rankForScore(score: number): (typeof CLASH_RANKS)[number]["label"] {
+  let current: (typeof CLASH_RANKS)[number]["label"] = CLASH_RANKS[0].label;
   for (const tier of CLASH_RANKS) {
     if (score >= tier.min) current = tier.label;
   }

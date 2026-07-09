@@ -88,7 +88,7 @@ function buildInitialCoachMessage(hasBattleData: boolean): string {
     return "Play one battle, then I can map your weak topics.";
   }
 
-  return "Nova AI ready. I will coach your next best move from your battle data.";
+  return "VYRA ready. I will coach your next best move from your battle data.";
 }
 
 function GigglesAvatar({ size = 36 }: { size?: number }) {
@@ -265,7 +265,7 @@ export default function GigglesCoach(props: GigglesCoachProps) {
       const data = await response.json();
 
       if (!response.ok) {
-          setError(data?.error || "Nova AI could not respond right now.");
+          setError(data?.error || "VYRA could not respond right now.");
         return;
       }
 
@@ -277,7 +277,7 @@ export default function GigglesCoach(props: GigglesCoachProps) {
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
       setInput("");
     } catch {
-        setError("Nova AI could not respond right now.");
+        setError("VYRA could not respond right now.");
     } finally {
       setIsSending(false);
     }
@@ -352,28 +352,30 @@ export default function GigglesCoach(props: GigglesCoachProps) {
     { mode: "rematch", label: "Rematch" },
   ];
 
-  const panelClass = `fixed z-50 transition-transform duration-300 ease-out ${
-    isOpen
-      ? "translate-y-0 opacity-100"
-      : "pointer-events-none translate-y-6 opacity-0"
-  } bottom-0 left-0 right-0 h-[78vh] rounded-t-3xl border border-white/15 bg-[#070912]/95 shadow-[0_-8px_40px_-18px_rgba(34,211,238,0.5)] backdrop-blur-xl md:bottom-4 md:left-auto md:right-4 md:top-4 md:h-auto md:w-[390px] md:rounded-3xl`;
+  const panelClass = `fixed right-0 top-0 z-50 h-full w-full max-w-[420px] border-l border-white/10 bg-[#070912]/95 shadow-[-16px_0_52px_-24px_rgba(34,211,238,0.5)] backdrop-blur-xl transition-transform duration-300 ease-out ${
+    isOpen ? "translate-x-0" : "pointer-events-none translate-x-full"
+  }`;
 
   return (
     <>
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-cyan-300/35 bg-[#081022]/90 px-3.5 py-2.5 text-sm font-semibold text-cyan-100 shadow-[0_0_30px_-12px_rgba(34,211,238,0.8)] backdrop-blur md:bottom-5 md:right-5"
+        aria-expanded={isOpen}
+        aria-label="Toggle VYRA side coach"
+        className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-cyan-300/35 bg-[#081022]/90 px-3.5 py-2.5 text-sm font-semibold text-cyan-100 shadow-[0_0_30px_-12px_rgba(34,211,238,0.8)] backdrop-blur transition hover:scale-[1.02] md:bottom-auto md:right-4 md:top-1/2 md:-translate-y-1/2 md:flex-col md:gap-1.5 md:rounded-2xl md:px-2.5 md:py-3"
       >
-        <GigglesAvatar size={28} />
-        Nova AI
+        <GigglesAvatar size={34} />
+        <span className="text-xs font-black uppercase tracking-[0.2em] md:[writing-mode:vertical-rl] md:[text-orientation:mixed]">
+          VYRA
+        </span>
       </button>
 
       {isOpen && (
         <button
-          aria-label="Close Nova AI panel"
+          aria-label="Close VYRA panel"
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px] md:hidden"
+          className="fixed inset-0 z-40 bg-black/45 backdrop-blur-[1px]"
         />
       )}
 
@@ -383,7 +385,7 @@ export default function GigglesCoach(props: GigglesCoachProps) {
             <div className="flex items-center gap-2.5">
               <GigglesAvatar />
               <div>
-                <p className="text-sm font-bold text-white">Nova AI</p>
+                <p className="text-sm font-bold text-white">VYRA</p>
                 <p className="text-[11px] uppercase tracking-wider text-cyan-200/80">Your battle coach</p>
               </div>
             </div>
@@ -498,7 +500,7 @@ export default function GigglesCoach(props: GigglesCoachProps) {
                   <div className="self-start rounded-xl border border-cyan-400/25 bg-cyan-500/[0.08] px-3 py-2 text-sm text-white/80">
                     <div className="flex items-center gap-2">
                       <GigglesAvatar size={20} />
-                      <span>Nova AI is analyzing your mistakes...</span>
+                      <span>VYRA is analyzing your mistakes...</span>
                       <span className="inline-flex items-center gap-1">
                         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
                         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300 [animation-delay:120ms]" />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -177,7 +177,7 @@ function toTopicPrompt(topic: string, subject: string): string {
   return `Help me improve ${topic} in ${subject}. Give one simple explanation and one mini-quiz question.`;
 }
 
-export default function MasteryMapPage() {
+function MasteryMapPageContent() {
   const { user, profile, isLoggedIn, isLoading } = useAuth();
   const searchParams = useSearchParams();
 
@@ -508,7 +508,7 @@ export default function MasteryMapPage() {
     };
   }, [subjects]);
 
-  function handleAskNova(subject: SubjectMastery, topic: TopicNode) {
+  function handleAskVyra(subject: SubjectMastery, topic: TopicNode) {
     setCoachContext({
       deckId: subject.deckId,
       deckTitle: subject.title,
@@ -710,10 +710,10 @@ export default function MasteryMapPage() {
                             </Link>
                             <button
                               type="button"
-                              onClick={() => handleAskNova(subject, topic)}
+                              onClick={() => handleAskVyra(subject, topic)}
                               className="rounded-lg border border-fuchsia-400/30 bg-fuchsia-500/10 px-2.5 py-2 text-[11px] font-bold text-fuchsia-100"
                             >
-                              Ask Nova AI
+                              Ask VYRA
                             </button>
                             <Link
                               href={topic.bossHref}
@@ -771,7 +771,7 @@ export default function MasteryMapPage() {
 
       {coachContext && (
         <GigglesCoach
-          key={`nova-${coachSeed}-${coachContext.deckId}`}
+          key={`vyra-${coachSeed}-${coachContext.deckId}`}
           deckId={coachContext.deckId}
           deckTitle={coachContext.deckTitle}
           courseName={coachContext.courseName}
@@ -798,5 +798,27 @@ export default function MasteryMapPage() {
         />
       )}
     </Background>
+  );
+}
+
+function MasteryMapFallback() {
+  return (
+    <Background>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center">
+        <svg className="h-10 w-10 animate-spin text-cyan-400" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+        </svg>
+        <p className="mt-4 text-sm text-white/50">Loading Mastery Map...</p>
+      </div>
+    </Background>
+  );
+}
+
+export default function MasteryMapPage() {
+  return (
+    <Suspense fallback={<MasteryMapFallback />}>
+      <MasteryMapPageContent />
+    </Suspense>
   );
 }
