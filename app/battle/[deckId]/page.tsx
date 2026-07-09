@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/trackEvent";
@@ -1340,6 +1341,20 @@ export default function BattlePage() {
           <p className="mt-2 text-sm text-red-200/80">
             {loadError || "Something went wrong."}
           </p>
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+            <Link
+              href="/decks"
+              className="flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
+            >
+              Back to Decks
+            </Link>
+            <Link
+              href="/create"
+              className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-2.5 text-sm font-bold text-white"
+            >
+              Create New Deck
+            </Link>
+          </div>
         </div>
       </Background>
     );
@@ -1484,6 +1499,10 @@ export default function BattlePage() {
         <p className="mt-2 text-center text-sm text-white/50">
           {deck.course_name} · {questions.length} questions
         </p>
+
+        <div className="mt-4 w-full max-w-xl rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] px-4 py-3 text-center text-xs text-cyan-100/90">
+          Flow: Battle now &rarr; review weak topics in results &rarr; run a focused rematch &rarr; improve your score.
+        </div>
 
         <div className="mt-8 w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:mt-10 sm:p-6">
           {accountDisplayName && !isEditingPlayerName ? (

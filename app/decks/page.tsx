@@ -229,6 +229,21 @@ export default function DecksPage() {
               Couldn&apos;t load decks
             </h2>
             <p className="mt-2 text-sm text-red-200/80">{loadError}</p>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
+              >
+                Try Again
+              </button>
+              <Link
+                href="/demo/battle"
+                className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-2.5 text-sm font-bold text-white"
+              >
+                Try Demo Battle
+              </Link>
+            </div>
           </div>
         )}
 

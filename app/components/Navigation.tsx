@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
+  { label: "Demo", href: "/demo/battle" },
   { label: "Create", href: "/create" },
   { label: "Decks", href: "/decks" },
   { label: "Pricing", href: "/pricing" },
@@ -20,6 +21,10 @@ export default function Navigation() {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const navLinks = isLoggedIn
+    ? [...NAV_LINKS, { label: "Dashboard", href: "/dashboard" }]
+    : NAV_LINKS;
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -51,7 +56,7 @@ export default function Navigation() {
 
         {/* Desktop nav links */}
         <div className="hidden items-center gap-1 md:flex">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -150,7 +155,7 @@ export default function Navigation() {
       {isMobileMenuOpen && (
         <div className="border-t border-white/10 bg-[#05050a]/95 px-4 py-4 backdrop-blur-md md:hidden">
           <div className="flex flex-col gap-1">
-            {NAV_LINKS.map((link) => (
+            {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}

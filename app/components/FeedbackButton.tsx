@@ -39,25 +39,34 @@ export default function FeedbackButton() {
     const trimmedMessage = message.trim();
     const currentPageUrl = window.location.href;
 
-    const { error } = await supabase.from("feedback_reports").insert({
-      message: trimmedMessage,
-      page_url: currentPageUrl,
-    });
+    try {
+      const { error } = await supabase.from("feedback_reports").insert({
+        message: trimmedMessage,
+        page_url: currentPageUrl,
+      });
 
-    if (error) {
-      setErrorMessage(error.message);
+      if (error) {
+        setErrorMessage(error.message);
+        setIsSubmitting(false);
+        return;
+      }
+
       setIsSubmitting(false);
-      return;
+      setIsSubmitted(true);
+      setMessage("");
+
+      trackEvent("feedback_submitted", {
+        pageUrl: currentPageUrl,
+        messageLength: trimmedMessage.length,
+      });
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : "Could not submit feedback right now. Please try again."
+      );
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    setMessage("");
-
-    trackEvent("feedback_submitted", {
-      pageUrl: currentPageUrl,
-      messageLength: trimmedMessage.length,
-    });
   };
 
   return (
@@ -65,7 +74,7 @@ export default function FeedbackButton() {
       {/* Floating button */}
       <button
         onClick={handleOpen}
-        className="fixed bottom-5 left-5 z-40 flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-3 text-sm font-bold text-white shadow-[0_0_30px_-8px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:bottom-6 sm:left-auto sm:right-6 sm:hover:scale-105"
+        className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-4 z-40 flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-3 text-sm font-bold text-white shadow-[0_0_30px_-8px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:bottom-6 sm:left-auto sm:right-6 sm:hover:scale-105"
         aria-label="Send feedback"
       >
         <svg

@@ -1517,6 +1517,20 @@ export default function ResultsPage() {
           <p className="mt-2 text-sm text-red-200/80">
             {loadError || "Something went wrong."}
           </p>
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+            <Link
+              href="/decks"
+              className="flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
+            >
+              Back to Decks
+            </Link>
+            <Link
+              href="/create"
+              className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-2.5 text-sm font-bold text-white"
+            >
+              Create New Deck
+            </Link>
+          </div>
         </div>
       </Background>
     );
@@ -2895,6 +2909,10 @@ export default function ResultsPage() {
           contextLabel="Results"
         />
 
+        <div className="mt-6 rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] px-4 py-3 text-center text-xs text-cyan-100/90 sm:mt-8">
+          Next move: run a rematch, review weak topics, then repeat until accuracy climbs.
+        </div>
+
         {/* Action buttons */}
         <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
           <Link
@@ -2913,7 +2931,7 @@ export default function ResultsPage() {
             }
             className="group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:px-8 sm:hover:scale-[1.02]"
           >
-            <span className="relative z-10">{isRivalBattle ? "Rematch Rival" : "Rematch"}</span>
+            <span className="relative z-10">{isRivalBattle ? "Rematch Rival" : "Rematch This Deck"}</span>
             <svg
               className="relative z-10 h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
               fill="none"

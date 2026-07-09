@@ -59,6 +59,9 @@ const PLANS: Plan[] = [
 export default function PricingPage() {
   const { profile, isLoggedIn } = useAuth();
 
+  const requestAccessHref =
+    "mailto:studyclashbeta@gmail.com?subject=StudyClash%20Plan%20Access%20Request";
+
   const getButtonLabel = (planId: string): string => {
     if (isLoggedIn && profile?.plan === planId) {
       return "Current Plan";
@@ -71,6 +74,18 @@ export default function PricingPage() {
 
   const isCurrentPlan = (planId: string): boolean => {
     return isLoggedIn && profile?.plan === planId;
+  };
+
+  const getPlanHref = (planId: string): string => {
+    if (planId === "free_beta") {
+      return isLoggedIn ? "/create" : "/signup?redirect=/create";
+    }
+
+    if (isLoggedIn) {
+      return requestAccessHref;
+    }
+
+    return `/signup?redirect=${encodeURIComponent("/pricing")}`;
   };
 
   return (
@@ -187,18 +202,35 @@ export default function PricingPage() {
                 </ul>
 
                 {/* CTA button */}
-                <button
-                  disabled={current}
-                  className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed sm:hover:scale-[1.02] ${
-                    current
-                      ? "border border-emerald-400/30 bg-emerald-500/10 text-emerald-300 disabled:hover:scale-100"
-                      : plan.highlight
-                      ? "bg-gradient-to-r from-fuchsia-500 to-violet-600 text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)]"
-                      : "border border-white/10 bg-white/5 text-white/80 hover:border-fuchsia-400/30 hover:bg-white/10"
-                  }`}
-                >
-                  {getButtonLabel(plan.id)}
-                </button>
+                {current ? (
+                  <div className="mt-6 flex w-full items-center justify-center rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-6 py-3.5 text-sm font-bold text-emerald-300">
+                    {getButtonLabel(plan.id)}
+                  </div>
+                ) : plan.id === "free_beta" || !isLoggedIn ? (
+                  <Link
+                    href={getPlanHref(plan.id)}
+                    className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02] ${
+                      plan.highlight
+                        ? "bg-gradient-to-r from-fuchsia-500 to-violet-600 text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)]"
+                        : "border border-white/10 bg-white/5 text-white/80 hover:border-fuchsia-400/30 hover:bg-white/10"
+                    }`}
+                  >
+                    {getButtonLabel(plan.id)}
+                  </Link>
+                ) : (
+                  <a
+                    href={getPlanHref(plan.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02] ${
+                      plan.highlight
+                        ? "bg-gradient-to-r from-fuchsia-500 to-violet-600 text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)]"
+                        : "border border-white/10 bg-white/5 text-white/80 hover:border-fuchsia-400/30 hover:bg-white/10"
+                    }`}
+                  >
+                    {getButtonLabel(plan.id)}
+                  </a>
+                )}
               </div>
             );
           })}

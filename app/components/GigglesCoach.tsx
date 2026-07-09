@@ -149,6 +149,11 @@ export default function GigglesCoach(props: GigglesCoachProps) {
 
   const storageKey = useMemo(() => {
     const keyRoot = matchId || deckId || "global";
+    return `studyclash:vyra:session:${keyRoot}`;
+  }, [deckId, matchId]);
+
+  const legacyStorageKey = useMemo(() => {
+    const keyRoot = matchId || deckId || "global";
     return `studyclash:giggles:session:${keyRoot}`;
   }, [deckId, matchId]);
 
@@ -163,7 +168,9 @@ export default function GigglesCoach(props: GigglesCoachProps) {
     }
 
     try {
-      const raw = window.sessionStorage.getItem(storageKey);
+      const raw =
+        window.sessionStorage.getItem(storageKey) ||
+        window.sessionStorage.getItem(legacyStorageKey);
       if (!raw) {
         return [
           {
@@ -216,7 +223,8 @@ export default function GigglesCoach(props: GigglesCoachProps) {
   useEffect(() => {
     if (messages.length === 0) return;
     window.sessionStorage.setItem(storageKey, JSON.stringify({ messages: messages.slice(-20) }));
-  }, [messages, storageKey]);
+    window.sessionStorage.removeItem(legacyStorageKey);
+  }, [legacyStorageKey, messages, storageKey]);
 
   async function sendCoachMessage(params: {
     action: CoachAction;
@@ -362,8 +370,8 @@ export default function GigglesCoach(props: GigglesCoachProps) {
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         aria-expanded={isOpen}
-        aria-label="Toggle VYRA side coach"
-        className="fixed bottom-4 right-4 z-40 flex items-center gap-2 rounded-full border border-cyan-300/35 bg-[#081022]/90 px-3.5 py-2.5 text-sm font-semibold text-cyan-100 shadow-[0_0_30px_-12px_rgba(34,211,238,0.8)] backdrop-blur transition hover:scale-[1.02] md:bottom-auto md:right-4 md:top-1/2 md:-translate-y-1/2 md:flex-col md:gap-1.5 md:rounded-2xl md:px-2.5 md:py-3"
+        aria-label="Toggle VYRA AI coach"
+        className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] right-4 z-40 flex items-center gap-2 rounded-full border border-cyan-300/35 bg-[#081022]/90 px-3.5 py-2.5 text-sm font-semibold text-cyan-100 shadow-[0_0_30px_-12px_rgba(34,211,238,0.8)] backdrop-blur transition hover:scale-[1.02] md:bottom-auto md:right-4 md:top-1/2 md:-translate-y-1/2 md:flex-col md:gap-1.5 md:rounded-2xl md:px-2.5 md:py-3"
       >
         <GigglesAvatar size={34} />
         <span className="text-xs font-black uppercase tracking-[0.2em] md:[writing-mode:vertical-rl] md:[text-orientation:mixed]">
@@ -385,7 +393,7 @@ export default function GigglesCoach(props: GigglesCoachProps) {
             <div className="flex items-center gap-2.5">
               <GigglesAvatar />
               <div>
-                <p className="text-sm font-bold text-white">VYRA</p>
+                <p className="text-sm font-bold text-white">VYRA AI Coach</p>
                 <p className="text-[11px] uppercase tracking-wider text-cyan-200/80">Your battle coach</p>
               </div>
             </div>
