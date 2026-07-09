@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
 
@@ -46,13 +46,19 @@ function Background({ children }: { children: React.ReactNode }) {
 
 export default function ClassroomJoinPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const initialCode = useMemo(() => (searchParams.get("code") || "").toUpperCase(), [searchParams]);
-
-  const [roomCode, setRoomCode] = useState(initialCode);
+  const [roomCode, setRoomCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [preview, setPreview] = useState<JoinResponse | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const code = (params.get("code") || "").toUpperCase();
+    if (code) {
+      setRoomCode(code);
+    }
+  }, []);
 
   const handleJoin = async () => {
     const normalizedCode = roomCode.trim().toUpperCase();
