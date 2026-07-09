@@ -108,6 +108,10 @@ export async function GET(req: NextRequest) {
       battleFinishedTodayResult,
       feedbackSubmittedTodayResult,
       questionReportSubmittedTodayResult,
+      classroomRoomCreatedTodayResult,
+      classroomInviteCopiedTodayResult,
+      classroomJoinSuccessTodayResult,
+      enterpriseLeadSubmittedTodayResult,
       // Analytics: latest 20 raw events
       recentEventsResult,
     ] = await Promise.all([
@@ -159,6 +163,10 @@ export async function GET(req: NextRequest) {
       countEventToday("battle_finished", startOfTodayIso),
       countEventToday("feedback_submitted", startOfTodayIso),
       countEventToday("question_report_submitted", startOfTodayIso),
+      countEventToday("classroom_room_created", startOfTodayIso),
+      countEventToday("classroom_invite_copied", startOfTodayIso),
+      countEventToday("classroom_join_success", startOfTodayIso),
+      countEventToday("enterprise_lead_submitted", startOfTodayIso),
       supabase
         .from("analytics_events")
         .select("id, user_id, event_name, page_url, metadata, created_at")
@@ -189,6 +197,10 @@ export async function GET(req: NextRequest) {
       battleFinishedTodayResult.error,
       feedbackSubmittedTodayResult.error,
       questionReportSubmittedTodayResult.error,
+      classroomRoomCreatedTodayResult.error,
+      classroomInviteCopiedTodayResult.error,
+      classroomJoinSuccessTodayResult.error,
+      enterpriseLeadSubmittedTodayResult.error,
       recentEventsResult.error,
     ].filter((e) => e !== null && e !== undefined);
 
@@ -221,6 +233,10 @@ export async function GET(req: NextRequest) {
         battleFinishedToday: battleFinishedTodayResult.count,
         feedbackSubmittedToday: feedbackSubmittedTodayResult.count,
         questionReportSubmittedToday: questionReportSubmittedTodayResult.count,
+        classroomRoomCreatedToday: classroomRoomCreatedTodayResult.count,
+        classroomInviteCopiedToday: classroomInviteCopiedTodayResult.count,
+        classroomJoinSuccessToday: classroomJoinSuccessTodayResult.count,
+        enterpriseLeadSubmittedToday: enterpriseLeadSubmittedTodayResult.count,
       },
       recent: {
         feedback: recentFeedbackResult.data || [],

@@ -556,6 +556,13 @@ export default function CreateDeck() {
           difficulty: difficultyMode,
           questionCount: Number(questionCount),
           questionType,
+          uploadKind: uploadedFileName
+            ? uploadedFileName.toLowerCase().endsWith(".pdf")
+              ? "pdf"
+              : uploadedFileName.toLowerCase().includes(".txt")
+                ? "text"
+                : "folder_text"
+            : "manual",
           betaAccessCode: betaAccessCode.trim(),
         }),
       });

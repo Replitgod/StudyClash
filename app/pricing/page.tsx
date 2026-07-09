@@ -22,36 +22,51 @@ const PLANS: Plan[] = [
     dailyLimit: "3 deck generations / day",
     features: [
       "AI-generated 15-question decks",
+      "Up to 2 PDF uploads / day",
+      "Up to 3 battles / day",
       "Paced quiz battles",
       "Leaderboards & challenge links",
       "Weak Topic Report",
     ],
   },
   {
-    id: "pro_preview",
-    name: "Pro Preview",
-    price: "$0",
-    tagline: "For heavier study sessions",
-    dailyLimit: "20 deck generations / day",
+    id: "pro_individual",
+    name: "Pro Individual",
+    price: "$8-$12/mo",
+    tagline: "For serious daily prep",
+    dailyLimit: "Unlimited uploads and battles",
     features: [
       "Everything in Free Beta",
-      "6x higher daily deck limit",
-      "Priority access to new features",
-      "Early access to Pro-only tools",
+      "Priority generation queue",
+      "Full VYRA deep-dive coaching",
+      "Unlimited PDF/text uploads",
     ],
     highlight: true,
   },
   {
-    id: "founder",
-    name: "Founder",
-    price: "$0",
-    tagline: "For our earliest supporters",
-    dailyLimit: "Unlimited deck generations",
+    id: "team_pass",
+    name: "Team/Guild Pass",
+    price: "$30-$50/mo",
+    tagline: "For study groups up to 10",
+    dailyLimit: "Shared unlimited group usage",
     features: [
-      "Everything in Pro Preview",
-      "No daily generation limit",
-      "Founder badge on your profile",
-      "Direct line to shape the roadmap",
+      "Private un-expiring leaderboards",
+      "Collaborative deck building",
+      "Custom group styling",
+      "Up to 10 members per guild",
+    ],
+  },
+  {
+    id: "exam_tunnel",
+    name: "High-Stakes Exam Tunnel",
+    price: "$29-$99/mo",
+    tagline: "MCAT / LSAT / NCLEX / AP",
+    dailyLimit: "Premium board-style generation",
+    features: [
+      "Exam-format tuned prompts",
+      "VYRA remediation by exam objective",
+      "Faster queues during peak hours",
+      "Dedicated weak-topic recovery loops",
     ],
   },
 ];
@@ -79,6 +94,10 @@ export default function PricingPage() {
   const getPlanHref = (planId: string): string => {
     if (planId === "free_beta") {
       return isLoggedIn ? "/create" : "/signup?redirect=/create";
+    }
+
+    if (planId === "exam_tunnel") {
+      return "/exams";
     }
 
     if (isLoggedIn) {

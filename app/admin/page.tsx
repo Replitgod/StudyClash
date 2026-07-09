@@ -26,6 +26,10 @@ type AdminAnalytics = {
   battleFinishedToday: number;
   feedbackSubmittedToday: number;
   questionReportSubmittedToday: number;
+  classroomRoomCreatedToday: number;
+  classroomInviteCopiedToday: number;
+  classroomJoinSuccessToday: number;
+  enterpriseLeadSubmittedToday: number;
 };
 
 type FeedbackReport = {
@@ -131,6 +135,22 @@ type TutorDashboardData = {
   emptyMessage: string;
 };
 
+type EnterpriseLeadStatus = "new" | "contacted" | "qualified" | "won" | "lost";
+
+type EnterpriseLead = {
+  id: string;
+  email: string;
+  organization: string;
+  role: string | null;
+  seats: string | null;
+  message: string | null;
+  status: EnterpriseLeadStatus;
+  source: string;
+  created_at: string;
+  updated_at: string;
+  last_contacted_at: string | null;
+};
+
 // Defined OUTSIDE the page component so it keeps a stable identity across
 // re-renders, preventing the whole subtree from remounting on state changes.
 function Background({ children }: { children: React.ReactNode }) {
@@ -193,6 +213,13 @@ function formatEventName(eventName: string): string {
     battle_finished: "Battle Finished",
     feedback_submitted: "Feedback Submitted",
     question_report_submitted: "Question Report Submitted",
+    classroom_room_created: "Classroom Room Created",
+    classroom_invite_copied: "Classroom Invite Copied",
+    classroom_join_attempted: "Classroom Join Attempted",
+    classroom_join_success: "Classroom Join Success",
+    classroom_join_failed: "Classroom Join Failed",
+    enterprise_lead_submitted: "Enterprise Lead Submitted",
+    enterprise_lead_submit_failed: "Enterprise Lead Submit Failed",
   };
   return map[eventName] || eventName;
 }
@@ -254,6 +281,10 @@ export default function AdminPage() {
   const [tutorError, setTutorError] = useState<string | null>(null);
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const [enterpriseLeads, setEnterpriseLeads] = useState<EnterpriseLead[]>([]);
+  const [isLoadingLeads, setIsLoadingLeads] = useState(true);
+  const [leadsError, setLeadsError] = useState<string | null>(null);
+  const [isUpdatingLeadId, setIsUpdatingLeadId] = useState<string | null>(null);
 
   const selectedTutorStudent = tutorDashboard?.students.find(
     (student) => student.id === selectedStudentId
@@ -298,6 +329,86 @@ export default function AdminPage() {
       loadStats();
     }
   }, [isLoggedIn]);
+
+  useEffect(() => {
+    async function loadEnterpriseLeads() {
+      setIsLoadingLeads(true);
+      setLeadsError(null);
+
+      try {
+        const response = await authFetch("/api/admin/enterprise-leads", {
+          method: "GET",
+        });
+
+        const contentType = response.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) {
+          setLeadsError(`Server error (status ${response.status}).`);
+          setIsLoadingLeads(false);
+          return;
+        }
+
+        const json = (await response.json()) as {
+          leads?: EnterpriseLead[];
+          error?: string;
+        };
+
+        if (!response.ok) {
+          setLeadsError(json.error || "Failed to load enterprise leads.");
+          setIsLoadingLeads(false);
+          return;
+        }
+
+        setEnterpriseLeads(json.leads || []);
+        setIsLoadingLeads(false);
+      } catch (err) {
+        setLeadsError(
+          err instanceof Error ? err.message : "Failed to load enterprise leads."
+        );
+        setIsLoadingLeads(false);
+      }
+    }
+
+    if (isLoggedIn) {
+      loadEnterpriseLeads();
+    }
+  }, [isLoggedIn]);
+
+  const handleLeadStatusUpdate = async (
+    leadId: string,
+    status: EnterpriseLeadStatus
+  ) => {
+    if (isUpdatingLeadId) return;
+
+    setIsUpdatingLeadId(leadId);
+    setLeadsError(null);
+
+    try {
+      const response = await authFetch("/api/admin/enterprise-leads", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: leadId, status }),
+      });
+
+      const json = (await response.json()) as {
+        lead?: EnterpriseLead;
+        error?: string;
+      };
+
+      if (!response.ok || !json.lead) {
+        throw new Error(json.error || "Failed to update lead.");
+      }
+
+      setEnterpriseLeads((prev) =>
+        prev.map((lead) => (lead.id === leadId ? json.lead as EnterpriseLead : lead))
+      );
+    } catch (err) {
+      setLeadsError(err instanceof Error ? err.message : "Failed to update lead.");
+    } finally {
+      setIsUpdatingLeadId(null);
+    }
+  };
 
   useEffect(() => {
     async function loadTutorDashboard() {
@@ -508,6 +619,10 @@ export default function AdminPage() {
     { label: "Battles Finished", value: analytics.battleFinishedToday, color: "text-violet-300" },
     { label: "Feedback Submitted", value: analytics.feedbackSubmittedToday, color: "text-emerald-300" },
     { label: "Question Reports Submitted", value: analytics.questionReportSubmittedToday, color: "text-red-300" },
+    { label: "Classroom Rooms Created", value: analytics.classroomRoomCreatedToday, color: "text-amber-300" },
+    { label: "Classroom Invites Copied", value: analytics.classroomInviteCopiedToday, color: "text-cyan-300" },
+    { label: "Classroom Joins", value: analytics.classroomJoinSuccessToday, color: "text-emerald-300" },
+    { label: "Enterprise Leads", value: analytics.enterpriseLeadSubmittedToday, color: "text-fuchsia-300" },
   ];
 
   const hasAnalyticsToday = analytics.eventsToday > 0;
@@ -754,6 +869,98 @@ export default function AdminPage() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="mt-10 w-full sm:mt-12">
+        <div className="flex items-center gap-2">
+          <svg
+            className="h-4 w-4 flex-shrink-0 text-amber-300"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3.75 3v18m0-18h16.5M3.75 9h10.5m-10.5 6h16.5"
+            />
+          </svg>
+          <p className="text-xs font-bold uppercase tracking-wider text-amber-300">
+            Enterprise Lead Pipeline
+          </p>
+        </div>
+
+        <p className="mt-2 max-w-2xl text-sm text-white/45">
+          B2B pilot leads captured from classroom and pricing flows. Move each lead through the funnel to track conversion progress.
+        </p>
+
+        {leadsError && (
+          <div className="mt-4 rounded-2xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200/80">
+            {leadsError}
+          </div>
+        )}
+
+        {isLoadingLeads ? (
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-sm text-white/45 backdrop-blur-sm">
+            Loading enterprise leads...
+          </div>
+        ) : enterpriseLeads.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-sm text-white/45 backdrop-blur-sm">
+            No enterprise leads yet.
+          </div>
+        ) : (
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            {enterpriseLeads.map((lead) => (
+              <div
+                key={lead.id}
+                className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-white/90">{lead.organization}</p>
+                    <p className="mt-1 text-xs text-white/50">{lead.email}</p>
+                    <p className="mt-1 text-[11px] text-white/35">
+                      {lead.role || "Role unknown"}
+                      {lead.seats ? ` · ${lead.seats} seats` : ""}
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-amber-300/25 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-200">
+                    {lead.status}
+                  </span>
+                </div>
+
+                {lead.message && (
+                  <p className="mt-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-white/70">
+                    {lead.message}
+                  </p>
+                )}
+
+                <p className="mt-3 text-[11px] text-white/35">
+                  Captured: {formatDateTime(lead.created_at)}
+                </p>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(["new", "contacted", "qualified", "won", "lost"] as EnterpriseLeadStatus[]).map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => handleLeadStatusUpdate(lead.id, status)}
+                      disabled={isUpdatingLeadId === lead.id || lead.status === status}
+                      className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors duration-150 ${
+                        lead.status === status
+                          ? "border border-cyan-300/30 bg-cyan-500/15 text-cyan-200"
+                          : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
+                      } disabled:cursor-not-allowed disabled:opacity-60`}
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Tutor Center Progress Dashboard */}

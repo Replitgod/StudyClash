@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
+import { createHash } from "node:crypto";
 
 // This client uses the SERVICE ROLE key, which is safe here because
 // this code only ever runs on the server (inside this API route).
@@ -40,6 +41,22 @@ const ALLOWED_QUESTION_TYPES: QuestionType[] = [
   "multiple_choice",
   "true_false",
 ];
+
+type UploadKind = "manual" | "pdf" | "text" | "folder_text";
+
+const FREE_PLAN_IDS = new Set(["free_beta"]);
+const PRIORITY_PLAN_IDS = new Set([
+  "pro_individual",
+  "pro_preview",
+  "founder",
+  "team_pass",
+  "exam_tunnel",
+]);
+const FREE_DAILY_BATTLE_CAP = 3;
+const FREE_DAILY_PDF_CAP = 2;
+const CACHE_VECTOR_DIMENSIONS = 128;
+const VECTOR_CACHE_CANDIDATE_LIMIT = 120;
+const VECTOR_CACHE_MIN_SIMILARITY = 0.9;
 
 function parseAllowedBetaCodes(rawValue: string): string[] {
   return rawValue
@@ -608,7 +625,10 @@ export async function POST(req: NextRequest) {
       difficulty,
       questionCount,
       questionType,
+      uploadKind,
     } = body;
+
+    const normalizedUploadKind = normalizeUploadKind(uploadKind);
 
     if (!studentName || !courseName || !deckTitle || !notes) {
       return NextResponse.json(
@@ -660,17 +680,74 @@ export async function POST(req: NextRequest) {
     }
 
     const dailyLimit: number | null = planData.daily_limit;
+    const activePlanId = String(profileData.plan || "free_beta");
+    const isFreePlan = FREE_PLAN_IDS.has(activePlanId);
+    const isPriorityPlan = PRIORITY_PLAN_IDS.has(activePlanId);
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayIso = startOfToday.toISOString();
+
+    if (isFreePlan) {
+      const trimmedPlayerName = String(studentName || "").trim();
+      if (trimmedPlayerName) {
+        const { count: battleCountToday, error: battleCountError } = await supabase
+          .from("matches")
+          .select("id", { count: "exact", head: true })
+          .eq("player_name", trimmedPlayerName)
+          .gte("created_at", startOfTodayIso);
+
+        if (battleCountError) {
+          return NextResponse.json(
+            { error: "Could not check your battle usage right now. Please try again." },
+            { status: 500 }
+          );
+        }
+
+        if ((battleCountToday || 0) >= FREE_DAILY_BATTLE_CAP) {
+          return NextResponse.json(
+            {
+              error:
+                "Free Beta limit reached: 3 battles today. Upgrade to Pro for unlimited battles.",
+            },
+            { status: 429 }
+          );
+        }
+      }
+
+      if (normalizedUploadKind === "pdf") {
+        const { count: pdfCountToday, error: pdfCountError } = await supabase
+          .from("generation_logs")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("source_kind", "pdf")
+          .gte("created_at", startOfTodayIso);
+
+        if (pdfCountError) {
+          return NextResponse.json(
+            { error: "Could not check your PDF usage right now. Please try again." },
+            { status: 500 }
+          );
+        }
+
+        if ((pdfCountToday || 0) >= FREE_DAILY_PDF_CAP) {
+          return NextResponse.json(
+            {
+              error:
+                "Free Beta limit reached: 2 PDF uploads today. Upgrade to Pro for unlimited uploads.",
+            },
+            { status: 429 }
+          );
+        }
+      }
+    }
 
     // 5. If the plan has a limit (not unlimited), count today's generations
     if (dailyLimit !== null) {
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
-
       const { count, error: countError } = await supabase
         .from("generation_logs")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
-        .gte("created_at", startOfToday.toISOString());
+        .gte("created_at", startOfTodayIso);
 
       if (countError) {
         return NextResponse.json(
@@ -720,6 +797,16 @@ export async function POST(req: NextRequest) {
       sanitizedDifficultyMode
     );
     const choiceCount = sanitizedQuestionType === "true_false" ? 2 : 4;
+    const sourceHash = buildSourceHash(notes);
+    const sourceVector = buildSourceVector(notes);
+    const cacheKey = buildGenerationCacheKey({
+      sourceHash,
+      questionCount: sanitizedQuestionCount,
+      difficultyMode: sanitizedDifficultyMode,
+      questionType: sanitizedQuestionType,
+      gradeLevel: sanitizedGradeLevel,
+      topicFocus: sanitizedTopicFocus,
+    });
 
     // 6. Validate the notes themselves before spending an AI call on them
     const notesError = validateNotes(notes);
@@ -742,7 +829,126 @@ export async function POST(req: NextRequest) {
       topicFocus: sanitizedTopicFocus || undefined,
     };
 
-    let result = await generateAndValidate(notes, genParams);
+    let questions: GeneratedQuestion[] | null = null;
+    let cacheHitRowId: string | null = null;
+    let cacheHitCount = 0;
+
+    try {
+      const { data: cachedRow } = await supabase
+        .from("generation_cache")
+        .select("id, questions, hit_count")
+        .eq("cache_key", cacheKey)
+        .single();
+
+      const cachedQuestions = (cachedRow?.questions || null) as unknown;
+      if (Array.isArray(cachedQuestions)) {
+        const validationError = validateQuestions(cachedQuestions, {
+          total: sanitizedQuestionCount,
+          easyCount: easy,
+          mediumCount: medium,
+          hardCount: hard,
+          choiceCount,
+          questionType: sanitizedQuestionType,
+        });
+
+        if (!validationError) {
+          questions = cachedQuestions as GeneratedQuestion[];
+          cacheHitRowId = cachedRow?.id || null;
+          cacheHitCount = Number(cachedRow?.hit_count || 0);
+        }
+      }
+    } catch {
+      // Cache table may not exist yet in some environments; continue normally.
+    }
+
+    if (questions === null) {
+      try {
+        let candidateQuery = supabase
+          .from("generation_cache")
+          .select("id, questions, source_vector, hit_count")
+          .eq("question_count", sanitizedQuestionCount)
+          .eq("difficulty_mode", sanitizedDifficultyMode)
+          .eq("question_type", sanitizedQuestionType)
+          .eq("source_kind", normalizedUploadKind)
+          .order("updated_at", { ascending: false })
+          .limit(VECTOR_CACHE_CANDIDATE_LIMIT);
+
+        if (sanitizedGradeLevel) {
+          candidateQuery = candidateQuery.eq("grade_level", sanitizedGradeLevel);
+        } else {
+          candidateQuery = candidateQuery.is("grade_level", null);
+        }
+
+        if (sanitizedTopicFocus) {
+          candidateQuery = candidateQuery.eq("topic_focus", sanitizedTopicFocus);
+        } else {
+          candidateQuery = candidateQuery.is("topic_focus", null);
+        }
+
+        const { data: candidateRows } = await candidateQuery;
+
+        let bestSimilarity = 0;
+        let bestQuestions: GeneratedQuestion[] | null = null;
+        let bestRowId: string | null = null;
+        let bestHitCount = 0;
+
+        for (const row of candidateRows || []) {
+          const candidateVector = toVectorFromUnknown(row.source_vector);
+          if (!candidateVector) continue;
+
+          const similarity = cosineSimilarity(sourceVector, candidateVector);
+          if (similarity < VECTOR_CACHE_MIN_SIMILARITY || similarity <= bestSimilarity) {
+            continue;
+          }
+
+          const candidateQuestions = row.questions as unknown;
+          if (!Array.isArray(candidateQuestions)) continue;
+
+          const validationError = validateQuestions(candidateQuestions, {
+            total: sanitizedQuestionCount,
+            easyCount: easy,
+            mediumCount: medium,
+            hardCount: hard,
+            choiceCount,
+            questionType: sanitizedQuestionType,
+          });
+
+          if (validationError) continue;
+
+          bestSimilarity = similarity;
+          bestQuestions = candidateQuestions as GeneratedQuestion[];
+          bestRowId = row.id as string;
+          bestHitCount = Number(row.hit_count || 0);
+        }
+
+        if (bestQuestions) {
+          questions = bestQuestions;
+          cacheHitRowId = bestRowId;
+          cacheHitCount = bestHitCount;
+        }
+      } catch {
+        // Similarity cache lookup is optional; continue with OpenAI generation.
+      }
+    }
+
+    if (questions !== null && cacheHitRowId) {
+      try {
+        await supabase
+          .from("generation_cache")
+          .update({
+            hit_count: cacheHitCount + 1,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", cacheHitRowId);
+      } catch {
+        // Hit count update is optional.
+      }
+    }
+
+    let result =
+      questions !== null
+        ? ({ questions } as { questions: GeneratedQuestion[] })
+        : await generateAndValidate(notes, genParams);
 
     if ("error" in result) {
       result = await generateAndValidate(notes, {
@@ -775,7 +981,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const questions = result.questions;
+    questions = result.questions;
 
     // 8. Save the deck first, so we get a deck_id to attach questions to
     const { data: deckData, error: deckError } = await supabase
@@ -823,11 +1029,44 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    try {
+      await supabase.from("generation_cache").upsert(
+        {
+          cache_key: cacheKey,
+          source_hash: sourceHash,
+          source_kind: normalizedUploadKind,
+          question_count: sanitizedQuestionCount,
+          difficulty_mode: sanitizedDifficultyMode,
+          question_type: sanitizedQuestionType,
+          grade_level: sanitizedGradeLevel || null,
+          topic_focus: sanitizedTopicFocus || null,
+          source_vector: sourceVector,
+          source_text_length: notes.trim().length,
+          questions,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "cache_key" }
+      );
+    } catch {
+      // Cache write is optional. Deck generation should still succeed.
+    }
+
     // 10. Log this generation so daily limits can be enforced going forward.
-    const { error: logError } = await supabase.from("generation_logs").insert({
+    let { error: logError } = await supabase.from("generation_logs").insert({
       user_id: user.id,
       deck_id: deckId,
+      source_kind: normalizedUploadKind,
+      is_priority: isPriorityPlan,
+      plan_id_snapshot: activePlanId,
     });
+
+    if (logError) {
+      const fallback = await supabase.from("generation_logs").insert({
+        user_id: user.id,
+        deck_id: deckId,
+      });
+      logError = fallback.error;
+    }
 
     if (logError) {
       console.error("Failed to insert generation log:", logError.message);
@@ -840,4 +1079,97 @@ export async function POST(req: NextRequest) {
       err instanceof Error ? err.message : "Something went wrong.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+function normalizeUploadKind(value: unknown): UploadKind {
+  const raw = typeof value === "string" ? value : "manual";
+  const allowed: UploadKind[] = ["manual", "pdf", "text", "folder_text"];
+  return allowed.includes(raw as UploadKind) ? (raw as UploadKind) : "manual";
+}
+
+function buildSourceHash(notes: string): string {
+  const normalized = notes.trim().replace(/\s+/g, " ");
+  return createHash("sha256").update(normalized).digest("hex");
+}
+
+function tokenizeForVector(notes: string): string[] {
+  return notes
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 3);
+}
+
+function hashTokenToIndex(token: string, dimensions: number): number {
+  let hash = 0;
+  for (let i = 0; i < token.length; i += 1) {
+    hash = (hash * 31 + token.charCodeAt(i)) >>> 0;
+  }
+  return hash % dimensions;
+}
+
+function buildSourceVector(notes: string, dimensions = CACHE_VECTOR_DIMENSIONS): number[] {
+  const vector = new Array<number>(dimensions).fill(0);
+  const tokens = tokenizeForVector(notes);
+
+  if (tokens.length === 0) return vector;
+
+  for (const token of tokens) {
+    const index = hashTokenToIndex(token, dimensions);
+    vector[index] += 1;
+  }
+
+  const norm = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0));
+  if (norm === 0) return vector;
+
+  return vector.map((value) => Number((value / norm).toFixed(6)));
+}
+
+function toVectorFromUnknown(value: unknown): number[] | null {
+  if (!Array.isArray(value)) return null;
+  const vector = value
+    .map((entry) => (typeof entry === "number" && Number.isFinite(entry) ? entry : 0))
+    .slice(0, CACHE_VECTOR_DIMENSIONS);
+
+  if (vector.length !== CACHE_VECTOR_DIMENSIONS) return null;
+  return vector;
+}
+
+function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length || a.length === 0) return 0;
+
+  let dot = 0;
+  let aNorm = 0;
+  let bNorm = 0;
+
+  for (let i = 0; i < a.length; i += 1) {
+    dot += a[i] * b[i];
+    aNorm += a[i] * a[i];
+    bNorm += b[i] * b[i];
+  }
+
+  if (aNorm === 0 || bNorm === 0) return 0;
+  return dot / Math.sqrt(aNorm * bNorm);
+}
+
+function buildGenerationCacheKey(args: {
+  sourceHash: string;
+  questionCount: number;
+  difficultyMode: DifficultyMode;
+  questionType: QuestionType;
+  gradeLevel: string;
+  topicFocus: string;
+}): string {
+  const { sourceHash, questionCount, difficultyMode, questionType, gradeLevel, topicFocus } = args;
+  const normalizedGrade = gradeLevel.trim().toLowerCase();
+  const normalizedFocus = topicFocus.trim().toLowerCase();
+  return [
+    sourceHash,
+    String(questionCount),
+    difficultyMode,
+    questionType,
+    normalizedGrade,
+    normalizedFocus,
+  ].join("|");
 }

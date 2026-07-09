@@ -21,6 +21,14 @@ type FinishBattlePayload = {
   correctAnswers: number;
   timeTakenSeconds: number;
   answers: AnswerPayload[];
+  challengeFromMatchId?: string;
+};
+
+type MatchLite = {
+  id: string;
+  player_name: string;
+  score: number;
+  time_taken_seconds: number;
 };
 
 function buildAnswerSignature(answer: AnswerPayload): string {
@@ -221,6 +229,15 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const { data: previousTopMatch } = await supabase
+      .from("matches")
+      .select("id, player_name, score, time_taken_seconds")
+      .eq("deck_id", body.deckId)
+      .order("score", { ascending: false })
+      .order("time_taken_seconds", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
     const { data: matchData, error: matchError } = await supabase
       .from("matches")
       .insert({
@@ -264,11 +281,77 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ matchId: matchData.id });
+    let crownTaken = false;
+    const normalizedPreviousTop = previousTopMatch as MatchLite | null;
+
+    if (
+      normalizedPreviousTop &&
+      normalizedPreviousTop.player_name.trim().toLowerCase() !==
+        body.playerName.trim().toLowerCase() &&
+      didBeatMatch({
+        score: body.score,
+        timeTakenSeconds: body.timeTakenSeconds,
+        previous: normalizedPreviousTop,
+      })
+    ) {
+      crownTaken = true;
+
+      const actionHref = `/challenge/${matchData.id}`;
+      const message = `${body.playerName} beat your top score on this deck. Tap to rematch.`;
+
+      try {
+        await supabase.from("email_notification_queue").insert({
+          recipient_player_name: normalizedPreviousTop.player_name,
+          event_type: "crown_taken",
+          subject: "Your StudyClash crown was taken",
+          body: message,
+          action_href: actionHref,
+          metadata: {
+            deckId: body.deckId,
+            oldTopMatchId: normalizedPreviousTop.id,
+            newTopMatchId: matchData.id,
+            challengerName: body.playerName,
+          },
+        });
+      } catch {
+        // Queue table may not be deployed yet.
+      }
+
+      try {
+        await supabase.from("challenge_notifications").insert({
+          target_player_name: normalizedPreviousTop.player_name,
+          source_match_id: matchData.id,
+          deck_id: body.deckId,
+          event_type: "crown_taken",
+          title: "Your crown was taken",
+          message,
+          action_href: actionHref,
+          metadata: {
+            oldTopMatchId: normalizedPreviousTop.id,
+            newTopMatchId: matchData.id,
+          },
+        });
+      } catch {
+        // Notification table may not be deployed yet.
+      }
+    }
+
+    return NextResponse.json({ matchId: matchData.id, crownTaken });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to finish battle.";
 
     return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+function didBeatMatch(args: {
+  score: number;
+  timeTakenSeconds: number;
+  previous: MatchLite;
+}): boolean {
+  const { score, timeTakenSeconds, previous } = args;
+  if (score > previous.score) return true;
+  if (score < previous.score) return false;
+  return timeTakenSeconds < previous.time_taken_seconds;
 }

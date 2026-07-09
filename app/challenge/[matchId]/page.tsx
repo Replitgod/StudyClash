@@ -200,6 +200,7 @@ export default function ChallengeLandingPage() {
     match.total_questions
   );
   const battleLink = `/battle/${deck.id}?challengeFrom=${match.id}&challengeScore=${challengerAccuracy}`;
+  const ghostBattleLink = `/battle/${deck.id}?mode=rival&ghostMatchId=${match.id}&challengeFrom=${match.id}&challengeScore=${challengerAccuracy}`;
   const challengeMessage = `I scored ${challengerAccuracy}% on ${deck.title}. Can you beat me?`;
 
   const handleCopyChallenge = async () => {
@@ -262,6 +263,12 @@ export default function ChallengeLandingPage() {
             >
               Start the Same Battle
             </Link>
+            <Link
+              href={ghostBattleLink}
+              className="inline-flex flex-1 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/15 px-5 py-3.5 text-sm font-bold text-cyan-100 transition-colors duration-150 hover:border-cyan-300/60 hover:bg-cyan-500/20"
+            >
+              Battle Their Ghost
+            </Link>
             <button
               type="button"
               onClick={handleCopyChallenge}
@@ -270,6 +277,10 @@ export default function ChallengeLandingPage() {
               Copy Challenge Message
             </button>
           </div>
+
+          <p className="mt-3 text-center text-xs text-cyan-100/80">
+            Ghost mode replays the challenger&apos;s recorded answers and pacing from their original run.
+          </p>
 
           <p className="mt-3 text-center text-xs text-white/35">
             {challengeMessage}

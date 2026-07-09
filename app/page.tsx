@@ -438,6 +438,13 @@ export default function Home() {
             >
               View Decks
             </Link>
+
+            <Link
+              href="/exams"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-8 py-4 text-base font-bold text-cyan-200 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/45 hover:bg-cyan-500/15 sm:w-auto"
+            >
+              Exam Tunnels
+            </Link>
           </div>
         </section>
       </div>

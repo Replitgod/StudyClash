@@ -23,7 +23,14 @@ export type AnalyticsEventName =
   | "results_practice_mode_clicked"
   | "results_rival_battle_clicked"
   | "results_review_missed_clicked"
-  | "results_boss_battle_clicked";
+  | "results_boss_battle_clicked"
+  | "classroom_room_created"
+  | "classroom_invite_copied"
+  | "classroom_join_attempted"
+  | "classroom_join_success"
+  | "classroom_join_failed"
+  | "enterprise_lead_submitted"
+  | "enterprise_lead_submit_failed";
 
 // Fire-and-forget analytics logging. This intentionally never throws —
 // a failed analytics insert (network hiccup, RLS misconfiguration, etc.)

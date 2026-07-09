@@ -466,6 +466,7 @@ export default function BattlePage() {
   const deckId = params.deckId as string;
   const challengeFromMatchId = searchParams.get("challengeFrom");
   const challengeBaseScore = searchParams.get("challengeScore");
+  const ghostMatchId = searchParams.get("ghostMatchId");
   const requestedRivalRank = parseRivalRank(searchParams.get("rivalRank"));
 
   // Current logged-in user, if any. Battle play stays open to anyone with
@@ -525,6 +526,13 @@ export default function BattlePage() {
   const [bossReadiness, setBossReadiness] = useState<BossReadiness | null>(null);
   const [isBossLoading, setIsBossLoading] = useState(false);
   const [rivalReadiness, setRivalReadiness] = useState<RivalReadiness | null>(null);
+  const [isGhostRival, setIsGhostRival] = useState(false);
+  const [ghostAnswerByQuestion, setGhostAnswerByQuestion] = useState<
+    Record<
+      string,
+      { selectedAnswer: string; isCorrect: boolean; responseTimeMs: number }
+    >
+  >({});
   const [rivalAnswers, setRivalAnswers] = useState<AnswerRecord[]>([]);
   const [rivalCurrentStreak, setRivalCurrentStreak] = useState(0);
   const [rivalBestStreak, setRivalBestStreak] = useState(0);
@@ -578,6 +586,8 @@ export default function BattlePage() {
       setBossReadiness(null);
       setIsBossLoading(false);
       setRivalReadiness(null);
+      setIsGhostRival(false);
+      setGhostAnswerByQuestion({});
       setRivalAnswers([]);
       setRivalCurrentStreak(0);
       setRivalBestStreak(0);
@@ -742,6 +752,73 @@ export default function BattlePage() {
       }
 
       if (effectiveStudyMode === "rival") {
+        let ghostProfile: {
+          id: string;
+          playerName: string;
+          targetAccuracy: number;
+          expectedResponseMs: number;
+        } | null = null;
+
+        if (ghostMatchId) {
+          const { data: ghostMatch } = await supabase
+            .from("matches")
+            .select(
+              "id, player_name, correct_answers, total_questions, time_taken_seconds"
+            )
+            .eq("id", ghostMatchId)
+            .eq("deck_id", deckId)
+            .maybeSingle();
+
+          if (ghostMatch) {
+            const { data: ghostAnswers } = await supabase
+              .from("match_answers")
+              .select("question_id, selected_answer, is_correct, response_time_ms")
+              .eq("match_id", ghostMatch.id);
+
+            if (ghostAnswers && ghostAnswers.length > 0) {
+              const ghostAnswerMap = ghostAnswers.reduce<
+                Record<
+                  string,
+                  { selectedAnswer: string; isCorrect: boolean; responseTimeMs: number }
+                >
+              >((acc, entry) => {
+                acc[entry.question_id] = {
+                  selectedAnswer: entry.selected_answer,
+                  isCorrect: !!entry.is_correct,
+                  responseTimeMs: Number(entry.response_time_ms || 0),
+                };
+                return acc;
+              }, {});
+
+              const ghostAccuracy =
+                Number(ghostMatch.total_questions || 0) > 0
+                  ? Math.round(
+                      (Number(ghostMatch.correct_answers || 0) /
+                        Number(ghostMatch.total_questions || 0)) *
+                        100
+                    )
+                  : 0;
+
+              const ghostExpectedResponse =
+                Number(ghostMatch.total_questions || 0) > 0
+                  ? Math.round(
+                      (Number(ghostMatch.time_taken_seconds || 0) * 1000) /
+                        Number(ghostMatch.total_questions || 1)
+                    )
+                  : 5000;
+
+              setGhostAnswerByQuestion(ghostAnswerMap);
+              setIsGhostRival(true);
+              ghostProfile = {
+                id: ghostMatch.id,
+                playerName: ghostMatch.player_name,
+                targetAccuracy: clampNumber(ghostAccuracy, 20, 99),
+                expectedResponseMs: clampNumber(ghostExpectedResponse, 1200, 15000),
+              };
+            }
+          }
+        }
+
         const playerIdentity =
           accountDisplayName || normalizedDeck.student_name || "Player";
 
@@ -865,10 +942,10 @@ export default function BattlePage() {
             : ["Consistency", "Hard-question accuracy"];
 
         setRivalReadiness({
-          rivalName: selectedTier.rivalName,
-          rank: selectedTier.rank,
-          targetAccuracy,
-          expectedResponseMs,
+          rivalName: ghostProfile?.playerName || selectedTier.rivalName,
+          rank: ghostProfile ? "Legend" : selectedTier.rank,
+          targetAccuracy: ghostProfile?.targetAccuracy || targetAccuracy,
+          expectedResponseMs: ghostProfile?.expectedResponseMs || expectedResponseMs,
           weakTopics,
           strongTopics,
           playerAverageAccuracy,
@@ -946,6 +1023,7 @@ export default function BattlePage() {
     effectiveStudyMode,
     accountDisplayName,
     requestedRivalRank,
+    ghostMatchId,
   ]);
 
   // Load the top 5 scores for this deck's leaderboard.
@@ -1026,6 +1104,7 @@ export default function BattlePage() {
       rivalName: rivalReadiness?.rivalName,
       rivalRank: rivalReadiness?.rank,
       challengeFromMatchId,
+      ghostMatchId,
     });
   };
 
@@ -1064,6 +1143,52 @@ export default function BattlePage() {
     }
 
     if (effectiveStudyMode !== "rival" || !rivalReadiness) {
+      return;
+    }
+
+    if (isGhostRival) {
+      const ghostAnswer = ghostAnswerByQuestion[currentQuestion.id];
+      if (!ghostAnswer) {
+        return;
+      }
+
+      setIsRivalResolving(true);
+      if (rivalResolveTimerRef.current) {
+        clearTimeout(rivalResolveTimerRef.current);
+        rivalResolveTimerRef.current = null;
+      }
+
+      const revealDelay = Math.round(
+        clampNumber(ghostAnswer.responseTimeMs * 0.35, 500, 2600)
+      );
+
+      rivalResolveTimerRef.current = setTimeout(() => {
+        setRivalAnswers((prev) => [
+          ...prev,
+          {
+            questionId: currentQuestion.id,
+            selectedAnswer: ghostAnswer.selectedAnswer,
+            isCorrect: ghostAnswer.isCorrect,
+            responseTimeMs: ghostAnswer.responseTimeMs,
+          },
+        ]);
+
+        if (ghostAnswer.isCorrect) {
+          setRivalCurrentStreak((prevStreak) => {
+            const nextStreak = prevStreak + 1;
+            const points = calculatePointsForStreak(nextStreak);
+            setRivalScore((prevScore) => prevScore + points);
+            setRivalBestStreak((prevBest) => Math.max(prevBest, nextStreak));
+            return nextStreak;
+          });
+        } else {
+          setRivalCurrentStreak(0);
+        }
+
+        setIsRivalResolving(false);
+        rivalResolveTimerRef.current = null;
+      }, revealDelay);
+
       return;
     }
 
@@ -1190,6 +1315,7 @@ export default function BattlePage() {
           correctAnswers: correctCount,
           timeTakenSeconds: elapsedSeconds,
           answers,
+          challengeFromMatchId,
         }),
       });
     } catch (error) {
@@ -1446,10 +1572,10 @@ export default function BattlePage() {
           <div className="mb-4 w-full max-w-xl rounded-2xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/12 via-black/30 to-fuchsia-500/10 px-4 py-3.5 sm:mb-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-200">
-                Study Rival Protocol
+                {isGhostRival ? "Ghost Rival Protocol" : "Study Rival Protocol"}
               </p>
               <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fuchsia-200">
-                Rank {rivalReadiness.rank}
+                {isGhostRival ? "Recorded Run" : `Rank ${rivalReadiness.rank}`}
               </span>
             </div>
 
@@ -1886,7 +2012,7 @@ export default function BattlePage() {
           <div className="mb-3 rounded-xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/[0.1] via-black/25 to-fuchsia-500/[0.08] px-3.5 py-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">
-                Study Rival Arena
+                {isGhostRival ? "Ghost Rival Arena" : "Study Rival Arena"}
               </p>
               <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-fuchsia-200">
                 {rivalReadiness.rivalName} · {rivalReadiness.rank}
@@ -2115,7 +2241,7 @@ export default function BattlePage() {
                 <p className="mt-2 text-xs text-cyan-200/85">
                   {isRivalResolving
                     ? `${rivalReadiness?.rivalName || "Rival"} is locking in an answer...`
-                    : `${rivalReadiness?.rivalName || "Rival"} accuracy: ${rivalAccuracyPercent}% · target ${rivalReadiness?.targetAccuracy || 0}%`}
+                    : `${rivalReadiness?.rivalName || "Rival"} accuracy: ${rivalAccuracyPercent}% · ${isGhostRival ? "recorded" : "target"} ${rivalReadiness?.targetAccuracy || 0}%`}
                 </p>
               )}
             </div>

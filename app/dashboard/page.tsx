@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
+import { trackEvent } from "@/lib/trackEvent";
 import GigglesCoach from "@/app/components/GigglesCoach";
 
 type PlanInfo = {
@@ -56,6 +57,40 @@ type DeckInsights = {
   } | null;
 };
 
+type DashboardNotification = {
+  id: string;
+  event_type: string;
+  title: string;
+  message: string;
+  action_href: string | null;
+  metadata: Record<string, unknown> | null;
+  is_read: boolean;
+  created_at: string;
+};
+
+type ClassroomRoom = {
+  id: string;
+  owner_user_id: string;
+  room_code: string;
+  title: string;
+  deck_id: string | null;
+  deck_title?: string | null;
+  is_live: boolean;
+  created_at: string;
+  updated_at: string;
+  launch_href?: string | null;
+  share_code?: string;
+  join_href?: string;
+};
+
+type RoomLimitNotice = {
+  planId: string;
+  roomLimit: number;
+  currentActiveRooms: number;
+  upgradeRequired: boolean;
+  upgradeHref?: string;
+};
+
 function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
@@ -92,6 +127,19 @@ export default function DashboardPage() {
   const [recentMatches, setRecentMatches] = useState<MatchSummary[]>([]);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<DashboardNotification[]>([]);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [isNotificationsLoading, setIsNotificationsLoading] = useState(true);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
+  const [isMarkingRead, setIsMarkingRead] = useState(false);
+  const [classroomRooms, setClassroomRooms] = useState<ClassroomRoom[]>([]);
+  const [isRoomsLoading, setIsRoomsLoading] = useState(true);
+  const [roomsError, setRoomsError] = useState<string | null>(null);
+  const [roomTitleInput, setRoomTitleInput] = useState("Friday Exam Sprint");
+  const [roomDeckIdInput, setRoomDeckIdInput] = useState<string>("");
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false);
+  const [roomInviteStatus, setRoomInviteStatus] = useState<string | null>(null);
+  const [roomLimitNotice, setRoomLimitNotice] = useState<RoomLimitNotice | null>(null);
   const [renderTimestampMs] = useState(() => Date.now());
   const [deckInsights, setDeckInsights] = useState<DeckInsights>({
     mostPlayed: [],
@@ -286,6 +334,208 @@ export default function DashboardPage() {
     loadDeckInsights();
   }, [isLoggedIn, user]);
 
+  useEffect(() => {
+    async function loadRooms() {
+      if (!isLoggedIn || !user) {
+        setClassroomRooms([]);
+        setIsRoomsLoading(false);
+        return;
+      }
+
+      setIsRoomsLoading(true);
+      setRoomsError(null);
+
+      try {
+        const response = await authFetch("/api/classroom/rooms", { method: "GET" });
+        const data = (await response.json()) as {
+          rooms?: ClassroomRoom[];
+          error?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load classroom rooms.");
+        }
+
+        setClassroomRooms(data.rooms || []);
+      } catch (err) {
+        setRoomsError(
+          err instanceof Error ? err.message : "Failed to load classroom rooms."
+        );
+      } finally {
+        setIsRoomsLoading(false);
+      }
+    }
+
+    loadRooms();
+  }, [isLoggedIn, user]);
+
+  const handleCreateRoom = async () => {
+    if (!isLoggedIn || !user) return;
+    if (isCreatingRoom) return;
+
+    setIsCreatingRoom(true);
+    setRoomsError(null);
+    setRoomLimitNotice(null);
+
+    try {
+      const trimmedTitle = roomTitleInput.trim();
+      if (!trimmedTitle) {
+        throw new Error("Room title is required.");
+      }
+
+      const payload: { title: string; deckId?: string } = {
+        title: trimmedTitle,
+      };
+
+      if (roomDeckIdInput.trim()) {
+        payload.deckId = roomDeckIdInput.trim();
+      }
+
+      const response = await authFetch("/api/classroom/rooms", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = (await response.json()) as {
+        room?: ClassroomRoom;
+        error?: string;
+        code?: string;
+        planId?: string;
+        roomLimit?: number;
+        currentActiveRooms?: number;
+        upgradeRequired?: boolean;
+        upgradeHref?: string;
+      };
+
+      if (!response.ok || !data.room) {
+        if (
+          data.code === "ROOM_LIMIT_REACHED" &&
+          typeof data.planId === "string" &&
+          typeof data.roomLimit === "number" &&
+          typeof data.currentActiveRooms === "number"
+        ) {
+          setRoomLimitNotice({
+            planId: data.planId,
+            roomLimit: data.roomLimit,
+            currentActiveRooms: data.currentActiveRooms,
+            upgradeRequired: !!data.upgradeRequired,
+            upgradeHref: data.upgradeHref,
+          });
+        }
+        throw new Error(data.error || "Failed to create classroom room.");
+      }
+
+      void trackEvent("classroom_room_created", {
+        roomId: data.room.id,
+        deckId: payload.deckId || null,
+      });
+
+      setClassroomRooms((prev) => [data.room as ClassroomRoom, ...prev]);
+      setRoomTitleInput("");
+      setRoomDeckIdInput("");
+    } catch (err) {
+      setRoomsError(
+        err instanceof Error ? err.message : "Failed to create classroom room."
+      );
+    } finally {
+      setIsCreatingRoom(false);
+    }
+  };
+
+  useEffect(() => {
+    async function loadNotifications() {
+      if (!isLoggedIn || !user) {
+        setNotifications([]);
+        setUnreadNotifications(0);
+        setIsNotificationsLoading(false);
+        return;
+      }
+
+      setIsNotificationsLoading(true);
+      setNotificationsError(null);
+
+      try {
+        const response = await authFetch("/api/notifications?limit=10", {
+          method: "GET",
+        });
+
+        const data = (await response.json()) as {
+          notifications?: DashboardNotification[];
+          unreadCount?: number;
+          error?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to load notifications.");
+        }
+
+        setNotifications(data.notifications || []);
+        setUnreadNotifications(Number(data.unreadCount || 0));
+      } catch (err) {
+        setNotificationsError(
+          err instanceof Error ? err.message : "Failed to load notifications."
+        );
+      } finally {
+        setIsNotificationsLoading(false);
+      }
+    }
+
+    loadNotifications();
+  }, [isLoggedIn, user]);
+
+  const markNotificationsRead = async (notificationIds?: string[]) => {
+    if (!isLoggedIn || !user) return;
+    if (isMarkingRead) return;
+
+    setIsMarkingRead(true);
+    setNotificationsError(null);
+
+    try {
+      const markAll = !notificationIds || notificationIds.length === 0;
+      const response = await authFetch("/api/notifications/mark-read", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(
+          markAll
+            ? { markAll: true }
+            : {
+                markAll: false,
+                notificationIds,
+              }
+        ),
+      });
+
+      const data = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update notifications.");
+      }
+
+      if (markAll) {
+        setNotifications((prev) => prev.map((item) => ({ ...item, is_read: true })));
+        setUnreadNotifications(0);
+      } else {
+        const idSet = new Set(notificationIds);
+        setNotifications((prev) =>
+          prev.map((item) =>
+            idSet.has(item.id) ? { ...item, is_read: true } : item
+          )
+        );
+        setUnreadNotifications((prev) => Math.max(0, prev - idSet.size));
+      }
+    } catch (err) {
+      setNotificationsError(
+        err instanceof Error ? err.message : "Failed to update notifications."
+      );
+    } finally {
+      setIsMarkingRead(false);
+    }
+  };
+
   const formatDate = (isoString: string) => {
     const date = new Date(isoString);
     return date.toLocaleDateString("en-US", {
@@ -299,6 +549,25 @@ export default function DashboardPage() {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
+
+  const copyRoomInvite = async (room: ClassroomRoom) => {
+    const joinPath = room.join_href || `/classroom/join?code=${room.share_code || room.room_code}`;
+    const inviteUrl = `${window.location.origin}${joinPath}`;
+    const message = `${room.title} - Join with room code ${room.share_code || room.room_code}: ${inviteUrl}`;
+
+    try {
+      await navigator.clipboard.writeText(message);
+      void trackEvent("classroom_invite_copied", {
+        roomId: room.id,
+        roomCode: room.share_code || room.room_code,
+      });
+      setRoomInviteStatus(`Invite copied for ${room.title}`);
+      setTimeout(() => setRoomInviteStatus(null), 2000);
+    } catch {
+      setRoomInviteStatus("Could not copy invite link. Please copy the room code manually.");
+      setTimeout(() => setRoomInviteStatus(null), 2500);
+    }
   };
 
   const dueRematchDeck = deckInsights.recentlyPlayed.find((deck) => {
@@ -621,6 +890,234 @@ export default function DashboardPage() {
               />
             </svg>
           </Link>
+        </div>
+
+        <div className="rounded-2xl border border-cyan-400/25 bg-cyan-500/[0.06] p-5 backdrop-blur-sm sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300">
+                Rival Alerts
+              </p>
+              <h2 className="mt-1 text-lg font-bold text-white">
+                Challenge Notifications
+              </h2>
+              <p className="mt-1 text-sm text-white/65">
+                {unreadNotifications > 0
+                  ? `${unreadNotifications} unread alert${unreadNotifications === 1 ? "" : "s"}`
+                  : "You are all caught up."}
+              </p>
+            </div>
+
+            {notifications.length > 0 && (
+              <button
+                type="button"
+                onClick={() => markNotificationsRead()}
+                disabled={isMarkingRead || unreadNotifications === 0}
+                className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white/90 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isMarkingRead ? "Updating..." : "Mark All Read"}
+              </button>
+            )}
+          </div>
+
+          {notificationsError && (
+            <p className="mt-3 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+              {notificationsError}
+            </p>
+          )}
+
+          {isNotificationsLoading ? (
+            <p className="mt-4 text-sm text-white/55">Loading alerts...</p>
+          ) : notifications.length === 0 ? (
+            <p className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/55">
+              No challenge alerts yet. When someone takes your crown, it will show up here.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-2.5">
+              {notifications.map((item) => (
+                <div
+                  key={item.id}
+                  className={`rounded-xl border px-4 py-3 ${
+                    item.is_read
+                      ? "border-white/10 bg-black/20"
+                      : "border-cyan-300/35 bg-cyan-500/10"
+                  }`}
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-bold text-white">{item.title}</p>
+                      <p className="mt-1 text-xs text-white/70">{item.message}</p>
+                      <p className="mt-1 text-[11px] text-white/45">{formatDate(item.created_at)}</p>
+                    </div>
+                    {!item.is_read && (
+                      <span className="rounded-full border border-cyan-300/40 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-200">
+                        Unread
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {item.action_href && (
+                      <Link
+                        href={item.action_href}
+                        className="rounded-lg bg-gradient-to-r from-cyan-500 to-fuchsia-500 px-3 py-1.5 text-xs font-bold text-white"
+                      >
+                        Open Challenge
+                      </Link>
+                    )}
+
+                    {!item.is_read && (
+                      <button
+                        type="button"
+                        onClick={() => markNotificationsRead([item.id])}
+                        disabled={isMarkingRead}
+                        className="rounded-lg border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-white/85 disabled:opacity-60"
+                      >
+                        Mark Read
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-2xl border border-amber-400/25 bg-amber-500/[0.06] p-5 backdrop-blur-sm sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-amber-300">
+                Classroom Beta
+              </p>
+              <h2 className="mt-1 text-lg font-bold text-white">Teacher Room Launcher</h2>
+              <p className="mt-1 text-sm text-white/65">
+                Create a room code, share it in class, and run a live deck challenge.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <input
+              value={roomTitleInput}
+              onChange={(event) => setRoomTitleInput(event.target.value)}
+              placeholder="Room title"
+              className="rounded-xl border border-white/15 bg-black/25 px-3.5 py-2.5 text-sm text-white placeholder-white/35 outline-none focus:border-amber-300/50"
+            />
+            <select
+              value={roomDeckIdInput}
+              onChange={(event) => setRoomDeckIdInput(event.target.value)}
+              className="rounded-xl border border-white/15 bg-black/25 px-3.5 py-2.5 text-sm text-white outline-none focus:border-amber-300/50"
+            >
+              <option value="">Attach deck later</option>
+              {recentDecks.map((deck) => (
+                <option key={deck.id} value={deck.id}>
+                  {deck.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCreateRoom}
+              disabled={isCreatingRoom}
+              className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+            >
+              {isCreatingRoom ? "Creating..." : "Create Room"}
+            </button>
+            <Link
+              href="/admin"
+              className="rounded-xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-bold text-white/90"
+            >
+              Open Admin Console
+            </Link>
+          </div>
+
+          {roomInviteStatus && (
+            <p className="mt-3 rounded-xl border border-cyan-300/25 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100">
+              {roomInviteStatus}
+            </p>
+          )}
+
+          {roomsError && (
+            <p className="mt-3 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+              {roomsError}
+            </p>
+          )}
+
+          {roomLimitNotice && (
+            <div className="mt-3 rounded-xl border border-amber-400/35 bg-amber-500/12 px-3 py-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-200">
+                Plan Limit Reached
+              </p>
+              <p className="mt-1 text-xs text-amber-100/90">
+                Your {roomLimitNotice.planId} plan allows {roomLimitNotice.roomLimit} live classroom room{roomLimitNotice.roomLimit === 1 ? "" : "s"}. You currently have {roomLimitNotice.currentActiveRooms} active.
+              </p>
+              {roomLimitNotice.upgradeRequired && (
+                <Link
+                  href={roomLimitNotice.upgradeHref || "/pricing"}
+                  className="mt-2 inline-flex rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1.5 text-xs font-bold text-white"
+                >
+                  Upgrade for More Rooms
+                </Link>
+              )}
+            </div>
+          )}
+
+          {isRoomsLoading ? (
+            <p className="mt-4 text-sm text-white/55">Loading classroom rooms...</p>
+          ) : classroomRooms.length === 0 ? (
+            <p className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/55">
+              No rooms yet. Create your first classroom room to start live challenges.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-2.5">
+              {classroomRooms.slice(0, 5).map((room) => (
+                <div
+                  key={room.id}
+                  className="rounded-xl border border-white/10 bg-black/20 px-4 py-3"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-bold text-white">{room.title}</p>
+                      <p className="mt-1 text-xs text-white/60">
+                        Code: <span className="font-black tracking-[0.16em] text-amber-200">{room.share_code || room.room_code}</span>
+                      </p>
+                      <p className="mt-1 text-xs text-white/45">
+                        {room.deck_title || "No deck linked yet"}
+                      </p>
+                    </div>
+                    {room.launch_href ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => copyRoomInvite(room)}
+                          className="rounded-lg border border-cyan-300/30 bg-cyan-500/15 px-3 py-1.5 text-xs font-bold text-cyan-100"
+                        >
+                          Copy Invite
+                        </button>
+                        <Link
+                          href={room.launch_href}
+                          className="rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-bold text-amber-100"
+                        >
+                          Launch Deck
+                        </Link>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => copyRoomInvite(room)}
+                        className="rounded-lg border border-cyan-300/30 bg-cyan-500/15 px-3 py-1.5 text-xs font-bold text-cyan-100"
+                      >
+                        Copy Invite
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
