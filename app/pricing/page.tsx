@@ -33,8 +33,8 @@ const PLANS: Plan[] = [
   {
     id: "pro_individual",
     name: "Pro Individual",
-    price: "$0 Pilot",
-    tagline: "Free during pilot for feedback partners",
+    price: "$3/mo Pilot",
+    tagline: "Low nominal pilot price for active testers",
     dailyLimit: "Unlimited uploads and battles",
     features: [
       "Everything in Free Beta",
@@ -60,8 +60,8 @@ const PLANS: Plan[] = [
   {
     id: "exam_tunnel",
     name: "High-Stakes Exam Tunnel",
-    price: "$0 Pilot",
-    tagline: "Free pilot access for exam-track testers",
+    price: "$5/mo Pilot",
+    tagline: "Nominal pilot price for exam-track testers",
     dailyLimit: "Premium board-style generation",
     features: [
       "Exam-format tuned prompts",
@@ -141,8 +141,8 @@ export default function PricingPage() {
           </span>
         </h1>
         <p className="mt-3 max-w-lg text-center text-sm text-white/50 sm:text-base">
-          StudyClash is still in pilot. Pricing is intentionally free right now
-          so we can gather strong tester feedback while we iterate.
+          StudyClash is still in pilot. Some plans are free, and others use a
+          low nominal price so we can gather feedback while improving reliability.
         </p>
 
         {/* Plan cards */}
@@ -185,7 +185,7 @@ export default function PricingPage() {
                     {plan.price}
                   </span>
                   <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-white/40">
-                    during beta
+                    during pilot
                   </p>
                 </div>
 
@@ -259,12 +259,11 @@ export default function PricingPage() {
         {/* Bottom note */}
         <div className="mt-10 flex w-full max-w-2xl flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center backdrop-blur-sm sm:mt-12 sm:p-6">
           <p className="text-sm font-semibold text-white/80">
-            Pilot access is free for now
+            Pilot pricing: free + low nominal options
           </p>
           <p className="text-xs text-white/40">
-            We are prioritizing learning and product quality before final pricing.
-            Premium plans are enabled as pilot invites while we improve StudyClash
-            with tester feedback.
+            We are optimizing for product quality and feedback before final pricing.
+            Free access remains available, with low-cost pilot tiers for higher usage.
           </p>
           {!isLoggedIn && (
             <Link

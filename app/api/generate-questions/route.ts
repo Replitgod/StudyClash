@@ -1017,7 +1017,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json(
             {
               error:
-                "Free Beta limit reached: 3 battles today. Upgrade to Pro for unlimited battles.",
+                "Free Beta limit reached: 3 battles today. Pilot plans include both free and low-cost options for higher limits.",
             },
             { status: 429 }
           );
@@ -1043,7 +1043,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json(
             {
               error:
-                "Free Beta limit reached: 2 PDF uploads today. Upgrade to Pro for unlimited uploads.",
+                "Free Beta limit reached: 2 PDF uploads today. Pilot plans include both free and low-cost options for higher limits.",
             },
             { status: 429 }
           );
