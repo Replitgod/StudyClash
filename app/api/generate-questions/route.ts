@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import { createHash } from "node:crypto";
+import { FREE_PLAN_IDS, PRIORITY_PLAN_IDS } from "@/lib/plans";
 
 // This client uses the SERVICE ROLE key, which is safe here because
 // this code only ever runs on the server (inside this API route).
@@ -45,14 +46,6 @@ const ALLOWED_QUESTION_TYPES: QuestionType[] = [
 
 type UploadKind = "manual" | "pdf" | "text" | "folder_text";
 
-const FREE_PLAN_IDS = new Set(["free_beta"]);
-const PRIORITY_PLAN_IDS = new Set([
-  "pro_individual",
-  "pro_preview",
-  "founder",
-  "team_pass",
-  "exam_tunnel",
-]);
 const FREE_DAILY_BATTLE_CAP = 3;
 const FREE_DAILY_PDF_CAP = 2;
 const CACHE_VECTOR_DIMENSIONS = 128;

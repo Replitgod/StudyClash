@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
-import GigglesCoach from "@/app/components/GigglesCoach";
+import VyraCoach from "@/app/components/VyraCoach";
 import {
   ACHIEVEMENTS,
   calculateLevel,
@@ -217,7 +217,7 @@ export default function DashboardPage() {
             .select("id")
             .eq("user_id", user.id)
             .gte("created_at", startOfTodayIso),
-          supabase.from("decks").select("id").eq("user_id", user.id),
+          supabase.from("decks").select("id, title").eq("user_id", user.id),
         ]);
 
         if (planError) {
@@ -240,7 +240,9 @@ export default function DashboardPage() {
           throw allDeckIdsError;
         }
 
-        const allDeckIds = (allDeckIdsData || []).map((deck: { id: string }) => deck.id);
+        const allDecksLite = (allDeckIdsData || []) as Array<{ id: string; title: string }>;
+        const allDeckIds = allDecksLite.map((deck) => deck.id);
+        const deckTitleById = new Map(allDecksLite.map((deck) => [deck.id, deck.title]));
 
         let recentMatchesData: MatchSummary[] = [];
         let totalMatchesCount = 0;
@@ -333,27 +335,15 @@ export default function DashboardPage() {
           });
         }
 
-        const recentDeckIds = (recentDeckData || []).map((deck: { id: string }) => deck.id);
-
-        if (recentDeckIds.length > 0) {
-          const { data: deckTitlesData, error: deckTitlesError } = await supabase
-            .from("decks")
-            .select("id, title")
-            .in("id", recentDeckIds);
-
-          if (!deckTitlesError && deckTitlesData) {
-            const titleMap = new Map(deckTitlesData.map((deck: { id: string; title: string }) => [deck.id, deck.title]));
-            const matchesWithDeckTitles = recentMatchesData.map((match) => ({
-              ...match,
-              deck_title: titleMap.get(match.deck_id) || "Unknown deck",
-            }));
-            setRecentMatches(matchesWithDeckTitles);
-          } else {
-            setRecentMatches(recentMatchesData);
-          }
-        } else {
-          setRecentMatches(recentMatchesData);
-        }
+        // Look up titles from the full deck-title map (built from allDecksLite,
+        // not just the recent-5 query) so matches on any of the user's decks —
+        // not only their 5 most-recently-created ones — resolve a real title
+        // instead of falling back to "Unknown deck".
+        const matchesWithDeckTitles = recentMatchesData.map((match) => ({
+          ...match,
+          deck_title: deckTitleById.get(match.deck_id) || "Unknown deck",
+        }));
+        setRecentMatches(matchesWithDeckTitles);
 
         const generationCount = generationData?.length ?? 0;
         const dailyLimit = planData?.daily_limit;
@@ -1721,7 +1711,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <GigglesCoach
+      <VyraCoach
         deckId={coachDeckId}
         deckTitle={coachDeckId ? "Recommended deck context" : "Dashboard study context"}
         courseName="StudyClash Dashboard"

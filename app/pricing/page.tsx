@@ -3,77 +3,19 @@
 import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { PUBLIC_PLANS, getPlanMetadata } from "@/lib/plans";
 
-type Plan = {
-  id: string;
-  name: string;
-  price: string;
-  tagline: string;
-  dailyLimit: string;
-  features: string[];
-  highlight?: boolean;
-};
-
-const PLANS: Plan[] = [
-  {
-    id: "free_beta",
-    name: "Free Beta",
-    price: "$0",
-    tagline: "Everyone starts here",
-    dailyLimit: "3 deck generations / day",
-    features: [
-      "AI-generated 15-question decks",
-      "Up to 2 PDF uploads / day",
-      "Up to 3 battles / day",
-      "Paced quiz battles",
-      "Leaderboards & challenge links",
-      "Weak Topic Report",
-    ],
-  },
-  {
-    id: "pro_individual",
-    name: "Pro Individual",
-    price: "$3/mo Pilot",
-    tagline: "Low nominal pilot price for active testers",
-    dailyLimit: "Unlimited uploads and battles",
-    features: [
-      "Everything in Free Beta",
-      "Priority generation queue",
-      "Full VYRA deep-dive coaching",
-      "Unlimited PDF/text uploads",
-    ],
-    highlight: true,
-  },
-  {
-    id: "team_pass",
-    name: "Team/Guild Pass",
-    price: "$0 Pilot",
-    tagline: "Free during pilot for small groups",
-    dailyLimit: "Shared unlimited group usage",
-    features: [
-      "Private un-expiring leaderboards",
-      "Collaborative deck building",
-      "Custom group styling",
-      "Up to 10 members per guild",
-    ],
-  },
-  {
-    id: "exam_tunnel",
-    name: "High-Stakes Exam Tunnel",
-    price: "$5/mo Pilot",
-    tagline: "Nominal pilot price for exam-track testers",
-    dailyLimit: "Premium board-style generation",
-    features: [
-      "Exam-format tuned prompts",
-      "VYRA remediation by exam objective",
-      "Faster queues during peak hours",
-      "Dedicated weak-topic recovery loops",
-    ],
-  },
-];
+const PLANS = PUBLIC_PLANS;
 
 export default function PricingPage() {
   const { profile, isLoggedIn } = useAuth();
+
+  // A user can be on a plan that isn't publicly sold (e.g. a manually
+  // granted "pro_preview"/"founder" seat) — surface that clearly instead of
+  // silently showing no "Current Plan" badge anywhere on this page.
+  const currentPlanMeta = getPlanMetadata(profile?.plan);
+  const isOnUnlistedPlan =
+    isLoggedIn && currentPlanMeta !== null && !currentPlanMeta.publiclyListed;
 
   const requestAccessHref =
     "mailto:studyclashbeta@gmail.com?subject=StudyClash%20Plan%20Access%20Request";
@@ -145,6 +87,18 @@ export default function PricingPage() {
           low nominal price so we can gather feedback while improving reliability.
         </p>
 
+        {isOnUnlistedPlan && currentPlanMeta && (
+          <div className="mt-6 flex w-full max-w-lg items-center gap-3 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-left sm:px-5">
+            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-sm font-black text-emerald-300">
+              ✓
+            </span>
+            <p className="text-sm text-emerald-100/90">
+              You&apos;re on the <span className="font-bold">{currentPlanMeta.label}</span> plan
+              ({currentPlanMeta.tagline.toLowerCase()}) — not publicly listed below, but fully active on your account.
+            </p>
+          </div>
+        )}
+
         {/* Plan cards */}
         <div className="mt-10 grid w-full grid-cols-1 gap-5 sm:mt-12 md:grid-cols-3">
           {PLANS.map((plan) => {
@@ -174,7 +128,7 @@ export default function PricingPage() {
                 {/* Plan name + tagline */}
                 <div className="text-center">
                   <h2 className="text-lg font-black tracking-tight sm:text-xl">
-                    {plan.name}
+                    {plan.label}
                   </h2>
                   <p className="mt-1 text-xs text-white/40">{plan.tagline}</p>
                 </div>

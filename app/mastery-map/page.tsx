@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
-import GigglesCoach from "@/app/components/GigglesCoach";
+import VyraCoach from "@/app/components/VyraCoach";
 
 type DeckLite = {
   id: string;
@@ -770,7 +770,7 @@ function MasteryMapPageContent() {
       </div>
 
       {coachContext && (
-        <GigglesCoach
+        <VyraCoach
           key={`vyra-${coachSeed}-${coachContext.deckId}`}
           deckId={coachContext.deckId}
           deckTitle={coachContext.deckTitle}

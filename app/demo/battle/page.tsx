@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import GigglesCoach from "@/app/components/GigglesCoach";
+import VyraCoach from "@/app/components/VyraCoach";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 type DemoQuestion = {
@@ -784,7 +784,7 @@ export default function DemoBattlePage() {
 							</Link>
 						</div>
 
-						<GigglesCoach
+						<VyraCoach
 							deckTitle={DEMO_DECK.title}
 							courseName={DEMO_DECK.course_name}
 							playerName={DEMO_DECK.student_name}

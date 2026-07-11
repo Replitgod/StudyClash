@@ -1,5 +1,43 @@
 @import "tailwindcss";
 
+/*
+ * Design tokens — additive Tailwind v4 @theme extensions.
+ *
+ * This does NOT replace the existing cyan/fuchsia/emerald/violet "battle"
+ * color language (that stays exactly as-is, using Tailwind's native palette
+ * classes like `from-fuchsia-500`). What's missing today is everything that
+ * ISN'T a simple color: every glow shadow and hover/tap transition is
+ * hand-tuned per component with slightly different numbers each time
+ * (e.g. `shadow-[0_0_22px_-8px_rgba(34,211,238,0.8)]` vs
+ * `shadow-[0_22px_45px_-22px_rgba(34,211,238,0.95)]` for what's clearly the
+ * same "cyan glow" intent). These tokens name and standardize that so new
+ * and refactored components pull from one recipe instead of reinventing it.
+ */
+@theme {
+  /* Glow shadows — one recipe per brand color, two intensities. Use via
+     `shadow-glow-cyan-md` etc. */
+  --shadow-glow-cyan-sm: 0 0 20px -10px rgba(34, 211, 238, 0.75);
+  --shadow-glow-cyan-md: 0 20px 45px -20px rgba(34, 211, 238, 0.9);
+  --shadow-glow-fuchsia-sm: 0 0 20px -10px rgba(217, 70, 239, 0.7);
+  --shadow-glow-fuchsia-md: 0 20px 45px -20px rgba(217, 70, 239, 0.85);
+  --shadow-glow-emerald-sm: 0 0 20px -10px rgba(52, 211, 153, 0.7);
+  --shadow-glow-emerald-md: 0 20px 45px -20px rgba(52, 211, 153, 0.85);
+
+  /* Motion — the two durations already dominant in the codebase
+     (`duration-150` for color/border transitions, `duration-200` for
+     transform/scale), named so intent is explicit, plus a slower entrance
+     tier for premium success/milestone moments. Use via `duration-fast`,
+     `duration-base`, `duration-slow`. */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 450ms;
+
+  /* The "settle into place" bounce already used ad hoc on CTA hover/tap
+     (`hover:scale-[1.03] active:scale-95`) and on the pulse-enter keyframe
+     below. Use via `ease-brand-bounce`. */
+  --ease-brand-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
 html,
 body {
   touch-action: manipulation;
@@ -118,5 +156,27 @@ textarea:-webkit-autofill:focus {
   }
   100% {
     width: 100%;
+  }
+}
+
+/* Skeleton loading shimmer — used by app/components/ui/Skeleton.tsx */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Slide up + fade — used by InlineBanner/Toast-style success & error moments */
+@keyframes slide-up-fade {
+  0% {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
   }
 }

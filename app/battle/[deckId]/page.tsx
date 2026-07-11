@@ -5,8 +5,9 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
+import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
-import GigglesCoach from "@/app/components/GigglesCoach";
+import VyraCoach from "@/app/components/VyraCoach";
 import ConfettiBurst from "@/app/components/ConfettiBurst";
 import {
   calculateLevel,
@@ -1394,11 +1395,11 @@ export default function BattlePage() {
     let response: Response;
 
     try {
-      response = await fetch("/api/battle/finish", {
+      // authFetch attaches the logged-in player's session token (when one
+      // exists) so the match can be stamped with a real user_id server-side.
+      // Guests get no Authorization header and the battle still saves fine.
+      response = await authFetch("/api/battle/finish", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           deckId,
           playerName: playerName || accountDisplayName || deck?.student_name || "Player",
@@ -2452,7 +2453,7 @@ export default function BattlePage() {
         </div>
           </div>
 
-          <GigglesCoach
+          <VyraCoach
             deckId={deck.id}
             deckTitle={deck.title}
             courseName={deck.course_name}

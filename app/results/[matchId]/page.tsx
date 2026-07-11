@@ -6,7 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
 import type { AnalyticsEventName } from "@/lib/trackEvent";
-import GigglesCoach from "@/app/components/GigglesCoach";
+import VyraCoach from "@/app/components/VyraCoach";
 import ConfettiBurst from "@/app/components/ConfettiBurst";
 import {
   buildClashPathReport,
@@ -3021,7 +3021,7 @@ export default function ResultsPage() {
           </p>
         )}
 
-        <GigglesCoach
+        <VyraCoach
           deckId={deck.id}
           matchId={match.id}
           deckTitle={deck.title}

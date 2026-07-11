@@ -67,7 +67,7 @@ type BattleHistoryEntry = {
   createdAt?: string;
 };
 
-type GigglesCoachProps = {
+type VyraCoachProps = {
   deckId?: string;
   matchId?: string;
   deckTitle?: string;
@@ -194,7 +194,7 @@ const QUICK_ACTIONS: Array<{
   },
 ];
 
-export default function GigglesCoach(props: GigglesCoachProps) {
+export default function VyraCoach(props: VyraCoachProps) {
   const {
     deckId,
     matchId,
@@ -369,11 +369,14 @@ export default function GigglesCoach(props: GigglesCoachProps) {
     });
   }
 
-  const desktopPanelClass = `fixed right-0 top-0 z-50 hidden h-full w-full max-w-[460px] border-l border-cyan-300/15 bg-[#040a12]/95 shadow-[-26px_0_72px_-36px_rgba(16,185,129,0.55)] backdrop-blur-xl transition-transform duration-300 ease-out md:block ${
+  // z-index is set via inline style={{ zIndex: UI_Z_INDEX.vyraPanel }} below,
+  // not a hardcoded Tailwind z-* class, so the shared uiLayout.ts tier stays
+  // the single source of truth for stacking order.
+  const desktopPanelClass = `fixed right-0 top-0 hidden h-full w-full max-w-[460px] border-l border-cyan-300/15 bg-[#040a12]/95 shadow-[-26px_0_72px_-36px_rgba(16,185,129,0.55)] backdrop-blur-xl transition-transform duration-300 ease-out md:block ${
     isOpen ? "translate-x-0" : "pointer-events-none translate-x-full"
   }`;
 
-  const mobilePanelClass = `fixed inset-x-0 bottom-0 z-50 h-[88dvh] rounded-t-3xl border border-cyan-300/20 bg-[#040a12]/95 p-3 shadow-[0_-24px_70px_-30px_rgba(16,185,129,0.6)] backdrop-blur-xl transition-transform duration-300 ease-out ${
+  const mobilePanelClass = `fixed inset-x-0 bottom-0 h-[88dvh] rounded-t-3xl border border-cyan-300/20 bg-[#040a12]/95 p-3 shadow-[0_-24px_70px_-30px_rgba(16,185,129,0.6)] backdrop-blur-xl transition-transform duration-300 ease-out ${
     isDocked ? "xl:hidden" : "md:hidden"
   } ${isOpen ? "translate-y-0" : "pointer-events-none translate-y-full"}`;
 
@@ -401,7 +404,7 @@ export default function GigglesCoach(props: GigglesCoachProps) {
         <button
           aria-label="Close VYRA panel"
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 z-40 bg-black/45 backdrop-blur-[1px]"
+          className="fixed inset-0 bg-black/45 backdrop-blur-[1px]"
           style={{ zIndex: UI_Z_INDEX.vyraPanel - 1 }}
         />
       )}

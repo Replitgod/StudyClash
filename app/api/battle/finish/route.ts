@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
   checkInMemoryRateLimit,
+  getBearerToken,
   getClientIpAddress,
   hashIdentifier,
 } from "@/lib/server/apiUtils";
@@ -10,6 +11,22 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string
 );
+
+// Battle is intentionally open to guests (no login required), so auth here
+// is optional: if a session token is present we stamp the match with the
+// real user_id (so pages like Mastery Map can query by ownership instead of
+// fragile player_name string-matching); if not, the match is saved as a
+// guest match exactly as before.
+async function resolveOptionalUserId(request: NextRequest): Promise<string | null> {
+  const token = getBearerToken(request);
+  if (!token) return null;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser(token);
+
+  return user?.id || null;
+}
 
 type AnswerPayload = {
   questionId: string;
@@ -61,6 +78,7 @@ function isValidAnswerPayload(value: unknown): value is AnswerPayload {
 
 export async function POST(req: NextRequest) {
   try {
+    const authenticatedUserId = await resolveOptionalUserId(req);
     const ipHash = hashIdentifier(getClientIpAddress(req));
     const rateLimit = checkInMemoryRateLimit({
       key: `battle-finish:${ipHash}`,
@@ -265,6 +283,7 @@ export async function POST(req: NextRequest) {
       .insert({
         deck_id: body.deckId,
         player_name: body.playerName,
+        user_id: authenticatedUserId,
         score: body.score,
         total_questions: body.totalQuestions,
         correct_answers: body.correctAnswers,

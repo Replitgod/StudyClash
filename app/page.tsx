@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import GigglesCoach from "./components/GigglesCoach";
+import VyraCoach from "./components/VyraCoach";
 import InstantAIBattle from "./components/InstantAIBattle";
 import AutoplayDemoRail from "./components/AutoplayDemoRail";
 
@@ -715,7 +715,7 @@ export default function Home() {
         </footer>
       </div>
 
-      <GigglesCoach contextLabel="Website" />
+      <VyraCoach contextLabel="Website" />
     </div>
   );
 }
