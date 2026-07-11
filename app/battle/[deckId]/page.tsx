@@ -7,6 +7,14 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/trackEvent";
 import GigglesCoach from "@/app/components/GigglesCoach";
+import ConfettiBurst from "@/app/components/ConfettiBurst";
+import {
+  calculateLevel,
+  getGoalProgress,
+  getProgressStorageKey,
+  loadProgressSnapshot,
+  type BattleHistoryEntry,
+} from "@/lib/playerProgress";
 import type { User } from "@supabase/supabase-js";
 import type { Profile } from "@/lib/useAuth";
 
@@ -101,6 +109,14 @@ type RivalReadiness = {
   } | null;
   rivalStrengths: string[];
   playerNeedsImprovement: string[];
+};
+
+type EngagementPreview = {
+  level: number;
+  currentStreakDays: number;
+  dailyBattles: number;
+  weeklyBattles: number;
+  recentHistory: BattleHistoryEntry[];
 };
 
 const RIVAL_TIERS: RivalTier[] = [
@@ -493,6 +509,11 @@ export default function BattlePage() {
   const [playerName, setPlayerName] = useState("");
   const [isEditingPlayerName, setIsEditingPlayerName] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  const [introCountdown, setIntroCountdown] = useState<number | null>(null);
+  const [showRewardBurst, setShowRewardBurst] = useState(false);
+  const [engagementPreview, setEngagementPreview] =
+    useState<EngagementPreview | null>(null);
+  const rewardBurstTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Quiz progress
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -574,6 +595,9 @@ export default function BattlePage() {
       setDeck(null);
       setQuestions([]);
       setHasStarted(false);
+      setIntroCountdown(null);
+      setShowRewardBurst(false);
+      setEngagementPreview(null);
       setCurrentIndex(0);
       setAnswers([]);
       setSelectedChoice(null);
@@ -596,6 +620,10 @@ export default function BattlePage() {
       if (rivalResolveTimerRef.current) {
         clearTimeout(rivalResolveTimerRef.current);
         rivalResolveTimerRef.current = null;
+      }
+      if (rewardBurstTimerRef.current) {
+        clearTimeout(rewardBurstTimerRef.current);
+        rewardBurstTimerRef.current = null;
       }
       hasFinishedRef.current = false;
 
@@ -1058,22 +1086,60 @@ export default function BattlePage() {
 
   // Simple timer: ticks up once per second while playing
   useEffect(() => {
-    if (!hasStarted || isFinishing) return;
+    if (!hasStarted || isFinishing || introCountdown !== null) return;
 
     const interval = setInterval(() => {
       setElapsedSeconds((prev) => prev + 1);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [hasStarted, isFinishing]);
+  }, [hasStarted, isFinishing, introCountdown]);
 
   useEffect(() => {
     return () => {
       if (rivalResolveTimerRef.current) {
         clearTimeout(rivalResolveTimerRef.current);
       }
+      if (rewardBurstTimerRef.current) {
+        clearTimeout(rewardBurstTimerRef.current);
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (!deck) return;
+
+    const storageKey = getProgressStorageKey({
+      userId: user?.id ?? null,
+      playerName: accountDisplayName || deck.student_name,
+    });
+    const snapshot = loadProgressSnapshot(storageKey);
+    const goals = getGoalProgress(snapshot);
+    const levelInfo = calculateLevel(snapshot.totalXp);
+
+    setEngagementPreview({
+      level: levelInfo.level,
+      currentStreakDays: snapshot.currentStreakDays,
+      dailyBattles: goals.dailyBattles,
+      weeklyBattles: goals.weeklyBattles,
+      recentHistory: snapshot.battleHistory.slice(0, 4),
+    });
+  }, [deck, user?.id, accountDisplayName]);
+
+  useEffect(() => {
+    if (!hasStarted || introCountdown === null) return;
+
+    if (introCountdown <= 0) {
+      setIntroCountdown(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setIntroCountdown((prev) => (prev === null ? null : prev - 1));
+    }, 760);
+
+    return () => clearTimeout(timer);
+  }, [hasStarted, introCountdown]);
 
   const formatTime = (totalSeconds: number) => {
     const minutes = Math.floor(totalSeconds / 60);
@@ -1092,6 +1158,7 @@ export default function BattlePage() {
 
     setPlayerName(finalName);
     setHasStarted(true);
+    setIntroCountdown(3);
     questionStartSecondsRef.current = elapsedSeconds;
 
     trackEvent("battle_started", {
@@ -1109,7 +1176,7 @@ export default function BattlePage() {
   };
 
   const handleSelectAnswer = (choice: string) => {
-    if (selectedChoice) return; // question already answered
+    if (selectedChoice || introCountdown !== null) return; // question already answered
 
     const currentQuestion = questions[currentIndex];
     const isCorrect = choice === currentQuestion.correct_answer;
@@ -1137,6 +1204,17 @@ export default function BattlePage() {
       setBestStreak((prevBest) => Math.max(prevBest, newStreak));
       setTotalScore((prevScore) => prevScore + pointsEarned);
       setLastPointsEarned(pointsEarned);
+
+      if (newStreak >= 3) {
+        setShowRewardBurst(true);
+        if (rewardBurstTimerRef.current) {
+          clearTimeout(rewardBurstTimerRef.current);
+        }
+        rewardBurstTimerRef.current = setTimeout(() => {
+          setShowRewardBurst(false);
+          rewardBurstTimerRef.current = null;
+        }, 980);
+      }
     } else {
       setCurrentStreak(0);
       setLastPointsEarned(0);
@@ -1629,6 +1707,45 @@ export default function BattlePage() {
         <div className="mt-4 w-full max-w-xl rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] px-4 py-3 text-center text-xs text-cyan-100/90">
           Flow: Battle now &rarr; review weak topics in results &rarr; run a focused rematch &rarr; improve your score.
         </div>
+
+        {engagementPreview && (
+          <div className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Level</p>
+                <p className="mt-1 text-base font-black text-cyan-200">{engagementPreview.level}</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Day Streak</p>
+                <p className="mt-1 text-base font-black text-amber-200">{engagementPreview.currentStreakDays}</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Daily Goal</p>
+                <p className="mt-1 text-base font-black text-emerald-200">{engagementPreview.dailyBattles}/2</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Weekly Goal</p>
+                <p className="mt-1 text-base font-black text-fuchsia-200">{engagementPreview.weeklyBattles}/8</p>
+              </div>
+            </div>
+
+            {engagementPreview.recentHistory.length > 0 && (
+              <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2.5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">Recent Battles</p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {engagementPreview.recentHistory.map((entry) => (
+                    <span
+                      key={entry.matchId}
+                      className="rounded-full border border-cyan-400/25 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-semibold text-cyan-100"
+                    >
+                      {entry.score} pts · {entry.accuracy}%
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="mt-8 w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:mt-10 sm:p-6">
           {accountDisplayName && !isEditingPlayerName ? (
@@ -2133,7 +2250,25 @@ export default function BattlePage() {
         </div>
 
         {/* Question card */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:p-6 lg:p-7 xl:p-8">
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:p-6 lg:p-7 xl:p-8">
+          <ConfettiBurst show={showRewardBurst} />
+
+          {introCountdown !== null && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#030812]/85 backdrop-blur-sm">
+              <div className="text-center" style={{ animation: "pulse-enter 260ms ease-out" }}>
+                <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-200">
+                  Battle Intro
+                </p>
+                <p className="mt-2 text-6xl font-black text-white sm:text-7xl">
+                  {introCountdown === 0 ? "GO" : introCountdown}
+                </p>
+                <p className="mt-2 text-xs text-white/55">
+                  Precision first. Speed second.
+                </p>
+              </div>
+            </div>
+          )}
+
           <span className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
             {currentQuestion.topic}
           </span>

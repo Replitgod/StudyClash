@@ -1,35 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+import {
+  getServiceSupabaseClient,
+  requireAuthenticatedUser,
+} from "@/lib/server/apiUtils";
 
 export async function GET(request: NextRequest) {
-  // Check authorization header
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireAuthenticatedUser(request);
+  if (!auth.userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    // Create a service role client to fetch data
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Extract the user ID from auth token
-    // The authFetch adds: Authorization: Bearer <access_token>
-    const token = authHeader.replace("Bearer ", "");
-
-    // Verify the token by fetching the user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = user.id;
+    const supabase = getServiceSupabaseClient();
+    const userId = auth.userId;
 
     // Fetch all user decks
     const { data: decks, error: decksError } = await supabase

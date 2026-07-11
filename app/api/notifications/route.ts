@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+import {
+  getServiceSupabaseClient,
+  requireAuthenticatedUser,
+} from "@/lib/server/apiUtils";
 
 type NotificationRow = {
   id: string;
@@ -22,28 +22,16 @@ function toLimit(raw: string | null): number {
 }
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const auth = await requireAuthenticatedUser(request);
+  if (!auth.userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const token = authHeader.replace("Bearer ", "");
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const supabase = getServiceSupabaseClient();
 
     const profileResult = await supabase
       .from("profiles")
       .select("display_name")
-      .eq("id", user.id)
+      .eq("id", auth.userId)
       .maybeSingle();
 
     const displayName =
@@ -63,10 +51,10 @@ export async function GET(request: NextRequest) {
 
     if (displayName) {
       query = query.or(
-        `target_user_id.eq.${user.id},target_player_name.ilike.${displayName}`
+        `target_user_id.eq.${auth.userId},target_player_name.ilike.${displayName}`
       );
     } else {
-      query = query.eq("target_user_id", user.id);
+      query = query.eq("target_user_id", auth.userId);
     }
 
     const { data, error } = await query;

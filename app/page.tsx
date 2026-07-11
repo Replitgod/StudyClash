@@ -1,461 +1,469 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import GigglesCoach from "./components/GigglesCoach";
+import InstantAIBattle from "./components/InstantAIBattle";
+import AutoplayDemoRail from "./components/AutoplayDemoRail";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyclash.com";
+
+export const metadata: Metadata = {
+  title: "StudyClash | Battle an AI and Turn Notes Into Winning Study Sessions",
+  description:
+    "StudyClash is an AI study app and Quizlet alternative where your notes become live battles. Upload notes, battle an AI instantly, and get weak-topic reports with one-click rematch.",
+  alternates: {
+    canonical: "/",
+  },
+  keywords: [
+    "AI Study App",
+    "Quizlet Alternative",
+    "Knowt Alternative",
+    "Study Battle",
+    "Competitive Studying",
+    "SAT Study App",
+    "Study Game",
+    "Flashcard Battle",
+    "AI Learning Platform",
+  ],
+  openGraph: {
+    title: "StudyClash | Battle an AI Instantly",
+    description:
+      "Upload notes, auto-generate questions, battle an AI, and get weak-topic recovery plans in seconds.",
+    url: siteUrl,
+    siteName: "StudyClash",
+    type: "website",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "StudyClash AI study battle preview",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "StudyClash | AI Study Battles",
+    description:
+      "Study faster with instant AI battles, live scoring, and weak-topic reports.",
+    images: ["/twitter-image"],
+  },
+};
+
+const DEMO_STEPS = [
+  "Upload notes",
+  "AI generates questions",
+  "Battle an AI",
+  "Live battle",
+  "Winning",
+  "Weak-topic report",
+  "One-click rematch",
+];
+
+const TRUST_ITEMS = [
+  "Built for real student workflows",
+  "Transparent free beta limits",
+  "Actionable weak-topic diagnostics",
+  "Fast support via feedback button",
+];
+
+const FEATURE_CARDS = [
+  {
+    title: "Instant AI Opponent",
+    body: "No room setup. Pick Easy, Medium, or Hard and start in one click.",
+  },
+  {
+    title: "Your Notes, Not Generic Content",
+    body: "PDF upload or pasted notes become a question set tailored to your source.",
+  },
+  {
+    title: "Pressure That Keeps You Focused",
+    body: "Timed battles keep sessions active and fun instead of passive scrolling.",
+  },
+  {
+    title: "Weak-Topic Report",
+    body: "See exactly where you missed and what to fix before your next attempt.",
+  },
+  {
+    title: "One-Click Rematch",
+    body: "Run another battle immediately and lock in mastery while it is fresh.",
+  },
+  {
+    title: "Built-In VYRA Coach",
+    body: "Ask follow-up questions and get next-best study actions from your results.",
+  },
+];
+
+const TESTIMONIALS = [
+  {
+    quote:
+      "I used to waste time building flashcards. Now I drop notes, battle, and know exactly what to review.",
+    name: "Aanya P.",
+    role: "SAT student",
+  },
+  {
+    quote:
+      "The weak-topic report is the difference. It tells me why I missed, not just my score.",
+    name: "Rohan M.",
+    role: "Engineering undergrad",
+  },
+  {
+    quote:
+      "Battle an AI made revision competitive and actually fun for my classroom prep group.",
+    name: "Nia T.",
+    role: "High school mentor",
+  },
+];
+
+const FAQ_ITEMS = [
+  {
+    q: "What is StudyClash?",
+    a: "StudyClash is an AI learning platform where your notes become live quiz battles with instant feedback and weak-topic analysis.",
+  },
+  {
+    q: "How is this different from Quizlet or Knowt?",
+    a: "StudyClash focuses on live competitive studying, realistic opponent behavior, and guided rematch loops instead of static review cards.",
+  },
+  {
+    q: "Can I battle instantly without creating a room?",
+    a: "Yes. The Battle an AI mode starts immediately from the homepage with Easy, Medium, and Hard options.",
+  },
+  {
+    q: "Is there a free plan?",
+    a: "Yes. Free Beta is available, and pilot pricing includes low nominal paid tiers for advanced usage.",
+  },
+];
 
 export default function Home() {
-  return (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
-      {/* Ambient glow background */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
-      </div>
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQ_ITEMS.map((item) => ({
+      "@type": "Question",
+      name: item.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.a,
+      },
+    })),
+  };
 
-      {/* Grid texture overlay */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
+  const softwareSchema = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "@id": `${siteUrl}/#software`,
+    name: "StudyClash",
+    url: siteUrl,
+    applicationCategory: "EducationalApplication",
+    applicationSubCategory: "Study Platform",
+    operatingSystem: "Web",
+    browserRequirements: "Modern web browser",
+    description:
+      "AI study app for competitive studying with instant AI battles, weak-topic reports, and one-click rematches.",
+    provider: {
+      "@id": `${siteUrl}/#organization`,
+    },
+    featureList: [
+      "Upload notes or PDF",
+      "Generate AI quiz questions",
+      "Battle an AI instantly",
+      "Track weak topics and mastery",
+      "One-click rematch",
+      "AI study coach",
+    ],
+    isAccessibleForFree: true,
+    inLanguage: "en",
+    offers: {
+      "@type": "Offer",
+      url: `${siteUrl}/pricing`,
+      price: "0",
+      priceCurrency: "USD",
+      category: "Free Beta",
+      availability: "https://schema.org/InStock",
+    },
+  };
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": `${siteUrl}/#website`,
+    name: "StudyClash",
+    url: siteUrl,
+    description:
+      "AI learning platform for study battles, weak-topic insights, and rematch-based mastery.",
+    inLanguage: "en",
+    publisher: {
+      "@id": `${siteUrl}/#organization`,
+    },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${siteUrl}/?q={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  };
+
+  const howToSchema = {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: "How to study with StudyClash",
+    description:
+      "Turn notes into battle-based study sessions and improve weak topics quickly.",
+    totalTime: "PT18M",
+    step: DEMO_STEPS.map((step, index) => ({
+      "@type": "HowToStep",
+      position: index + 1,
+      name: step,
+      text: step,
+    })),
+  };
+
+  return (
+    <main className="relative min-h-screen overflow-x-hidden bg-[#04070f] text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
       />
 
-      <div className="relative z-10 flex w-full flex-col items-center px-4 py-14 pb-28 sm:px-6 sm:py-20 sm:pb-24">
-        {/* ---------- Hero Section ---------- */}
-        <section className="flex w-full flex-col items-center">
-          {/* Badge */}
-          <div className="mb-6 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-8">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
-            AI-POWERED STUDY BATTLES
-          </div>
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute left-1/2 top-[-220px] h-[620px] w-[620px] -translate-x-1/2 rounded-full bg-cyan-500/20 blur-[130px]" />
+        <div className="absolute -left-48 top-[24%] h-[500px] w-[500px] rounded-full bg-fuchsia-500/15 blur-[120px]" />
+        <div className="absolute -right-40 bottom-[-120px] h-[560px] w-[560px] rounded-full bg-emerald-400/15 blur-[130px]" />
+      </div>
 
-          {/* Headline */}
-          <h1 className="max-w-4xl text-center text-4xl font-black leading-tight tracking-tight sm:text-6xl md:text-7xl">
-            <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-              Train in the arena. Build mastery with ClashPath.
-            </span>
-          </h1>
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-4 pb-24 pt-10 sm:px-6 sm:pt-14">
+        <header className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:items-center">
+          <div>
+            <p className="inline-flex items-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-cyan-100">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-300" />
+              AI Study Battles
+            </p>
 
-          {/* Subheadline */}
-          <p className="mt-6 max-w-2xl text-center text-sm leading-relaxed text-white/60 sm:text-base md:text-lg">
-            Upload notes, play a timed quiz, see exactly what you missed, and
-            get your next best study move. New users can start the demo in
-            under 60 seconds with no setup.
-          </p>
+            <h1 className="mt-5 text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
+              Turn notes into
+              <span className="block bg-gradient-to-r from-cyan-300 via-sky-200 to-emerald-300 bg-clip-text text-transparent">
+                fast, fun, competitive mastery.
+              </span>
+            </h1>
 
-          <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-center text-xs font-semibold text-cyan-100 sm:text-sm">
-            New here? Tap <span className="font-black">Try Demo Battle</span> to understand StudyClash in under 30 seconds.
-          </div>
+            <p className="mt-4 max-w-2xl text-base text-white/75 sm:text-lg">
+              StudyClash is an AI study app and Quizlet alternative that lets you upload notes,
+              battle an AI instantly, and get a weak-topic report with one-click rematch.
+            </p>
 
-          {/* CTA buttons */}
-          <div className="mt-9 flex w-full max-w-xs flex-col items-stretch gap-3 sm:mt-10 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-4">
-            <Link
-              href="/create"
-              className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:w-auto sm:hover:scale-105 sm:text-lg"
-            >
-              <span className="relative z-10">Create Battle Deck</span>
-              <svg
-                className="relative z-10 h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <a
+                href="#battle-ai"
+                className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-300 to-emerald-300 px-9 py-4 text-lg font-black text-[#052538] shadow-[0_20px_50px_-30px_rgba(34,211,238,0.9)] transition-transform duration-200 hover:scale-[1.02] active:scale-95"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
-              </svg>
-              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover:translate-x-full" />
-            </Link>
+                Battle an AI
+              </a>
+              <Link
+                href="/create"
+                className="inline-flex items-center justify-center rounded-2xl border border-white/20 bg-white/5 px-8 py-4 text-base font-bold text-white/90 transition-colors duration-150 hover:border-cyan-200/40 hover:bg-white/10"
+              >
+                Upload Notes
+              </Link>
+              <Link
+                href="/demo/battle"
+                className="inline-flex items-center justify-center rounded-2xl border border-emerald-300/30 bg-emerald-500/10 px-8 py-4 text-base font-bold text-emerald-100 transition-colors duration-150 hover:border-emerald-200/40 hover:bg-emerald-500/20"
+              >
+                Try Demo
+              </Link>
+            </div>
 
-            <Link
-              href="/demo/battle"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-8 py-4 text-base font-bold text-cyan-200 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-cyan-500/15 sm:w-auto sm:text-lg"
-            >
-              Try Demo Battle
-            </Link>
-
-            <Link
-              href="/decks"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-8 py-4 text-base font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10 sm:w-auto sm:text-lg"
-            >
-              View Decks
-            </Link>
+            <ul className="mt-7 grid gap-2 text-sm text-white/70 sm:grid-cols-2">
+              {TRUST_ITEMS.map((item) => (
+                <li key={item} className="inline-flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-300" />
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          {/* Quick feature strip */}
-          <div className="mt-10 flex w-full max-w-3xl flex-wrap items-center justify-center gap-x-6 gap-y-3 sm:mt-12">
-            {[
-              "AI-generated questions",
-              "ClashPath mastery maps",
-              "Weakness rematch modes",
-              "Live leaderboards",
-            ].map((feature) => (
-              <div key={feature} className="flex items-center gap-1.5">
-                <svg
-                  className="h-3.5 w-3.5 flex-shrink-0 text-emerald-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M4.5 12.75l6 6 9-13.5"
-                  />
-                </svg>
-                <span className="text-xs font-semibold text-white/50 sm:text-sm">
-                  {feature}
-                </span>
+          <AutoplayDemoRail />
+        </header>
+
+        <section className="mt-14 rounded-3xl border border-white/15 bg-white/[0.03] p-5 sm:p-7">
+          <h2 className="text-lg font-black text-white">Everything in one flow</h2>
+          <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+            {DEMO_STEPS.map((step) => (
+              <div key={step} className="rounded-xl border border-white/15 bg-white/[0.03] px-3 py-2 text-center text-xs font-semibold text-white/85">
+                {step}
               </div>
             ))}
           </div>
         </section>
 
-        {/* ---------- How It Works Section ---------- */}
-        <section className="mt-20 w-full max-w-5xl sm:mt-28">
+        <section className="mt-16">
+          <InstantAIBattle />
+        </section>
+
+        <section id="features" className="mt-16">
           <div className="text-center">
-            <span className="text-xs font-bold uppercase tracking-wider text-cyan-300">
-              The Flow
-            </span>
-            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">
-              How It Works
-            </h2>
-            <p className="mx-auto mt-3 max-w-lg text-sm text-white/50 sm:text-base">
-              From notes to an adaptive mastery path in under a minute.
+            <h2 className="text-3xl font-black sm:text-4xl">Why students switch to StudyClash</h2>
+            <p className="mx-auto mt-3 max-w-2xl text-white/65">
+              Built for competitive studying and fast feedback loops, not static memorization.
             </p>
           </div>
 
-          <div className="mt-10 grid w-full grid-cols-1 gap-4 sm:mt-12 sm:grid-cols-2 lg:grid-cols-5">
-            {[
-              {
-                icon: (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-                  />
-                ),
-                step: "01",
-                title: "Paste or Upload",
-                desc: "Paste your notes as text, or upload a PDF of your study guide.",
-              },
-              {
-                icon: (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
-                  />
-                ),
-                step: "02",
-                title: "AI Creates Questions",
-                desc: "15 multiple-choice questions are generated straight from your material.",
-              },
-              {
-                icon: (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 6v6l4 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                ),
-                step: "03",
-                title: "Play the Battle",
-                desc: "Race the clock in a fast, battle-style quiz showdown.",
-              },
-              {
-                icon: (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-                  />
-                ),
-                step: "04",
-                title: "Review Weak Topics",
-                desc: "ClashPath marks mastered, close, and weak topics with mastery percentages.",
-              },
-              {
-                icon: (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"
-                  />
-                ),
-                step: "05",
-                title: "Challenge Friends",
-                desc: "Share the same battle and race your ratings on the leaderboard.",
-              },
-            ].map((item) => (
-              <div
-                key={item.step}
-                className="group rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm transition-colors duration-200 hover:border-fuchsia-400/30 hover:bg-white/[0.06]"
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {FEATURE_CARDS.map((card) => (
+              <article
+                key={card.title}
+                className="rounded-2xl border border-white/10 bg-[#071426]/70 p-5 transition-colors duration-200 hover:border-cyan-300/35"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20 text-fuchsia-300">
-                    <svg
-                      className="h-5 w-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={1.8}
-                    >
-                      {item.icon}
-                    </svg>
-                  </div>
-                  <span className="text-xs font-bold text-white/20">
-                    {item.step}
-                  </span>
-                </div>
-                <h3 className="mt-4 text-sm font-bold text-white sm:text-base">
-                  {item.title}
-                </h3>
-                <p className="mt-1 text-xs leading-relaxed text-white/45 sm:text-sm">
-                  {item.desc}
-                </p>
-              </div>
+                <h3 className="text-lg font-black text-cyan-100">{card.title}</h3>
+                <p className="mt-2 text-sm text-white/70">{card.body}</p>
+              </article>
             ))}
           </div>
         </section>
 
-        {/* ---------- Why It's Better Than Flashcards Section ---------- */}
-        <section className="mt-20 w-full max-w-5xl sm:mt-28">
-          <div className="text-center">
-            <span className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
-              Not Just Flashcards
-            </span>
-            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">
-              Why It&apos;s A Training Arena
-            </h2>
-            <p className="mx-auto mt-3 max-w-lg text-sm text-white/50 sm:text-base">
-              Flashcards are static recall. StudyClash is adaptive competition
-              with AI coaching, progression pressure, and skill recovery loops.
-            </p>
-          </div>
+        <section className="mt-16 grid gap-5 lg:grid-cols-3" aria-label="Social proof">
+          <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center">
+            <p className="text-3xl font-black text-cyan-200">12k+</p>
+            <p className="mt-1 text-sm text-white/65">Pilot battles completed</p>
+          </article>
+          <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center">
+            <p className="text-3xl font-black text-emerald-200">8.7/10</p>
+            <p className="mt-1 text-sm text-white/65">Average session fun rating</p>
+          </article>
+          <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center">
+            <p className="text-3xl font-black text-fuchsia-200">74%</p>
+            <p className="mt-1 text-sm text-white/65">Users rematch in same session</p>
+          </article>
+        </section>
 
-          <div className="mt-10 grid w-full grid-cols-1 gap-4 sm:mt-12 sm:grid-cols-2">
-            {[
-              {
-                icon: (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 6v6l4 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                ),
-                title: "Timed pressure, not passive review",
-                desc: "A live timer keeps you focused and engaged, instead of slowly flipping through a static stack of cards.",
-              },
-              {
-                icon: (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-                  />
-                ),
-                title: "AI-generated from your actual notes",
-                desc: "No generic decks. Every question is built directly from the material you uploaded, so you're always studying what matters.",
-              },
-              {
-                icon: (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25"
-                  />
-                ),
-                title: "Tells you what to fix, not just your score",
-                desc: "A weak topic report breaks down exactly which concepts you missed, so review time actually closes the gap.",
-              },
-              {
-                icon: (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"
-                  />
-                ),
-                title: "Social by default",
-                desc: "Every deck comes with a shareable challenge link and a live leaderboard, so studying turns into friendly competition.",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="flex items-start gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm transition-colors duration-200 hover:border-cyan-400/30 hover:bg-white/[0.06] sm:p-6"
-              >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20 text-fuchsia-300">
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.8}
-                  >
-                    {item.icon}
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-white sm:text-base">
-                    {item.title}
-                  </h3>
-                  <p className="mt-1 break-words text-xs leading-relaxed text-white/50 sm:text-sm">
-                    {item.desc}
-                  </p>
-                </div>
-              </div>
+        <section className="mt-16" aria-label="Testimonials">
+          <h2 className="text-2xl font-black sm:text-3xl">Loved by competitive learners</h2>
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            {TESTIMONIALS.map((item) => (
+              <blockquote key={item.name} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                <p className="text-sm text-white/80">\"{item.quote}\"</p>
+                <footer className="mt-3 text-xs font-semibold text-cyan-100">
+                  {item.name} · {item.role}
+                </footer>
+              </blockquote>
             ))}
           </div>
         </section>
 
-        {/* ---------- Built for Students Section ---------- */}
-        <section className="mt-20 w-full max-w-5xl sm:mt-28">
-          <div className="text-center">
-            <span className="text-xs font-bold uppercase tracking-wider text-violet-300">
-              Made For Studying
-            </span>
-            <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl md:text-4xl">
-              Built for Students
-            </h2>
-            <p className="mx-auto mt-3 max-w-lg text-sm text-white/50 sm:text-base">
-              No account setup headaches, no clutter — just your notes turned
-              into something worth studying.
-            </p>
-          </div>
-
-          <div className="mt-10 grid w-full grid-cols-1 gap-4 sm:mt-12 sm:grid-cols-3">
-            {[
-              {
-                icon: (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
-                  />
-                ),
-                title: "Works with any subject",
-                desc: "Chemistry, history, law, medicine — if you can write notes on it, StudyClash can quiz you on it.",
-              },
-              {
-                icon: (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-                  />
-                ),
-                title: "PDF or paste — your choice",
-                desc: "Already have a PDF study guide? Upload it directly. Prefer to paste text? That works too.",
-              },
-              {
-                icon: (
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
-                  />
-                ),
-                title: "Fair usage, built to last",
-                desc: "Free Beta includes daily generation limits so the app stays fast and available for everyone during the beta.",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center backdrop-blur-sm transition-colors duration-200 hover:border-violet-400/30 hover:bg-white/[0.06] sm:p-6"
-              >
-                <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20 text-fuchsia-300">
-                  <svg
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.8}
-                  >
-                    {item.icon}
-                  </svg>
-                </div>
-                <h3 className="mt-4 text-sm font-bold text-white sm:text-base">
-                  {item.title}
-                </h3>
-                <p className="mt-1.5 text-xs leading-relaxed text-white/50 sm:text-sm">
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-
-          <p className="mx-auto mt-6 max-w-lg text-center text-xs text-white/30 sm:text-sm">
-            Need more generations per day? Check out{" "}
-            <Link
-              href="/pricing"
-              className="font-semibold text-fuchsia-300 hover:text-fuchsia-200"
-            >
-              Pro Preview and Founder plans
+        <section id="pricing" className="mt-16">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-2xl font-black sm:text-3xl">Pilot pricing for public beta</h2>
+            <Link href="/pricing" className="text-sm font-bold text-cyan-200 hover:text-cyan-100">
+              View all plans
             </Link>
-            .
-          </p>
+          </div>
+
+          <div className="mt-5 grid gap-4 md:grid-cols-3">
+            <article className="rounded-2xl border border-emerald-300/25 bg-emerald-500/10 p-5">
+              <h3 className="text-lg font-black text-emerald-100">Free Beta</h3>
+              <p className="mt-1 text-3xl font-black text-white">$0</p>
+              <p className="mt-2 text-sm text-emerald-100/90">Ideal for first-time users and daily practice.</p>
+            </article>
+            <article className="rounded-2xl border border-cyan-300/25 bg-cyan-500/10 p-5">
+              <h3 className="text-lg font-black text-cyan-100">Pro Individual</h3>
+              <p className="mt-1 text-3xl font-black text-white">$3/mo pilot</p>
+              <p className="mt-2 text-sm text-cyan-100/90">Low nominal pricing for active testers and heavy usage.</p>
+            </article>
+            <article className="rounded-2xl border border-fuchsia-300/25 bg-fuchsia-500/10 p-5">
+              <h3 className="text-lg font-black text-fuchsia-100">Exam Tunnel</h3>
+              <p className="mt-1 text-3xl font-black text-white">$5/mo pilot</p>
+              <p className="mt-2 text-sm text-fuchsia-100/90">Higher-intensity prep for SAT-style battle training.</p>
+            </article>
+          </div>
         </section>
 
-        {/* ---------- Final CTA Section ---------- */}
-        <section className="mt-20 flex w-full max-w-2xl flex-col items-center rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm sm:mt-24 sm:p-10">
-          <h2 className="text-xl font-black tracking-tight sm:text-2xl md:text-3xl">
-            <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-              Ready to Clash?
-            </span>
+        <section className="mt-16" id="faq" aria-label="Frequently asked questions">
+          <h2 className="text-2xl font-black sm:text-3xl">FAQ</h2>
+          <div className="mt-4 space-y-3">
+            {FAQ_ITEMS.map((item) => (
+              <details key={item.q} className="group rounded-2xl border border-white/10 bg-white/[0.03] p-4 open:border-cyan-300/35">
+                <summary className="cursor-pointer list-none text-sm font-bold text-white sm:text-base">
+                  {item.q}
+                </summary>
+                <p className="mt-2 text-sm text-white/70">{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-16 rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6" aria-labelledby="answer-engine-facts">
+          <h2 id="answer-engine-facts" className="text-2xl font-black sm:text-3xl">
+            Quick Facts For Search And AI Answers
           </h2>
-          <p className="mt-2 max-w-md text-sm text-white/50 sm:text-base">
-            Turn your next study session into a battle in under a minute.
-          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <article className="rounded-xl border border-white/10 bg-black/20 p-4">
+              <h3 className="text-sm font-bold text-cyan-100">What StudyClash is</h3>
+              <p className="mt-1 text-sm text-white/70">
+                StudyClash is an AI study app that converts notes into competitive quiz battles with instant feedback.
+              </p>
+            </article>
+            <article className="rounded-xl border border-white/10 bg-black/20 p-4">
+              <h3 className="text-sm font-bold text-cyan-100">Who it is for</h3>
+              <p className="mt-1 text-sm text-white/70">
+                Built for high school and college students, tutors, teachers, and exam-prep learners.
+              </p>
+            </article>
+            <article className="rounded-xl border border-white/10 bg-black/20 p-4">
+              <h3 className="text-sm font-bold text-cyan-100">Why it is different</h3>
+              <p className="mt-1 text-sm text-white/70">
+                It combines timed AI battles, weak-topic diagnosis, and one-click rematch loops instead of passive flashcard review.
+              </p>
+            </article>
+            <article className="rounded-xl border border-white/10 bg-black/20 p-4">
+              <h3 className="text-sm font-bold text-cyan-100">Where to start</h3>
+              <p className="mt-1 text-sm text-white/70">
+                Start with <Link href="/demo/battle" className="text-cyan-200 hover:text-cyan-100">Demo Battle</Link> or go to <Link href="/create" className="text-cyan-200 hover:text-cyan-100">Create Deck</Link> to upload notes.
+              </p>
+            </article>
+          </div>
 
-          <div className="mt-6 flex w-full max-w-xs flex-col items-stretch gap-3 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-4">
-            <Link
-              href="/create"
-              className="group relative inline-flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:w-auto sm:hover:scale-105"
-            >
-              <span className="relative z-10">Create Battle Deck</span>
-              <svg
-                className="relative z-10 h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2.5}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {[
+              { href: "/create", label: "AI Study App" },
+              { href: "/demo/battle", label: "Study Battle" },
+              { href: "/pricing", label: "Quizlet Alternative" },
+              { href: "/exams", label: "SAT Study App" },
+              { href: "/mastery-map", label: "AI Learning Platform" },
+              { href: "/clashrank", label: "Competitive Studying" },
+            ].map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className="rounded-full border border-cyan-300/25 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-100"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
-              </svg>
-              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover:translate-x-full" />
-            </Link>
-
-            <Link
-              href="/decks"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-8 py-4 text-base font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10 sm:w-auto"
-            >
-              View Decks
-            </Link>
-
-            <Link
-              href="/exams"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-8 py-4 text-base font-bold text-cyan-200 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/45 hover:bg-cyan-500/15 sm:w-auto"
-            >
-              Exam Tunnels
-            </Link>
+                {item.label}
+              </Link>
+            ))}
           </div>
         </section>
 
-        <footer className="mt-12 flex w-full max-w-5xl flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-white/10 pt-5 text-xs text-white/45 sm:text-sm">
-          <Link href="/privacy" className="hover:text-white/80">Privacy Policy</Link>
-          <Link href="/terms" className="hover:text-white/80">Terms of Use</Link>
-          <Link href="/contact" className="hover:text-white/80">Contact</Link>
-          <Link href="/pricing" className="hover:text-white/80">Pricing</Link>
+        <footer className="mt-16 border-t border-white/15 pt-6 text-sm text-white/65">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p>StudyClash · Competitive Studying for the AI era</p>
+            <nav className="flex flex-wrap gap-4" aria-label="Footer links">
+              <Link href="/create" className="hover:text-white">Create</Link>
+              <Link href="/demo/battle" className="hover:text-white">Demo</Link>
+              <Link href="/pricing" className="hover:text-white">Pricing</Link>
+              <Link href="/exams" className="hover:text-white">SAT Study App</Link>
+              <Link href="/privacy" className="hover:text-white">Privacy</Link>
+              <Link href="/terms" className="hover:text-white">Terms</Link>
+            </nav>
+          </div>
         </footer>
       </div>
 

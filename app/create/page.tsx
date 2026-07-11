@@ -113,6 +113,40 @@ const MIN_NOTES_CHARACTERS = 300;
 const LONG_NOTES_CHARACTERS = 15000;
 const LAST_COURSE_STORAGE_KEY = "studyclash_last_course";
 const BETA_ACCESS_CODE_STORAGE_KEY = "studyclash_beta_access_code";
+const CREATE_PREFS_STORAGE_KEY = "studyclash_create_prefs_v1";
+
+type CreatePrefs = {
+  studentName?: string;
+  courseOption?: string;
+  customCourse?: string;
+  deckTitle?: string;
+  topicFocus?: string;
+  gradeLevel?: string;
+  difficultyMode?: string;
+  questionCount?: string;
+  questionType?: string;
+  examTrack?: string;
+  examMode?: string;
+};
+
+function buildSmartDeckTitle(params: {
+  courseOption: string;
+  customCourse: string;
+  topicFocus: string;
+}) {
+  const { courseOption, customCourse, topicFocus } = params;
+  const resolvedCourse =
+    courseOption === "Other" ? customCourse.trim() : courseOption.trim();
+
+  const cleanTopic = topicFocus
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 36);
+
+  if (!resolvedCourse) return "";
+  if (cleanTopic) return `${resolvedCourse} - ${cleanTopic}`;
+  return `${resolvedCourse} Practice Deck`;
+}
 
 function getPreferredDisplayName(profile: Profile | null, user: User | null): string {
   const profileName = profile?.display_name?.trim();
@@ -238,6 +272,7 @@ export default function CreateDeck() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [betaAccessCode, setBetaAccessCode] = useState("");
+  const [hasUserEditedDeckTitle, setHasUserEditedDeckTitle] = useState(false);
 
   // Guided generation fields. None of these are stored on the deck itself —
   // they only shape the OpenAI prompt and validation at generation time.
@@ -309,6 +344,28 @@ export default function CreateDeck() {
         void Promise.resolve().then(() => setCourseOption(saved));
       }
 
+      const savedPrefsRaw = window.localStorage.getItem(CREATE_PREFS_STORAGE_KEY);
+      if (savedPrefsRaw) {
+        const prefs = JSON.parse(savedPrefsRaw) as CreatePrefs;
+
+        if (typeof prefs.studentName === "string") setStudentName(prefs.studentName);
+        if (typeof prefs.courseOption === "string" && COURSE_OPTIONS.includes(prefs.courseOption)) {
+          setCourseOption(prefs.courseOption);
+        }
+        if (typeof prefs.customCourse === "string") setCustomCourse(prefs.customCourse);
+        if (typeof prefs.deckTitle === "string") {
+          setDeckTitle(prefs.deckTitle);
+          setHasUserEditedDeckTitle(prefs.deckTitle.trim().length > 0);
+        }
+        if (typeof prefs.topicFocus === "string") setTopicFocus(prefs.topicFocus);
+        if (typeof prefs.gradeLevel === "string") setGradeLevel(prefs.gradeLevel);
+        if (typeof prefs.difficultyMode === "string") setDifficultyMode(prefs.difficultyMode);
+        if (typeof prefs.questionCount === "string") setQuestionCount(prefs.questionCount);
+        if (typeof prefs.questionType === "string") setQuestionType(prefs.questionType);
+        if (typeof prefs.examTrack === "string") setExamTrack(prefs.examTrack);
+        if (typeof prefs.examMode === "string") setExamMode(prefs.examMode);
+      }
+
       const savedBetaCode = window.localStorage.getItem(
         BETA_ACCESS_CODE_STORAGE_KEY
       );
@@ -320,6 +377,60 @@ export default function CreateDeck() {
       // just skip preselection in that case.
     }
   }, []);
+
+  useEffect(() => {
+    try {
+      const prefs: CreatePrefs = {
+        studentName,
+        courseOption,
+        customCourse,
+        deckTitle,
+        topicFocus,
+        gradeLevel,
+        difficultyMode,
+        questionCount,
+        questionType,
+        examTrack,
+        examMode,
+      };
+
+      window.localStorage.setItem(CREATE_PREFS_STORAGE_KEY, JSON.stringify(prefs));
+    } catch {
+      // Ignore localStorage access issues.
+    }
+  }, [
+    studentName,
+    courseOption,
+    customCourse,
+    deckTitle,
+    topicFocus,
+    gradeLevel,
+    difficultyMode,
+    questionCount,
+    questionType,
+    examTrack,
+    examMode,
+  ]);
+
+  useEffect(() => {
+    if (hasUserEditedDeckTitle || examTrack !== "none") return;
+
+    const suggested = buildSmartDeckTitle({
+      courseOption,
+      customCourse,
+      topicFocus,
+    });
+
+    if (suggested) {
+      setDeckTitle(suggested);
+    }
+  }, [
+    hasUserEditedDeckTitle,
+    courseOption,
+    customCourse,
+    topicFocus,
+    examTrack,
+  ]);
 
   // Feature-detect folder upload support. webkitdirectory works reliably in
   // Chromium-based browsers (Chrome, Edge). Support elsewhere is spotty, so
@@ -958,13 +1069,31 @@ export default function CreateDeck() {
                   id="deckTitle"
                   type="text"
                   value={deckTitle}
-                  onChange={(e) => setDeckTitle(e.target.value)}
+                  onChange={(e) => {
+                    setHasUserEditedDeckTitle(true);
+                    setDeckTitle(e.target.value);
+                  }}
                   placeholder={`e.g. ${DECK_TITLE_EXAMPLES[0]}`}
                   required
                   className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
                 />
+                <div className="flex flex-wrap items-center gap-2">
+                  {DECK_TITLE_EXAMPLES.map((example) => (
+                    <button
+                      key={example}
+                      type="button"
+                      onClick={() => {
+                        setHasUserEditedDeckTitle(true);
+                        setDeckTitle(example);
+                      }}
+                      className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/70 transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10"
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </div>
                 <p className="text-[11px] text-white/30">
-                  Make it short and specific so it&apos;s easy to find later. Other ideas: {DECK_TITLE_EXAMPLES.slice(1).join(" · ")}
+                  Make it short and specific so it&apos;s easy to find later.
                 </p>
               </div>
             )}
@@ -993,6 +1122,23 @@ export default function CreateDeck() {
               placeholder="e.g. Cell structure and function — leave blank to cover everything in your notes"
               className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
             />
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                "Core concepts",
+                "Common mistakes",
+                "Exam-style drills",
+                "Definitions and applications",
+              ].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => setTopicFocus(suggestion)}
+                  className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/70 transition-colors duration-150 hover:border-cyan-400/30 hover:bg-white/10"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
             <p className="text-[11px] text-white/30">
               Leave this blank if you want the battle to cover everything from your notes.
             </p>

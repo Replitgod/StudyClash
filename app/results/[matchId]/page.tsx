@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
 import type { AnalyticsEventName } from "@/lib/trackEvent";
 import GigglesCoach from "@/app/components/GigglesCoach";
+import ConfettiBurst from "@/app/components/ConfettiBurst";
 import {
   buildClashPathReport,
   type ClashPathAttempt,
@@ -750,6 +751,7 @@ export default function ResultsPage() {
     selectedOptionRepeats: {},
   });
   const [isSavingMistakes, setIsSavingMistakes] = useState(false);
+  const [showVictoryBurst, setShowVictoryBurst] = useState(false);
   const challengeFromMatchId = searchParams.get("challengeFrom");
   const challengeScoreParam = searchParams.get("challengeScore");
   const modeParam = (searchParams.get("mode") || "").toLowerCase();
@@ -1381,6 +1383,17 @@ export default function ResultsPage() {
     };
   }, [deck, match, mistakeBreakdowns]);
 
+  useEffect(() => {
+    if (!match) return;
+
+    const accuracy = calculateAccuracy(match.correct_answers, match.total_questions);
+    if (accuracy < 80 && !battleProgress?.newPersonalBest) return;
+
+    setShowVictoryBurst(true);
+    const timer = setTimeout(() => setShowVictoryBurst(false), 1200);
+    return () => clearTimeout(timer);
+  }, [match, battleProgress?.newPersonalBest]);
+
   const formatTime = (totalSeconds: number) => {
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
@@ -1626,6 +1639,38 @@ export default function ResultsPage() {
     deck.title,
     currentAccuracyPercent
   );
+  const longestStreak = reviewItems.reduce(
+    (state, item) => {
+      const nextCurrent = item.isCorrect ? state.current + 1 : 0;
+      return {
+        current: nextCurrent,
+        best: Math.max(state.best, nextCurrent),
+      };
+    },
+    { current: 0, best: 0 }
+  ).best;
+  const avgResponseMs =
+    reviewItems.length > 0
+      ? Math.round(
+          reviewItems.reduce((sum, item) => sum + (item.responseTimeMs || 0), 0) /
+            reviewItems.length
+        )
+      : 0;
+  const unlockedHighlights = [
+    currentAccuracyPercent >= 80 ? "Champion Accuracy" : null,
+    currentAccuracyPercent === 100 ? "Flawless Run" : null,
+    longestStreak >= 5 ? "Heat Streak" : null,
+    avgResponseMs > 0 && avgResponseMs < 6500 ? "Speed Focus" : null,
+    battleProgress?.newPersonalBest ? "New Personal Best" : null,
+    didDefeatBoss ? "Boss Slayer" : null,
+    didBeatRival ? "Rival Takedown" : null,
+  ].filter((value): value is string => Boolean(value));
+  const victoryTone =
+    currentAccuracyPercent >= 90
+      ? "Elite"
+      : currentAccuracyPercent >= 75
+        ? "Strong"
+        : "Building";
   const weakTopicQueryValue =
     weakTopics && weakTopics.length > 0
       ? encodeURIComponent(weakTopics.map((topic) => topic.topic).join(","))
@@ -1669,7 +1714,8 @@ export default function ResultsPage() {
 
   return (
     <Background>
-      <div className="w-full max-w-5xl">
+      <div className="relative w-full max-w-5xl">
+        <ConfettiBurst show={showVictoryBurst} />
         {/* Badge */}
         <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
@@ -1685,6 +1731,38 @@ export default function ResultsPage() {
         <p className="mt-3 break-words text-center text-sm text-white/50">
           {deck.title} · {deck.course_name}
         </p>
+
+        <div className="mt-5 rounded-2xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/[0.12] via-black/35 to-fuchsia-500/[0.1] p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-cyan-200">
+                Victory Screen
+              </p>
+              <p className="mt-1 text-base font-black text-white">
+                {victoryTone} performance · {currentAccuracyPercent}% accuracy
+              </p>
+              <p className="mt-1 text-xs text-white/70">
+                Longest streak {longestStreak} · Avg response {avgResponseMs > 0 ? `${(avgResponseMs / 1000).toFixed(1)}s` : "n/a"}
+              </p>
+            </div>
+            <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold text-emerald-200">
+              {rank.label}
+            </span>
+          </div>
+
+          {unlockedHighlights.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {unlockedHighlights.map((item) => (
+                <span
+                  key={item}
+                  className="rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-100"
+                >
+                  {item}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
 
         {isBossBattle && (
           <div className="mt-5 rounded-2xl border border-fuchsia-400/25 bg-gradient-to-r from-fuchsia-500/[0.1] via-black/30 to-cyan-500/[0.08] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">

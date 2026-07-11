@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  checkInMemoryRateLimit,
+  getClientIpAddress,
+  hashIdentifier,
+} from "@/lib/server/apiUtils";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -56,6 +61,23 @@ function isValidAnswerPayload(value: unknown): value is AnswerPayload {
 
 export async function POST(req: NextRequest) {
   try {
+    const ipHash = hashIdentifier(getClientIpAddress(req));
+    const rateLimit = checkInMemoryRateLimit({
+      key: `battle-finish:${ipHash}`,
+      limit: 30,
+      windowMs: 60_000,
+    });
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many battle submissions. Please slow down and retry." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+        }
+      );
+    }
+
     const body = (await req.json()) as Partial<FinishBattlePayload>;
 
     if (

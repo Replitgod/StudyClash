@@ -1,10 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
+
+const CONTINUE_PATH_STORAGE_KEY = "studyclash_last_path";
+const CONTINUE_PATH_EXCLUDE = new Set([
+  "/login",
+  "/signup",
+  "/privacy",
+  "/terms",
+  "/contact",
+]);
 
 function VyraMiniIcon() {
   return (
@@ -26,6 +35,7 @@ function VyraMiniIcon() {
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
+  { label: "Battle AI", href: "/#battle-ai" },
   { label: "Demo", href: "/demo/battle" },
   { label: "Contact", href: "/contact" },
   { label: "Exams", href: "/exams" },
@@ -42,6 +52,7 @@ export default function Navigation() {
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [continuePath, setContinuePath] = useState<string | null>(null);
 
   const navLinks = isLoggedIn
     ? [...NAV_LINKS, { label: "Dashboard", href: "/dashboard" }]
@@ -53,6 +64,23 @@ export default function Navigation() {
   };
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  useEffect(() => {
+    if (!pathname) return;
+
+    try {
+      const saved = window.localStorage.getItem(CONTINUE_PATH_STORAGE_KEY);
+      if (saved && saved !== pathname) {
+        setContinuePath(saved);
+      }
+
+      if (pathname !== "/" && !CONTINUE_PATH_EXCLUDE.has(pathname)) {
+        window.localStorage.setItem(CONTINUE_PATH_STORAGE_KEY, pathname);
+      }
+    } catch {
+      // Ignore localStorage access issues.
+    }
+  }, [pathname]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -82,6 +110,7 @@ export default function Navigation() {
             <Link
               key={link.href}
               href={link.href}
+              aria-current={isActive(link.href) ? "page" : undefined}
               className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-150 ${
                 isActive(link.href)
                   ? "bg-white/10 text-white"
@@ -99,6 +128,14 @@ export default function Navigation() {
             <div className="h-9 w-24 animate-pulse rounded-lg bg-white/5" />
           ) : isLoggedIn ? (
             <>
+              {continuePath && (
+                <Link
+                  href={continuePath}
+                  className="rounded-lg border border-cyan-400/25 bg-cyan-500/10 px-3 py-2 text-sm font-semibold text-cyan-100 transition-colors duration-150 hover:border-cyan-300/40 hover:bg-cyan-500/20"
+                >
+                  Continue
+                </Link>
+              )}
               <Link
                 href="/account"
                 className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-150 ${
@@ -140,6 +177,7 @@ export default function Navigation() {
           onClick={() => setIsMobileMenuOpen((prev) => !prev)}
           className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white md:hidden"
           aria-label="Toggle menu"
+          aria-expanded={isMobileMenuOpen}
         >
           {isMobileMenuOpen ? (
             <svg
@@ -182,6 +220,7 @@ export default function Navigation() {
                 key={link.href}
                 href={link.href}
                 onClick={closeMobileMenu}
+                aria-current={isActive(link.href) ? "page" : undefined}
                 className={`rounded-lg px-3 py-3 text-sm font-semibold transition-colors duration-150 ${
                   isActive(link.href)
                     ? "bg-white/10 text-white"
@@ -198,6 +237,15 @@ export default function Navigation() {
               <div className="h-11 w-full animate-pulse rounded-lg bg-white/5" />
             ) : isLoggedIn ? (
               <>
+                {continuePath && (
+                  <Link
+                    href={continuePath}
+                    onClick={closeMobileMenu}
+                    className="rounded-lg border border-cyan-400/25 bg-cyan-500/10 px-3 py-3 text-sm font-semibold text-cyan-100"
+                  >
+                    Continue where you left off
+                  </Link>
+                )}
                 <Link
                   href="/account"
                   onClick={closeMobileMenu}

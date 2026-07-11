@@ -1,11 +1,50 @@
-export const metadata = {
-  title: "Contact | StudyClash",
-  description: "Contact StudyClash support during public beta.",
+import type { Metadata } from "next";
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyclash.com";
+
+export const metadata: Metadata = {
+  title: "Contact Support",
+  description:
+    "Contact StudyClash support for login issues, deck generation help, battle errors, and beta feedback.",
+  alternates: {
+    canonical: "/contact",
+  },
+  keywords: [
+    "StudyClash support",
+    "study app support",
+    "AI study app help",
+  ],
+  openGraph: {
+    title: "Contact Support | StudyClash",
+    description:
+      "Reach StudyClash support for account, battle, and study workflow help.",
+    url: "/contact",
+    images: ["/opengraph-image"],
+  },
 };
 
 export default function ContactPage() {
+  const contactPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    name: "StudyClash Support Contact",
+    url: `${siteUrl}/contact`,
+    description:
+      "Support contact page for StudyClash users.",
+    mainEntity: {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+    },
+  };
+
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] px-4 py-12 text-white sm:px-6 sm:py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(contactPageSchema),
+        }}
+      />
       <div className="mx-auto w-full max-w-3xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-8">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">StudyClash Support</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight">Contact</h1>

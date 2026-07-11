@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import {
+  checkInMemoryRateLimit,
+  getClientIpAddress,
+  hashIdentifier,
+} from "@/lib/server/apiUtils";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -17,6 +22,23 @@ type RoomRecord = {
 };
 
 export async function POST(request: NextRequest) {
+  const ipHash = hashIdentifier(getClientIpAddress(request));
+  const rateLimit = checkInMemoryRateLimit({
+    key: `classroom-join:${ipHash}`,
+    limit: 40,
+    windowMs: 60_000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many room-join attempts. Please wait and try again." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      }
+    );
+  }
+
   let payload: JoinPayload = {};
   try {
     payload = (await request.json()) as JoinPayload;

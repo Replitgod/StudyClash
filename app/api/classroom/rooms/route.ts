@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+import {
+  getServiceSupabaseClient,
+  requireAuthenticatedUser,
+} from "@/lib/server/apiUtils";
 
 type CreateRoomPayload = {
   title?: string;
@@ -46,21 +46,8 @@ function randomRoomCode(length = 6): string {
 }
 
 async function getAuthorizedUser(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader) return { userId: null as string | null, error: "Unauthorized" };
-
-  const token = authHeader.replace("Bearer ", "");
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser(token);
-
-  if (error || !user) {
-    return { userId: null as string | null, error: "Unauthorized" };
-  }
-
-  return { userId: user.id, error: null as string | null };
+  const auth = await requireAuthenticatedUser(request);
+  return { userId: auth.userId, error: auth.errorResponse };
 }
 
 export async function GET(request: NextRequest) {
@@ -70,7 +57,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: auth.error || "Unauthorized" }, { status: 401 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = getServiceSupabaseClient();
 
     const { data: rooms, error: roomError } = await supabase
       .from("classroom_rooms")
@@ -126,7 +113,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Room title is required." }, { status: 400 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = getServiceSupabaseClient();
 
     const { data: profileData } = await supabase
       .from("profiles")

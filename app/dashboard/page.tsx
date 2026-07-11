@@ -91,6 +91,12 @@ type RoomLimitNotice = {
   upgradeHref?: string;
 };
 
+type GoalProgressState = {
+  dailyBattles: number;
+  weeklyBattles: number;
+  weeklyAccuracy: number;
+};
+
 function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
@@ -147,6 +153,11 @@ export default function DashboardPage() {
     weakest: [],
     recentlyPlayed: [],
     recommendedNextBattle: null,
+  });
+  const [goalProgress, setGoalProgress] = useState<GoalProgressState>({
+    dailyBattles: 0,
+    weeklyBattles: 0,
+    weeklyAccuracy: 0,
   });
 
   useEffect(() => {
@@ -230,7 +241,7 @@ export default function DashboardPage() {
               .limit(5),
             supabase
               .from("matches")
-              .select("correct_answers, total_questions", { count: "exact" })
+              .select("correct_answers, total_questions, created_at", { count: "exact" })
               .in("deck_id", allDeckIds),
           ]);
 
@@ -257,6 +268,51 @@ export default function DashboardPage() {
           );
 
           average = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+
+          const nowMs = Date.now();
+          const startOfTodayMs = (() => {
+            const date = new Date();
+            date.setHours(0, 0, 0, 0);
+            return date.getTime();
+          })();
+          const weekStartMs = nowMs - 6 * 24 * 60 * 60 * 1000;
+
+          const dailyBattles = (allMatchStatsData || []).filter((match) => {
+            const createdAtMs = new Date(String(match.created_at || "")).getTime();
+            return Number.isFinite(createdAtMs) && createdAtMs >= startOfTodayMs;
+          }).length;
+
+          const weeklyEntries = (allMatchStatsData || []).filter((match) => {
+            const createdAtMs = new Date(String(match.created_at || "")).getTime();
+            return Number.isFinite(createdAtMs) && createdAtMs >= weekStartMs;
+          });
+
+          const weeklyBattles = weeklyEntries.length;
+          const weeklyAccuracy =
+            weeklyEntries.length > 0
+              ? Math.round(
+                  (weeklyEntries.reduce(
+                    (sum: number, match: { correct_answers: number | null }) =>
+                      sum + (match.correct_answers || 0),
+                    0
+                  ) /
+                    Math.max(
+                      1,
+                      weeklyEntries.reduce(
+                        (sum: number, match: { total_questions: number | null }) =>
+                          sum + (match.total_questions || 0),
+                        0
+                      )
+                    )) *
+                    100
+                )
+              : 0;
+
+          setGoalProgress({
+            dailyBattles,
+            weeklyBattles,
+            weeklyAccuracy,
+          });
         }
 
         const recentDeckIds = (recentDeckData || []).map((deck: { id: string }) => deck.id);
@@ -649,6 +705,25 @@ export default function DashboardPage() {
     return "Unranked";
   })();
 
+  const estimatedXp = battlesPlayed * 120 + averageAccuracy * 8;
+  const estimatedLevel = Math.floor(estimatedXp / 500) + 1;
+  const xpInLevel = estimatedXp % 500;
+  const dailyGoalTarget = 2;
+  const weeklyGoalTarget = 8;
+  const weeklyAccuracyTarget = 72;
+  const dailyGoalPercent = Math.min(100, Math.round((goalProgress.dailyBattles / dailyGoalTarget) * 100));
+  const weeklyBattlePercent = Math.min(100, Math.round((goalProgress.weeklyBattles / weeklyGoalTarget) * 100));
+  const weeklyAccuracyPercent = Math.min(100, Math.round((goalProgress.weeklyAccuracy / weeklyAccuracyTarget) * 100));
+  const unlockedBadges = [
+    battlesPlayed >= 1 ? "First Clash" : null,
+    averageAccuracy >= 80 ? "Sharp Accuracy" : null,
+    goalProgress.dailyBattles >= dailyGoalTarget ? "Daily Goal Cleared" : null,
+    goalProgress.weeklyBattles >= weeklyGoalTarget && goalProgress.weeklyAccuracy >= weeklyAccuracyTarget
+      ? "Weekly Training Complete"
+      : null,
+    battlesPlayed >= 20 ? "Battle Veteran" : null,
+  ].filter((badge): badge is string => Boolean(badge));
+
   const clashPathPulse = (() => {
     if (battlesPlayed === 0) {
       return {
@@ -853,6 +928,61 @@ export default function DashboardPage() {
             )}
           </div>
         )}
+
+        <div className="rounded-2xl border border-emerald-400/25 bg-gradient-to-br from-emerald-500/[0.08] to-cyan-500/[0.08] p-5 backdrop-blur-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-300">
+                Player Progression
+              </p>
+              <h2 className="mt-1 text-lg font-bold text-white">Level {estimatedLevel} · {arenaTier}</h2>
+              <p className="mt-1 text-sm text-white/65">
+                Keep momentum with daily and weekly study goals.
+              </p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-right">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">XP in level</p>
+              <p className="mt-1 text-base font-black text-emerald-200">{xpInLevel}/500</p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-white/10 bg-black/25 px-3.5 py-3">
+              <p className="text-[10px] uppercase tracking-wider text-white/45">Daily Goal</p>
+              <p className="mt-1 text-sm font-bold text-white">{goalProgress.dailyBattles}/{dailyGoalTarget} battles</p>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300 transition-all duration-500" style={{ width: `${dailyGoalPercent}%` }} />
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-black/25 px-3.5 py-3">
+              <p className="text-[10px] uppercase tracking-wider text-white/45">Weekly Battles</p>
+              <p className="mt-1 text-sm font-bold text-white">{goalProgress.weeklyBattles}/{weeklyGoalTarget}</p>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-300 transition-all duration-500" style={{ width: `${weeklyBattlePercent}%` }} />
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-white/10 bg-black/25 px-3.5 py-3">
+              <p className="text-[10px] uppercase tracking-wider text-white/45">Weekly Accuracy</p>
+              <p className="mt-1 text-sm font-bold text-white">{goalProgress.weeklyAccuracy}% / {weeklyAccuracyTarget}%</p>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div className="h-full rounded-full bg-gradient-to-r from-fuchsia-400 to-amber-300 transition-all duration-500" style={{ width: `${weeklyAccuracyPercent}%` }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-1.5">
+            {(unlockedBadges.length > 0 ? unlockedBadges : ["No badges unlocked yet"]).map((badge) => (
+              <span
+                key={badge}
+                className="rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-100"
+              >
+                {badge}
+              </span>
+            ))}
+          </div>
+        </div>
 
         <div className="rounded-2xl border border-fuchsia-400/25 bg-gradient-to-br from-fuchsia-500/[0.08] to-cyan-500/[0.06] p-5 backdrop-blur-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">

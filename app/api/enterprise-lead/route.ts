@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import {
+  checkInMemoryRateLimit,
+  getBearerToken,
+  getClientIpAddress,
+  getServiceSupabaseClient,
+  hashIdentifier,
+} from "@/lib/server/apiUtils";
 
 type EnterpriseLeadPayload = {
   email?: string;
@@ -9,16 +15,31 @@ type EnterpriseLeadPayload = {
   message?: string;
 };
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string
-);
+const supabase = getServiceSupabaseClient();
 
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export async function POST(req: NextRequest) {
+  const ip = getClientIpAddress(req);
+  const ipHash = hashIdentifier(ip);
+  const rateLimit = checkInMemoryRateLimit({
+    key: `enterprise-lead:${ipHash}`,
+    limit: 6,
+    windowMs: 60_000,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "Too many submissions. Please try again in a minute." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+      }
+    );
+  }
+
   let body: EnterpriseLeadPayload = {};
   try {
     body = (await req.json()) as EnterpriseLeadPayload;
@@ -49,10 +70,7 @@ export async function POST(req: NextRequest) {
     .filter(Boolean)
     .join("\n");
 
-  const authHeader = req.headers.get("authorization") || "";
-  const token = authHeader.startsWith("Bearer ")
-    ? authHeader.slice("Bearer ".length)
-    : null;
+  const token = getBearerToken(req);
 
   let submitterUserId: string | null = null;
   if (token) {
