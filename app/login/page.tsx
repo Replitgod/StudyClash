@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
+import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 const LAST_LOGIN_EMAIL_KEY = "studyclash_last_login_email";
 
@@ -146,7 +147,7 @@ export default function LoginPage() {
   const isAnyLoading = isSubmitting || isGoogleLoading;
 
   return (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       {/* Ambient glow background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
@@ -164,7 +165,7 @@ export default function LoginPage() {
         }}
       />
 
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-14 sm:px-6 sm:py-20">
+      <div className={`relative z-10 flex min-h-dvh flex-col items-center justify-center px-4 pt-14 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {/* Badge */}
         <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />

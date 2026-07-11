@@ -918,15 +918,15 @@ export default function AdminPage() {
                 className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-bold text-white/90">{lead.organization}</p>
-                    <p className="mt-1 text-xs text-white/50">{lead.email}</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-white/90">{lead.organization}</p>
+                    <p className="mt-1 truncate text-xs text-white/50">{lead.email}</p>
                     <p className="mt-1 text-[11px] text-white/35">
                       {lead.role || "Role unknown"}
                       {lead.seats ? ` · ${lead.seats} seats` : ""}
                     </p>
                   </div>
-                  <span className="rounded-full border border-amber-300/25 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-200">
+                  <span className="flex-shrink-0 rounded-full border border-amber-300/25 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-200">
                     {lead.status}
                   </span>
                 </div>

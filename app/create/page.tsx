@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
-import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { FLOATING_ACTION, UI_Z_INDEX } from "@/lib/uiLayout";
 import type { User } from "@supabase/supabase-js";
 import type { Profile } from "@/lib/useAuth";
 
@@ -1645,7 +1645,10 @@ export default function CreateDeck() {
 
       {/* Generation loading overlay */}
       {isGenerating && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#05050a]/90 px-4 backdrop-blur-md">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-[#05050a]/90 px-4 backdrop-blur-md"
+          style={{ zIndex: UI_Z_INDEX.modal }}
+        >
           <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_60px_-15px_rgba(217,70,239,0.4)] sm:p-8">
             {/* Spinning badge */}
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20">

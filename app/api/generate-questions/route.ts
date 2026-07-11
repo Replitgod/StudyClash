@@ -257,6 +257,8 @@ Other rules:
 - No two questions may test the exact same fact or be reworded duplicates of each other.
 - Every question must be unique in what it tests.
 - If the notes do not contain enough distinct material to support ${totalQuestions} unique, non-overlapping questions, do your best to cover every distinct fact, concept, or detail in the notes without repeating yourself.
+- Favor conceptual understanding and application over shallow definition-recall: test whether the student understands WHY something is true or HOW to apply it, not just whether they can repeat a phrase from the notes.
+- Vary the angle across the set: mix direct recall, "why"/"how" conceptual questions, application or scenario-style use of a concept, and at least one question that targets a common misconception (a wrong answer choice should reflect that misconception, not just be randomly incorrect).
 
 Return ONLY valid JSON in this exact shape, with no extra text, no markdown, no code fences:
 {

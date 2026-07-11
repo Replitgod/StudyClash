@@ -16,7 +16,7 @@ export default function FloatingBattleCTA() {
 
   return (
     <div
-      className={`${FLOATING_ACTION.base} left-1/2 w-[calc(100%-1.5rem)] max-w-sm -translate-x-1/2 md:hidden`}
+      className={`${FLOATING_ACTION.raisedRow} left-1/2 w-[calc(100%-1.5rem)] max-w-sm -translate-x-1/2 md:hidden`}
       style={{ zIndex: UI_Z_INDEX.floatingAction }}
     >
       <BattleAILink

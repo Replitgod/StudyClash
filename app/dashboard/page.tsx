@@ -1158,9 +1158,9 @@ export default function DashboardPage() {
                   }`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-bold text-white">{item.title}</p>
-                      <p className="mt-1 text-xs text-white/70">{item.message}</p>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-white">{item.title}</p>
+                      <p className="mt-1 break-words text-xs text-white/70">{item.message}</p>
                       <p className="mt-1 text-[11px] text-white/45">{formatDate(item.created_at)}</p>
                     </div>
                     {!item.is_read && (
@@ -1293,12 +1293,12 @@ export default function DashboardPage() {
                   className="rounded-xl border border-white/10 bg-black/20 px-4 py-3"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-bold text-white">{room.title}</p>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-white">{room.title}</p>
                       <p className="mt-1 text-xs text-white/60">
                         Code: <span className="font-black tracking-[0.16em] text-amber-200">{room.share_code || room.room_code}</span>
                       </p>
-                      <p className="mt-1 text-xs text-white/45">
+                      <p className="mt-1 truncate text-xs text-white/45">
                         {room.deck_title || "No deck linked yet"}
                       </p>
                     </div>
@@ -1390,12 +1390,12 @@ export default function DashboardPage() {
             ) : (
               <div className="space-y-3">
                 {recentDecks.map((deck) => (
-                  <Link key={deck.id} href={`/decks/${deck.id}`} className="flex items-start justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3 transition-colors hover:border-fuchsia-400/30">
-                    <div>
-                      <p className="text-sm font-semibold text-white">{deck.title}</p>
-                      <p className="mt-1 text-xs text-white/45">{deck.course_name}</p>
+                  <Link key={deck.id} href={`/decks/${deck.id}`} className="flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 transition-colors hover:border-fuchsia-400/30">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-white">{deck.title}</p>
+                      <p className="mt-1 truncate text-xs text-white/45">{deck.course_name}</p>
                     </div>
-                    <span className="text-xs text-white/40">{formatDate(deck.created_at)}</span>
+                    <span className="flex-shrink-0 text-xs text-white/40">{formatDate(deck.created_at)}</span>
                   </Link>
                 ))}
               </div>
@@ -1427,11 +1427,11 @@ export default function DashboardPage() {
                 {recentMatches.map((match) => (
                   <div key={match.id} className="rounded-xl border border-white/10 bg-black/20 px-4 py-3">
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-white">{match.player_name}</p>
-                        <p className="mt-1 text-xs text-white/45">{match.deck_title || "Study deck"}</p>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-white">{match.player_name}</p>
+                        <p className="mt-1 truncate text-xs text-white/45">{match.deck_title || "Study deck"}</p>
                       </div>
-                      <div className="text-right">
+                      <div className="flex-shrink-0 text-right">
                         <p className="text-sm font-bold text-fuchsia-300">{match.score} pts</p>
                         <p className="text-xs text-white/40">{formatTime(match.time_taken_seconds)}</p>
                       </div>

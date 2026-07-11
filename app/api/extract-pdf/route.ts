@@ -10,6 +10,9 @@ import {
 export const runtime = "nodejs";
 
 const MAX_PDF_SIZE_BYTES = 8 * 1024 * 1024;
+// Matches generate-questions' MAX_NOTES_CHARACTERS -- a densely-packed PDF
+// could otherwise extract to a multi-megabyte text payload with no cap.
+const MAX_EXTRACTED_TEXT_CHARACTERS = 120_000;
 
 export async function POST(req: NextRequest) {
   try {
@@ -68,16 +71,18 @@ export async function POST(req: NextRequest) {
     const uint8Array = new Uint8Array(arrayBuffer);
 
     const result = await extractText(uint8Array);
-    const extractedText = Array.isArray(result.text)
+    const rawExtractedText = Array.isArray(result.text)
       ? result.text.join("\n").trim()
       : String(result.text || "").trim();
 
-    if (!extractedText) {
+    if (!rawExtractedText) {
       return NextResponse.json(
         { error: "Could not extract text from this PDF." },
         { status: 400 }
       );
     }
+
+    const extractedText = rawExtractedText.slice(0, MAX_EXTRACTED_TEXT_CHARACTERS);
 
     return NextResponse.json({ text: extractedText });
   } catch (error) {

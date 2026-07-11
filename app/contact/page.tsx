@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyclash.com";
 
@@ -45,7 +46,7 @@ export default function ContactPage() {
   };
 
   return (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] px-4 py-12 text-white sm:px-6 sm:py-16">
+    <main className={`relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] px-4 pt-12 text-white sm:px-6 sm:pt-16 ${FLOATING_ACTION.mobileBottomPadding}`}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{

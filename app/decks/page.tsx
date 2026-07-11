@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
+import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 type Deck = {
   id: string;
@@ -80,7 +81,7 @@ export default function DecksPage() {
 
   if (isAuthLoading) {
     return (
-      <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+      <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
           <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
@@ -94,7 +95,7 @@ export default function DecksPage() {
             backgroundSize: "48px 48px",
           }}
         />
-        <div className="relative z-10 flex min-h-screen items-center justify-center px-4">
+        <div className="relative z-10 flex min-h-dvh items-center justify-center px-4">
           <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-8 text-center backdrop-blur-sm">
             <svg className="h-10 w-10 animate-spin text-fuchsia-400" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -109,7 +110,7 @@ export default function DecksPage() {
 
   if (!isLoggedIn) {
     return (
-      <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+      <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
           <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
@@ -123,7 +124,7 @@ export default function DecksPage() {
             backgroundSize: "48px 48px",
           }}
         />
-        <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
+        <div className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-12">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm sm:p-8">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-fuchsia-500/10">
               <svg className="h-6 w-6 text-fuchsia-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -150,7 +151,7 @@ export default function DecksPage() {
   }
 
   return (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       {/* Ambient glow background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
@@ -168,7 +169,7 @@ export default function DecksPage() {
         }}
       />
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center px-4 py-12 sm:px-6 sm:py-20">
+      <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-5xl flex-col items-center px-4 pt-12 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {/* Badge */}
         <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />

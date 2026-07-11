@@ -108,6 +108,12 @@ const FREE_DAILY_VYRA_CAP = 80;
 const DEFAULT_DAILY_VYRA_CAP = 180;
 const VYRA_UNAUTH_WINDOW_MS = 60_000;
 const VYRA_UNAUTH_LIMIT = 12;
+// Anonymous callers have no per-day cap otherwise (only the per-minute burst
+// limit above), so a slow/distributed anonymous client could otherwise call
+// this OpenAI-backed endpoint indefinitely. Mirrors the authenticated free
+// plan's daily ceiling, keyed by IP instead of user id.
+const VYRA_UNAUTH_DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
+const VYRA_UNAUTH_DAILY_LIMIT = 60;
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -583,6 +589,25 @@ export async function POST(req: NextRequest) {
           {
             status: 429,
             headers: { "Retry-After": String(limit.retryAfterSeconds) },
+          }
+        );
+      }
+
+      const dailyLimit = checkInMemoryRateLimit({
+        key: `vyra-chat-unauth-daily:${ipHash}`,
+        limit: VYRA_UNAUTH_DAILY_LIMIT,
+        windowMs: VYRA_UNAUTH_DAILY_WINDOW_MS,
+      });
+
+      if (!dailyLimit.allowed) {
+        return NextResponse.json(
+          {
+            error:
+              "Daily VYRA limit reached for guest usage. Sign in for a higher daily limit.",
+          },
+          {
+            status: 429,
+            headers: { "Retry-After": String(dailyLimit.retryAfterSeconds) },
           }
         );
       }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 type Match = {
   id: string;
@@ -79,7 +80,7 @@ function coerceDeck(value: unknown): Deck | null {
 
 function Background({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
         <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
@@ -93,7 +94,7 @@ function Background({ children }: { children: React.ReactNode }) {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-4xl flex-col items-center px-4 py-10 sm:px-6 sm:py-16">
+      <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-4xl flex-col items-center px-4 pt-10 sm:px-6 sm:pt-16 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {children}
       </div>
     </main>

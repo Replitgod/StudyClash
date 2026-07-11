@@ -62,6 +62,38 @@ function buildAnswerSignature(answer: AnswerPayload): string {
   ].join("|");
 }
 
+// Mirrors the exact scoring formula in app/battle/[deckId]/page.tsx and
+// app/demo/battle/page.tsx (calculatePointsForStreak) so the leaderboard
+// score is always recomputed server-side from the validated answer
+// sequence, never trusted from the client. Deterministic given the answers'
+// submission order and correctness, both of which are already verified
+// above against the deck's real questions.
+const BASE_POINTS_PER_CORRECT = 100;
+const STREAK_BONUS_TIER_1 = 25; // 3+ streak
+const STREAK_BONUS_TIER_2 = 50; // 5+ streak
+
+function calculatePointsForStreak(streak: number): number {
+  if (streak >= 5) return BASE_POINTS_PER_CORRECT + STREAK_BONUS_TIER_2;
+  if (streak >= 3) return BASE_POINTS_PER_CORRECT + STREAK_BONUS_TIER_1;
+  return BASE_POINTS_PER_CORRECT;
+}
+
+function computeAuthoritativeScore(answers: AnswerPayload[]): number {
+  let streak = 0;
+  let score = 0;
+
+  for (const answer of answers) {
+    if (answer.isCorrect) {
+      streak += 1;
+      score += calculatePointsForStreak(streak);
+    } else {
+      streak = 0;
+    }
+  }
+
+  return score;
+}
+
 function isValidAnswerPayload(value: unknown): value is AnswerPayload {
   if (!value || typeof value !== "object") return false;
 
@@ -211,6 +243,19 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (body.timeTakenSeconds < 0) {
+      return NextResponse.json(
+        { error: "This battle reported an invalid completion time." },
+        { status: 400 }
+      );
+    }
+
+    // Never trust the client-submitted score for storage/leaderboards --
+    // recompute it from the server-validated answer sequence using the same
+    // formula the client uses, so a crafted payload can't forge a leaderboard
+    // score or boss-battle win.
+    const authoritativeScore = computeAuthoritativeScore(body.answers);
+
     // Deduplicate accidental rapid re-submits of the exact same completed
     // battle payload (for example, retry taps after transient network lag).
     const dedupeWindowStart = new Date(Date.now() - 2 * 60 * 1000).toISOString();
@@ -219,7 +264,7 @@ export async function POST(req: NextRequest) {
       .select("id, created_at")
       .eq("deck_id", body.deckId)
       .eq("player_name", body.playerName)
-      .eq("score", body.score)
+      .eq("score", authoritativeScore)
       .eq("total_questions", body.totalQuestions)
       .eq("correct_answers", body.correctAnswers)
       .eq("time_taken_seconds", body.timeTakenSeconds)
@@ -284,7 +329,7 @@ export async function POST(req: NextRequest) {
         deck_id: body.deckId,
         player_name: body.playerName,
         user_id: authenticatedUserId,
-        score: body.score,
+        score: authoritativeScore,
         total_questions: body.totalQuestions,
         correct_answers: body.correctAnswers,
         time_taken_seconds: body.timeTakenSeconds,
@@ -330,7 +375,7 @@ export async function POST(req: NextRequest) {
       normalizedPreviousTop.player_name.trim().toLowerCase() !==
         body.playerName.trim().toLowerCase() &&
       didBeatMatch({
-        score: body.score,
+        score: authoritativeScore,
         timeTakenSeconds: body.timeTakenSeconds,
         previous: normalizedPreviousTop,
       })

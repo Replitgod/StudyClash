@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
 import BattleAILink from "./BattleAILink";
+import { UI_Z_INDEX } from "@/lib/uiLayout";
 
 const CONTINUE_PATH_STORAGE_KEY = "studyclash_last_path";
 const CONTINUE_PATH_EXCLUDE = new Set([
@@ -127,7 +128,10 @@ export default function Navigation() {
   };
 
   return (
-    <nav className="sticky top-0 z-30 w-full border-b border-white/10 bg-[#05050a]/80 backdrop-blur-md">
+    <nav
+      className="sticky top-0 w-full border-b border-white/10 bg-[#05050a]/80 backdrop-blur-md"
+      style={{ zIndex: UI_Z_INDEX.stickyHeader }}
+    >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6">
         {/* Logo */}
         <Link

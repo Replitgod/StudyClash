@@ -400,11 +400,11 @@ export default function VyraCoach(props: VyraCoachProps) {
         </span>
       </button>
 
-      {isOpen && !isDocked && (
+      {isOpen && (
         <button
           aria-label="Close VYRA panel"
           onClick={() => setIsOpen(false)}
-          className="fixed inset-0 bg-black/45 backdrop-blur-[1px]"
+          className={`fixed inset-0 bg-black/45 backdrop-blur-[1px] ${isDocked ? "xl:hidden" : ""}`}
           style={{ zIndex: UI_Z_INDEX.vyraPanel - 1 }}
         />
       )}

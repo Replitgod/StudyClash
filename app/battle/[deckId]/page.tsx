@@ -9,6 +9,7 @@ import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
 import VyraCoach from "@/app/components/VyraCoach";
 import ConfettiBurst from "@/app/components/ConfettiBurst";
+import { UI_Z_INDEX } from "@/lib/uiLayout";
 import {
   calculateLevel,
   getGoalProgress,
@@ -2287,7 +2288,10 @@ export default function BattlePage() {
           <ConfettiBurst show={showRewardBurst} />
 
           {introCountdown !== null && (
-            <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#030812]/85 backdrop-blur-sm">
+            <div
+              className="absolute inset-0 flex items-center justify-center bg-[#030812]/85 backdrop-blur-sm"
+              style={{ zIndex: UI_Z_INDEX.pageContent }}
+            >
               <div className="text-center" style={{ animation: "pulse-enter 260ms ease-out" }}>
                 <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-200">
                   Battle Intro

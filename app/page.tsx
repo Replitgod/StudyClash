@@ -3,6 +3,7 @@ import Link from "next/link";
 import VyraCoach from "./components/VyraCoach";
 import InstantAIBattle from "./components/InstantAIBattle";
 import AutoplayDemoRail from "./components/AutoplayDemoRail";
+import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyclash.com";
 
@@ -363,7 +364,7 @@ export default function Home() {
         <div className="absolute -right-40 bottom-[-120px] h-[560px] w-[560px] rounded-full bg-emerald-400/15 blur-[130px]" />
       </div>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-4 pb-24 pt-10 sm:px-6 sm:pt-14">
+      <div className={`relative z-10 mx-auto flex w-full max-w-6xl flex-col px-4 pt-10 sm:px-6 sm:pt-14 ${FLOATING_ACTION.mobileBottomPadding}`}>
         <header className="grid gap-8 lg:grid-cols-[1.05fr_1fr] lg:items-center">
           <div>
             <p className="inline-flex items-center gap-2 rounded-full border border-cyan-300/35 bg-cyan-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-cyan-100">

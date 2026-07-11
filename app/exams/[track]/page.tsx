@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 const TRACK_DETAILS: Record<
   string,
@@ -49,13 +50,13 @@ export default async function ExamTrackPage({
   };
 
   return (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
         <div className="absolute top-1/3 -left-40 h-[420px] w-[420px] rounded-full bg-cyan-500/20 blur-[120px]" />
       </div>
 
-      <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-4xl flex-col px-4 py-14 sm:px-6 sm:py-20">
+      <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-4xl flex-col px-4 pt-14 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
         <Link href="/exams" className="w-fit text-sm font-semibold text-cyan-300">
           &larr; Back to exam tunnels
         </Link>
