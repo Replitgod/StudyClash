@@ -62,7 +62,7 @@ export default function ContactPage() {
         <div className="mt-6 grid gap-3 text-sm sm:grid-cols-2">
           <div className="rounded-xl border border-white/10 bg-black/20 p-4">
             <p className="font-bold text-white">Beta support email</p>
-            <p className="mt-1 text-white/70">support@studyclash.app</p>
+            <p className="mt-1 text-white/70">siddharthdatla582@gmail.com</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4">
             <p className="font-bold text-white">Response window</p>

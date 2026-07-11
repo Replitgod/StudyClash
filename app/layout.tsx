@@ -112,7 +112,7 @@ const organizationSchema = {
     {
       "@type": "ContactPoint",
       contactType: "customer support",
-      email: "support@studyclash.app",
+      email: "siddharthdatla582@gmail.com",
       areaServed: "Worldwide",
       availableLanguage: ["English"],
       url: `${siteUrl}/contact`,

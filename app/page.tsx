@@ -651,7 +651,7 @@ export default function Home() {
                 <Link href="/demo/battle" className="text-cyan-200 hover:text-cyan-100">Study battle</Link> and flashcard battle demo
               </li>
               <li>
-                <Link href="/exams" className="text-cyan-200 hover:text-cyan-100">SAT study app</Link> and AP study app workflows
+                <Link href="/exams" className="text-cyan-200 hover:text-cyan-100">Premium Tunnel Options</Link> for exam-focused workflows
               </li>
               <li>
                 <Link href="/create" className="text-cyan-200 hover:text-cyan-100">AI flashcards</Link> from your own notes
@@ -664,7 +664,7 @@ export default function Home() {
               { href: "/create", label: "AI Study App" },
               { href: "/demo/battle", label: "Study Battle" },
               { href: "/pricing", label: "Quizlet Alternative" },
-              { href: "/exams", label: "SAT Study App" },
+              { href: "/exams", label: "Premium Tunnel Options" },
               { href: "/mastery-map", label: "AI Learning Platform" },
               { href: "/clashrank", label: "Competitive Studying" },
             ].map((item) => (
@@ -707,7 +707,7 @@ export default function Home() {
               <Link href="/create" className="hover:text-white">Create</Link>
               <Link href="/demo/battle" className="hover:text-white">Demo</Link>
               <Link href="/pricing" className="hover:text-white">Pricing</Link>
-              <Link href="/exams" className="hover:text-white">SAT Study App</Link>
+              <Link href="/exams" className="hover:text-white">Premium Tunnel Options</Link>
               <Link href="/privacy" className="hover:text-white">Privacy</Link>
               <Link href="/terms" className="hover:text-white">Terms</Link>
             </nav>
