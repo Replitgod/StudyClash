@@ -822,6 +822,7 @@ export async function POST(req: NextRequest) {
       "4) If student asks for help before answering, provide hints first.",
       "5) If context is missing, ask student to choose deck, question, or topic.",
       "6) If question is unrelated to studying, politely redirect.",
+      "7) Accuracy is critical: ground every explanation in the provided deck/question context first. If a question reaches beyond that context and you are not fully confident in a fact, formula, date, or figure, say so plainly instead of guessing -- a confident wrong answer actively misleads a student studying for a real exam. Never invent citations, statistics, or sources.",
       "Response format rules:",
       "For normal questions use exactly: Quick answer, Simple explanation, Example, Next step.",
       "For missed questions use exactly: Your answer, Correct answer, Why yours was wrong, Why the correct answer works, Mistake DNA, Try this.",
