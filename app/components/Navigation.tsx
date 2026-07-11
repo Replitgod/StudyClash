@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
+import BattleAILink from "./BattleAILink";
 
 const CONTINUE_PATH_STORAGE_KEY = "studyclash_last_path";
 const CONTINUE_PATH_EXCLUDE = new Set([
@@ -35,7 +36,7 @@ function VyraMiniIcon() {
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Battle AI", href: "/#battle-ai" },
+  { label: "Battle AI", href: "/#battle-ai", isBattle: true },
   { label: "Demo", href: "/demo/battle" },
   { label: "Create", href: "/create" },
   { label: "Decks", href: "/decks", authOnly: true },
@@ -44,12 +45,6 @@ const NAV_LINKS = [
   { label: "Pricing", href: "/pricing" },
   { label: "Contact", href: "/contact" },
   { label: "Classroom", href: "/classroom" },
-];
-
-const AUTH_MINIMAL_LINKS = [
-  { label: "Home", href: "/" },
-  { label: "Demo", href: "/demo/battle" },
-  { label: "Pricing", href: "/pricing" },
 ];
 
 export default function Navigation() {
@@ -61,16 +56,18 @@ export default function Navigation() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [continuePath, setContinuePath] = useState<string | null>(null);
 
-  const isAuthPage = pathname === "/login" || pathname === "/signup";
-
   const fullNavLinks = NAV_LINKS.filter((link) => {
     if (link.authOnly) return isLoggedIn;
     return true;
   });
-
-  const navLinks = isAuthPage ? AUTH_MINIMAL_LINKS : fullNavLinks;
+  const navLinks = fullNavLinks;
 
   const isActive = (href: string) => {
+    if (href.includes("#")) {
+      const [base] = href.split("#");
+      return pathname === (base || "/");
+    }
+
     if (href === "/") return pathname === "/";
     return pathname === href || pathname.startsWith(`${href}/`);
   };
@@ -147,28 +144,46 @@ export default function Navigation() {
         {/* Desktop nav links */}
         <div className="hidden items-center gap-1 md:flex">
           {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              aria-current={isActive(link.href) ? "page" : undefined}
-              className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-150 ${
-                isActive(link.href)
-                  ? "bg-white/10 text-white"
-                  : "text-white/60 hover:bg-white/5 hover:text-white/90"
-              }`}
-            >
-              {link.label}
-            </Link>
+            link.isBattle ? (
+              <BattleAILink
+                key={link.href}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-150 ${
+                  isActive(link.href)
+                    ? "bg-white/10 text-white"
+                    : "text-white/60 hover:bg-white/5 hover:text-white/90"
+                }`}
+              >
+                {link.label}
+              </BattleAILink>
+            ) : (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={isActive(link.href) ? "page" : undefined}
+                className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-150 ${
+                  isActive(link.href)
+                    ? "bg-white/10 text-white"
+                    : "text-white/60 hover:bg-white/5 hover:text-white/90"
+                }`}
+              >
+                {link.label}
+              </Link>
+            )
           ))}
         </div>
 
         {/* Desktop auth section */}
         <div className="hidden items-center gap-2 md:flex">
+          <BattleAILink
+            className="rounded-lg bg-gradient-to-r from-cyan-300 to-emerald-300 px-3 py-2 text-sm font-black text-[#052538] shadow-[0_0_22px_-8px_rgba(34,211,238,0.8)] transition-transform duration-200 hover:scale-[1.03] active:scale-95"
+          >
+            Battle AI Now
+          </BattleAILink>
           <Link
             href={isLoggedIn ? "/create" : "/signup?redirect=/create"}
             className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-sm font-bold text-cyan-100 transition-colors duration-150 hover:border-cyan-300/45 hover:bg-cyan-500/20"
           >
-            Quick Start
+            Create Deck
           </Link>
           {isLoading ? (
             <div className="h-9 w-24 animate-pulse rounded-lg bg-white/5" />
@@ -261,28 +276,49 @@ export default function Navigation() {
       {isMobileMenuOpen && (
         <div className="border-t border-white/10 bg-[#05050a]/95 px-4 py-4 backdrop-blur-md md:hidden">
           <div className="flex flex-col gap-1">
+            <BattleAILink
+              onClick={closeMobileMenu}
+              className="mb-2 flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-300 to-emerald-300 px-3 py-3 text-sm font-black text-[#052538]"
+            >
+              Battle AI Now
+            </BattleAILink>
+
             <Link
               href={isLoggedIn ? "/create" : "/signup?redirect=/create"}
               onClick={closeMobileMenu}
               className="mb-2 flex items-center justify-center rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-3 py-3 text-sm font-bold text-cyan-100"
             >
-              Quick Start a Battle Deck
+              Create Deck
             </Link>
 
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={closeMobileMenu}
-                aria-current={isActive(link.href) ? "page" : undefined}
-                className={`rounded-lg px-3 py-3 text-sm font-semibold transition-colors duration-150 ${
-                  isActive(link.href)
-                    ? "bg-white/10 text-white"
-                    : "text-white/60 hover:bg-white/5 hover:text-white/90"
-                }`}
-              >
-                {link.label}
-              </Link>
+              link.isBattle ? (
+                <BattleAILink
+                  key={link.href}
+                  onClick={closeMobileMenu}
+                  className={`rounded-lg px-3 py-3 text-sm font-semibold transition-colors duration-150 ${
+                    isActive(link.href)
+                      ? "bg-white/10 text-white"
+                      : "text-white/60 hover:bg-white/5 hover:text-white/90"
+                  }`}
+                >
+                  {link.label}
+                </BattleAILink>
+              ) : (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={closeMobileMenu}
+                  aria-current={isActive(link.href) ? "page" : undefined}
+                  className={`rounded-lg px-3 py-3 text-sm font-semibold transition-colors duration-150 ${
+                    isActive(link.href)
+                      ? "bg-white/10 text-white"
+                      : "text-white/60 hover:bg-white/5 hover:text-white/90"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              )
             ))}
 
             <div className="my-2 h-px bg-white/10" />

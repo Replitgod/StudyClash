@@ -111,3 +111,12 @@ textarea:-webkit-autofill:focus {
     opacity: 0;
   }
 }
+
+@keyframes demoFill {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}

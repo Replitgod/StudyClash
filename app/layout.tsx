@@ -1,4 +1,6 @@
 import FeedbackButton from "./components/FeedbackButton";
+import FloatingBattleCTA from "./components/FloatingBattleCTA";
+import HashAnchorScroller from "./components/HashAnchorScroller";
 import Navigation from "./components/Navigation";
 import { AuthProvider } from "@/lib/useAuth";
 import type { Metadata, Viewport } from "next";
@@ -126,6 +128,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
@@ -137,6 +140,7 @@ export default function RootLayout({
           }}
         />
         <AuthProvider>
+          <HashAnchorScroller />
           <a
             href="#main-content"
             className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[120] focus:rounded-lg focus:bg-[#0b1f2a] focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-cyan-100"
@@ -145,6 +149,7 @@ export default function RootLayout({
           </a>
           <Navigation />
           <div id="main-content" className="flex-1">{children}</div>
+          <FloatingBattleCTA />
           <FeedbackButton />
         </AuthProvider>
       </body>

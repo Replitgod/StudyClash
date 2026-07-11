@@ -8,6 +8,7 @@ type Scene = {
   subtitle: string;
   accent: string;
   metric: string;
+  callout: string;
 };
 
 const SCENES: Scene[] = [
@@ -17,6 +18,7 @@ const SCENES: Scene[] = [
     subtitle: "Drop PDF or paste class notes",
     accent: "from-sky-400/40 to-cyan-400/10",
     metric: "2 files in 12s",
+    callout: "Drag and drop works on mobile and desktop",
   },
   {
     id: "generate",
@@ -24,6 +26,7 @@ const SCENES: Scene[] = [
     subtitle: "Topic-aware, exam-style prompts",
     accent: "from-violet-400/40 to-fuchsia-400/10",
     metric: "15 questions ready",
+    callout: "Auto-tuned for level and difficulty",
   },
   {
     id: "battle-ai",
@@ -31,6 +34,7 @@ const SCENES: Scene[] = [
     subtitle: "Easy, Medium, Hard, Adaptive",
     accent: "from-amber-400/40 to-orange-400/10",
     metric: "No lobby",
+    callout: "Tap start and answer instantly",
   },
   {
     id: "live",
@@ -38,6 +42,7 @@ const SCENES: Scene[] = [
     subtitle: "Live score + realistic AI timings",
     accent: "from-rose-400/40 to-orange-400/10",
     metric: "Round 3 / 5",
+    callout: "See your pace vs AI pace",
   },
   {
     id: "winning",
@@ -45,6 +50,7 @@ const SCENES: Scene[] = [
     subtitle: "Instant result with streak feedback",
     accent: "from-emerald-400/40 to-lime-400/10",
     metric: "You 4 • AI 3",
+    callout: "Clear winner with next-step actions",
   },
   {
     id: "weak-topics",
@@ -52,6 +58,7 @@ const SCENES: Scene[] = [
     subtitle: "Find what to fix next",
     accent: "from-cyan-400/40 to-blue-400/10",
     metric: "3 key gaps",
+    callout: "Target the exact concepts you missed",
   },
   {
     id: "rematch",
@@ -59,6 +66,7 @@ const SCENES: Scene[] = [
     subtitle: "Retry focused topics immediately",
     accent: "from-fuchsia-400/40 to-purple-400/10",
     metric: "Rematch in 1 tap",
+    callout: "Momentum stays high after each round",
   },
 ];
 
@@ -101,20 +109,21 @@ export default function AutoplayDemoRail() {
           </div>
 
           <p className="mt-2 text-sm font-semibold text-white/90">{SCENES[index].subtitle}</p>
+          <p className="mt-1 text-xs text-white/75">{SCENES[index].callout}</p>
 
           <div className="mt-5 grid grid-cols-12 gap-2">
             <div className="col-span-8 space-y-2">
-              <div className="h-3 rounded bg-white/30" />
-              <div className="h-3 w-4/5 rounded bg-white/25" />
-              <div className="h-3 w-3/5 rounded bg-white/20" />
+              <div className="h-3 rounded bg-white/30 animate-pulse" />
+              <div className="h-3 w-4/5 rounded bg-white/25 animate-pulse" />
+              <div className="h-3 w-3/5 rounded bg-white/20 animate-pulse" />
               <div className="mt-2 rounded-lg border border-white/25 bg-white/10 px-2 py-1 text-[11px] font-semibold text-white/85">
                 {SCENES[index].metric}
               </div>
             </div>
             <div className="col-span-4 rounded-xl border border-white/20 bg-white/10 p-2">
               <div className="flex h-full flex-col rounded-lg border border-white/20 bg-white/10 p-2">
-                <div className="h-2 rounded bg-white/25" />
-                <div className="mt-2 h-2 w-4/5 rounded bg-white/20" />
+                <div className="h-2 rounded bg-white/25 animate-pulse" />
+                <div className="mt-2 h-2 w-4/5 rounded bg-white/20 animate-pulse" />
                 <div className="mt-2 flex-1 rounded border border-white/15 bg-black/15" />
               </div>
             </div>
@@ -123,6 +132,13 @@ export default function AutoplayDemoRail() {
           <div className="mt-5 flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2">
             <span className="text-xs font-bold uppercase tracking-wider text-white/80">Scene {index + 1} of {SCENES.length}</span>
             <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-200" />
+          </div>
+
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/20" aria-hidden="true">
+            <div
+              key={`progress-${SCENES[index].id}`}
+              className="h-full bg-cyan-300/90 animate-[demoFill_2600ms_linear_forwards]"
+            />
           </div>
         </div>
       </div>
