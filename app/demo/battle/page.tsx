@@ -457,7 +457,7 @@ export default function DemoBattlePage() {
 							</span>
 						</h1>
 						<p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-white/60 sm:text-base">
-							This SAT Math / Algebra sample deck shows the exact tutoring-center experience: answer questions, see your score, review weak topics, and jump straight into topic-specific study links.
+							This SAT Math / Algebra practice deck shows the exact tutoring-center experience: answer questions, see your score, review weak topics, and jump straight into topic-specific study links.
 						</p>
 
 						<p className="mx-auto mt-3 max-w-xl rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-center text-xs font-semibold text-cyan-100 sm:text-sm">
@@ -467,7 +467,7 @@ export default function DemoBattlePage() {
 						<div className="mt-8 grid gap-4 md:grid-cols-3">
 							{[
 								{ title: "1. Start instantly", text: "No upload, no deck setup, no login required." },
-								{ title: "2. Answer 6 questions", text: "A quick SAT Math sample that feels like the real battle." },
+								{ title: "2. Answer 6 questions", text: "A quick SAT Math set that feels like the real battle." },
 								{ title: "3. Review what matters", text: "Weak-topic report, study links, and a 3-day plan." },
 							].map((item) => (
 								<div key={item.title} className="rounded-2xl border border-white/10 bg-black/20 p-4">

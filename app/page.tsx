@@ -544,10 +544,11 @@ export default function Home() {
             </div>
           )}
 
-          <p className="mt-4 text-xs text-white/55">
-            When verified analytics are available, this section automatically displays real metrics from
-            <span className="font-semibold text-white/75"> PUBLIC_USAGE_METRICS_JSON</span>.
-          </p>
+          {!hasVerifiedUsageMetrics && (
+            <p className="mt-4 text-sm text-white/65">
+              StudyClash is in active early access. We are onboarding students and educators in small waves, collecting feedback, and improving weekly before wider release.
+            </p>
+          )}
         </section>
 
         <section className="mt-16" aria-label="Early beta feedback themes">
