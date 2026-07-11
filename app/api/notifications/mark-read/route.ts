@@ -34,25 +34,10 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = getServiceSupabaseClient();
 
-    const profileResult = await supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", auth.userId)
-      .maybeSingle();
-
-    const displayName =
-      typeof profileResult.data?.display_name === "string"
-        ? profileResult.data.display_name.trim()
-        : "";
-
     let scopeQuery = supabase
       .from("challenge_notifications")
       .select("id")
-      .or(
-        displayName
-          ? `target_user_id.eq.${auth.userId},target_player_name.ilike.${displayName}`
-          : `target_user_id.eq.${auth.userId}`
-      );
+      .eq("target_user_id", auth.userId);
 
     if (!body.markAll && ids.length > 0) {
       scopeQuery = scopeQuery.in("id", ids);

@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyclash.com";
 
 export const metadata: Metadata = {
-  title: "Contact Support",
+  title: "Contact StudyClash Support",
   description:
-    "Contact StudyClash support for login issues, deck generation help, battle errors, and beta feedback.",
+    "Contact StudyClash support for account help, AI deck generation issues, battle troubleshooting, and beta feedback.",
   alternates: {
     canonical: "/contact",
   },
@@ -20,6 +20,13 @@ export const metadata: Metadata = {
       "Reach StudyClash support for account, battle, and study workflow help.",
     url: "/contact",
     images: ["/opengraph-image"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contact Support | StudyClash",
+    description:
+      "Get help with account access, AI generation, and study battle issues.",
+    images: ["/twitter-image"],
   },
 };
 

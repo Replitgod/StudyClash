@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
+import {
+  checkInMemoryRateLimit,
+  getClientIpAddress,
+  hashIdentifier,
+} from "@/lib/server/apiUtils";
 
 type CoachAction =
   | "ask"
@@ -101,6 +106,8 @@ type QuestionRow = {
 const FREE_PLAN_IDS = new Set(["free_beta"]);
 const FREE_DAILY_VYRA_CAP = 80;
 const DEFAULT_DAILY_VYRA_CAP = 180;
+const VYRA_UNAUTH_WINDOW_MS = 60_000;
+const VYRA_UNAUTH_LIMIT = 12;
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -560,6 +567,25 @@ export async function POST(req: NextRequest) {
         data: { user },
       } = await supabase.auth.getUser(accessToken);
       authedUserId = user?.id || null;
+    }
+
+    if (!authedUserId) {
+      const ipHash = hashIdentifier(getClientIpAddress(req));
+      const limit = checkInMemoryRateLimit({
+        key: `vyra-chat-unauth:${ipHash}`,
+        limit: VYRA_UNAUTH_LIMIT,
+        windowMs: VYRA_UNAUTH_WINDOW_MS,
+      });
+
+      if (!limit.allowed) {
+        return NextResponse.json(
+          { error: "Too many VYRA requests. Please wait and try again." },
+          {
+            status: 429,
+            headers: { "Retry-After": String(limit.retryAfterSeconds) },
+          }
+        );
+      }
     }
 
     if (authedUserId) {

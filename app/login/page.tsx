@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
+
+const LAST_LOGIN_EMAIL_KEY = "studyclash_last_login_email";
 
 // Reads a "?redirect=" query param directly from window.location instead of
 // using Next.js's useSearchParams() hook. useSearchParams() requires a
@@ -44,6 +46,20 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      const savedEmail = window.localStorage.getItem(LAST_LOGIN_EMAIL_KEY);
+      if (savedEmail) {
+        setEmail(savedEmail);
+      }
+    } catch {
+      // Ignore localStorage access issues.
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +95,12 @@ export default function LoginPage() {
       }
 
       const target = getSafeRedirectTarget("/account");
+
+      try {
+        window.localStorage.setItem(LAST_LOGIN_EMAIL_KEY, email.trim());
+      } catch {
+        // Ignore localStorage access issues.
+      }
 
       router.push(target);
     } catch (err) {
@@ -206,6 +228,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 autoComplete="email"
+                autoFocus
                 required
                 disabled={isAnyLoading}
                 className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 disabled:opacity-50 sm:py-3 sm:text-sm"
@@ -219,17 +242,27 @@ export default function LoginPage() {
               >
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                autoComplete="current-password"
-                required
-                disabled={isAnyLoading}
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 disabled:opacity-50 sm:py-3 sm:text-sm"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  required
+                  disabled={isAnyLoading}
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 pr-12 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 disabled:opacity-50 sm:py-3 sm:text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-white/55 transition-colors duration-150 hover:bg-white/10 hover:text-white/80"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? "Hide" : "Show"}
+                </button>
+              </div>
             </div>
 
             <button
@@ -251,7 +284,11 @@ export default function LoginPage() {
             </button>
 
             {errorMessage && (
-              <div className="flex items-start gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+              <div
+                role="alert"
+                aria-live="assertive"
+                className="flex items-start gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+              >
                 <svg
                   className="mt-0.5 h-4 w-4 flex-shrink-0"
                   fill="none"
@@ -280,6 +317,16 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
+
+        <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs">
+          <Link href="/demo/battle" className="text-cyan-200/90 hover:text-cyan-100">
+            Try Demo First
+          </Link>
+          <span className="text-white/20">•</span>
+          <Link href="/pricing" className="text-cyan-200/90 hover:text-cyan-100">
+            View Plans
+          </Link>
+        </div>
 
         <p className="mt-3 text-center text-xs text-white/35">
           By continuing, you agree to our{" "}

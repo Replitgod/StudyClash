@@ -37,11 +37,18 @@ const NAV_LINKS = [
   { label: "Home", href: "/" },
   { label: "Battle AI", href: "/#battle-ai" },
   { label: "Demo", href: "/demo/battle" },
-  { label: "Contact", href: "/contact" },
-  { label: "Exams", href: "/exams" },
-  { label: "Classroom", href: "/classroom" },
   { label: "Create", href: "/create" },
-  { label: "Decks", href: "/decks" },
+  { label: "Decks", href: "/decks", authOnly: true },
+  { label: "Dashboard", href: "/dashboard", authOnly: true },
+  { label: "Exams", href: "/exams" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Contact", href: "/contact" },
+  { label: "Classroom", href: "/classroom" },
+];
+
+const AUTH_MINIMAL_LINKS = [
+  { label: "Home", href: "/" },
+  { label: "Demo", href: "/demo/battle" },
   { label: "Pricing", href: "/pricing" },
 ];
 
@@ -54,9 +61,14 @@ export default function Navigation() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [continuePath, setContinuePath] = useState<string | null>(null);
 
-  const navLinks = isLoggedIn
-    ? [...NAV_LINKS, { label: "Dashboard", href: "/dashboard" }]
-    : NAV_LINKS;
+  const isAuthPage = pathname === "/login" || pathname === "/signup";
+
+  const fullNavLinks = NAV_LINKS.filter((link) => {
+    if (link.authOnly) return isLoggedIn;
+    return true;
+  });
+
+  const navLinks = isAuthPage ? AUTH_MINIMAL_LINKS : fullNavLinks;
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -81,6 +93,34 @@ export default function Navigation() {
       // Ignore localStorage access issues.
     }
   }, [pathname]);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isMobileMenuOpen]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -124,6 +164,12 @@ export default function Navigation() {
 
         {/* Desktop auth section */}
         <div className="hidden items-center gap-2 md:flex">
+          <Link
+            href={isLoggedIn ? "/create" : "/signup?redirect=/create"}
+            className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-3 py-2 text-sm font-bold text-cyan-100 transition-colors duration-150 hover:border-cyan-300/45 hover:bg-cyan-500/20"
+          >
+            Quick Start
+          </Link>
           {isLoading ? (
             <div className="h-9 w-24 animate-pulse rounded-lg bg-white/5" />
           ) : isLoggedIn ? (
@@ -215,6 +261,14 @@ export default function Navigation() {
       {isMobileMenuOpen && (
         <div className="border-t border-white/10 bg-[#05050a]/95 px-4 py-4 backdrop-blur-md md:hidden">
           <div className="flex flex-col gap-1">
+            <Link
+              href={isLoggedIn ? "/create" : "/signup?redirect=/create"}
+              onClick={closeMobileMenu}
+              className="mb-2 flex items-center justify-center rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-3 py-3 text-sm font-bold text-cyan-100"
+            >
+              Quick Start a Battle Deck
+            </Link>
+
             {navLinks.map((link) => (
               <Link
                 key={link.href}

@@ -27,11 +27,11 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "StudyClash | AI Study Battles",
+    default: "StudyClash | AI Study App for Battle-Based Learning",
     template: "%s | StudyClash",
   },
   description:
-    "StudyClash is an AI study app where you upload notes, battle an AI, and improve with weak-topic reports and one-click rematches.",
+    "StudyClash is an AI study app where students upload notes, battle an AI, and improve with weak-topic diagnostics, rematches, and exam-focused practice loops.",
   applicationName: "StudyClash",
   category: "education",
   referrer: "origin-when-cross-origin",
@@ -43,20 +43,25 @@ export const metadata: Metadata = {
     "Quizlet Alternative",
     "Knowt Alternative",
     "Study Battle",
+    "Flashcard Battle",
+    "Competitive Learning",
     "Competitive Studying",
     "SAT Study App",
+    "AP Study App",
+    "AI Flashcards",
     "Study Game",
-    "Flashcard Battle",
     "AI Learning Platform",
   ],
-  alternates: {
-    canonical: "/",
+  formatDetection: {
+    telephone: false,
+    address: false,
+    email: false,
   },
   openGraph: {
     type: "website",
-    title: "StudyClash | AI Study Battles",
+    title: "StudyClash | AI Study App for Competitive Learning",
     description:
-      "Turn your notes into live AI study battles with weak-topic diagnostics and one-click rematch loops.",
+      "Turn notes into AI study battles with weak-topic diagnostics, flashcard battle loops, and exam-ready practice.",
     siteName: "StudyClash",
     url: "/",
     locale: "en_US",
@@ -71,9 +76,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "StudyClash | AI Study Battles",
+    title: "StudyClash | AI Study App and Quizlet Alternative",
     description:
-      "Upload notes, battle an AI instantly, and improve with weak-topic reports.",
+      "Upload notes, battle an AI instantly, and improve with weak-topic diagnostics.",
     images: ["/twitter-image"],
   },
   robots: {
@@ -98,6 +103,9 @@ const organizationSchema = {
   logo: `${siteUrl}/opengraph-image`,
   description:
     "StudyClash is an AI study platform for interactive quiz battles, weak-topic analysis, and personalized study improvement.",
+  sameAs: [
+    `${siteUrl}/`,
+  ],
   contactPoint: [
     {
       "@type": "ContactPoint",
@@ -136,7 +144,7 @@ export default function RootLayout({
             Skip to main content
           </a>
           <Navigation />
-          <main id="main-content" className="flex-1">{children}</main>
+          <div id="main-content" className="flex-1">{children}</div>
           <FeedbackButton />
         </AuthProvider>
       </body>

@@ -20,6 +20,7 @@ import {
   type MistakeBreakdown,
   type MistakeHistoryStats,
 } from "@/lib/mistakeBreakdown";
+import { getNextMilestoneXp, getRankInfo, getSeasonProgress } from "@/lib/playerProgress";
 
 type Match = {
   id: string;
@@ -134,15 +135,23 @@ const BOSS_BONUS_XP = 250;
 type BattleProgress = {
   xpEarned: number;
   totalXp: number;
+  previousTotalXp: number;
   level: number;
+  rankLabel: string;
+  seasonLabel: string;
+  seasonProgressPercent: number;
   xpInLevel: number;
   xpToNextLevel: number;
+  nextMilestoneXp: number | null;
+  unlockedMilestoneXp: number | null;
   previousBestScore: number | null;
   newPersonalBest: boolean;
   improvementPercent: number | null;
   progressMessage: string;
   weakestTopic: string | null;
 };
+
+const XP_MILESTONES = [500, 1200, 2500, 4000, 6000, 9000, 12000, 16000, 22000];
 
 type StudyDay = {
   day: number;
@@ -1083,6 +1092,12 @@ export default function ResultsPage() {
     saveProgressSnapshot(storageKey, nextSnapshot);
 
     const levelInfo = calculateLevel(nextSnapshot.totalXp);
+    const rankInfo = getRankInfo(nextSnapshot.totalXp, 0);
+    const seasonInfo = getSeasonProgress(nextSnapshot.totalXp);
+    const nextMilestoneXp = getNextMilestoneXp(nextSnapshot.totalXp);
+    const unlockedMilestoneXp = XP_MILESTONES.find(
+      (milestone) => snapshot.totalXp < milestone && nextSnapshot.totalXp >= milestone
+    ) || null;
     const improvementPercent = previousAttempt
       ? currentAccuracy - previousAttempt.accuracy
       : null;
@@ -1091,9 +1106,15 @@ export default function ResultsPage() {
       setBattleProgress({
         xpEarned,
         totalXp: nextSnapshot.totalXp,
+        previousTotalXp: snapshot.totalXp,
         level: levelInfo.level,
+        rankLabel: rankInfo.label,
+        seasonLabel: `Season ${seasonInfo.seasonNumber}`,
+        seasonProgressPercent: seasonInfo.progressPercent,
         xpInLevel: levelInfo.xpInLevel,
         xpToNextLevel: levelInfo.xpToNextLevel,
+        nextMilestoneXp,
+        unlockedMilestoneXp,
         previousBestScore: previousBest?.score ?? null,
         newPersonalBest: shouldUpdateBest,
         improvementPercent,
@@ -1988,6 +2009,9 @@ export default function ResultsPage() {
                 <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-emerald-200">
                   Level {battleProgress.level}
                 </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-amber-200">
+                  Rank {battleProgress.rankLabel}
+                </span>
                 <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-fuchsia-200">
                   {battleProgress.xpToNextLevel} XP to next level
                 </span>
@@ -1999,6 +2023,31 @@ export default function ResultsPage() {
                 className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-cyan-400 transition-all duration-300"
                 style={{ width: `${battleProgress.xpInLevel / 5}%` }}
               />
+            </div>
+
+            <div className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-500/[0.08] px-3 py-2.5">
+              <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-cyan-100">
+                <span>{battleProgress.seasonLabel} progression</span>
+                <span>{Math.round(battleProgress.seasonProgressPercent)}%</span>
+              </div>
+              <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/30">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300 transition-all duration-700"
+                  style={{ width: `${Math.max(4, battleProgress.seasonProgressPercent)}%` }}
+                />
+              </div>
+
+              <p className="mt-2 text-[11px] text-cyan-100/80">
+                {battleProgress.nextMilestoneXp === null
+                  ? "Top milestone reached. Keep the streak alive."
+                  : `${battleProgress.nextMilestoneXp - battleProgress.totalXp} XP to next milestone (${battleProgress.nextMilestoneXp}).`}
+              </p>
+
+              {battleProgress.unlockedMilestoneXp !== null && (
+                <p className="mt-1 text-[11px] font-bold text-emerald-200">
+                  Milestone unlocked: {battleProgress.unlockedMilestoneXp} XP
+                </p>
+              )}
             </div>
           </div>
         )}

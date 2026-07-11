@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Exam Prep Study Tunnels",
+  title: "Exam Prep Study App | SAT, AP, MCAT, LSAT, NCLEX",
   description:
-    "Practice MCAT, LSAT, NCLEX, and AP exam-style battles with AI-guided remediation and timed pressure drills.",
+    "Practice SAT-style, AP, MCAT, LSAT, and NCLEX battle drills with AI-guided remediation, timed pressure practice, and weak-topic recovery.",
   alternates: {
     canonical: "/exams",
   },
@@ -13,6 +13,7 @@ export const metadata: Metadata = {
     "LSAT study app",
     "NCLEX study platform",
     "AP exam practice app",
+    "AP study app",
   ],
   openGraph: {
     title: "Exam Prep Study Tunnels | StudyClash",
@@ -20,6 +21,13 @@ export const metadata: Metadata = {
       "High-stakes exam prep through battle-style practice and weak-topic loops.",
     url: "/exams",
     images: ["/opengraph-image"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "StudyClash Exams | SAT/AP/MCAT/LSAT/NCLEX Battle Prep",
+    description:
+      "Train with exam-style AI battles and targeted remediation loops.",
+    images: ["/twitter-image"],
   },
 };
 

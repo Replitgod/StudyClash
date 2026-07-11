@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import {
   checkInMemoryRateLimit,
+  getServiceSupabaseClient,
   getClientIpAddress,
   hashIdentifier,
 } from "@/lib/server/apiUtils";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 type JoinPayload = {
   roomCode?: string;
@@ -52,7 +49,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabase = getServiceSupabaseClient();
 
     const { data, error } = await supabase
       .from("classroom_rooms")

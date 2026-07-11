@@ -7,9 +7,9 @@ import AutoplayDemoRail from "./components/AutoplayDemoRail";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyclash.com";
 
 export const metadata: Metadata = {
-  title: "StudyClash | Battle an AI and Turn Notes Into Winning Study Sessions",
+  title: "AI Study App | StudyClash Battle-Based Quizlet Alternative",
   description:
-    "StudyClash is an AI study app and Quizlet alternative where your notes become live battles. Upload notes, battle an AI instantly, and get weak-topic reports with one-click rematch.",
+    "StudyClash is an AI study app and Quizlet alternative where students turn notes into instant study battles, flashcard battle loops, and adaptive AI practice for SAT and AP prep.",
   alternates: {
     canonical: "/",
   },
@@ -23,12 +23,15 @@ export const metadata: Metadata = {
     "Study Game",
     "Flashcard Battle",
     "AI Learning Platform",
+    "Competitive Learning",
+    "AI Flashcards",
+    "AP Study App",
   ],
   openGraph: {
-    title: "StudyClash | Battle an AI Instantly",
+    title: "StudyClash | AI Study App, Flashcard Battle, Quizlet Alternative",
     description:
-      "Upload notes, auto-generate questions, battle an AI, and get weak-topic recovery plans in seconds.",
-    url: siteUrl,
+      "Upload notes, auto-generate questions, battle an AI, and improve with weak-topic recovery loops.",
+    url: "/",
     siteName: "StudyClash",
     type: "website",
     images: [
@@ -42,9 +45,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "StudyClash | AI Study Battles",
+    title: "StudyClash | AI Study App and Competitive Learning",
     description:
-      "Study faster with instant AI battles, live scoring, and weak-topic reports.",
+      "Study faster with AI study battles, adaptive opponents, and weak-topic remediation.",
     images: ["/twitter-image"],
   },
 };
@@ -53,79 +56,178 @@ const DEMO_STEPS = [
   "Upload notes",
   "AI generates questions",
   "Battle an AI",
-  "Live battle",
-  "Winning",
+  "Battle interface",
+  "Victory",
   "Weak-topic report",
   "One-click rematch",
 ];
 
-const TRUST_ITEMS = [
-  "Built for real student workflows",
-  "Transparent free beta limits",
-  "Actionable weak-topic diagnostics",
-  "Fast support via feedback button",
+const HERO_TRUST = [
+  "No multiplayer lobby",
+  "No setup confusion",
+  "One-click instant match",
+  "Adaptive AI realism",
 ];
 
-const FEATURE_CARDS = [
+const FIRST_TIME_PATHS = [
   {
-    title: "Instant AI Opponent",
-    body: "No room setup. Pick Easy, Medium, or Hard and start in one click.",
+    title: "Try a no-signup demo",
+    time: "90 seconds",
+    description: "See the full battle + results flow before creating anything.",
+    href: "/demo/battle",
+    cta: "Start Demo",
   },
   {
-    title: "Your Notes, Not Generic Content",
-    body: "PDF upload or pasted notes become a question set tailored to your source.",
+    title: "Upload your notes",
+    time: "2-3 minutes",
+    description: "Generate your first personalized battle deck from text or PDF.",
+    href: "/create",
+    cta: "Create My Deck",
   },
   {
-    title: "Pressure That Keeps You Focused",
-    body: "Timed battles keep sessions active and fun instead of passive scrolling.",
-  },
-  {
-    title: "Weak-Topic Report",
-    body: "See exactly where you missed and what to fix before your next attempt.",
-  },
-  {
-    title: "One-Click Rematch",
-    body: "Run another battle immediately and lock in mastery while it is fresh.",
-  },
-  {
-    title: "Built-In VYRA Coach",
-    body: "Ask follow-up questions and get next-best study actions from your results.",
+    title: "Battle instantly",
+    time: "60 seconds",
+    description: "Jump into instant AI mode with no room setup required.",
+    href: "/#battle-ai",
+    cta: "Battle an AI",
   },
 ];
 
-const TESTIMONIALS = [
+const DIFFERENTIATORS = [
   {
-    quote:
-      "I used to waste time building flashcards. Now I drop notes, battle, and know exactly what to review.",
-    name: "Aanya P.",
-    role: "SAT student",
+    title: "Active Recall Under Pressure",
+    body: "Unlike static card review, StudyClash forces quick retrieval with live score pressure and realistic response timing.",
   },
   {
-    quote:
-      "The weak-topic report is the difference. It tells me why I missed, not just my score.",
-    name: "Rohan M.",
-    role: "Engineering undergrad",
+    title: "Your Notes Become the Arena",
+    body: "Upload notes or PDF and instantly transform your own material into battle-ready question sets.",
   },
   {
-    quote:
-      "Battle an AI made revision competitive and actually fun for my classroom prep group.",
-    name: "Nia T.",
-    role: "High school mentor",
+    title: "Adaptive AI Opponent",
+    body: "Easy, Medium, Hard, and Adaptive AI modes with realistic accuracy and reaction time patterns.",
+  },
+  {
+    title: "Weak Topic Intelligence",
+    body: "Get exact topic gaps and mistake patterns so every rematch targets what actually matters.",
+  },
+  {
+    title: "One-click Rematch Loops",
+    body: "Finish a battle and run the next focused attempt instantly while your memory is still warm.",
+  },
+  {
+    title: "Coach Layer Built In",
+    body: "VYRA coach explains misses, gives hints, and helps convert every wrong answer into mastery.",
+  },
+];
+
+type UsageMetric = {
+  label: string;
+  value: string;
+};
+
+const TRUST_FALLBACK_ITEMS = [
+  "Early Beta",
+  "Built for Students",
+  "AI-Powered Study Battles",
+  "Personalized Weak-Topic Reports",
+  "Multiplayer + Battle an AI",
+  "Secure Authentication",
+  "Continuous Updates",
+];
+
+function readVerifiedUsageMetrics(): UsageMetric[] {
+  const raw = process.env.PUBLIC_USAGE_METRICS_JSON?.trim();
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .map((entry) => {
+        if (!entry || typeof entry !== "object") return null;
+
+        const candidate = entry as Record<string, unknown>;
+        const label = typeof candidate.label === "string" ? candidate.label.trim() : "";
+        const value = typeof candidate.value === "string" ? candidate.value.trim() : "";
+
+        if (!label || !value) return null;
+
+        return {
+          label: label.slice(0, 120),
+          value: value.slice(0, 60),
+        };
+      })
+      .filter((entry): entry is UsageMetric => entry !== null)
+      .slice(0, 6);
+  } catch {
+    return [];
+  }
+}
+
+const COMPARISON_ROWS = [
+  {
+    label: "Instant AI battle from homepage",
+    studyclash: "Yes",
+    quizlet: "No",
+    knowt: "No",
+  },
+  {
+    label: "Adaptive opponent behavior",
+    studyclash: "Yes",
+    quizlet: "No",
+    knowt: "No",
+  },
+  {
+    label: "Weak-topic rematch loops",
+    studyclash: "Yes",
+    quizlet: "Limited",
+    knowt: "Limited",
+  },
+  {
+    label: "Real-time duel scoring",
+    studyclash: "Yes",
+    quizlet: "No",
+    knowt: "No",
+  },
+  {
+    label: "Battle-first motivation",
+    studyclash: "High",
+    quizlet: "Low",
+    knowt: "Low",
+  },
+];
+
+const FEEDBACK_THEMES = [
+  {
+    title: "Fast to start",
+    summary:
+      "New users can run a full demo quickly and understand the product before committing to account setup.",
+  },
+  {
+    title: "More active than passive review",
+    summary:
+      "Battle pressure and immediate weak-topic feedback make study sessions feel focused and less repetitive.",
+  },
+  {
+    title: "Clear next step",
+    summary:
+      "One-click rematches reduce drop-off because users always know what to do after each battle.",
   },
 ];
 
 const FAQ_ITEMS = [
   {
     q: "What is StudyClash?",
-    a: "StudyClash is an AI learning platform where your notes become live quiz battles with instant feedback and weak-topic analysis.",
+    a: "StudyClash is an AI study platform where your notes become live quiz battles with instant feedback and weak-topic diagnostics.",
   },
   {
     q: "How is this different from Quizlet or Knowt?",
-    a: "StudyClash focuses on live competitive studying, realistic opponent behavior, and guided rematch loops instead of static review cards.",
+    a: "StudyClash is battle-first, with realistic AI opponents, live duel scoring, and targeted rematch loops instead of passive flashcard scrolling.",
   },
   {
     q: "Can I battle instantly without creating a room?",
-    a: "Yes. The Battle an AI mode starts immediately from the homepage with Easy, Medium, and Hard options.",
+    a: "Yes. Tap Battle an AI on the homepage and start instantly in Easy, Medium, Hard, or Adaptive mode. No lobby required.",
   },
   {
     q: "Is there a free plan?",
@@ -134,6 +236,9 @@ const FAQ_ITEMS = [
 ];
 
 export default function Home() {
+  const verifiedUsageMetrics = readVerifiedUsageMetrics();
+  const hasVerifiedUsageMetrics = verifiedUsageMetrics.length > 0;
+
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -152,6 +257,7 @@ export default function Home() {
     "@type": "SoftwareApplication",
     "@id": `${siteUrl}/#software`,
     name: "StudyClash",
+    mainEntityOfPage: `${siteUrl}/`,
     url: siteUrl,
     applicationCategory: "EducationalApplication",
     applicationSubCategory: "Study Platform",
@@ -166,6 +272,7 @@ export default function Home() {
       "Upload notes or PDF",
       "Generate AI quiz questions",
       "Battle an AI instantly",
+      "Adaptive difficulty (easy, medium, hard, adaptive)",
       "Track weak topics and mastery",
       "One-click rematch",
       "AI study coach",
@@ -194,11 +301,22 @@ export default function Home() {
     publisher: {
       "@id": `${siteUrl}/#organization`,
     },
-    potentialAction: {
-      "@type": "SearchAction",
-      target: `${siteUrl}/?q={search_term_string}`,
-      "query-input": "required name=search_term_string",
+  };
+
+  const webPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${siteUrl}/#home`,
+    name: "StudyClash Homepage",
+    url: siteUrl,
+    isPartOf: {
+      "@id": `${siteUrl}/#website`,
     },
+    about: {
+      "@id": `${siteUrl}/#software`,
+    },
+    description:
+      "Homepage for StudyClash, an AI study app focused on battle-style learning and weak-topic recovery.",
   };
 
   const howToSchema = {
@@ -217,7 +335,7 @@ export default function Home() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-x-hidden bg-[#04070f] text-white">
+    <div className="relative min-h-screen overflow-x-hidden bg-[#04070f] text-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
@@ -232,6 +350,10 @@ export default function Home() {
       />
       <script
         type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageSchema) }}
+      />
+      <script
+        type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }}
       />
 
@@ -242,23 +364,23 @@ export default function Home() {
       </div>
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-col px-4 pb-24 pt-10 sm:px-6 sm:pt-14">
-        <header className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:items-center">
+        <header className="grid gap-8 lg:grid-cols-[1.05fr_1fr] lg:items-center">
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-cyan-100">
+            <p className="inline-flex items-center gap-2 rounded-full border border-cyan-300/35 bg-cyan-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-cyan-100">
               <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-300" />
-              AI Study Battles
+              Early Access AI Study Platform
             </p>
 
             <h1 className="mt-5 text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
-              Turn notes into
+              StudyClash is
               <span className="block bg-gradient-to-r from-cyan-300 via-sky-200 to-emerald-300 bg-clip-text text-transparent">
-                fast, fun, competitive mastery.
+                instant AI battle study.
               </span>
             </h1>
 
             <p className="mt-4 max-w-2xl text-base text-white/75 sm:text-lg">
-              StudyClash is an AI study app and Quizlet alternative that lets you upload notes,
-              battle an AI instantly, and get a weak-topic report with one-click rematch.
+              Open the site, click <strong>Battle an AI</strong>, and start playing immediately.
+              No lobby. No waiting. No confusion. More fun and pressure than Quizlet or Knowt.
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -266,7 +388,7 @@ export default function Home() {
                 href="#battle-ai"
                 className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-300 to-emerald-300 px-9 py-4 text-lg font-black text-[#052538] shadow-[0_20px_50px_-30px_rgba(34,211,238,0.9)] transition-transform duration-200 hover:scale-[1.02] active:scale-95"
               >
-                Battle an AI
+                Battle an AI Now
               </a>
               <Link
                 href="/create"
@@ -278,12 +400,16 @@ export default function Home() {
                 href="/demo/battle"
                 className="inline-flex items-center justify-center rounded-2xl border border-emerald-300/30 bg-emerald-500/10 px-8 py-4 text-base font-bold text-emerald-100 transition-colors duration-150 hover:border-emerald-200/40 hover:bg-emerald-500/20"
               >
-                Try Demo
+                Try Demo (No Signup)
               </Link>
             </div>
 
+            <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200/85">
+              First time here? Start with Demo, then create your own deck.
+            </p>
+
             <ul className="mt-7 grid gap-2 text-sm text-white/70 sm:grid-cols-2">
-              {TRUST_ITEMS.map((item) => (
+              {HERO_TRUST.map((item) => (
                 <li key={item} className="inline-flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-300" />
                   {item}
@@ -295,8 +421,36 @@ export default function Home() {
           <AutoplayDemoRail />
         </header>
 
-        <section className="mt-14 rounded-3xl border border-white/15 bg-white/[0.03] p-5 sm:p-7">
-          <h2 className="text-lg font-black text-white">Everything in one flow</h2>
+        <section className="mt-10 rounded-3xl border border-cyan-300/20 bg-cyan-500/10 p-5 sm:p-6" aria-label="First-time start options">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-xl font-black text-white sm:text-2xl">Start in the way that matches you</h2>
+            <p className="text-sm text-cyan-100/85">No account setup required for demo and instant battle.</p>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {FIRST_TIME_PATHS.map((path) => (
+              <article key={path.title} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-200">{path.time}</p>
+                <h3 className="mt-1 text-lg font-black text-white">{path.title}</h3>
+                <p className="mt-2 text-sm text-white/70">{path.description}</p>
+                <Link
+                  href={path.href}
+                  className="mt-4 inline-flex items-center justify-center rounded-xl border border-cyan-300/30 bg-cyan-500/10 px-4 py-2 text-sm font-bold text-cyan-100 hover:border-cyan-200/40 hover:bg-cyan-500/20"
+                >
+                  {path.cta}
+                </Link>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-12 rounded-3xl border border-white/15 bg-white/[0.03] p-5 sm:p-7" aria-label="Product flow overview">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-black text-white">What you see in 18 seconds</h2>
+            <span className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-100">
+              Autoplay demo above the fold
+            </span>
+          </div>
           <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
             {DEMO_STEPS.map((step) => (
               <div key={step} className="rounded-xl border border-white/15 bg-white/[0.03] px-3 py-2 text-center text-xs font-semibold text-white/85">
@@ -306,20 +460,20 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="mt-16">
+        <section className="mt-12">
           <InstantAIBattle />
         </section>
 
         <section id="features" className="mt-16">
           <div className="text-center">
-            <h2 className="text-3xl font-black sm:text-4xl">Why students switch to StudyClash</h2>
+            <h2 className="text-3xl font-black sm:text-4xl">Why StudyClash feels better than Quizlet and Knowt</h2>
             <p className="mx-auto mt-3 max-w-2xl text-white/65">
-              Built for competitive studying and fast feedback loops, not static memorization.
+              Built for action, pressure, and visible progress instead of passive review loops.
             </p>
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {FEATURE_CARDS.map((card) => (
+            {DIFFERENTIATORS.map((card) => (
               <article
                 key={card.title}
                 className="rounded-2xl border border-white/10 bg-[#071426]/70 p-5 transition-colors duration-200 hover:border-cyan-300/35"
@@ -331,38 +485,86 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="mt-16 grid gap-5 lg:grid-cols-3" aria-label="Social proof">
-          <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center">
-            <p className="text-3xl font-black text-cyan-200">12k+</p>
-            <p className="mt-1 text-sm text-white/65">Pilot battles completed</p>
-          </article>
-          <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center">
-            <p className="text-3xl font-black text-emerald-200">8.7/10</p>
-            <p className="mt-1 text-sm text-white/65">Average session fun rating</p>
-          </article>
-          <article className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center">
-            <p className="text-3xl font-black text-fuchsia-200">74%</p>
-            <p className="mt-1 text-sm text-white/65">Users rematch in same session</p>
-          </article>
+        <section className="mt-16 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6" aria-label="Comparison table">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-2xl font-black sm:text-3xl">Fast comparison</h2>
+            <p className="text-sm text-white/60">Battle-first study vs passive flashcard workflows</p>
+          </div>
+
+          <div className="mt-5 overflow-x-auto rounded-2xl border border-white/10">
+            <table className="w-full min-w-[560px] border-collapse text-left text-sm">
+              <thead className="bg-white/[0.04] text-white/80">
+                <tr>
+                  <th className="px-4 py-3 font-bold">Capability</th>
+                  <th className="px-4 py-3 font-bold text-cyan-200">StudyClash</th>
+                  <th className="px-4 py-3 font-bold">Quizlet</th>
+                  <th className="px-4 py-3 font-bold">Knowt</th>
+                </tr>
+              </thead>
+              <tbody>
+                {COMPARISON_ROWS.map((row) => (
+                  <tr key={row.label} className="border-t border-white/10">
+                    <td className="px-4 py-3 text-white/80">{row.label}</td>
+                    <td className="px-4 py-3 font-semibold text-emerald-200">{row.studyclash}</td>
+                    <td className="px-4 py-3 text-white/65">{row.quizlet}</td>
+                    <td className="px-4 py-3 text-white/65">{row.knowt}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
 
-        <section className="mt-16" aria-label="Testimonials">
-          <h2 className="text-2xl font-black sm:text-3xl">Loved by competitive learners</h2>
+        <section className="mt-16 rounded-3xl border border-white/10 bg-white/[0.03] p-5 sm:p-6" aria-label="Trust and transparency">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-2xl font-black sm:text-3xl">Trust through transparency</h2>
+            <p className="text-sm text-white/60">
+              {hasVerifiedUsageMetrics
+                ? "Verified analytics from production telemetry"
+                : "No vanity numbers in early beta"}
+            </p>
+          </div>
+
+          {hasVerifiedUsageMetrics ? (
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {verifiedUsageMetrics.map((metric) => (
+                <article key={metric.label} className="rounded-2xl border border-cyan-300/25 bg-cyan-500/10 p-5">
+                  <p className="text-3xl font-black text-cyan-100">{metric.value}</p>
+                  <p className="mt-1 text-sm text-cyan-100/90">{metric.label}</p>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {TRUST_FALLBACK_ITEMS.map((item) => (
+                <article key={item} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+                  <p className="text-sm font-semibold text-white/85">{item}</p>
+                </article>
+              ))}
+            </div>
+          )}
+
+          <p className="mt-4 text-xs text-white/55">
+            When verified analytics are available, this section automatically displays real metrics from
+            <span className="font-semibold text-white/75"> PUBLIC_USAGE_METRICS_JSON</span>.
+          </p>
+        </section>
+
+        <section className="mt-16" aria-label="Early beta feedback themes">
+          <h2 className="text-2xl font-black sm:text-3xl">What early beta users value most</h2>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
-            {TESTIMONIALS.map((item) => (
-              <blockquote key={item.name} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                <p className="text-sm text-white/80">\"{item.quote}\"</p>
-                <footer className="mt-3 text-xs font-semibold text-cyan-100">
-                  {item.name} · {item.role}
-                </footer>
-              </blockquote>
+            {FEEDBACK_THEMES.map((item) => (
+              <article key={item.title} className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+                <h3 className="text-sm font-bold uppercase tracking-[0.14em] text-cyan-100">{item.title}</h3>
+                <p className="mt-2 text-sm text-white/80">{item.summary}</p>
+              </article>
             ))}
           </div>
         </section>
 
         <section id="pricing" className="mt-16">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 className="text-2xl font-black sm:text-3xl">Pilot pricing for public beta</h2>
+            <h2 className="text-2xl font-black sm:text-3xl">Start free, scale when you need more</h2>
             <Link href="/pricing" className="text-sm font-bold text-cyan-200 hover:text-cyan-100">
               View all plans
             </Link>
@@ -432,6 +634,30 @@ export default function Home() {
             </article>
           </div>
 
+          <nav className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4" aria-label="Popular study intent links">
+            <h3 className="text-sm font-bold text-cyan-100">Popular student searches</h3>
+            <ul className="mt-2 grid gap-2 text-sm text-white/75 sm:grid-cols-2">
+              <li>
+                Best <Link href="/" className="text-cyan-200 hover:text-cyan-100">AI study app</Link> for battle-based learning
+              </li>
+              <li>
+                <Link href="/pricing" className="text-cyan-200 hover:text-cyan-100">Quizlet alternative</Link> for active recall
+              </li>
+              <li>
+                <Link href="/pricing" className="text-cyan-200 hover:text-cyan-100">Knowt alternative</Link> with live scoring pressure
+              </li>
+              <li>
+                <Link href="/demo/battle" className="text-cyan-200 hover:text-cyan-100">Study battle</Link> and flashcard battle demo
+              </li>
+              <li>
+                <Link href="/exams" className="text-cyan-200 hover:text-cyan-100">SAT study app</Link> and AP study app workflows
+              </li>
+              <li>
+                <Link href="/create" className="text-cyan-200 hover:text-cyan-100">AI flashcards</Link> from your own notes
+              </li>
+            </ul>
+          </nav>
+
           <div className="mt-4 flex flex-wrap gap-2">
             {[
               { href: "/create", label: "AI Study App" },
@@ -452,9 +678,30 @@ export default function Home() {
           </div>
         </section>
 
+        <section className="mt-16 rounded-3xl border border-cyan-300/25 bg-cyan-500/10 p-6 text-center sm:p-8" aria-label="Final call to action">
+          <h2 className="text-2xl font-black sm:text-4xl">Ready to study like a competition?</h2>
+          <p className="mx-auto mt-3 max-w-2xl text-sm text-cyan-100/90 sm:text-base">
+            Click Battle an AI and start instantly. Or upload your notes and generate a personalized battle deck in under a minute.
+          </p>
+          <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a
+              href="#battle-ai"
+              className="inline-flex items-center justify-center rounded-2xl bg-white px-7 py-3 text-sm font-black text-[#052538] transition-transform duration-200 hover:scale-[1.02] active:scale-95"
+            >
+              Start Instant Battle
+            </a>
+            <Link
+              href="/create"
+              className="inline-flex items-center justify-center rounded-2xl border border-white/40 bg-white/10 px-7 py-3 text-sm font-bold text-white"
+            >
+              Upload Notes and Play
+            </Link>
+          </div>
+        </section>
+
         <footer className="mt-16 border-t border-white/15 pt-6 text-sm text-white/65">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p>StudyClash · Competitive Studying for the AI era</p>
+            <p>StudyClash · Competitive studying for the AI era</p>
             <nav className="flex flex-wrap gap-4" aria-label="Footer links">
               <Link href="/create" className="hover:text-white">Create</Link>
               <Link href="/demo/battle" className="hover:text-white">Demo</Link>
@@ -468,6 +715,6 @@ export default function Home() {
       </div>
 
       <GigglesCoach contextLabel="Website" />
-    </main>
+    </div>
   );
 }

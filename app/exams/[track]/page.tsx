@@ -11,25 +11,25 @@ const TRACK_DETAILS: Record<
 > = {
   mcat: {
     title: "MCAT Tunnel",
-    monthly: "$99/mo",
+    monthly: "Included in Exam Tunnel ($5/mo Pilot)",
     cue: "Passage-first scientific reasoning under timed pressure.",
     depth: "VYRA focuses on weak biochemical and conceptual chains over time.",
   },
   lsat: {
     title: "LSAT Tunnel",
-    monthly: "$79/mo",
+    monthly: "Included in Exam Tunnel ($5/mo Pilot)",
     cue: "Logical flaw detection and argument structure speed loops.",
     depth: "VYRA targets recurring reasoning traps and pacing mistakes.",
   },
   nclex: {
     title: "NCLEX Tunnel",
-    monthly: "$69/mo",
+    monthly: "Included in Exam Tunnel ($5/mo Pilot)",
     cue: "Clinical priority and safety judgment battle sequences.",
     depth: "VYRA highlights decision pathways and risk-based rematches.",
   },
   ap: {
     title: "AP Exams Tunnel",
-    monthly: "$29/mo",
+    monthly: "Included in Exam Tunnel ($5/mo Pilot)",
     cue: "AP-style stem structures with classroom pacing and depth control.",
     depth: "VYRA converts weak standards into targeted rematch sets.",
   },
@@ -43,7 +43,7 @@ export default async function ExamTrackPage({
   const { track } = await params;
   const detail = TRACK_DETAILS[track] || {
     title: "Exam Tunnel",
-    monthly: "$49/mo",
+    monthly: "Included in Exam Tunnel ($5/mo Pilot)",
     cue: "High-stakes format tuning and deep remediation.",
     depth: "VYRA keeps your weak-topic recovery loop active over time.",
   };

@@ -1,8 +1,24 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Privacy Policy | StudyClash",
-  description: "How StudyClash handles data in public beta.",
+  description: "How StudyClash handles account, study content, AI processing, and privacy requests.",
+  alternates: {
+    canonical: "/privacy",
+  },
+  openGraph: {
+    title: "Privacy Policy | StudyClash",
+    description: "Learn how StudyClash handles data in public beta.",
+    url: "/privacy",
+    images: ["/opengraph-image"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Privacy Policy | StudyClash",
+    description: "StudyClash privacy policy for account and study data.",
+    images: ["/twitter-image"],
+  },
 };
 
 export default function PrivacyPage() {

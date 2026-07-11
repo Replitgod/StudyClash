@@ -68,6 +68,41 @@ const QUESTION_TYPE_OPTIONS = [
   { value: "true_false", label: "True / False" },
 ];
 
+const CREATE_PRESETS = [
+  {
+    label: "Quick Review",
+    topicFocus: "Core concepts",
+    difficultyMode: "easy",
+    questionCount: "10",
+    questionType: "multiple_choice",
+    gradeLevel: "",
+  },
+  {
+    label: "Exam Sprint",
+    topicFocus: "Exam-style drills",
+    difficultyMode: "hard",
+    questionCount: "20",
+    questionType: "multiple_choice",
+    gradeLevel: "AP / Advanced",
+  },
+  {
+    label: "Fix Mistakes",
+    topicFocus: "Common mistakes",
+    difficultyMode: "medium",
+    questionCount: "15",
+    questionType: "multiple_choice",
+    gradeLevel: "",
+  },
+  {
+    label: "Rapid Check",
+    topicFocus: "Definitions and applications",
+    difficultyMode: "mixed",
+    questionCount: "5",
+    questionType: "true_false",
+    gradeLevel: "",
+  },
+];
+
 const EXAM_TRACK_OPTIONS = [
   { value: "none", label: "No exam track" },
   { value: "lsat", label: "LSAT" },
@@ -299,6 +334,16 @@ export default function CreateDeck() {
   const [isProcessingUpload, setIsProcessingUpload] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
+
+  const applyPreset = (preset: (typeof CREATE_PRESETS)[number]) => {
+    setTopicFocus(preset.topicFocus);
+    setDifficultyMode(preset.difficultyMode);
+    setQuestionCount(preset.questionCount);
+    setQuestionType(preset.questionType);
+    if (!isExamDrillFlow) {
+      setGradeLevel(preset.gradeLevel);
+    }
+  };
 
   // Folder upload support varies a lot by browser. We feature-detect on
   // mount rather than assuming, and hide the control entirely if it's
@@ -1107,6 +1152,24 @@ export default function CreateDeck() {
             Optional — pick what fits, or leave the defaults as-is.
           </p>
 
+          <div className="mb-4 rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] p-3 sm:p-4">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-cyan-100/85">
+              One-Click Presets
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {CREATE_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  onClick={() => applyPreset(preset)}
+                  className="rounded-full border border-cyan-300/25 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-semibold text-cyan-100 transition-colors duration-150 hover:border-cyan-200/45 hover:bg-cyan-500/20"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex flex-col gap-2">
             <label
               htmlFor="topicFocus"
@@ -1424,7 +1487,7 @@ export default function CreateDeck() {
           )}
 
           {uploadError && (
-            <p className="mt-3 text-xs text-red-300">{uploadError}</p>
+            <p role="alert" aria-live="assertive" className="mt-3 text-xs text-red-300">{uploadError}</p>
           )}
 
           {/* Notes textarea */}
@@ -1556,7 +1619,11 @@ export default function CreateDeck() {
           </button>
 
           {errorMessage && (
-            <div className="mt-5 flex items-start gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            <div
+              role="alert"
+              aria-live="assertive"
+              className="mt-5 flex items-start gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+            >
               <svg
                 className="mt-0.5 h-5 w-5 flex-shrink-0"
                 fill="none"

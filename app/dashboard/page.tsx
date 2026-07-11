@@ -7,6 +7,15 @@ import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
 import GigglesCoach from "@/app/components/GigglesCoach";
+import {
+  ACHIEVEMENTS,
+  calculateLevel,
+  getNextMilestoneXp,
+  getProgressStorageKey,
+  getRankInfo,
+  getSeasonProgress,
+  loadProgressSnapshot,
+} from "@/lib/playerProgress";
 
 type PlanInfo = {
   id: string;
@@ -97,6 +106,14 @@ type GoalProgressState = {
   weeklyAccuracy: number;
 };
 
+type LocalProgressState = {
+  totalXp: number;
+  currentStreakDays: number;
+  bestStreakDays: number;
+  unlockedAchievementIds: string[];
+  historyAccuracies: number[];
+};
+
 function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
@@ -159,6 +176,7 @@ export default function DashboardPage() {
     weeklyBattles: 0,
     weeklyAccuracy: 0,
   });
+  const [localProgress, setLocalProgress] = useState<LocalProgressState | null>(null);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -389,6 +407,27 @@ export default function DashboardPage() {
 
     loadDeckInsights();
   }, [isLoggedIn, user]);
+
+  useEffect(() => {
+    if (!user) {
+      setLocalProgress(null);
+      return;
+    }
+
+    const storageKey = getProgressStorageKey({
+      userId: user.id,
+      playerName: profile?.display_name || user.email || "guest",
+    });
+    const snapshot = loadProgressSnapshot(storageKey);
+
+    setLocalProgress({
+      totalXp: snapshot.totalXp,
+      currentStreakDays: snapshot.currentStreakDays,
+      bestStreakDays: snapshot.bestStreakDays,
+      unlockedAchievementIds: snapshot.unlockedAchievementIds,
+      historyAccuracies: snapshot.battleHistory.slice(0, 10).map((entry) => entry.accuracy),
+    });
+  }, [user, profile?.display_name, user?.email]);
 
   useEffect(() => {
     async function loadRooms() {
@@ -705,9 +744,16 @@ export default function DashboardPage() {
     return "Unranked";
   })();
 
-  const estimatedXp = battlesPlayed * 120 + averageAccuracy * 8;
-  const estimatedLevel = Math.floor(estimatedXp / 500) + 1;
-  const xpInLevel = estimatedXp % 500;
+  const fallbackXp = battlesPlayed * 120 + averageAccuracy * 8;
+  const totalXp = localProgress?.totalXp ?? fallbackXp;
+  const levelInfo = calculateLevel(totalXp);
+  const rankInfo = getRankInfo(totalXp, localProgress?.bestStreakDays || 0);
+  const seasonInfo = getSeasonProgress(totalXp);
+  const nextMilestoneXp = getNextMilestoneXp(totalXp);
+  const unlockedAchievementLabels = (localProgress?.unlockedAchievementIds || [])
+    .map((id) => ACHIEVEMENTS.find((achievement) => achievement.id === id)?.label)
+    .filter((label): label is string => Boolean(label));
+
   const dailyGoalTarget = 2;
   const weeklyGoalTarget = 8;
   const weeklyAccuracyTarget = 72;
@@ -723,6 +769,10 @@ export default function DashboardPage() {
       : null,
     battlesPlayed >= 20 ? "Battle Veteran" : null,
   ].filter((badge): badge is string => Boolean(badge));
+
+  const combinedBadges = [
+    ...new Set([...unlockedBadges, ...unlockedAchievementLabels]),
+  ];
 
   const clashPathPulse = (() => {
     if (battlesPlayed === 0) {
@@ -935,14 +985,40 @@ export default function DashboardPage() {
               <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-300">
                 Player Progression
               </p>
-              <h2 className="mt-1 text-lg font-bold text-white">Level {estimatedLevel} · {arenaTier}</h2>
+              <h2 className="mt-1 text-lg font-bold text-white">Level {levelInfo.level} · {rankInfo.label}</h2>
               <p className="mt-1 text-sm text-white/65">
                 Keep momentum with daily and weekly study goals.
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-right">
               <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">XP in level</p>
-              <p className="mt-1 text-base font-black text-emerald-200">{xpInLevel}/500</p>
+              <p className="mt-1 text-base font-black text-emerald-200">{levelInfo.xpInLevel}/500</p>
+            </div>
+          </div>
+
+          <div className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-500/[0.08] px-3.5 py-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-cyan-100">
+                {seasonInfo.seasonNumber === 1 ? "Current Season" : `Season ${seasonInfo.seasonNumber}`}
+              </p>
+              <p className="text-xs font-bold text-cyan-100">{Math.round(seasonInfo.progressPercent)}%</p>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/30">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300 transition-all duration-700"
+                style={{ width: `${Math.max(4, seasonInfo.progressPercent)}%` }}
+              />
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-cyan-100/80">
+              <span>Streak {localProgress?.currentStreakDays || 0}d</span>
+              <span>•</span>
+              <span>Best streak {localProgress?.bestStreakDays || 0}d</span>
+              {nextMilestoneXp !== null && (
+                <>
+                  <span>•</span>
+                  <span>{nextMilestoneXp - totalXp} XP to milestone</span>
+                </>
+              )}
             </div>
           </div>
 
@@ -973,7 +1049,7 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-1.5">
-            {(unlockedBadges.length > 0 ? unlockedBadges : ["No badges unlocked yet"]).map((badge) => (
+            {(combinedBadges.length > 0 ? combinedBadges : ["No badges unlocked yet"]).map((badge) => (
               <span
                 key={badge}
                 className="rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-100"
@@ -982,6 +1058,24 @@ export default function DashboardPage() {
               </span>
             ))}
           </div>
+
+          {localProgress && localProgress.historyAccuracies.length > 0 && (
+            <div className="mt-4 rounded-xl border border-white/10 bg-black/25 px-3.5 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">
+                Last 10 Battle Accuracy
+              </p>
+              <div className="mt-2 flex items-end gap-1">
+                {localProgress.historyAccuracies.map((accuracy, index) => (
+                  <div key={`${accuracy}-${index}`} className="flex flex-1 flex-col items-center gap-1">
+                    <div
+                      className="w-full rounded-sm bg-gradient-to-t from-fuchsia-500 to-cyan-300"
+                      style={{ height: `${Math.max(8, Math.round(accuracy * 0.45))}px` }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-fuchsia-400/25 bg-gradient-to-br from-fuchsia-500/[0.08] to-cyan-500/[0.06] p-5 backdrop-blur-sm">

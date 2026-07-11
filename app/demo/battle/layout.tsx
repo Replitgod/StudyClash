@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Free Demo Battle",
+  title: "Free AI Study Battle Demo",
   description:
-    "Try StudyClash instantly with a free AI demo battle and see weak-topic insights in one flow.",
+    "Try StudyClash instantly with a free AI study battle demo and see weak-topic insights in one flow.",
   alternates: {
     canonical: "/demo/battle",
   },
@@ -18,6 +18,13 @@ export const metadata: Metadata = {
       "Start a no-signup demo battle and experience AI study workflows instantly.",
     url: "/demo/battle",
     images: ["/opengraph-image"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Free AI Study Battle Demo | StudyClash",
+    description:
+      "No-signup demo for AI-powered study battles and instant feedback.",
+    images: ["/twitter-image"],
   },
 };
 

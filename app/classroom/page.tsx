@@ -34,7 +34,7 @@ export default function ClassroomPage() {
   const [seats, setSeats] = useState("30");
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<string | null>(null);
+  const [submitStatus, setSubmitStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const handleLeadSubmit = async () => {
     if (isSubmitting) return;
@@ -72,7 +72,10 @@ export default function ClassroomPage() {
         seats,
       });
 
-      setSubmitStatus("Pilot request received. We will contact you soon.");
+      setSubmitStatus({
+        type: "success",
+        message: "Pilot request received. We will contact you soon.",
+      });
       setWorkEmail("");
       setOrganization("");
       setRole("Teacher");
@@ -84,9 +87,11 @@ export default function ClassroomPage() {
         role,
         seats,
       });
-      setSubmitStatus(
-        error instanceof Error ? error.message : "Could not submit pilot request."
-      );
+      setSubmitStatus({
+        type: "error",
+        message:
+          error instanceof Error ? error.message : "Could not submit pilot request.",
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -130,24 +135,28 @@ export default function ClassroomPage() {
             <input
               value={workEmail}
               onChange={(event) => setWorkEmail(event.target.value)}
+              aria-label="Work email"
               placeholder="Work email"
               className="rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/35 outline-none focus:border-amber-300/45"
             />
             <input
               value={organization}
               onChange={(event) => setOrganization(event.target.value)}
+              aria-label="School or organization"
               placeholder="School or organization"
               className="rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/35 outline-none focus:border-amber-300/45"
             />
             <input
               value={role}
               onChange={(event) => setRole(event.target.value)}
+              aria-label="Role"
               placeholder="Role"
               className="rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/35 outline-none focus:border-amber-300/45"
             />
             <input
               value={seats}
               onChange={(event) => setSeats(event.target.value)}
+              aria-label="Estimated seats"
               placeholder="Estimated seats"
               className="rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/35 outline-none focus:border-amber-300/45"
             />
@@ -156,6 +165,7 @@ export default function ClassroomPage() {
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
+            aria-label="Cohort or curriculum notes"
             placeholder="Anything we should know about your cohort or curriculum goals"
             rows={3}
             className="mt-2 w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/35 outline-none focus:border-amber-300/45"
@@ -179,8 +189,16 @@ export default function ClassroomPage() {
           </div>
 
           {submitStatus && (
-            <p className="mt-3 rounded-lg border border-white/15 bg-black/25 px-3 py-2 text-xs text-white/85">
-              {submitStatus}
+            <p
+              role={submitStatus.type === "error" ? "alert" : "status"}
+              aria-live={submitStatus.type === "error" ? "assertive" : "polite"}
+              className={`mt-3 rounded-lg border px-3 py-2 text-xs ${
+                submitStatus.type === "error"
+                  ? "border-red-400/30 bg-red-500/10 text-red-200"
+                  : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
+              }`}
+            >
+              {submitStatus.message}
             </p>
           )}
         </div>

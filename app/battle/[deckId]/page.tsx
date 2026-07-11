@@ -11,7 +11,10 @@ import ConfettiBurst from "@/app/components/ConfettiBurst";
 import {
   calculateLevel,
   getGoalProgress,
+  getNextMilestoneXp,
   getProgressStorageKey,
+  getRankInfo,
+  getSeasonProgress,
   loadProgressSnapshot,
   type BattleHistoryEntry,
 } from "@/lib/playerProgress";
@@ -113,9 +116,13 @@ type RivalReadiness = {
 
 type EngagementPreview = {
   level: number;
+  rankLabel: string;
   currentStreakDays: number;
   dailyBattles: number;
   weeklyBattles: number;
+  seasonProgressPercent: number;
+  seasonLabel: string;
+  nextMilestoneXp: number | null;
   recentHistory: BattleHistoryEntry[];
 };
 
@@ -1116,12 +1123,19 @@ export default function BattlePage() {
     const snapshot = loadProgressSnapshot(storageKey);
     const goals = getGoalProgress(snapshot);
     const levelInfo = calculateLevel(snapshot.totalXp);
+    const rankInfo = getRankInfo(snapshot.totalXp, snapshot.bestStreakDays);
+    const seasonInfo = getSeasonProgress(snapshot.totalXp);
+    const nextMilestoneXp = getNextMilestoneXp(snapshot.totalXp);
 
     setEngagementPreview({
       level: levelInfo.level,
+      rankLabel: rankInfo.label,
       currentStreakDays: snapshot.currentStreakDays,
       dailyBattles: goals.dailyBattles,
       weeklyBattles: goals.weeklyBattles,
+      seasonProgressPercent: seasonInfo.progressPercent,
+      seasonLabel: `Season ${seasonInfo.seasonNumber}`,
+      nextMilestoneXp,
       recentHistory: snapshot.battleHistory.slice(0, 4),
     });
   }, [deck, user?.id, accountDisplayName]);
@@ -1724,9 +1738,27 @@ export default function BattlePage() {
                 <p className="mt-1 text-base font-black text-emerald-200">{engagementPreview.dailyBattles}/2</p>
               </div>
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Weekly Goal</p>
-                <p className="mt-1 text-base font-black text-fuchsia-200">{engagementPreview.weeklyBattles}/8</p>
+                <p className="text-[10px] uppercase tracking-wider text-white/45">Rank</p>
+                <p className="mt-1 text-base font-black text-fuchsia-200">{engagementPreview.rankLabel}</p>
               </div>
+            </div>
+
+            <div className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-500/[0.08] px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3 text-[11px] font-semibold text-cyan-100">
+                <span>{engagementPreview.seasonLabel} progression</span>
+                <span>{Math.round(engagementPreview.seasonProgressPercent)}%</span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/30">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300 transition-all duration-700"
+                  style={{ width: `${Math.max(4, engagementPreview.seasonProgressPercent)}%` }}
+                />
+              </div>
+              {engagementPreview.nextMilestoneXp !== null && (
+                <p className="mt-2 text-[11px] text-cyan-100/80">
+                  Next XP milestone: {engagementPreview.nextMilestoneXp}
+                </p>
+              )}
             </div>
 
             {engagementPreview.recentHistory.length > 0 && (

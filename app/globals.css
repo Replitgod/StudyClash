@@ -6,6 +6,7 @@ body {
   -webkit-tap-highlight-color: transparent;
   width: 100%;
   overflow-x: clip;
+  scroll-behavior: smooth;
 }
 
 :root {
@@ -28,6 +29,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
 #__next {
@@ -43,6 +45,31 @@ body {
 ::selection {
   background: rgb(217 70 239 / 0.3);
   color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(10 10 10 / 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgb(217 70 239 / 0.45), rgb(34 211 238 / 0.45));
+  border-radius: 999px;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #111827 inset;
+  -webkit-text-fill-color: #f5f5f5;
+  transition: background-color 9999s ease-in-out 0s;
 }
 
 @media (prefers-reduced-motion: reduce) {

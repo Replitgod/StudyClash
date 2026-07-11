@@ -1,8 +1,24 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Terms of Use | StudyClash",
-  description: "Terms for using StudyClash public beta.",
+  description: "Terms for using StudyClash public beta, including acceptable use and account responsibilities.",
+  alternates: {
+    canonical: "/terms",
+  },
+  openGraph: {
+    title: "Terms of Use | StudyClash",
+    description: "Terms and conditions for using StudyClash.",
+    url: "/terms",
+    images: ["/opengraph-image"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Terms of Use | StudyClash",
+    description: "Read StudyClash terms for beta usage and account responsibilities.",
+    images: ["/twitter-image"],
+  },
 };
 
 export default function TermsPage() {

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import type { MistakeType } from "@/lib/mistakeBreakdown";
+import {
+  getServiceSupabaseClient,
+  requireAuthenticatedUser,
+} from "@/lib/server/apiUtils";
 
 type MistakeBreakdownRecord = {
   questionId: string;
@@ -29,10 +32,20 @@ type SavePayload = {
   records?: MistakeBreakdownRecord[];
 };
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-  process.env.SUPABASE_SERVICE_ROLE_KEY as string
-);
+const supabase = getServiceSupabaseClient();
+
+async function resolvePlayerIdentity(userId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("profiles")
+    .select("display_name")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const displayName =
+    typeof data?.display_name === "string" ? data.display_name.trim() : "";
+
+  return displayName || null;
+}
 
 function normalizeKey(value: string): string {
   return value
@@ -67,8 +80,13 @@ function isValidRating(value: unknown): value is MistakeType {
 
 export async function GET(req: NextRequest) {
   try {
+    const auth = await requireAuthenticatedUser(req);
+    if (!auth.userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const deckId = req.nextUrl.searchParams.get("deckId") || "";
-    const playerName = req.nextUrl.searchParams.get("playerName") || "";
+    const playerName = await resolvePlayerIdentity(auth.userId);
 
     if (!deckId || !playerName) {
       return NextResponse.json(
@@ -148,10 +166,15 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireAuthenticatedUser(req);
+    if (!auth.userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = (await req.json()) as SavePayload;
     const deckId = String(body.deckId || "").trim();
     const matchId = String(body.matchId || "").trim();
-    const playerName = String(body.playerName || "").trim();
+    const playerName = await resolvePlayerIdentity(auth.userId);
     const records = ensureArray<MistakeBreakdownRecord>(body.records);
 
     if (!deckId || !matchId || !playerName || records.length === 0) {

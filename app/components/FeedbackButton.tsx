@@ -5,6 +5,16 @@ import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
 import { FLOATING_ACTION, UI_Z_INDEX } from "@/lib/uiLayout";
 
+const FEEDBACK_DRAFT_KEY = "studyclash_feedback_draft";
+
+const FEEDBACK_TEMPLATES = [
+  "Wrong answer marked correct",
+  "Question explanation is unclear",
+  "Generation took too long",
+  "UI is confusing on mobile",
+  "Feature request",
+];
+
 export default function FeedbackButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
@@ -13,6 +23,15 @@ export default function FeedbackButton() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleOpen = () => {
+    try {
+      const draft = window.localStorage.getItem(FEEDBACK_DRAFT_KEY);
+      if (draft && !message.trim()) {
+        setMessage(draft);
+      }
+    } catch {
+      // Ignore localStorage access issues.
+    }
+
     setIsOpen(true);
     setIsSubmitted(false);
     setErrorMessage(null);
@@ -27,6 +46,13 @@ export default function FeedbackButton() {
       setIsSubmitted(false);
       setErrorMessage(null);
     }, 200);
+  };
+
+  const handleTemplateClick = (template: string) => {
+    const nextValue = message.trim()
+      ? `${message.trim()}\n- ${template}`
+      : template;
+    setMessage(nextValue);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,6 +81,12 @@ export default function FeedbackButton() {
       setIsSubmitting(false);
       setIsSubmitted(true);
       setMessage("");
+
+      try {
+        window.localStorage.removeItem(FEEDBACK_DRAFT_KEY);
+      } catch {
+        // Ignore localStorage access issues.
+      }
 
       trackEvent("feedback_submitted", {
         pageUrl: currentPageUrl,
@@ -104,6 +136,11 @@ export default function FeedbackButton() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                handleClose();
+              }
+            }}
             className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#0a0a12] p-5 shadow-[0_0_60px_-15px_rgba(217,70,239,0.4)] sm:rounded-2xl sm:p-6"
           >
             {/* Header */}
@@ -165,6 +202,19 @@ export default function FeedbackButton() {
             ) : (
               /* Feedback form */
               <form onSubmit={handleSubmit} className="mt-4">
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  {FEEDBACK_TEMPLATES.map((template) => (
+                    <button
+                      key={template}
+                      type="button"
+                      onClick={() => handleTemplateClick(template)}
+                      className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/70 transition-colors duration-150 hover:border-fuchsia-400/35 hover:bg-white/10"
+                    >
+                      {template}
+                    </button>
+                  ))}
+                </div>
+
                 <label
                   htmlFor="feedbackMessage"
                   className="text-xs font-bold uppercase tracking-wider text-white/60"
@@ -174,12 +224,24 @@ export default function FeedbackButton() {
                 <textarea
                   id="feedbackMessage"
                   value={message}
-                  onChange={(e) => setMessage(e.target.value)}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setMessage(next);
+                    try {
+                      window.localStorage.setItem(FEEDBACK_DRAFT_KEY, next);
+                    } catch {
+                      // Ignore localStorage access issues.
+                    }
+                  }}
                   placeholder="Bug reports, feature ideas, or anything else..."
                   required
                   rows={4}
                   className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:text-sm"
                 />
+                <div className="mt-1 flex items-center justify-between text-[11px] text-white/35">
+                  <span>Tip: include what you expected and what happened.</span>
+                  <span>{message.trim().length} chars</span>
+                </div>
 
                 {errorMessage && (
                   <p className="mt-2 break-words text-xs text-red-300">

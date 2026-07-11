@@ -29,9 +29,25 @@ export type ProgressSnapshot = {
   unlockedAchievementIds: string[];
 };
 
+export type RankInfo = {
+  label: string;
+  tier: number;
+};
+
+export type SeasonProgress = {
+  seasonNumber: number;
+  seasonXp: number;
+  seasonXpTarget: number;
+  progressPercent: number;
+  checkpointsCleared: number;
+};
+
 export const DAILY_GOAL_BATTLES = 2;
 export const WEEKLY_GOAL_BATTLES = 8;
 export const WEEKLY_GOAL_AVG_ACCURACY = 72;
+export const SEASON_XP_TARGET = 5000;
+
+const GLOBAL_MILESTONES = [500, 1200, 2500, 4000, 6000, 9000, 12000, 16000, 22000];
 
 function defaultSnapshot(): ProgressSnapshot {
   return {
@@ -168,6 +184,51 @@ export function calculateLevel(totalXp: number): {
     xpToNextLevel: 500 - xpInLevel,
     progressPercent: (xpInLevel / 500) * 100,
   };
+}
+
+export function getRankInfo(totalXp: number, bestStreakDays: number): RankInfo {
+  if (totalXp >= 12000 && bestStreakDays >= 21) {
+    return { label: "Grandmaster", tier: 6 };
+  }
+  if (totalXp >= 7500 && bestStreakDays >= 14) {
+    return { label: "Diamond", tier: 5 };
+  }
+  if (totalXp >= 4500) {
+    return { label: "Platinum", tier: 4 };
+  }
+  if (totalXp >= 2500) {
+    return { label: "Gold", tier: 3 };
+  }
+  if (totalXp >= 1200) {
+    return { label: "Silver", tier: 2 };
+  }
+  if (totalXp >= 400) {
+    return { label: "Bronze", tier: 1 };
+  }
+
+  return { label: "Rookie", tier: 0 };
+}
+
+export function getSeasonProgress(totalXp: number): SeasonProgress {
+  const seasonNumber = Math.floor(totalXp / SEASON_XP_TARGET) + 1;
+  const seasonXp = totalXp % SEASON_XP_TARGET;
+  const checkpointsCleared = Math.floor((seasonXp / SEASON_XP_TARGET) * 5);
+
+  return {
+    seasonNumber,
+    seasonXp,
+    seasonXpTarget: SEASON_XP_TARGET,
+    progressPercent: (seasonXp / SEASON_XP_TARGET) * 100,
+    checkpointsCleared,
+  };
+}
+
+export function getNextMilestoneXp(totalXp: number): number | null {
+  const nextGlobal = GLOBAL_MILESTONES.find((value) => value > totalXp);
+  if (typeof nextGlobal === "number") return nextGlobal;
+
+  const nextSeason = Math.ceil((totalXp + 1) / SEASON_XP_TARGET) * SEASON_XP_TARGET;
+  return nextSeason > totalXp ? nextSeason : null;
 }
 
 export function getGoalProgress(snapshot: ProgressSnapshot): {
