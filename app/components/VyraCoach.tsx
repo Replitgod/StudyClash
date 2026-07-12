@@ -23,11 +23,24 @@ type CoachMode =
   | "plan"
   | "rematch";
 
+type ResourceRecommendation = {
+  title: string;
+  source: string;
+  url: string;
+  whyChosen: string;
+  estimatedStudyTime: string;
+  difficulty: "beginner" | "intermediate" | "advanced" | "mixed";
+  resourceType: string;
+  trustTier: "official" | "reputable" | "community";
+};
+
 type CoachMessage = {
   id: string;
   role: "user" | "assistant";
   content: string;
   createdAt: number;
+  resources?: ResourceRecommendation[];
+  resourcesDisclaimer?: string;
 };
 
 type MissedQuestion = {
@@ -369,6 +382,53 @@ export default function VyraCoach(props: VyraCoachProps) {
     });
   }
 
+  async function handleFindResources() {
+    const topic = weakTopics[0] || deckTitle || undefined;
+    const label = topic || courseName || "your weak topics";
+
+    const userEntry = createMessage("user", `Find trustworthy study resources for ${label}.`);
+    setMessages((prev) => [...prev, userEntry]);
+    setIsSending(true);
+    setError(null);
+
+    try {
+      const response = await authFetch("/api/find-resources", {
+        method: "POST",
+        body: JSON.stringify({
+          topic,
+          courseName: courseName || undefined,
+          weakTopics,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data?.error || "VYRA could not find resources right now. Try again shortly.");
+        return;
+      }
+
+      const resources: ResourceRecommendation[] = Array.isArray(data?.resources) ? data.resources : [];
+      const summary =
+        resources.length > 0
+          ? `Found ${resources.length} trustworthy resource${resources.length === 1 ? "" : "s"} for ${label}:`
+          : data?.disclaimer || "No confidently trustworthy resources found for this topic right now.";
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          ...createMessage("assistant", summary),
+          resources,
+          resourcesDisclaimer: resources.length > 0 ? data?.disclaimer : undefined,
+        },
+      ]);
+    } catch {
+      setError("VYRA could not find resources right now. Try again shortly.");
+    } finally {
+      setIsSending(false);
+    }
+  }
+
   // z-index is set via inline style={{ zIndex: UI_Z_INDEX.vyraPanel }} below,
   // not a hardcoded Tailwind z-* class, so the shared uiLayout.ts tier stays
   // the single source of truth for stacking order.
@@ -429,6 +489,7 @@ export default function VyraCoach(props: VyraCoachProps) {
               selectedMode={selectedMode}
               setSelectedMode={setSelectedMode}
               onQuickAction={handleQuickAction}
+            onFindResources={handleFindResources}
               hasBattleData={hasBattleData}
               closePanel={() => setIsOpen(false)}
               listEndRef={listEndRef}
@@ -452,6 +513,7 @@ export default function VyraCoach(props: VyraCoachProps) {
             selectedMode={selectedMode}
             setSelectedMode={setSelectedMode}
             onQuickAction={handleQuickAction}
+            onFindResources={handleFindResources}
             hasBattleData={hasBattleData}
             closePanel={() => setIsOpen(false)}
             listEndRef={listEndRef}
@@ -475,6 +537,7 @@ export default function VyraCoach(props: VyraCoachProps) {
           selectedMode={selectedMode}
           setSelectedMode={setSelectedMode}
           onQuickAction={handleQuickAction}
+          onFindResources={handleFindResources}
           hasBattleData={hasBattleData}
           closePanel={() => setIsOpen(false)}
           listEndRef={listEndRef}
@@ -499,6 +562,7 @@ function ChatPanel(props: {
   selectedMode: CoachMode;
   setSelectedMode: (mode: CoachMode) => void;
   onQuickAction: (entry: (typeof QUICK_ACTIONS)[number]) => Promise<void>;
+  onFindResources: () => Promise<void>;
   hasBattleData: boolean;
   closePanel: () => void;
   listEndRef: React.RefObject<HTMLDivElement | null>;
@@ -518,6 +582,7 @@ function ChatPanel(props: {
     selectedMode,
     setSelectedMode,
     onQuickAction,
+    onFindResources,
     hasBattleData,
     closePanel,
     listEndRef,
@@ -595,14 +660,27 @@ function ChatPanel(props: {
         ))}
       </div>
 
-      {rematchHref && (
-        <Link
-          href={rematchHref}
-          className="mb-2 inline-flex items-center justify-center rounded-xl border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-xs font-bold text-emerald-100"
+      <div className="mb-2 flex flex-wrap gap-2">
+        {rematchHref && (
+          <Link
+            href={rematchHref}
+            className="inline-flex items-center justify-center rounded-xl border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-xs font-bold text-emerald-100"
+          >
+            Start Weak-Topic Rematch
+          </Link>
+        )}
+        <button
+          type="button"
+          onClick={() => void onFindResources()}
+          disabled={isSending}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-amber-400/35 bg-amber-500/15 px-3 py-2 text-xs font-bold text-amber-100 transition-colors hover:bg-amber-500/25 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Start Weak-Topic Rematch
-        </Link>
-      )}
+          <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+          </svg>
+          Find Study Resources
+        </button>
+      </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-3">
         {messages.length === 0 ? (
@@ -615,15 +693,56 @@ function ChatPanel(props: {
         ) : (
           <div className="flex flex-col gap-3">
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`max-w-[96%] whitespace-pre-wrap break-words rounded-xl px-3 py-2.5 text-sm leading-relaxed ${
-                  message.role === "assistant"
-                    ? "self-start border border-cyan-400/20 bg-cyan-500/[0.08] text-white/90"
-                    : "self-end border border-emerald-400/20 bg-emerald-500/[0.08] text-white/90"
-                }`}
-              >
-                {message.content}
+              <div key={message.id} className="flex flex-col gap-2">
+                <div
+                  className={`max-w-[96%] whitespace-pre-wrap break-words rounded-xl px-3 py-2.5 text-sm leading-relaxed ${
+                    message.role === "assistant"
+                      ? "self-start border border-cyan-400/20 bg-cyan-500/[0.08] text-white/90"
+                      : "self-end border border-emerald-400/20 bg-emerald-500/[0.08] text-white/90"
+                  }`}
+                >
+                  {message.content}
+                </div>
+
+                {message.resources && message.resources.length > 0 && (
+                  <div className="flex flex-col gap-2 self-start w-full max-w-[96%]">
+                    {message.resources.map((resource) => (
+                      <a
+                        key={resource.url}
+                        href={resource.url}
+                        target="_blank"
+                        rel="noopener noreferrer nofollow"
+                        className="rounded-xl border border-amber-300/25 bg-amber-500/[0.06] p-3 transition-colors hover:border-amber-300/45 hover:bg-amber-500/[0.1]"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-bold text-white/90">{resource.title}</p>
+                          <span
+                            className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                              resource.trustTier === "official"
+                                ? "border-emerald-300/40 bg-emerald-500/15 text-emerald-200"
+                                : resource.trustTier === "reputable"
+                                  ? "border-cyan-300/40 bg-cyan-500/15 text-cyan-200"
+                                  : "border-white/20 bg-white/5 text-white/60"
+                            }`}
+                          >
+                            {resource.trustTier}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-white/50">{resource.source}</p>
+                        <p className="mt-1.5 text-xs text-white/75">{resource.whyChosen}</p>
+                        <div className="mt-2 flex flex-wrap gap-1.5 text-[10px] font-semibold text-amber-100/80">
+                          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5">{resource.resourceType.replace(/_/g, " ")}</span>
+                          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5">{resource.difficulty}</span>
+                          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5">{resource.estimatedStudyTime}</span>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                )}
+
+                {message.resourcesDisclaimer && (
+                  <p className="max-w-[96%] self-start text-[11px] text-white/40">{message.resourcesDisclaimer}</p>
+                )}
               </div>
             ))}
 
@@ -660,7 +779,7 @@ function ChatPanel(props: {
           onChange={(e) => setInput(e.target.value)}
           placeholder={
             hasBattleData
-              ? "Ask VYRA anything about your study progress..."
+              ? "Ask VYRA anything, or try \"I have an AP Bio exam Friday on cellular respiration\"..."
               : "Choose a deck, topic, or missed question to begin..."
           }
           className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-400/40"

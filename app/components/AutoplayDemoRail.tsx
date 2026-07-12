@@ -72,6 +72,105 @@ const SCENES: Scene[] = [
 
 const SCENE_DURATION_MS = 2600;
 
+// A tiny, tasteful mockup per scene instead of generic pulsing gray bars, so
+// the loop reads as "a peek at the real product" rather than a wireframe.
+function SceneVisual({ sceneId }: { sceneId: string }) {
+  if (sceneId === "upload") {
+    return (
+      <div className="col-span-12 flex items-center gap-3 rounded-xl border border-white/20 bg-white/10 px-3 py-2.5">
+        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-white/20 text-sm">📄</span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-bold text-white/90">chem-notes-unit4.pdf</p>
+          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/20">
+            <div className="h-full w-4/5 rounded-full bg-cyan-300 animate-[demoFill_2400ms_ease-out_forwards]" />
+          </div>
+        </div>
+        <span className="flex-shrink-0 text-[11px] font-bold text-emerald-200">Ready</span>
+      </div>
+    );
+  }
+
+  if (sceneId === "generate") {
+    return (
+      <div className="col-span-12 grid grid-cols-3 gap-1.5">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="rounded-lg border border-white/20 bg-white/10 p-2"
+            style={{ animation: `pulse-enter 380ms ease-brand-bounce ${i * 120}ms both` }}
+          >
+            <div className="h-1.5 w-full rounded bg-white/30" />
+            <div className="mt-1.5 h-1.5 w-2/3 rounded bg-white/20" />
+            <span className="mt-1.5 block text-[9px] font-bold uppercase tracking-wider text-emerald-200">✓ Ready</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (sceneId === "battle-ai") {
+    return (
+      <div className="col-span-12 grid grid-cols-2 gap-1.5">
+        {["A", "B", "C", "D"].map((letter, i) => (
+          <div
+            key={letter}
+            className={`rounded-lg border px-2.5 py-2 text-[11px] font-semibold ${
+              i === 1
+                ? "border-emerald-300/60 bg-emerald-400/25 text-white"
+                : "border-white/15 bg-white/5 text-white/70"
+            }`}
+          >
+            {letter}. {i === 1 ? "Selected ✓" : "Answer option"}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (sceneId === "live") {
+    return (
+      <div className="col-span-12 rounded-xl border border-white/20 bg-white/10 px-3 py-2.5">
+        <div className="flex items-center justify-between text-[11px] font-bold text-white/85">
+          <span>You</span>
+          <span>AI Opponent</span>
+        </div>
+        <div className="mt-1.5 flex h-2 overflow-hidden rounded-full bg-black/20">
+          <div className="h-full w-3/5 bg-cyan-300" />
+          <div className="h-full w-2/5 bg-fuchsia-400/80" />
+        </div>
+      </div>
+    );
+  }
+
+  if (sceneId === "winning") {
+    return (
+      <div className="col-span-12 flex items-center justify-center gap-3 rounded-xl border border-white/20 bg-white/10 px-3 py-3">
+        <span className="text-2xl">🏆</span>
+        <span className="text-lg font-black text-white">You 4 <span className="text-white/50">·</span> AI 3</span>
+      </div>
+    );
+  }
+
+  if (sceneId === "weak-topics") {
+    return (
+      <div className="col-span-12 flex flex-wrap gap-1.5">
+        {["Cell Division 42%", "Enzymes 58%", "Genetics 65%"].map((label) => (
+          <span key={label} className="rounded-full border border-rose-300/40 bg-rose-500/15 px-2.5 py-1 text-[11px] font-bold text-rose-100">
+            {label}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="col-span-12 flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2.5">
+      <span className="text-xs font-semibold text-white/85">Weak-topic rematch ready</span>
+      <span className="rounded-lg bg-white/90 px-3 py-1.5 text-[11px] font-black text-[#051320]">Rematch →</span>
+    </div>
+  );
+}
+
 export default function AutoplayDemoRail() {
   const [index, setIndex] = useState(0);
 
@@ -103,7 +202,7 @@ export default function AutoplayDemoRail() {
         <div className="pointer-events-none absolute -top-16 right-0 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-32 w-32 rounded-full bg-cyan-300/20 blur-3xl" />
 
-        <div className="relative z-10">
+        <div key={SCENES[index].id} className="relative z-10" style={{ animation: "slide-up-fade 320ms ease-out" }}>
           <div className="inline-flex rounded-full border border-white/30 bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white/90">
             {SCENES[index].title}
           </div>
@@ -112,25 +211,11 @@ export default function AutoplayDemoRail() {
           <p className="mt-1 text-xs text-white/75">{SCENES[index].callout}</p>
 
           <div className="mt-5 grid grid-cols-12 gap-2">
-            <div className="col-span-8 space-y-2">
-              <div className="h-3 rounded bg-white/30 animate-pulse" />
-              <div className="h-3 w-4/5 rounded bg-white/25 animate-pulse" />
-              <div className="h-3 w-3/5 rounded bg-white/20 animate-pulse" />
-              <div className="mt-2 rounded-lg border border-white/25 bg-white/10 px-2 py-1 text-[11px] font-semibold text-white/85">
-                {SCENES[index].metric}
-              </div>
-            </div>
-            <div className="col-span-4 rounded-xl border border-white/20 bg-white/10 p-2">
-              <div className="flex h-full flex-col rounded-lg border border-white/20 bg-white/10 p-2">
-                <div className="h-2 rounded bg-white/25 animate-pulse" />
-                <div className="mt-2 h-2 w-4/5 rounded bg-white/20 animate-pulse" />
-                <div className="mt-2 flex-1 rounded border border-white/15 bg-black/15" />
-              </div>
-            </div>
+            <SceneVisual sceneId={SCENES[index].id} />
           </div>
 
           <div className="mt-5 flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-white/80">Scene {index + 1} of {SCENES.length}</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-white/80">{SCENES[index].metric}</span>
             <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-200" />
           </div>
 

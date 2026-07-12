@@ -2284,7 +2284,11 @@ export default function BattlePage() {
         </div>
 
         {/* Question card */}
-        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:p-6 lg:p-7 xl:p-8">
+        <div
+          key={currentQuestion?.id}
+          className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:p-6 lg:p-7 xl:p-8"
+          style={{ animation: "slide-up-fade 240ms ease-out" }}
+        >
           <ConfettiBurst show={showRewardBurst} />
 
           {introCountdown !== null && (
@@ -2292,7 +2296,7 @@ export default function BattlePage() {
               className="absolute inset-0 flex items-center justify-center bg-[#030812]/85 backdrop-blur-sm"
               style={{ zIndex: UI_Z_INDEX.pageContent }}
             >
-              <div className="text-center" style={{ animation: "pulse-enter 260ms ease-out" }}>
+              <div key={introCountdown} className="text-center" style={{ animation: "pulse-enter 260ms ease-out" }}>
                 <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-200">
                   Battle Intro
                 </p>
@@ -2412,11 +2416,20 @@ export default function BattlePage() {
               </p>
 
               {effectiveStudyMode === "rival" && (
-                <p className="mt-2 text-xs text-cyan-200/85">
-                  {isRivalResolving
-                    ? `${rivalReadiness?.rivalName || "Rival"} is locking in an answer...`
-                    : `${rivalReadiness?.rivalName || "Rival"} accuracy: ${rivalAccuracyPercent}% · ${isGhostRival ? "recorded" : "target"} ${rivalReadiness?.targetAccuracy || 0}%`}
-                </p>
+                <div className="mt-2 text-xs text-cyan-200/85">
+                  {isRivalResolving ? (
+                    <span className="inline-flex items-center gap-2">
+                      {rivalReadiness?.rivalName || "Rival"} is locking in an answer
+                      <span className="inline-flex items-center gap-1">
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300 [animation-delay:150ms]" />
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300 [animation-delay:300ms]" />
+                      </span>
+                    </span>
+                  ) : (
+                    <p>{`${rivalReadiness?.rivalName || "Rival"} accuracy: ${rivalAccuracyPercent}% · ${isGhostRival ? "recorded" : "target"} ${rivalReadiness?.targetAccuracy || 0}%`}</p>
+                  )}
+                </div>
               )}
             </div>
           )}

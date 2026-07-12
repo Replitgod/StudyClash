@@ -726,6 +726,32 @@ function getConfidenceStyle(confidence: MistakeBreakdown["confidenceRating"]): {
   };
 }
 
+// Counts up from 0 to `value` once on mount -- the victory score is a "wow"
+// moment and previously rendered as a static number with no motion at all.
+function AnimatedNumber({ value, durationMs = 900 }: { value: number; durationMs?: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    let frameId: number;
+    const startTime = performance.now();
+
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - startTime) / durationMs);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayValue(Math.round(value * eased));
+
+      if (progress < 1) {
+        frameId = requestAnimationFrame(tick);
+      }
+    };
+
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [value, durationMs]);
+
+  return <>{displayValue.toLocaleString()}</>;
+}
+
 export default function ResultsPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -753,6 +779,10 @@ export default function ResultsPage() {
   const [deckLeaderboard, setDeckLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [isLeaderboardLoading, setIsLeaderboardLoading] = useState(false);
   const [battleProgress, setBattleProgress] = useState<BattleProgress | null>(null);
+  // Bars render at 0 width on the frame battleProgress first appears, then
+  // animate to their real width -- without this, the CSS transition has no
+  // "from" state to animate from and the fill just appears already full.
+  const [areProgressBarsAnimated, setAreProgressBarsAnimated] = useState(false);
   const [clashPathReport, setClashPathReport] = useState<ClashPathReport | null>(null);
   const [isClashPathLoading, setIsClashPathLoading] = useState(false);
   const [mistakeHistory, setMistakeHistory] = useState<MistakeHistoryStats>({
@@ -1137,6 +1167,13 @@ export default function ResultsPage() {
     bossTargetAccuracy,
     bossName,
   ]);
+
+  useEffect(() => {
+    if (!battleProgress) return;
+
+    const frame = requestAnimationFrame(() => setAreProgressBarsAnimated(true));
+    return () => cancelAnimationFrame(frame);
+  }, [battleProgress]);
 
   useEffect(() => {
     if (!match || !deck) return;
@@ -2020,8 +2057,8 @@ export default function ResultsPage() {
 
             <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/10">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-cyan-400 transition-all duration-300"
-                style={{ width: `${battleProgress.xpInLevel / 5}%` }}
+                className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-cyan-400 transition-all duration-700 ease-out"
+                style={{ width: areProgressBarsAnimated ? `${battleProgress.xpInLevel / 5}%` : "0%" }}
               />
             </div>
 
@@ -2032,8 +2069,8 @@ export default function ResultsPage() {
               </div>
               <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/30">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300 transition-all duration-700"
-                  style={{ width: `${Math.max(4, battleProgress.seasonProgressPercent)}%` }}
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300 transition-all duration-700 ease-out"
+                  style={{ width: areProgressBarsAnimated ? `${Math.max(4, battleProgress.seasonProgressPercent)}%` : "0%" }}
                 />
               </div>
 
@@ -2538,7 +2575,7 @@ export default function ResultsPage() {
           {/* Big score */}
           <div className="text-center">
             <span className="text-5xl font-black bg-gradient-to-r from-fuchsia-400 to-cyan-400 bg-clip-text text-transparent sm:text-6xl md:text-7xl">
-              {match.score}
+              <AnimatedNumber value={match.score} />
             </span>
             <p className="mt-1 text-xs font-bold uppercase tracking-wider text-white/40">
               Points

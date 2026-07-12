@@ -49,6 +49,8 @@ type MistakeRow = {
 
 type TopicStatus = "mastered" | "improving" | "weak";
 
+type ReviewUrgency = "overdue" | "due_soon" | "scheduled" | "unscheduled";
+
 type TopicNode = {
   topic: string;
   accuracy: number;
@@ -63,6 +65,8 @@ type TopicNode = {
   bossHref: string;
   attemptedCount: number;
   missedCount: number;
+  nextReviewLabel: string;
+  reviewUrgency: ReviewUrgency;
 };
 
 type SubjectMastery = {
@@ -149,6 +153,55 @@ function getRecommendedAction(status: TopicStatus, missedCount: number): string 
   }
 
   return "Revisit concept explanations, then rematch weakness.";
+}
+
+// Lightweight spaced-repetition schedule: weak topics come back fast (cram
+// pressure), improving topics get a short gap, and mastered topics get a
+// growing interval the more times they've been drilled -- so a topic you've
+// mastered 8 times gets left alone longer than one you've only just crossed
+// into "mastered" on.
+function getReviewIntervalDays(status: TopicStatus, attemptedCount: number): number {
+  if (status === "weak") return 1;
+  if (status === "improving") return 3;
+  return Math.min(21, 7 + Math.max(0, attemptedCount - 3) * 2);
+}
+
+function getReviewSchedule(args: {
+  status: TopicStatus;
+  attemptedCount: number;
+  lastPracticedTs: number;
+}): { label: string; urgency: ReviewUrgency } {
+  const { status, attemptedCount, lastPracticedTs } = args;
+
+  if (lastPracticedTs <= 0) {
+    return { label: "Not scheduled yet -- practice once to start review timing.", urgency: "unscheduled" };
+  }
+
+  const intervalDays = getReviewIntervalDays(status, attemptedCount);
+  const nextReviewTs = lastPracticedTs + intervalDays * 24 * 60 * 60 * 1000;
+  const msUntilDue = nextReviewTs - Date.now();
+  const daysUntilDue = Math.ceil(msUntilDue / (24 * 60 * 60 * 1000));
+
+  if (daysUntilDue <= 0) {
+    return { label: "Review due now", urgency: "overdue" };
+  }
+
+  if (daysUntilDue === 1) {
+    return { label: "Review due tomorrow", urgency: "due_soon" };
+  }
+
+  if (daysUntilDue <= 2) {
+    return { label: `Review due in ${daysUntilDue} days`, urgency: "due_soon" };
+  }
+
+  return { label: `Next review in ${daysUntilDue} days`, urgency: "scheduled" };
+}
+
+function getReviewBadgeStyle(urgency: ReviewUrgency): string {
+  if (urgency === "overdue") return "border-red-400/40 bg-red-500/15 text-red-200";
+  if (urgency === "due_soon") return "border-amber-400/40 bg-amber-500/15 text-amber-200";
+  if (urgency === "unscheduled") return "border-white/15 bg-white/5 text-white/50";
+  return "border-cyan-400/30 bg-cyan-500/10 text-cyan-200";
 }
 
 function getMistakeLabel(raw: string | undefined): string {
@@ -367,6 +420,11 @@ function MasteryMapPageContent() {
               const speed =
                 stats.speedCount > 0 ? Math.round(stats.speedSum / stats.speedCount) : 0;
               const status = getStatus(accuracy);
+              const reviewSchedule = getReviewSchedule({
+                status,
+                attemptedCount: stats.total,
+                lastPracticedTs: stats.lastPracticedTs,
+              });
 
               return {
                 topic,
@@ -386,6 +444,8 @@ function MasteryMapPageContent() {
                 bossHref: `/battle/${deck.id}?mode=boss`,
                 attemptedCount: stats.total,
                 missedCount: stats.misses,
+                nextReviewLabel: reviewSchedule.label,
+                reviewUrgency: reviewSchedule.urgency,
               };
             })
             .sort((a, b) => a.accuracy - b.accuracy || b.attemptedCount - a.attemptedCount);
@@ -670,10 +730,19 @@ function MasteryMapPageContent() {
                         >
                           <div className="flex items-start justify-between gap-2">
                             <h3 className="text-sm font-bold leading-tight text-white">{topic.topic}</h3>
-                            <span className="rounded-full border border-white/15 bg-black/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/80">
+                            <span className="flex-shrink-0 rounded-full border border-white/15 bg-black/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/80">
                               {topic.status}
                             </span>
                           </div>
+
+                          <span
+                            className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getReviewBadgeStyle(topic.reviewUrgency)}`}
+                          >
+                            {(topic.reviewUrgency === "overdue" || topic.reviewUrgency === "due_soon") && (
+                              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
+                            )}
+                            {topic.nextReviewLabel}
+                          </span>
 
                           <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
                             <div className="rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
@@ -757,7 +826,7 @@ function MasteryMapPageContent() {
                       <p className="mt-1 text-2xl font-black text-white">{subject.masteryPercent}%</p>
                       <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-emerald-400"
+                          className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-emerald-400 transition-all duration-700 ease-out"
                           style={{ width: `${subject.masteryPercent}%` }}
                         />
                       </div>

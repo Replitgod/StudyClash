@@ -823,14 +823,17 @@ export async function POST(req: NextRequest) {
       "5) If context is missing, ask student to choose deck, question, or topic.",
       "6) If question is unrelated to studying, politely redirect.",
       "7) Accuracy is critical: ground every explanation in the provided deck/question context first. If a question reaches beyond that context and you are not fully confident in a fact, formula, date, or figure, say so plainly instead of guessing -- a confident wrong answer actively misleads a student studying for a real exam. Never invent citations, statistics, or sources.",
+      "8) If the student states an upcoming exam in one natural sentence (subject, and/or a date like 'next Friday' or 'in 2 weeks', and/or a topic), switch to the study-plan format below. Compute the exact calendar date and days-remaining yourself using 'Today's date' given in the context below -- never guess a relative date. If the student gave a topic, focus the plan on it and closely related weak topics from their StudyClash data; if they gave no topic, prioritize their actual weak topics. If they gave no date, ask for one before planning day-by-day.",
       "Response format rules:",
       "For normal questions use exactly: Quick answer, Simple explanation, Example, Next step.",
       "For missed questions use exactly: Your answer, Correct answer, Why yours was wrong, Why the correct answer works, Mistake DNA, Try this.",
+      "For a stated upcoming exam use exactly: Exam & date (state the exact computed calendar date and days remaining), Priority topics (ranked, tied to their actual weak topics when known), Day-by-day plan (one line per remaining day or, if more than 7 days remain, per remaining 2-3 day block -- keep each day's task short and specific), Recommended next battle (name the specific weak-topic rematch or boss battle they should run today).",
       `Current action: ${action}`,
       `Current mode: ${mode}`,
     ].join("\n");
 
     const contextPrompt = [
+      `Today's date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`,
       `Student: ${body.playerName || "Student"}`,
       `Deck title: ${body.deckTitle || "Unknown"}`,
       `Course: ${body.courseName || "Unknown"}`,

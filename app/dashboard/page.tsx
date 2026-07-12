@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
 import VyraCoach from "@/app/components/VyraCoach";
+import { EmptyState } from "@/app/components/ui/EmptyState";
 import {
   ACHIEVEMENTS,
   calculateLevel,
@@ -980,9 +981,15 @@ export default function DashboardPage() {
                 Keep momentum with daily and weekly study goals.
               </p>
             </div>
-            <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-right">
+            <div className="w-full max-w-[180px] rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-right">
               <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">XP in level</p>
               <p className="mt-1 text-base font-black text-emerald-200">{levelInfo.xpInLevel}/500</p>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300 transition-all duration-700 ease-out"
+                  style={{ width: `${Math.min(100, (levelInfo.xpInLevel / 500) * 100)}%` }}
+                />
+              </div>
             </div>
           </div>
 
@@ -999,8 +1006,17 @@ export default function DashboardPage() {
                 style={{ width: `${Math.max(4, seasonInfo.progressPercent)}%` }}
               />
             </div>
-            <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-cyan-100/80">
-              <span>Streak {localProgress?.currentStreakDays || 0}d</span>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-cyan-100/80">
+              <span
+                className={`inline-flex items-center gap-1 font-bold ${
+                  (localProgress?.currentStreakDays || 0) > 0 ? "text-amber-300" : "text-cyan-100/80"
+                }`}
+              >
+                <svg className="h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2c1.2 3-1 4.6-1 7 0 1.4 1 2.5 2.3 2.5 1.4 0 2.2-1 2.2-2.2 2.3 1.7 3.5 4 3.5 6.4C19 19.7 15.9 22 12 22S5 19.7 5 15.7c0-4 3-7.4 7-13.7z" />
+                </svg>
+                Streak {localProgress?.currentStreakDays || 0}d
+              </span>
               <span>•</span>
               <span>Best streak {localProgress?.bestStreakDays || 0}d</span>
               {nextMilestoneXp !== null && (
@@ -1039,14 +1055,24 @@ export default function DashboardPage() {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-1.5">
-            {(combinedBadges.length > 0 ? combinedBadges : ["No badges unlocked yet"]).map((badge) => (
-              <span
-                key={badge}
-                className="rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-100"
-              >
-                {badge}
+            {combinedBadges.length > 0 ? (
+              combinedBadges.map((badge) => (
+                <span
+                  key={badge}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-100"
+                  style={{ animation: "pulse-enter 320ms ease-brand-bounce" }}
+                >
+                  <svg className="h-3 w-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2l2.4 6.6L21 9.3l-5.2 4.3L17.5 20 12 16.4 6.5 20l1.7-6.4L3 9.3l6.6-.7L12 2z" />
+                  </svg>
+                  {badge}
+                </span>
+              ))
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-white/15 px-2.5 py-1 text-[11px] font-semibold text-white/40">
+                No badges unlocked yet -- win a battle to earn your first
               </span>
-            ))}
+            )}
           </div>
 
           {localProgress && localProgress.historyAccuracies.length > 0 && (
@@ -1384,9 +1410,17 @@ export default function DashboardPage() {
                 Loading your decks...
               </div>
             ) : recentDecks.length === 0 ? (
-              <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-5 text-sm text-white/50">
-                No decks yet. Create your first one to start building your study library.
-              </div>
+              <EmptyState
+                icon={
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                }
+                title="No decks yet"
+                description="Create your first one to start building your study library."
+                actionLabel="Create a deck"
+                actionHref="/create"
+              />
             ) : (
               <div className="space-y-3">
                 {recentDecks.map((deck) => (
@@ -1419,9 +1453,17 @@ export default function DashboardPage() {
                 Loading recent matches...
               </div>
             ) : recentMatches.length === 0 ? (
-              <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-5 text-sm text-white/50">
-                No battles yet. Challenge yourself with one of your decks.
-              </div>
+              <EmptyState
+                icon={
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
+                }
+                title="No battles yet"
+                description="Challenge yourself with one of your decks to start earning XP."
+                actionLabel="Battle an AI"
+                actionHref="/#battle-ai"
+              />
             ) : (
               <div className="space-y-3">
                 {recentMatches.map((match) => (
