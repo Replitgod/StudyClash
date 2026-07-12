@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractText } from "unpdf";
 import {
-  checkInMemoryRateLimit,
   getClientIpAddress,
   hashIdentifier,
   requireAuthenticatedUser,
 } from "@/lib/server/apiUtils";
+import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 
 export const runtime = "nodejs";
 
@@ -23,10 +23,10 @@ export async function POST(req: NextRequest) {
 
     const ip = getClientIpAddress(req);
     const ipHash = hashIdentifier(ip);
-    const rateLimit = checkInMemoryRateLimit({
+    const rateLimit = await checkDistributedRateLimit({
       key: `extract-pdf:${ipHash}`,
       limit: 20,
-      windowMs: 60_000,
+      windowSeconds: 60,
     });
 
     if (!rateLimit.allowed) {

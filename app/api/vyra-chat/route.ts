@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import {
-  checkInMemoryRateLimit,
   getClientIpAddress,
   hashIdentifier,
 } from "@/lib/server/apiUtils";
+import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 
 type CoachAction =
   | "ask"
@@ -577,10 +577,10 @@ export async function POST(req: NextRequest) {
 
     if (!authedUserId) {
       const ipHash = hashIdentifier(getClientIpAddress(req));
-      const limit = checkInMemoryRateLimit({
+      const limit = await checkDistributedRateLimit({
         key: `vyra-chat-unauth:${ipHash}`,
         limit: VYRA_UNAUTH_LIMIT,
-        windowMs: VYRA_UNAUTH_WINDOW_MS,
+        windowSeconds: VYRA_UNAUTH_WINDOW_MS / 1000,
       });
 
       if (!limit.allowed) {
@@ -593,10 +593,10 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const dailyLimit = checkInMemoryRateLimit({
+      const dailyLimit = await checkDistributedRateLimit({
         key: `vyra-chat-unauth-daily:${ipHash}`,
         limit: VYRA_UNAUTH_DAILY_LIMIT,
-        windowMs: VYRA_UNAUTH_DAILY_WINDOW_MS,
+        windowSeconds: VYRA_UNAUTH_DAILY_WINDOW_MS / 1000,
       });
 
       if (!dailyLimit.allowed) {

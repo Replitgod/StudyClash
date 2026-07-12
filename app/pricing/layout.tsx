@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     "student study app subscription",
   ],
   openGraph: {
-    title: "StudyClash Pricing | Free And Pilot Plans",
+    title: "StudyClash Pricing | Free And Pro Plans",
     description:
       "Compare Free Beta, Pro, Team, and Exam Tunnel pricing options.",
     url: "/pricing",

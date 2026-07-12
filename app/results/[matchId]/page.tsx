@@ -762,6 +762,7 @@ export default function ResultsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [shareToken, setShareToken] = useState<string | null>(null);
 
   // Weak topic report state.
   const [weakTopics, setWeakTopics] = useState<WeakTopic[] | null>(null);
@@ -1464,10 +1465,26 @@ export default function ResultsPage() {
     const accuracyPercent = Math.round(
       (match.correct_answers / match.total_questions) * 100
     );
-    const challengeLink = `${window.location.origin}/challenge/${match.id}`;
-    const shareMessage = `${buildChallengeMessage(deck.title, accuracyPercent)} ${challengeLink}`;
 
     try {
+      let token = shareToken;
+      if (!token) {
+        const response = await fetch("/api/challenge/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ matchId: match.id }),
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data?.token) {
+          throw new Error(data?.error || "Could not create a share link.");
+        }
+        token = data.token as string;
+        setShareToken(token);
+      }
+
+      const challengeLink = `${window.location.origin}/challenge/${token}`;
+      const shareMessage = `${buildChallengeMessage(deck.title, accuracyPercent)} ${challengeLink}`;
+
       await navigator.clipboard.writeText(shareMessage);
       setLinkCopied(true);
       safeTrackEvent("challenge_link_copied", {
@@ -2679,7 +2696,9 @@ export default function ResultsPage() {
           </div>
 
           <p className="mt-3 text-center text-xs text-white/35">
-            Challenge link: /challenge/{match.id}
+            {shareToken
+              ? `Challenge link: /challenge/${shareToken}`
+              : "A fresh challenge link is created when you copy the message."}
           </p>
         </div>
 

@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
 import { FLOATING_ACTION, UI_Z_INDEX } from "@/lib/uiLayout";
+import { Skeleton } from "@/app/components/ui/Skeleton";
 import type { User } from "@supabase/supabase-js";
 import type { Profile } from "@/lib/useAuth";
 
@@ -14,6 +15,15 @@ const GENERATION_STEPS = [
   "Creating questions",
   "Saving battle",
   "Preparing arena",
+];
+
+// Rotates alongside GENERATION_STEPS so the loading screen has something to
+// say instead of just a spinner — cycles on the same timer via currentStep.
+const GENERATION_TIPS = [
+  "The AI opponent is already warming up.",
+  "Most rematches beat the first score. Will you?",
+  "Every wrong answer gets logged to your Weak Topic Report.",
+  "One click gets you a rematch — don't overthink round one.",
 ];
 
 const COURSE_OPTIONS = [
@@ -236,6 +246,30 @@ function SectionHeader({ step, title }: { step: number; title: string }) {
   );
 }
 
+// Client-side upload guards. Mirrors the server's MAX_NOTES_CHARACTERS cap
+// (app/api/generate-questions/route.ts) so oversized notes get truncated
+// with a clear message here instead of failing a generic 400 after the
+// user has already sat through the full upload + generation flow.
+const MAX_UPLOAD_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_NOTES_CHARACTERS = 120_000;
+const ACCEPTED_TEXT_MIME_TYPES = new Set(["text/plain", ""]);
+const ACCEPTED_PDF_MIME_TYPES = new Set(["application/pdf", ""]);
+
+function formatFileSize(bytes: number): string {
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
+// Caps notes text to what the model can reliably process in one request.
+// This app sends the whole deck-generation prompt in a single call rather
+// than chunking + merging multiple LLM calls, so "chunking" here means
+// truncating to the largest chunk the pipeline actually supports and
+// telling the user, rather than sending an oversized payload that risks a
+// slow/failed generation call.
+function chunkNotesToLimit(text: string, limit: number): { text: string; wasTruncated: boolean } {
+  if (text.length <= limit) return { text, wasTruncated: false };
+  return { text: text.slice(0, limit), wasTruncated: true };
+}
+
 // Reads a File object's contents as plain text. Used for .txt uploads,
 // both single-file and folder-based multi-file uploads.
 function readFileAsText(file: File): Promise<string> {
@@ -333,6 +367,7 @@ export default function CreateDeck() {
   );
   const [isProcessingUpload, setIsProcessingUpload] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadWarning, setUploadWarning] = useState<string | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
 
   const applyPreset = (preset: (typeof CREATE_PRESETS)[number]) => {
@@ -524,6 +559,7 @@ export default function CreateDeck() {
     if (!fileList || fileList.length === 0) return;
 
     setUploadError(null);
+    setUploadWarning(null);
     setUploadedFileName(null);
     setErrorMessage(null);
 
@@ -536,9 +572,26 @@ export default function CreateDeck() {
 
     const file = fileList[0];
     const lowerName = file.name.toLowerCase();
+    const isPdfName = lowerName.endsWith(".pdf");
+    const isTxtName = lowerName.endsWith(".txt");
 
-    if (!lowerName.endsWith(".pdf") && !lowerName.endsWith(".txt")) {
+    if (!isPdfName && !isTxtName) {
       setUploadError("Please upload a PDF or .txt file.");
+      return;
+    }
+
+    // Belt-and-suspenders type check: extension alone can be spoofed, so
+    // also check the browser-reported MIME type when one is present.
+    const acceptedMimeTypes = isPdfName ? ACCEPTED_PDF_MIME_TYPES : ACCEPTED_TEXT_MIME_TYPES;
+    if (file.type && !acceptedMimeTypes.has(file.type)) {
+      setUploadError(`That file doesn't look like a ${isPdfName ? "PDF" : "text"} file. Please check the file and try again.`);
+      return;
+    }
+
+    if (file.size > MAX_UPLOAD_FILE_SIZE_BYTES) {
+      setUploadError(
+        `That file is ${formatFileSize(file.size)}, which is over the 5MB limit. Try a shorter excerpt or split it into smaller files.`
+      );
       return;
     }
 
@@ -576,7 +629,13 @@ export default function CreateDeck() {
           return;
         }
 
-        setNotes(extractedText);
+        const chunked = chunkNotesToLimit(extractedText, MAX_NOTES_CHARACTERS);
+        if (chunked.wasTruncated) {
+          setUploadWarning(
+            `This PDF was long, so we kept the first ${MAX_NOTES_CHARACTERS.toLocaleString()} characters to keep generation fast.`
+          );
+        }
+        setNotes(chunked.text);
       } else {
         const text = (await readFileAsText(file)).trim();
         if (!text) {
@@ -584,7 +643,13 @@ export default function CreateDeck() {
           return;
         }
 
-        setNotes(text);
+        const chunked = chunkNotesToLimit(text, MAX_NOTES_CHARACTERS);
+        if (chunked.wasTruncated) {
+          setUploadWarning(
+            `This file was long, so we kept the first ${MAX_NOTES_CHARACTERS.toLocaleString()} characters to keep generation fast.`
+          );
+        }
+        setNotes(chunked.text);
       }
 
       setUploadedFileName(file.name);
@@ -604,6 +669,7 @@ export default function CreateDeck() {
     if (!fileList || fileList.length === 0) return;
 
     setUploadError(null);
+    setUploadWarning(null);
     setUploadedFileName(null);
     setErrorMessage(null);
 
@@ -614,6 +680,14 @@ export default function CreateDeck() {
     if (txtFiles.length === 0) {
       setUploadError(
         "No .txt files were found in that folder. Folder upload only supports .txt files."
+      );
+      return;
+    }
+
+    const oversizedFile = txtFiles.find((f) => f.size > MAX_UPLOAD_FILE_SIZE_BYTES);
+    if (oversizedFile) {
+      setUploadError(
+        `"${oversizedFile.name}" is ${formatFileSize(oversizedFile.size)}, which is over the 5MB per-file limit.`
       );
       return;
     }
@@ -636,7 +710,14 @@ export default function CreateDeck() {
         return;
       }
 
-      setNotes(combinedText);
+      const chunked = chunkNotesToLimit(combinedText, MAX_NOTES_CHARACTERS);
+      if (chunked.wasTruncated) {
+        setUploadWarning(
+          `Combined notes were long, so we kept the first ${MAX_NOTES_CHARACTERS.toLocaleString()} characters to keep generation fast.`
+        );
+      }
+
+      setNotes(chunked.text);
       setUploadedFileName(
         `${txtFiles.length} .txt file${txtFiles.length > 1 ? "s" : ""} from folder`
       );
@@ -683,6 +764,7 @@ export default function CreateDeck() {
   const handleRemoveUpload = () => {
     setUploadedFileName(null);
     setUploadError(null);
+    setUploadWarning(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (folderInputRef.current) folderInputRef.current.value = "";
   };
@@ -1490,6 +1572,10 @@ export default function CreateDeck() {
             <p role="alert" aria-live="assertive" className="mt-3 text-xs text-red-300">{uploadError}</p>
           )}
 
+          {!uploadError && uploadWarning && (
+            <p role="status" className="mt-3 text-xs text-amber-300">{uploadWarning}</p>
+          )}
+
           {/* Notes textarea */}
           <div className="mt-5 flex flex-col gap-2">
             <div className="flex items-center justify-between gap-2">
@@ -1682,6 +1768,14 @@ export default function CreateDeck() {
               This usually takes about 10-20 seconds
             </p>
 
+            <p
+              key={currentStep}
+              className="mt-3 text-center text-xs font-semibold text-fuchsia-200/80"
+              style={{ animation: "slide-up-fade 300ms ease-out" }}
+            >
+              {GENERATION_TIPS[currentStep % GENERATION_TIPS.length]}
+            </p>
+
             {/* Step list */}
             <div className="mt-6 flex flex-col gap-2.5 sm:mt-7 sm:gap-3">
               {GENERATION_STEPS.map((step, index) => {
@@ -1712,22 +1806,25 @@ export default function CreateDeck() {
                       )}
                     </div>
 
-                    <span
-                      className={`text-sm font-semibold ${
-                        isActive
-                          ? "text-white"
-                          : isComplete
-                          ? "text-emerald-300"
-                          : "text-white/40"
-                      }`}
-                    >
-                      {step}
-                      {isActive && (
-                        <span className="ml-0.5 inline-block animate-pulse">
-                          ...
-                        </span>
-                      )}
-                    </span>
+                    <div className="min-w-0 flex-1">
+                      <span
+                        className={`text-sm font-semibold ${
+                          isActive
+                            ? "text-white"
+                            : isComplete
+                            ? "text-emerald-300"
+                            : "text-white/40"
+                        }`}
+                      >
+                        {step}
+                        {isActive && (
+                          <span className="ml-0.5 inline-block animate-pulse">
+                            ...
+                          </span>
+                        )}
+                      </span>
+                      {isActive && <Skeleton className="mt-2 h-2 w-3/4" />}
+                    </div>
                   </div>
                 );
               })}

@@ -202,7 +202,11 @@ export default function AutoplayDemoRail() {
         <div className="pointer-events-none absolute -top-16 right-0 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-32 w-32 rounded-full bg-cyan-300/20 blur-3xl" />
 
-        <div key={SCENES[index].id} className="relative z-10" style={{ animation: "slide-up-fade 320ms ease-out" }}>
+        <div
+          key={SCENES[index].id}
+          className="relative z-10 min-h-[300px] sm:min-h-[270px]"
+          style={{ animation: "slide-up-fade 320ms ease-out" }}
+        >
           <div className="inline-flex rounded-full border border-white/30 bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-white/90">
             {SCENES[index].title}
           </div>

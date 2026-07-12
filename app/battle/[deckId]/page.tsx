@@ -9,6 +9,7 @@ import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
 import VyraCoach from "@/app/components/VyraCoach";
 import ConfettiBurst from "@/app/components/ConfettiBurst";
+import { OpponentFace, moodFromStreak } from "@/app/components/OpponentFace";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
 import {
   calculateLevel,
@@ -520,9 +521,11 @@ export default function BattlePage() {
   const [hasStarted, setHasStarted] = useState(false);
   const [introCountdown, setIntroCountdown] = useState<number | null>(null);
   const [showRewardBurst, setShowRewardBurst] = useState(false);
+  const [wrongShake, setWrongShake] = useState(false);
   const [engagementPreview, setEngagementPreview] =
     useState<EngagementPreview | null>(null);
   const rewardBurstTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wrongShakeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Quiz progress
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -1112,6 +1115,9 @@ export default function BattlePage() {
       if (rewardBurstTimerRef.current) {
         clearTimeout(rewardBurstTimerRef.current);
       }
+      if (wrongShakeTimerRef.current) {
+        clearTimeout(wrongShakeTimerRef.current);
+      }
     };
   }, []);
 
@@ -1234,6 +1240,14 @@ export default function BattlePage() {
     } else {
       setCurrentStreak(0);
       setLastPointsEarned(0);
+      setWrongShake(true);
+      if (wrongShakeTimerRef.current) {
+        clearTimeout(wrongShakeTimerRef.current);
+      }
+      wrongShakeTimerRef.current = setTimeout(() => {
+        setWrongShake(false);
+        wrongShakeTimerRef.current = null;
+      }, 420);
     }
 
     if (effectiveStudyMode !== "rival" || !rivalReadiness) {
@@ -2164,9 +2178,12 @@ export default function BattlePage() {
         {effectiveStudyMode === "rival" && rivalReadiness && (
           <div className="mb-3 rounded-xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/[0.1] via-black/25 to-fuchsia-500/[0.08] px-3.5 py-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">
-                {isGhostRival ? "Ghost Rival Arena" : "Study Rival Arena"}
-              </p>
+              <div className="flex items-center gap-2.5">
+                <OpponentFace mood={moodFromStreak(rivalCurrentStreak)} className="h-9 w-9 text-lg" />
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">
+                  {isGhostRival ? "Ghost Rival Arena" : "Study Rival Arena"}
+                </p>
+              </div>
               <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-fuchsia-200">
                 {rivalReadiness.rivalName} · {rivalReadiness.rank}
               </span>
@@ -2287,7 +2304,11 @@ export default function BattlePage() {
         <div
           key={currentQuestion?.id}
           className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:p-6 lg:p-7 xl:p-8"
-          style={{ animation: "slide-up-fade 240ms ease-out" }}
+          style={{
+            animation: wrongShake
+              ? "slide-up-fade 240ms ease-out, battle-shake 420ms ease-in-out"
+              : "slide-up-fade 240ms ease-out",
+          }}
         >
           <ConfettiBurst show={showRewardBurst} />
 

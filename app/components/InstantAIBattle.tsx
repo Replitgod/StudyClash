@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import ConfettiBurst from "./ConfettiBurst";
+import { OpponentFace, type OpponentMood } from "./OpponentFace";
 
 type Difficulty = "easy" | "medium" | "hard" | "adaptive";
 
@@ -151,6 +154,54 @@ function pickWrongChoice(question: Question): string {
   return wrong[Math.floor(Math.random() * wrong.length)] || question.choices[0];
 }
 
+// Lightweight synthesized SFX (no audio assets needed) — chirps for correct/
+// wrong/win/lose, all triggered from a user gesture (button click) so no
+// autoplay-policy issues.
+function playTone(notes: Array<{ freq: number; startMs: number; durationMs: number; type?: OscillatorType }>) {
+  try {
+    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+
+    notes.forEach(({ freq, startMs, durationMs, type = "sine" }) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      const start = ctx.currentTime + startMs / 1000;
+      const end = start + durationMs / 1000;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.14, start + 0.01);
+      gain.gain.linearRampToValueAtTime(0, end);
+      osc.start(start);
+      osc.stop(end + 0.02);
+    });
+
+    window.setTimeout(() => ctx.close(), 1200);
+  } catch {
+    // Web Audio unsupported or blocked — sound is a nice-to-have, fail silent.
+  }
+}
+
+const SFX = {
+  playerCorrect: () => playTone([{ freq: 720, startMs: 0, durationMs: 90 }, { freq: 980, startMs: 90, durationMs: 120 }]),
+  playerWrong: () => playTone([{ freq: 220, startMs: 0, durationMs: 180, type: "sawtooth" }]),
+  win: () =>
+    playTone([
+      { freq: 523, startMs: 0, durationMs: 110 },
+      { freq: 659, startMs: 110, durationMs: 110 },
+      { freq: 784, startMs: 220, durationMs: 220 },
+    ]),
+  lose: () =>
+    playTone([
+      { freq: 392, startMs: 0, durationMs: 140, type: "triangle" },
+      { freq: 293, startMs: 140, durationMs: 260, type: "triangle" },
+    ]),
+};
+
 export default function InstantAIBattle() {
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
   const [questionIds, setQuestionIds] = useState<string[]>([]);
@@ -165,9 +216,14 @@ export default function InstantAIBattle() {
   const [aiScore, setAiScore] = useState(0);
   const [waitingForAi, setWaitingForAi] = useState(false);
   const [roundStats, setRoundStats] = useState<RoundStats[]>([]);
+  const [showDifficultyPicker, setShowDifficultyPicker] = useState(false);
+  const [shake, setShake] = useState(false);
+  const [lastAiCorrect, setLastAiCorrect] = useState<boolean | null>(null);
+  const [soundOn, setSoundOn] = useState(true);
 
   const aiTimerRef = useRef<number | null>(null);
   const roundStartMsRef = useRef<number>(0);
+  const shakeTimerRef = useRef<number | null>(null);
 
   const questionList = useMemo(
     () => questionIds.map((id) => QUESTIONS.find((q) => q.id === id)).filter(Boolean) as Question[],
@@ -234,13 +290,30 @@ export default function InstantAIBattle() {
     return "Balanced";
   }, [difficulty, roundStats]);
 
+  const aiMood: OpponentMood = useMemo(() => {
+    if (battleFinished) return aiScore >= playerScore ? "victorious" : "defeated";
+    if (waitingForAi) return "thinking";
+    if (lastAiCorrect === true) return "gloating";
+    if (lastAiCorrect === false) return "rattled";
+    return "idle";
+  }, [battleFinished, waitingForAi, lastAiCorrect, aiScore, playerScore]);
+
   useEffect(() => {
     return () => {
       if (aiTimerRef.current) {
         window.clearTimeout(aiTimerRef.current);
       }
+      if (shakeTimerRef.current) {
+        window.clearTimeout(shakeTimerRef.current);
+      }
     };
   }, []);
+
+  const triggerShake = () => {
+    setShake(true);
+    if (shakeTimerRef.current) window.clearTimeout(shakeTimerRef.current);
+    shakeTimerRef.current = window.setTimeout(() => setShake(false), 420);
+  };
 
   const startBattle = (level: Difficulty) => {
     if (aiTimerRef.current) {
@@ -255,6 +328,8 @@ export default function InstantAIBattle() {
     setAiScore(0);
     setRoundStats([]);
     setWaitingForAi(false);
+    setLastAiCorrect(null);
+    setShowDifficultyPicker(false);
     roundStartMsRef.current = Date.now();
   };
 
@@ -281,6 +356,13 @@ export default function InstantAIBattle() {
     const playerCorrect = choice === currentQuestion.correct;
     if (playerCorrect) {
       setPlayerScore((prev) => prev + 1);
+    }
+    if (soundOn) {
+      if (playerCorrect) {
+        SFX.playerCorrect();
+      } else {
+        SFX.playerWrong();
+      }
     }
 
     setRound({
@@ -311,6 +393,8 @@ export default function InstantAIBattle() {
         aiResponseMs: clampedResponseMs,
         playerResponseMs,
       });
+      setLastAiCorrect(aiCorrect);
+      triggerShake();
 
       setRoundStats((prev) => [
         ...prev,
@@ -330,12 +414,22 @@ export default function InstantAIBattle() {
     if (!battleStarted || waitingForAi) return;
 
     if (index >= totalRounds - 1) {
+      const finalPlayerScore = playerScore;
+      const finalAiScore = aiScore;
+      if (soundOn) {
+        if (finalPlayerScore >= finalAiScore) {
+          SFX.win();
+        } else {
+          SFX.lose();
+        }
+      }
       setIndex(totalRounds);
       return;
     }
 
     setIndex((prev) => prev + 1);
     setRound({ playerChoice: null, aiChoice: null, aiResponseMs: null, playerResponseMs: null });
+    setLastAiCorrect(null);
     roundStartMsRef.current = Date.now();
   };
 
@@ -354,60 +448,80 @@ export default function InstantAIBattle() {
         ? "You win this duel."
         : "AI wins this duel.";
 
+  const playerWon = playerScore >= aiScore;
+
   return (
-    <section id="battle-ai" className="w-full rounded-3xl border border-cyan-300/25 bg-[#061325]/95 p-4 shadow-[0_40px_90px_-55px_rgba(6,182,212,0.85)] sm:p-6">
+    <section
+      id="battle-ai"
+      className={`w-full rounded-3xl border border-cyan-300/25 bg-[#061325]/95 p-4 shadow-[0_40px_90px_-55px_rgba(6,182,212,0.85)] sm:p-6 ${
+        shake ? "animate-[battle-shake_420ms_ease-in-out]" : ""
+      }`}
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Instant Mode</p>
           <h2 className="mt-1 text-2xl font-black text-white sm:text-3xl">Battle an AI in One Click</h2>
-          <p className="mt-1 text-sm text-cyan-100/80">No lobby. No waiting room. Tap start and answer 5 quick questions.</p>
+          <p className="mt-1 text-sm text-cyan-100/80">No lobby. Tap start and answer 5 quick questions.</p>
         </div>
-        <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.12em] text-cyan-100/90">
+        <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-cyan-100/90">
           <span className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1">No Signup Needed</span>
           <span className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1">~60 Seconds</span>
-          <span className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1">5 Questions</span>
+          <button
+            type="button"
+            onClick={() => setSoundOn((prev) => !prev)}
+            className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 normal-case tracking-normal"
+            aria-pressed={soundOn}
+            title={soundOn ? "Sound on" : "Sound off"}
+          >
+            {soundOn ? "🔊" : "🔇"}
+          </button>
         </div>
       </div>
 
       {!battleStarted && (
         <div className="mt-4 rounded-2xl border border-cyan-300/25 bg-cyan-500/10 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-bold text-cyan-100">Fastest first run</p>
-              <p className="text-xs text-cyan-100/80">Start with Adaptive AI. It auto-adjusts to your speed.</p>
+            <div className="flex items-center gap-3">
+              <OpponentFace mood="idle" />
+              <div>
+                <p className="text-sm font-bold text-cyan-100">Ready when you are</p>
+                <p className="text-xs text-cyan-100/80">Quick Play auto-balances to your pace.</p>
+              </div>
             </div>
             <button
               onClick={() => startBattle("adaptive")}
-              className="rounded-xl bg-cyan-300 px-4 py-2 text-sm font-black text-[#032236] transition-transform duration-200 active:scale-95"
+              className="rounded-xl bg-cyan-300 px-5 py-2.5 text-sm font-black text-[#032236] transition-transform duration-200 active:scale-95"
             >
-              Start Adaptive Battle
+              Battle Now
             </button>
           </div>
 
-          <ol className="mt-3 grid gap-2 text-xs text-cyan-100/85 sm:grid-cols-3">
-            <li className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">1. Pick an answer each round</li>
-            <li className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">2. Watch AI respond live</li>
-            <li className="rounded-lg border border-white/10 bg-black/20 px-3 py-2">3. Get instant winner + rematch</li>
-          </ol>
+          <div className="mt-3 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setShowDifficultyPicker((prev) => !prev)}
+              className="text-xs font-semibold text-cyan-200/80 underline-offset-2 hover:text-cyan-100 hover:underline"
+            >
+              {showDifficultyPicker ? "Hide difficulty options" : "Choose difficulty instead"}
+            </button>
+          </div>
+
+          {showDifficultyPicker && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(Object.keys(DIFFICULTY_CONFIG) as Difficulty[]).map((level) => (
+                <button
+                  key={level}
+                  onClick={() => startBattle(level)}
+                  className="rounded-xl border border-cyan-300/30 bg-cyan-500/10 px-4 py-2 text-sm font-bold text-cyan-100 transition-transform duration-200 hover:bg-cyan-500/20 active:scale-95"
+                  title={DIFFICULTY_CONFIG[level].summary}
+                >
+                  {DIFFICULTY_CONFIG[level].label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {(Object.keys(DIFFICULTY_CONFIG) as Difficulty[]).map((level) => (
-          <button
-            key={level}
-            onClick={() => startBattle(level)}
-            className={`rounded-xl px-4 py-2 text-sm font-bold transition-transform duration-200 active:scale-95 ${
-              difficulty === level
-                ? "bg-cyan-400 text-[#032236]"
-                : "border border-cyan-300/30 bg-cyan-500/10 text-cyan-100 hover:bg-cyan-500/20"
-            }`}
-            title={DIFFICULTY_CONFIG[level].summary}
-          >
-            {DIFFICULTY_CONFIG[level].label}
-          </button>
-        ))}
-      </div>
 
       <div className="mt-5 grid grid-cols-2 gap-3 rounded-2xl border border-white/10 bg-[#020916] p-3 sm:grid-cols-4 lg:grid-cols-8">
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
@@ -419,8 +533,13 @@ export default function InstantAIBattle() {
           <p className="mt-1 text-base font-extrabold text-emerald-300">{playerScore}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <p className="text-xs text-white/60">AI</p>
-          <p className="mt-1 text-base font-extrabold text-orange-300">{aiScore}</p>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-xs text-white/60">AI</p>
+              <p className="mt-1 text-base font-extrabold text-orange-300">{aiScore}</p>
+            </div>
+            {battleStarted && <OpponentFace mood={aiMood} />}
+          </div>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
           <p className="text-xs text-white/60">Round</p>
@@ -452,7 +571,7 @@ export default function InstantAIBattle() {
 
       {!battleStarted && (
         <div className="mt-5 rounded-2xl border border-cyan-300/20 bg-cyan-500/10 p-5 text-center text-cyan-100">
-          Choose any mode above to launch an instant duel.
+          Tap Battle Now to launch an instant duel.
         </div>
       )}
 
@@ -484,11 +603,12 @@ export default function InstantAIBattle() {
             <div className="text-sm text-white/80">
               {waitingForAi ? (
                 <span className="inline-flex items-center gap-2 text-orange-200">
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-orange-300" />
+                  <OpponentFace mood="thinking" />
                   AI is thinking...
                 </span>
               ) : round.aiChoice ? (
-                <span className="inline-flex flex-wrap gap-3">
+                <span className="inline-flex flex-wrap items-center gap-3">
+                  <OpponentFace mood={aiMood} />
                   <span>
                     AI: <strong>{((round.aiResponseMs || 0) / 1000).toFixed(1)}s</strong>
                   </span>
@@ -513,22 +633,46 @@ export default function InstantAIBattle() {
       )}
 
       {battleFinished && (
-        <div className="mt-5 rounded-2xl border border-emerald-300/30 bg-emerald-500/10 p-5 text-center">
-          <p className="text-lg font-black text-emerald-200">{winnerText}</p>
+        <div className="relative mt-5 overflow-hidden rounded-2xl border border-emerald-300/30 bg-emerald-500/10 p-5 text-center">
+          <ConfettiBurst show={playerWon} />
+          <div className="flex items-center justify-center gap-3">
+            <OpponentFace mood={aiMood} />
+            <p className="text-lg font-black text-emerald-200">{winnerText}</p>
+          </div>
           <p className="mt-1 text-sm text-emerald-100/90">Final score {playerScore} - {aiScore}</p>
           <p className="mt-1 text-xs text-emerald-100/75">
             AI realism stats: {aiAccuracy == null ? "-" : `${aiAccuracy}% accuracy`} · {avgAiMs == null ? "-" : `${(avgAiMs / 1000).toFixed(1)}s avg response`}
           </p>
+
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            {(Object.keys(DIFFICULTY_CONFIG) as Difficulty[]).map((level) => (
-              <button
-                key={`rematch-${level}`}
-                onClick={() => startBattle(level)}
-                className="rounded-xl border border-emerald-300/40 bg-emerald-500/15 px-4 py-2 text-sm font-bold text-emerald-100"
-              >
-                Rematch {DIFFICULTY_CONFIG[level].label}
-              </button>
-            ))}
+            <button
+              onClick={() => startBattle(difficulty || "adaptive")}
+              className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-black text-[#052914] transition-transform duration-200 active:scale-95"
+            >
+              Rematch
+            </button>
+            {(Object.keys(DIFFICULTY_CONFIG) as Difficulty[])
+              .filter((level) => level !== difficulty)
+              .map((level) => (
+                <button
+                  key={`rematch-${level}`}
+                  onClick={() => startBattle(level)}
+                  className="rounded-xl border border-emerald-300/40 bg-emerald-500/15 px-4 py-2 text-sm font-bold text-emerald-100"
+                >
+                  Try {DIFFICULTY_CONFIG[level].label}
+                </button>
+              ))}
+          </div>
+
+          <div className="mt-5 rounded-xl border border-fuchsia-300/30 bg-fuchsia-500/10 p-4">
+            <p className="text-sm font-bold text-fuchsia-100">Beat the AI? Prove it.</p>
+            <p className="mt-1 text-xs text-fuchsia-100/80">Create an account to challenge a friend to beat your score.</p>
+            <Link
+              href={`/signup?redirect=${encodeURIComponent("/create")}`}
+              className="mt-3 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-400 to-violet-400 px-5 py-2.5 text-sm font-black text-[#1a0524] transition-transform duration-200 active:scale-95"
+            >
+              Challenge a Friend
+            </Link>
           </div>
         </div>
       )}

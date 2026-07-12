@@ -5,25 +5,25 @@ const EXAM_TRACKS = [
   {
     slug: "mcat",
     name: "MCAT",
-    monthly: "Included in Exam Tunnel ($5/mo Pilot)",
+    monthly: "Included in Exam Tunnel ($9/mo)",
     promise: "AAMC-style multi-step reasoning with passage-heavy science prompts.",
   },
   {
     slug: "lsat",
     name: "LSAT",
-    monthly: "Included in Exam Tunnel ($5/mo Pilot)",
+    monthly: "Included in Exam Tunnel ($9/mo)",
     promise: "Argument structure, logical flaws, and timed pressure drills.",
   },
   {
     slug: "nclex",
     name: "NCLEX",
-    monthly: "Included in Exam Tunnel ($5/mo Pilot)",
+    monthly: "Included in Exam Tunnel ($9/mo)",
     promise: "Clinical judgment drills with safety-first prioritization patterns.",
   },
   {
     slug: "ap",
     name: "AP Exams",
-    monthly: "Included in Exam Tunnel ($5/mo Pilot)",
+    monthly: "Included in Exam Tunnel ($9/mo)",
     promise: "AP-style stems and depth tuned for class exams and AP scoring bands.",
   },
 ];

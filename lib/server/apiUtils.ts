@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { NextRequest } from "next/server";
-import { createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -75,6 +75,10 @@ export function getClientIpAddress(request: NextRequest): string {
 
 export function hashIdentifier(value: string): string {
   return createHash("sha256").update(value).digest("hex");
+}
+
+export function generateOpaqueToken(): string {
+  return randomBytes(24).toString("base64url");
 }
 
 type RateLimitBucket = {

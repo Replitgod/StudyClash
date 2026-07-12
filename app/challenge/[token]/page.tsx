@@ -103,7 +103,7 @@ function Background({ children }: { children: React.ReactNode }) {
 
 export default function ChallengeLandingPage() {
   const params = useParams();
-  const matchId = params.matchId as string;
+  const token = params.token as string;
 
   const [match, setMatch] = useState<Match | null>(null);
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -117,6 +117,23 @@ export default function ChallengeLandingPage() {
       setLoadError(null);
       setMatch(null);
       setDeck(null);
+
+      // The URL only carries an opaque, expiring share token -- resolve it
+      // to the real match id server-side before reading anything else.
+      const resolveResponse = await fetch(`/api/challenge/${encodeURIComponent(token)}`);
+      const resolveData = await resolveResponse.json().catch(() => null);
+
+      if (!resolveResponse.ok || !resolveData?.matchId) {
+        setLoadError(
+          resolveResponse.status === 410
+            ? "This challenge link has expired. Ask your friend for a fresh one."
+            : "This challenge link is no longer available."
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      const matchId = resolveData.matchId as string;
 
       const { data: matchData, error: matchError } = await supabase
         .from("matches")
@@ -161,10 +178,10 @@ export default function ChallengeLandingPage() {
       setIsLoading(false);
     }
 
-    if (matchId) {
+    if (token) {
       loadChallenge();
     }
-  }, [matchId]);
+  }, [token]);
 
   if (isLoading) {
     return (
@@ -206,7 +223,7 @@ export default function ChallengeLandingPage() {
 
   const handleCopyChallenge = async () => {
     try {
-      await navigator.clipboard.writeText(`${challengeMessage} ${window.location.origin}${match.id ? `/challenge/${match.id}` : ""}`);
+      await navigator.clipboard.writeText(`${challengeMessage} ${window.location.origin}/challenge/${token}`);
       setCopyStatus("Challenge message copied.");
       setTimeout(() => setCopyStatus(null), 2000);
     } catch {

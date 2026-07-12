@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import {
-  checkInMemoryRateLimit,
   getBearerToken,
   getClientIpAddress,
   getServiceSupabaseClient,
   hashIdentifier,
 } from "@/lib/server/apiUtils";
+import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 import { tavilySearch, type TavilySearchResult } from "@/lib/server/tavily";
 
 // Real-time, grounded study-resource discovery. Unlike generate-questions
@@ -151,10 +151,10 @@ export async function POST(req: NextRequest) {
     const ipHash = hashIdentifier(getClientIpAddress(req));
 
     if (authedUserId) {
-      const dailyLimit = checkInMemoryRateLimit({
+      const dailyLimit = await checkDistributedRateLimit({
         key: `find-resources-daily:${authedUserId}`,
         limit: AUTH_DAILY_LIMIT,
-        windowMs: AUTH_DAILY_WINDOW_MS,
+        windowSeconds: AUTH_DAILY_WINDOW_MS / 1000,
       });
 
       if (!dailyLimit.allowed) {
@@ -164,10 +164,10 @@ export async function POST(req: NextRequest) {
         );
       }
     } else {
-      const burst = checkInMemoryRateLimit({
+      const burst = await checkDistributedRateLimit({
         key: `find-resources-burst:${ipHash}`,
         limit: UNAUTH_BURST_LIMIT,
-        windowMs: UNAUTH_BURST_WINDOW_MS,
+        windowSeconds: UNAUTH_BURST_WINDOW_MS / 1000,
       });
 
       if (!burst.allowed) {
@@ -177,10 +177,10 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      const daily = checkInMemoryRateLimit({
+      const daily = await checkDistributedRateLimit({
         key: `find-resources-daily:${ipHash}`,
         limit: UNAUTH_DAILY_LIMIT,
-        windowMs: UNAUTH_DAILY_WINDOW_MS,
+        windowSeconds: UNAUTH_DAILY_WINDOW_MS / 1000,
       });
 
       if (!daily.allowed) {

@@ -97,27 +97,27 @@ const FIRST_TIME_PATHS = [
 const DIFFERENTIATORS = [
   {
     title: "Active Recall Under Pressure",
-    body: "Unlike static card review, StudyClash forces quick retrieval with live score pressure and realistic response timing.",
+    body: "Real pressure. Real retrieval.",
   },
   {
     title: "Your Notes Become the Arena",
-    body: "Upload notes or PDF and instantly transform your own material into battle-ready question sets.",
+    body: "Upload notes, get a battle deck.",
   },
   {
     title: "Adaptive AI Opponent",
-    body: "Easy, Medium, Hard, and Adaptive AI modes with realistic accuracy and reaction time patterns.",
+    body: "It learns your pace and pushes back.",
   },
   {
     title: "Weak Topic Intelligence",
-    body: "Get exact topic gaps and mistake patterns so every rematch targets what actually matters.",
+    body: "See exactly what you're missing.",
   },
   {
     title: "One-click Rematch Loops",
-    body: "Finish a battle and run the next focused attempt instantly while your memory is still warm.",
+    body: "Lose? Rematch instantly.",
   },
   {
     title: "Coach Layer Built In",
-    body: "VYRA coach explains misses, gives hints, and helps convert every wrong answer into mastery.",
+    body: "VYRA breaks down every miss.",
   },
 ];
 
@@ -232,7 +232,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is there a free plan?",
-    a: "Yes. Free Beta is available, and pilot pricing includes low nominal paid tiers for advanced usage.",
+    a: "Yes. Battle loops are free forever. Pro Premium unlocks unlimited play and the full VYRA coach.",
   },
 ];
 
@@ -373,15 +373,14 @@ export default function Home() {
             </p>
 
             <h1 className="mt-5 text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
-              StudyClash is
+              StudyClash is{" "}
               <span className="block bg-gradient-to-r from-cyan-300 via-sky-200 to-emerald-300 bg-clip-text text-transparent">
                 instant AI battle study.
               </span>
             </h1>
 
             <p className="mt-4 max-w-2xl text-base text-white/75 sm:text-lg">
-              Open the site, click <strong>Battle an AI</strong>, and start playing immediately.
-              No lobby. No waiting. No confusion. More fun and pressure than Quizlet or Knowt.
+              One click. Zero setup. Beat the AI.
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -424,7 +423,7 @@ export default function Home() {
 
         <section className="mt-10 rounded-3xl border border-cyan-300/20 bg-cyan-500/10 p-5 sm:p-6" aria-label="First-time start options">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 className="text-xl font-black text-white sm:text-2xl">Start in the way that matches you</h2>
+            <h2 className="text-2xl font-black text-white sm:text-3xl">Start in the way that matches you</h2>
             <p className="text-sm text-cyan-100/85">No account setup required for demo and instant battle.</p>
           </div>
 
@@ -447,7 +446,7 @@ export default function Home() {
 
         <section className="mt-12 rounded-3xl border border-white/15 bg-white/[0.03] p-5 sm:p-7" aria-label="Product flow overview">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-lg font-black text-white">What you see in 18 seconds</h2>
+            <h2 className="text-2xl font-black text-white sm:text-3xl">What you see in 18 seconds</h2>
             <span className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-100">
               Autoplay demo above the fold
             </span>
@@ -467,10 +466,7 @@ export default function Home() {
 
         <section id="features" className="mt-16">
           <div className="text-center">
-            <h2 className="text-3xl font-black sm:text-4xl">Why StudyClash feels better than Quizlet and Knowt</h2>
-            <p className="mx-auto mt-3 max-w-2xl text-white/65">
-              Built for action, pressure, and visible progress instead of passive review loops.
-            </p>
+            <h2 className="text-3xl font-black sm:text-4xl">Built to feel like a game, not homework</h2>
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -492,8 +488,10 @@ export default function Home() {
             <p className="text-sm text-white/60">Battle-first study vs passive flashcard workflows</p>
           </div>
 
-          <div className="mt-5 overflow-x-auto rounded-2xl border border-white/10">
-            <table className="w-full min-w-[560px] border-collapse text-left text-sm">
+          {/* Table layout: md and up. Mobile gets stacked cards below instead
+              of a horizontally-scrolling table, so there's no overflow. */}
+          <div className="mt-5 hidden overflow-hidden rounded-2xl border border-white/10 md:block">
+            <table className="w-full border-collapse text-left text-sm">
               <thead className="bg-white/[0.04] text-white/80">
                 <tr>
                   <th className="px-4 py-3 font-bold">Capability</th>
@@ -513,6 +511,29 @@ export default function Home() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Card layout: below md. Same data, one capability per card. */}
+          <div className="mt-5 grid gap-3 md:hidden">
+            {COMPARISON_ROWS.map((row) => (
+              <div key={row.label} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+                <p className="text-sm font-bold text-white/85">{row.label}</p>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="rounded-lg border border-cyan-300/25 bg-cyan-500/10 px-2 py-2">
+                    <p className="font-bold uppercase tracking-wide text-cyan-200/80">StudyClash</p>
+                    <p className="mt-1 font-semibold text-emerald-200">{row.studyclash}</p>
+                  </div>
+                  <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2">
+                    <p className="font-bold uppercase tracking-wide text-white/50">Quizlet</p>
+                    <p className="mt-1 text-white/65">{row.quizlet}</p>
+                  </div>
+                  <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2">
+                    <p className="font-bold uppercase tracking-wide text-white/50">Knowt</p>
+                    <p className="mt-1 text-white/65">{row.knowt}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -574,19 +595,19 @@ export default function Home() {
 
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             <article className="rounded-2xl border border-emerald-300/25 bg-emerald-500/10 p-5">
-              <h3 className="text-lg font-black text-emerald-100">Free Beta</h3>
+              <h3 className="text-lg font-black text-emerald-100">Free</h3>
               <p className="mt-1 text-3xl font-black text-white">$0</p>
-              <p className="mt-2 text-sm text-emerald-100/90">Ideal for first-time users and daily practice.</p>
+              <p className="mt-2 text-sm text-emerald-100/90">Battle loops, free forever.</p>
             </article>
             <article className="rounded-2xl border border-cyan-300/25 bg-cyan-500/10 p-5">
-              <h3 className="text-lg font-black text-cyan-100">Pro Individual</h3>
-              <p className="mt-1 text-3xl font-black text-white">$3/mo pilot</p>
-              <p className="mt-2 text-sm text-cyan-100/90">Low nominal pricing for active testers and heavy usage.</p>
+              <h3 className="text-lg font-black text-cyan-100">Pro Premium</h3>
+              <p className="mt-1 text-3xl font-black text-white">$5/mo</p>
+              <p className="mt-2 text-sm text-cyan-100/90">Unlimited battles + full VYRA coach.</p>
             </article>
             <article className="rounded-2xl border border-fuchsia-300/25 bg-fuchsia-500/10 p-5">
               <h3 className="text-lg font-black text-fuchsia-100">Exam Tunnel</h3>
-              <p className="mt-1 text-3xl font-black text-white">$5/mo pilot</p>
-              <p className="mt-2 text-sm text-fuchsia-100/90">Higher-intensity prep for SAT-style battle training.</p>
+              <p className="mt-1 text-3xl font-black text-white">$9/mo</p>
+              <p className="mt-2 text-sm text-fuchsia-100/90">Board-style prep for AP, LSAT, MCAT, NCLEX.</p>
             </article>
           </div>
         </section>
@@ -601,81 +622,6 @@ export default function Home() {
                 </summary>
                 <p className="mt-2 text-sm text-white/70">{item.a}</p>
               </details>
-            ))}
-          </div>
-        </section>
-
-        <section className="mt-16 rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6" aria-labelledby="answer-engine-facts">
-          <h2 id="answer-engine-facts" className="text-2xl font-black sm:text-3xl">
-            Quick Facts For Search And AI Answers
-          </h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <article className="rounded-xl border border-white/10 bg-black/20 p-4">
-              <h3 className="text-sm font-bold text-cyan-100">What StudyClash is</h3>
-              <p className="mt-1 text-sm text-white/70">
-                StudyClash is an AI study app that converts notes into competitive quiz battles with instant feedback.
-              </p>
-            </article>
-            <article className="rounded-xl border border-white/10 bg-black/20 p-4">
-              <h3 className="text-sm font-bold text-cyan-100">Who it is for</h3>
-              <p className="mt-1 text-sm text-white/70">
-                Built for high school and college students, tutors, teachers, and exam-prep learners.
-              </p>
-            </article>
-            <article className="rounded-xl border border-white/10 bg-black/20 p-4">
-              <h3 className="text-sm font-bold text-cyan-100">Why it is different</h3>
-              <p className="mt-1 text-sm text-white/70">
-                It combines timed AI battles, weak-topic diagnosis, and one-click rematch loops instead of passive flashcard review.
-              </p>
-            </article>
-            <article className="rounded-xl border border-white/10 bg-black/20 p-4">
-              <h3 className="text-sm font-bold text-cyan-100">Where to start</h3>
-              <p className="mt-1 text-sm text-white/70">
-                Start with <Link href="/demo/battle" className="text-cyan-200 hover:text-cyan-100">Demo Battle</Link> or go to <Link href="/create" className="text-cyan-200 hover:text-cyan-100">Create Deck</Link> to upload notes.
-              </p>
-            </article>
-          </div>
-
-          <nav className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4" aria-label="Popular study intent links">
-            <h3 className="text-sm font-bold text-cyan-100">Popular student searches</h3>
-            <ul className="mt-2 grid gap-2 text-sm text-white/75 sm:grid-cols-2">
-              <li>
-                Best <Link href="/" className="text-cyan-200 hover:text-cyan-100">AI study app</Link> for battle-based learning
-              </li>
-              <li>
-                <Link href="/pricing" className="text-cyan-200 hover:text-cyan-100">Quizlet alternative</Link> for active recall
-              </li>
-              <li>
-                <Link href="/pricing" className="text-cyan-200 hover:text-cyan-100">Knowt alternative</Link> with live scoring pressure
-              </li>
-              <li>
-                <Link href="/demo/battle" className="text-cyan-200 hover:text-cyan-100">Study battle</Link> and flashcard battle demo
-              </li>
-              <li>
-                <Link href="/exams" className="text-cyan-200 hover:text-cyan-100">Premium Tunnel Options</Link> for exam-focused workflows
-              </li>
-              <li>
-                <Link href="/create" className="text-cyan-200 hover:text-cyan-100">AI flashcards</Link> from your own notes
-              </li>
-            </ul>
-          </nav>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {[
-              { href: "/create", label: "AI Study App" },
-              { href: "/demo/battle", label: "Study Battle" },
-              { href: "/pricing", label: "Quizlet Alternative" },
-              { href: "/exams", label: "Premium Tunnel Options" },
-              { href: "/mastery-map", label: "AI Learning Platform" },
-              { href: "/clashrank", label: "Competitive Studying" },
-            ].map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="rounded-full border border-cyan-300/25 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-100"
-              >
-                {item.label}
-              </Link>
             ))}
           </div>
         </section>
@@ -713,6 +659,38 @@ export default function Home() {
               <Link href="/terms" className="hover:text-white">Terms</Link>
             </nav>
           </div>
+
+          <details className="mt-6 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-xs text-white/45" aria-labelledby="answer-engine-facts">
+            <summary id="answer-engine-facts" className="cursor-pointer select-none font-semibold text-white/50">
+              About StudyClash
+            </summary>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <p>StudyClash is an AI study app that converts notes into competitive quiz battles with instant feedback.</p>
+              <p>Built for high school and college students, tutors, teachers, and exam-prep learners.</p>
+              <p>Combines timed AI battles, weak-topic diagnosis, and one-click rematch loops instead of passive flashcard review.</p>
+              <p>
+                Start with <Link href="/demo/battle" className="text-cyan-200/70 hover:text-cyan-100">Demo Battle</Link> or <Link href="/create" className="text-cyan-200/70 hover:text-cyan-100">Create Deck</Link>.
+              </p>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {[
+                { href: "/create", label: "AI Study App" },
+                { href: "/demo/battle", label: "Study Battle" },
+                { href: "/pricing", label: "Quizlet Alternative" },
+                { href: "/exams", label: "Premium Tunnel Options" },
+                { href: "/mastery-map", label: "AI Learning Platform" },
+                { href: "/clashrank", label: "Competitive Studying" },
+              ].map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-white/50 hover:text-white/80"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </details>
         </footer>
       </div>
 

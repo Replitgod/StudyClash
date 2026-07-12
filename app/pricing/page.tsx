@@ -73,7 +73,7 @@ export default function PricingPage() {
         {/* Badge */}
         <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
-          PILOT PRICING
+          SIMPLE PRICING
         </div>
 
         {/* Title */}
@@ -83,8 +83,7 @@ export default function PricingPage() {
           </span>
         </h1>
         <p className="mt-3 max-w-lg text-center text-sm text-white/50 sm:text-base">
-          StudyClash is still in pilot. Some plans are free, and others use a
-          low nominal price so we can gather feedback while improving reliability.
+          Battle loops are free, forever. Upgrade for unlimited play and full AI coaching.
         </p>
 
         {isOnUnlistedPlan && currentPlanMeta && (
@@ -138,9 +137,6 @@ export default function PricingPage() {
                   <span className="text-4xl font-black text-white sm:text-5xl">
                     {plan.price}
                   </span>
-                  <p className="mt-1 text-xs font-semibold uppercase tracking-wider text-white/40">
-                    during pilot
-                  </p>
                 </div>
 
                 {/* Daily limit */}
@@ -213,11 +209,10 @@ export default function PricingPage() {
         {/* Bottom note */}
         <div className="mt-10 flex w-full max-w-2xl flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center backdrop-blur-sm sm:mt-12 sm:p-6">
           <p className="text-sm font-semibold text-white/80">
-            Pilot pricing: free + low nominal options
+            Free battle loops, forever
           </p>
           <p className="text-xs text-white/40">
-            We are optimizing for product quality and feedback before final pricing.
-            Free access remains available, with low-cost pilot tiers for higher usage.
+            Core AI battles stay free. Pro Premium unlocks unlimited play and the full VYRA coach.
           </p>
           {!isLoggedIn && (
             <Link

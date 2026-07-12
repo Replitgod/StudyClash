@@ -55,15 +55,16 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
   },
   pro_individual: {
     id: "pro_individual",
-    label: "Pro Individual",
-    tagline: "Low nominal pilot price for active testers",
-    price: "$3/mo Pilot",
+    label: "Pro Premium",
+    tagline: "Unlimited battles, full AI coaching",
+    price: "$5/mo",
     dailyLimit: "Unlimited uploads and battles",
     features: [
       "Everything in Free Beta",
       "Priority generation queue",
       "Full VYRA deep-dive coaching",
       "Unlimited PDF/text uploads",
+      "$49/year — 2 months free",
     ],
     tier: "priority",
     publiclyListed: true,
@@ -72,8 +73,8 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
   team_pass: {
     id: "team_pass",
     label: "Team/Guild Pass",
-    tagline: "Free during pilot for small groups",
-    price: "$0 Pilot",
+    tagline: "Free for small groups",
+    price: "$0",
     dailyLimit: "Shared unlimited group usage",
     features: [
       "Private un-expiring leaderboards",
@@ -87,8 +88,8 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
   exam_tunnel: {
     id: "exam_tunnel",
     label: "High-Stakes Exam Tunnel",
-    tagline: "Nominal pilot price for exam-track testers",
-    price: "$5/mo Pilot",
+    tagline: "Board-style prep for serious exam runs",
+    price: "$9/mo",
     dailyLimit: "Premium board-style generation",
     features: [
       "AP, LSAT, MCAT & NCLEX-tuned question generation",
@@ -106,7 +107,7 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
     price: "Invite-only",
     dailyLimit: "Unlimited uploads and battles",
     features: [
-      "Everything in Pro Individual",
+      "Everything in Pro Premium",
       "Early access to unreleased features",
     ],
     tier: "priority",

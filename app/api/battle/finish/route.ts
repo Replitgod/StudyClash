@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
   checkInMemoryRateLimit,
+  generateOpaqueToken,
   getBearerToken,
   getClientIpAddress,
   hashIdentifier,
 } from "@/lib/server/apiUtils";
+
+const CHALLENGE_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -382,7 +385,14 @@ export async function POST(req: NextRequest) {
     ) {
       crownTaken = true;
 
-      const actionHref = `/challenge/${matchData.id}`;
+      const challengeToken = generateOpaqueToken();
+      const challengeTokenExpiresAt = new Date(Date.now() + CHALLENGE_TOKEN_TTL_MS).toISOString();
+      await supabase
+        .from("matches")
+        .update({ share_token: challengeToken, share_token_expires_at: challengeTokenExpiresAt })
+        .eq("id", matchData.id);
+
+      const actionHref = `/challenge/${challengeToken}`;
       const message = `${body.playerName} beat your top score on this deck. Tap to rematch.`;
 
       try {
