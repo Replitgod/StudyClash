@@ -12,6 +12,7 @@ type JoinResponse = {
     id: string;
     roomCode: string;
     title: string;
+    mode?: string;
   };
   deck?: {
     id: string;
@@ -19,6 +20,7 @@ type JoinResponse = {
     courseName: string;
   };
   battleHref?: string;
+  tournamentHref?: string | null;
   error?: string;
 };
 
@@ -92,7 +94,7 @@ export default function ClassroomJoinPage() {
       });
 
       setPreview(data);
-      router.push(data.battleHref);
+      router.push(data.tournamentHref || data.battleHref);
     } catch (error) {
       void trackEvent("classroom_join_failed", {
         roomCode: normalizedCode,

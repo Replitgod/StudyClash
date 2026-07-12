@@ -7,6 +7,12 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import VyraCoach from "@/app/components/VyraCoach";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
+import {
+  getTopicStatus,
+  getReviewSchedule,
+  type TopicStatus,
+  type ReviewUrgency,
+} from "@/lib/srsSchedule";
 
 type DeckLite = {
   id: string;
@@ -46,10 +52,6 @@ type MistakeRow = {
   topic: string;
   confidence_rating: string;
 };
-
-type TopicStatus = "mastered" | "improving" | "weak";
-
-type ReviewUrgency = "overdue" | "due_soon" | "scheduled" | "unscheduled";
 
 type TopicNode = {
   topic: string;
@@ -133,12 +135,6 @@ function toSpeedLabel(ms: number): string {
   return `${seconds.toFixed(1)}s`;
 }
 
-function getStatus(accuracy: number): TopicStatus {
-  if (accuracy >= 85) return "mastered";
-  if (accuracy >= 60) return "improving";
-  return "weak";
-}
-
 function getRecommendedAction(status: TopicStatus, missedCount: number): string {
   if (status === "mastered") {
     return "Quick-check to maintain mastery.";
@@ -153,48 +149,6 @@ function getRecommendedAction(status: TopicStatus, missedCount: number): string 
   }
 
   return "Revisit concept explanations, then rematch weakness.";
-}
-
-// Lightweight spaced-repetition schedule: weak topics come back fast (cram
-// pressure), improving topics get a short gap, and mastered topics get a
-// growing interval the more times they've been drilled -- so a topic you've
-// mastered 8 times gets left alone longer than one you've only just crossed
-// into "mastered" on.
-function getReviewIntervalDays(status: TopicStatus, attemptedCount: number): number {
-  if (status === "weak") return 1;
-  if (status === "improving") return 3;
-  return Math.min(21, 7 + Math.max(0, attemptedCount - 3) * 2);
-}
-
-function getReviewSchedule(args: {
-  status: TopicStatus;
-  attemptedCount: number;
-  lastPracticedTs: number;
-}): { label: string; urgency: ReviewUrgency } {
-  const { status, attemptedCount, lastPracticedTs } = args;
-
-  if (lastPracticedTs <= 0) {
-    return { label: "Not scheduled yet -- practice once to start review timing.", urgency: "unscheduled" };
-  }
-
-  const intervalDays = getReviewIntervalDays(status, attemptedCount);
-  const nextReviewTs = lastPracticedTs + intervalDays * 24 * 60 * 60 * 1000;
-  const msUntilDue = nextReviewTs - Date.now();
-  const daysUntilDue = Math.ceil(msUntilDue / (24 * 60 * 60 * 1000));
-
-  if (daysUntilDue <= 0) {
-    return { label: "Review due now", urgency: "overdue" };
-  }
-
-  if (daysUntilDue === 1) {
-    return { label: "Review due tomorrow", urgency: "due_soon" };
-  }
-
-  if (daysUntilDue <= 2) {
-    return { label: `Review due in ${daysUntilDue} days`, urgency: "due_soon" };
-  }
-
-  return { label: `Next review in ${daysUntilDue} days`, urgency: "scheduled" };
 }
 
 function getReviewBadgeStyle(urgency: ReviewUrgency): string {
@@ -419,7 +373,7 @@ function MasteryMapPageContent() {
                 stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
               const speed =
                 stats.speedCount > 0 ? Math.round(stats.speedSum / stats.speedCount) : 0;
-              const status = getStatus(accuracy);
+              const status = getTopicStatus(accuracy);
               const reviewSchedule = getReviewSchedule({
                 status,
                 attemptedCount: stats.total,

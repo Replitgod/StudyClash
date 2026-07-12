@@ -7,6 +7,7 @@ import {
 type CreateRoomPayload = {
   title?: string;
   deckId?: string | null;
+  mode?: string;
 };
 
 type RoomRow = {
@@ -16,6 +17,7 @@ type RoomRow = {
   title: string;
   deck_id: string | null;
   is_live: boolean;
+  mode?: string;
   created_at: string;
   updated_at: string;
 };
@@ -61,7 +63,7 @@ export async function GET(request: NextRequest) {
 
     const { data: rooms, error: roomError } = await supabase
       .from("classroom_rooms")
-      .select("id, owner_user_id, room_code, title, deck_id, is_live, created_at, updated_at")
+      .select("id, owner_user_id, room_code, title, deck_id, is_live, mode, created_at, updated_at")
       .eq("owner_user_id", auth.userId)
       .order("created_at", { ascending: false })
       .limit(20);
@@ -89,6 +91,7 @@ export async function GET(request: NextRequest) {
       launch_href: room.deck_id ? `/battle/${room.deck_id}` : null,
       share_code: room.room_code,
       join_href: `/classroom/join?code=${room.room_code}`,
+      tournament_href: room.mode === "tournament" ? `/tournament/${room.room_code}` : null,
     }));
 
     return NextResponse.json({ rooms: normalizedRooms });
@@ -108,9 +111,17 @@ export async function POST(request: NextRequest) {
     const body = (await request.json().catch(() => ({}))) as CreateRoomPayload;
     const title = (body.title || "Study Session Room").trim().slice(0, 80);
     const deckId = body.deckId && body.deckId.trim() ? body.deckId.trim() : null;
+    const mode = body.mode === "tournament" ? "tournament" : "practice";
 
     if (!title) {
       return NextResponse.json({ error: "Room title is required." }, { status: 400 });
+    }
+
+    if (mode === "tournament" && !deckId) {
+      return NextResponse.json(
+        { error: "A tournament room needs a deck attached before it can be created." },
+        { status: 400 }
+      );
     }
 
     const supabase = getServiceSupabaseClient();
@@ -185,8 +196,9 @@ export async function POST(request: NextRequest) {
           title,
           deck_id: deckId,
           is_live: true,
+          mode,
         })
-        .select("id, owner_user_id, room_code, title, deck_id, is_live, created_at, updated_at")
+        .select("id, owner_user_id, room_code, title, deck_id, is_live, mode, created_at, updated_at")
         .single();
 
       if (!error && data) {
@@ -209,6 +221,8 @@ export async function POST(request: NextRequest) {
           share_code: createdRow.room_code,
           join_href: `/classroom/join?code=${createdRow.room_code}`,
           launch_href: createdRow.deck_id ? `/battle/${createdRow.deck_id}` : null,
+          tournament_href:
+            createdRow.mode === "tournament" ? `/tournament/${createdRow.room_code}` : null,
         },
       },
       { status: 201 }

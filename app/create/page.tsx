@@ -76,6 +76,12 @@ const QUESTION_COUNT_OPTIONS = [5, 10, 15, 20, 25];
 const QUESTION_TYPE_OPTIONS = [
   { value: "multiple_choice", label: "Multiple Choice" },
   { value: "true_false", label: "True / False" },
+  { value: "open_response", label: "Open Response (deep reasoning)" },
+];
+
+const REASONING_FORMAT_OPTIONS = [
+  { value: "argumentation", label: "Argumentation — defend a position with evidence" },
+  { value: "step_by_step", label: "Step-by-Step — work a multi-step problem" },
 ];
 
 const CREATE_PRESETS = [
@@ -170,6 +176,7 @@ type CreatePrefs = {
   difficultyMode?: string;
   questionCount?: string;
   questionType?: string;
+  reasoningFormat?: string;
   examTrack?: string;
   examMode?: string;
 };
@@ -251,9 +258,21 @@ function SectionHeader({ step, title }: { step: number; title: string }) {
 // with a clear message here instead of failing a generic 400 after the
 // user has already sat through the full upload + generation flow.
 const MAX_UPLOAD_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+// Smaller than the general cap -- stays well under Vercel's ~4.5MB
+// serverless request body limit (see app/api/extract-image/route.ts).
+const MAX_IMAGE_UPLOAD_FILE_SIZE_BYTES = 4 * 1024 * 1024;
 const MAX_NOTES_CHARACTERS = 120_000;
 const ACCEPTED_TEXT_MIME_TYPES = new Set(["text/plain", ""]);
 const ACCEPTED_PDF_MIME_TYPES = new Set(["application/pdf", ""]);
+const ACCEPTED_IMAGE_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+  "",
+]);
+const IMAGE_FILE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"];
 
 function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
@@ -350,6 +369,7 @@ export default function CreateDeck() {
   const [difficultyMode, setDifficultyMode] = useState("mixed");
   const [questionCount, setQuestionCount] = useState("15");
   const [questionType, setQuestionType] = useState("multiple_choice");
+  const [reasoningFormat, setReasoningFormat] = useState("argumentation");
   const [examTrack, setExamTrack] = useState(initialExamSelection.track);
   const [examMode, setExamMode] = useState(initialExamSelection.mode);
 
@@ -442,6 +462,7 @@ export default function CreateDeck() {
         if (typeof prefs.difficultyMode === "string") setDifficultyMode(prefs.difficultyMode);
         if (typeof prefs.questionCount === "string") setQuestionCount(prefs.questionCount);
         if (typeof prefs.questionType === "string") setQuestionType(prefs.questionType);
+        if (typeof prefs.reasoningFormat === "string") setReasoningFormat(prefs.reasoningFormat);
         if (typeof prefs.examTrack === "string") setExamTrack(prefs.examTrack);
         if (typeof prefs.examMode === "string") setExamMode(prefs.examMode);
       }
@@ -470,6 +491,7 @@ export default function CreateDeck() {
         difficultyMode,
         questionCount,
         questionType,
+        reasoningFormat,
         examTrack,
         examMode,
       };
@@ -488,6 +510,7 @@ export default function CreateDeck() {
     difficultyMode,
     questionCount,
     questionType,
+    reasoningFormat,
     examTrack,
     examMode,
   ]);
@@ -574,23 +597,31 @@ export default function CreateDeck() {
     const lowerName = file.name.toLowerCase();
     const isPdfName = lowerName.endsWith(".pdf");
     const isTxtName = lowerName.endsWith(".txt");
+    const isImageName = IMAGE_FILE_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
 
-    if (!isPdfName && !isTxtName) {
-      setUploadError("Please upload a PDF or .txt file.");
+    if (!isPdfName && !isTxtName && !isImageName) {
+      setUploadError("Please upload a PDF, .txt, or photo (JPG/PNG/WEBP/HEIC) file.");
       return;
     }
 
     // Belt-and-suspenders type check: extension alone can be spoofed, so
     // also check the browser-reported MIME type when one is present.
-    const acceptedMimeTypes = isPdfName ? ACCEPTED_PDF_MIME_TYPES : ACCEPTED_TEXT_MIME_TYPES;
+    const acceptedMimeTypes = isPdfName
+      ? ACCEPTED_PDF_MIME_TYPES
+      : isImageName
+        ? ACCEPTED_IMAGE_MIME_TYPES
+        : ACCEPTED_TEXT_MIME_TYPES;
     if (file.type && !acceptedMimeTypes.has(file.type)) {
-      setUploadError(`That file doesn't look like a ${isPdfName ? "PDF" : "text"} file. Please check the file and try again.`);
+      setUploadError(
+        `That file doesn't look like a ${isPdfName ? "PDF" : isImageName ? "photo" : "text"} file. Please check the file and try again.`
+      );
       return;
     }
 
-    if (file.size > MAX_UPLOAD_FILE_SIZE_BYTES) {
+    const sizeLimit = isImageName ? MAX_IMAGE_UPLOAD_FILE_SIZE_BYTES : MAX_UPLOAD_FILE_SIZE_BYTES;
+    if (file.size > sizeLimit) {
       setUploadError(
-        `That file is ${formatFileSize(file.size)}, which is over the 5MB limit. Try a shorter excerpt or split it into smaller files.`
+        `That file is ${formatFileSize(file.size)}, which is over the ${formatFileSize(sizeLimit)} limit. Try a shorter excerpt or split it into smaller files.`
       );
       return;
     }
@@ -633,6 +664,44 @@ export default function CreateDeck() {
         if (chunked.wasTruncated) {
           setUploadWarning(
             `This PDF was long, so we kept the first ${MAX_NOTES_CHARACTERS.toLocaleString()} characters to keep generation fast.`
+          );
+        }
+        setNotes(chunked.text);
+      } else if (isImageName) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/extract-image", {
+          method: "POST",
+          body: formData,
+        });
+
+        const contentType = response.headers.get("content-type") || "";
+        if (!contentType.includes("application/json")) {
+          setUploadError(
+            `Server error (status ${response.status}). Please try again.`
+          );
+          setIsProcessingUpload(false);
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setUploadError(data.error || "Failed to extract text from this photo.");
+          return;
+        }
+
+        const extractedText = typeof data.text === "string" ? data.text.trim() : "";
+        if (!extractedText) {
+          setUploadError("We couldn't read any usable notes from this photo.");
+          return;
+        }
+
+        const chunked = chunkNotesToLimit(extractedText, MAX_NOTES_CHARACTERS);
+        if (chunked.wasTruncated) {
+          setUploadWarning(
+            `This photo transcribed to a lot of text, so we kept the first ${MAX_NOTES_CHARACTERS.toLocaleString()} characters to keep generation fast.`
           );
         }
         setNotes(chunked.text);
@@ -846,6 +915,7 @@ export default function CreateDeck() {
       difficultyMode,
       questionCount: Number(questionCount),
       questionType,
+      reasoningFormat: questionType === "open_response" ? reasoningFormat : null,
       examTrack: examTrack === "none" ? null : examTrack,
       examMode: examTrack === "none" ? null : examMode || null,
     });
@@ -875,6 +945,7 @@ export default function CreateDeck() {
           difficulty: difficultyMode,
           questionCount: Number(questionCount),
           questionType,
+          reasoningFormat: questionType === "open_response" ? reasoningFormat : undefined,
           examTrack: examTrack === "none" ? undefined : examTrack,
           examMode: examTrack === "none" ? undefined : examMode || undefined,
           uploadKind: uploadedFileName
@@ -882,7 +953,11 @@ export default function CreateDeck() {
               ? "pdf"
               : uploadedFileName.toLowerCase().includes(".txt")
                 ? "text"
-                : "folder_text"
+                : IMAGE_FILE_EXTENSIONS.some((ext) =>
+                      uploadedFileName.toLowerCase().endsWith(ext)
+                    )
+                  ? "image"
+                  : "folder_text"
             : "manual",
           betaAccessCode: betaAccessCode.trim() || undefined,
         }),
@@ -1425,6 +1500,33 @@ export default function CreateDeck() {
                 ))}
               </select>
             </div>
+
+            {questionType === "open_response" && (
+              <div className="flex flex-col gap-2 sm:col-span-2">
+                <label
+                  htmlFor="reasoningFormat"
+                  className="text-xs font-bold uppercase tracking-wider text-white/60"
+                >
+                  Reasoning Style
+                </label>
+                <select
+                  id="reasoningFormat"
+                  value={reasoningFormat}
+                  onChange={(e) => setReasoningFormat(e.target.value)}
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                >
+                  {REASONING_FORMAT_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-white/40">
+                  Open Response questions are graded by AI against a rubric, not multiple choice
+                  — slower-paced and better suited to deep reasoning than rapid-fire recall.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1457,7 +1559,7 @@ export default function CreateDeck() {
               />
             </svg>
             <p className="text-sm font-semibold text-white/70">
-              Drag & drop a PDF or .txt file here
+              Drag & drop a PDF, .txt, or photo of your notes here
             </p>
             <p className="text-xs text-white/40">or</p>
             <button
@@ -1471,7 +1573,7 @@ export default function CreateDeck() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="application/pdf,.pdf,text/plain,.txt"
+              accept="application/pdf,.pdf,text/plain,.txt,image/jpeg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif"
               onChange={handleFileInputChange}
               disabled={isProcessingUpload}
               className="hidden"

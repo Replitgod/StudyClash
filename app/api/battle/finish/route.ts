@@ -7,6 +7,7 @@ import {
   getClientIpAddress,
   hashIdentifier,
 } from "@/lib/server/apiUtils";
+import { getReviewIntervalDays, getTopicStatus } from "@/lib/srsSchedule";
 
 const CHALLENGE_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -202,7 +203,7 @@ export async function POST(req: NextRequest) {
 
     const { data: questionRows, error: questionsError } = await supabase
       .from("questions")
-      .select("id, correct_answer")
+      .select("id, correct_answer, topic")
       .eq("deck_id", body.deckId)
       .in("id", Array.from(uniqueQuestionIds));
 
@@ -221,10 +222,12 @@ export async function POST(req: NextRequest) {
     }
 
     const questionById = new Map(
-      questionRows.map((question: { id: string; correct_answer: string }) => [
-        question.id,
-        question,
-      ])
+      questionRows.map(
+        (question: { id: string; correct_answer: string; topic?: string | null }) => [
+          question.id,
+          question,
+        ]
+      )
     );
 
     for (const answer of body.answers) {
@@ -370,6 +373,32 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Best-effort: roll this match's answers into each answered topic's
+    // spaced-repetition schedule so the SRS cron (app/api/cron/srs-reviews)
+    // can later remind the student when it comes due. Never blocks the
+    // battle-finish response -- the match itself is already saved above.
+    try {
+      const questionTopics = new Map<string, string>();
+      for (const question of questionRows as Array<{
+        id: string;
+        topic?: string | null;
+      }>) {
+        if (question.topic) {
+          questionTopics.set(question.id, question.topic);
+        }
+      }
+
+      await updateTopicReviewSchedule({
+        deckId: body.deckId,
+        userId: authenticatedUserId,
+        playerName: body.playerName,
+        answers: body.answers,
+        questionTopics,
+      });
+    } catch {
+      // topic_review_schedule may not be deployed yet.
+    }
+
     let crownTaken = false;
     const normalizedPreviousTop = previousTopMatch as MatchLite | null;
 
@@ -450,4 +479,79 @@ function didBeatMatch(args: {
   if (score > previous.score) return true;
   if (score < previous.score) return false;
   return timeTakenSeconds < previous.time_taken_seconds;
+}
+
+// Rolls this match's per-topic results into topic_review_schedule: a
+// cumulative correct/total count per (owner, deck, topic) drives the same
+// weak/improving/mastered thresholds and interval math as Mastery Map (see
+// lib/srsSchedule.ts), so the async reminder cron agrees with what the
+// student sees on that dashboard. Read-then-write rather than an atomic
+// upsert -- battle finish isn't a high-concurrency path (one write per
+// student per completed battle), so this stays simple.
+async function updateTopicReviewSchedule(args: {
+  deckId: string;
+  userId: string | null;
+  playerName: string;
+  answers: AnswerPayload[];
+  questionTopics: Map<string, string>;
+}): Promise<void> {
+  const { deckId, userId, playerName, answers, questionTopics } = args;
+
+  const perTopic = new Map<string, { correct: number; total: number }>();
+  for (const answer of answers) {
+    const topic = questionTopics.get(answer.questionId);
+    if (!topic) continue;
+    const bucket = perTopic.get(topic) || { correct: 0, total: 0 };
+    bucket.total += 1;
+    if (answer.isCorrect) bucket.correct += 1;
+    perTopic.set(topic, bucket);
+  }
+
+  if (perTopic.size === 0) return;
+
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
+
+  for (const [topic, delta] of perTopic.entries()) {
+    let existingQuery = supabase
+      .from("topic_review_schedule")
+      .select("id, correct_count, total_count, attempts")
+      .eq("deck_id", deckId)
+      .eq("topic", topic);
+
+    existingQuery = userId
+      ? existingQuery.eq("user_id", userId)
+      : existingQuery.is("user_id", null).eq("player_name", playerName);
+
+    const { data: existing } = await existingQuery.maybeSingle();
+
+    const correctCount = (existing?.correct_count || 0) + delta.correct;
+    const totalCount = (existing?.total_count || 0) + delta.total;
+    const attempts = (existing?.attempts || 0) + 1;
+    const accuracy = totalCount > 0 ? (correctCount / totalCount) * 100 : 0;
+    const status = getTopicStatus(accuracy);
+    const intervalDays = getReviewIntervalDays(status, attempts);
+    const nextReviewAt = new Date(nowMs + intervalDays * 24 * 60 * 60 * 1000).toISOString();
+
+    const row = {
+      user_id: userId,
+      player_name: userId ? null : playerName,
+      deck_id: deckId,
+      topic,
+      status,
+      correct_count: correctCount,
+      total_count: totalCount,
+      attempts,
+      last_practiced_at: nowIso,
+      next_review_at: nextReviewAt,
+      notified_at: null,
+      updated_at: nowIso,
+    };
+
+    if (existing?.id) {
+      await supabase.from("topic_review_schedule").update(row).eq("id", existing.id);
+    } else {
+      await supabase.from("topic_review_schedule").insert(row);
+    }
+  }
 }

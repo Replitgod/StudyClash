@@ -86,11 +86,13 @@ type ClassroomRoom = {
   deck_id: string | null;
   deck_title?: string | null;
   is_live: boolean;
+  mode?: string;
   created_at: string;
   updated_at: string;
   launch_href?: string | null;
   share_code?: string;
   join_href?: string;
+  tournament_href?: string | null;
 };
 
 type RoomLimitNotice = {
@@ -161,6 +163,7 @@ export default function DashboardPage() {
   const [roomsError, setRoomsError] = useState<string | null>(null);
   const [roomTitleInput, setRoomTitleInput] = useState("Friday Exam Sprint");
   const [roomDeckIdInput, setRoomDeckIdInput] = useState<string>("");
+  const [roomModeInput, setRoomModeInput] = useState<"practice" | "tournament">("practice");
   const [isCreatingRoom, setIsCreatingRoom] = useState(false);
   const [roomInviteStatus, setRoomInviteStatus] = useState<string | null>(null);
   const [roomLimitNotice, setRoomLimitNotice] = useState<RoomLimitNotice | null>(null);
@@ -469,8 +472,13 @@ export default function DashboardPage() {
         throw new Error("Room title is required.");
       }
 
-      const payload: { title: string; deckId?: string } = {
+      if (roomModeInput === "tournament" && !roomDeckIdInput.trim()) {
+        throw new Error("A tournament room needs a deck attached.");
+      }
+
+      const payload: { title: string; deckId?: string; mode?: string } = {
         title: trimmedTitle,
+        mode: roomModeInput,
       };
 
       if (roomDeckIdInput.trim()) {
@@ -522,6 +530,7 @@ export default function DashboardPage() {
       setClassroomRooms((prev) => [data.room as ClassroomRoom, ...prev]);
       setRoomTitleInput("");
       setRoomDeckIdInput("");
+      setRoomModeInput("practice");
     } catch (err) {
       setRoomsError(
         err instanceof Error ? err.message : "Failed to create classroom room."
@@ -1248,7 +1257,9 @@ export default function DashboardPage() {
               onChange={(event) => setRoomDeckIdInput(event.target.value)}
               className="rounded-xl border border-white/15 bg-black/25 px-3.5 py-2.5 text-sm text-white outline-none focus:border-amber-300/50"
             >
-              <option value="">Attach deck later</option>
+              <option value="">
+                {roomModeInput === "tournament" ? "Attach a deck (required)" : "Attach deck later"}
+              </option>
               {recentDecks.map((deck) => (
                 <option key={deck.id} value={deck.id}>
                   {deck.title}
@@ -1256,6 +1267,38 @@ export default function DashboardPage() {
               ))}
             </select>
           </div>
+
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => setRoomModeInput("practice")}
+              className={`flex-1 rounded-xl border px-3.5 py-2.5 text-sm font-bold transition-colors ${
+                roomModeInput === "practice"
+                  ? "border-amber-300/60 bg-amber-500/15 text-amber-100"
+                  : "border-white/15 bg-black/20 text-white/60"
+              }`}
+            >
+              Practice Room
+            </button>
+            <button
+              type="button"
+              onClick={() => setRoomModeInput("tournament")}
+              className={`flex-1 rounded-xl border px-3.5 py-2.5 text-sm font-bold transition-colors ${
+                roomModeInput === "tournament"
+                  ? "border-amber-300/60 bg-amber-500/15 text-amber-100"
+                  : "border-white/15 bg-black/20 text-white/60"
+              }`}
+            >
+              Tournament Bracket
+            </button>
+          </div>
+          {roomModeInput === "tournament" && (
+            <p className="mt-2 text-xs text-white/50">
+              Students register with a room code (login required), then you start the bracket
+              once enough have joined. Each match is settled by whoever scores higher on the deck
+              after the pairing is made — no live head-to-head needed.
+            </p>
+          )}
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
@@ -1326,9 +1369,26 @@ export default function DashboardPage() {
                       </p>
                       <p className="mt-1 truncate text-xs text-white/45">
                         {room.deck_title || "No deck linked yet"}
+                        {room.mode === "tournament" && " · Tournament"}
                       </p>
                     </div>
-                    {room.launch_href ? (
+                    {room.tournament_href ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => copyRoomInvite(room)}
+                          className="rounded-lg border border-cyan-300/30 bg-cyan-500/15 px-3 py-1.5 text-xs font-bold text-cyan-100"
+                        >
+                          Copy Invite
+                        </button>
+                        <Link
+                          href={room.tournament_href}
+                          className="rounded-lg bg-amber-500/20 px-3 py-1.5 text-xs font-bold text-amber-100"
+                        >
+                          View Bracket
+                        </Link>
+                      </div>
+                    ) : room.launch_href ? (
                       <div className="flex flex-wrap items-center gap-2">
                         <button
                           type="button"

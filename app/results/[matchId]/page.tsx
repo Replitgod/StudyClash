@@ -49,6 +49,7 @@ type Question = {
   explanation: string;
   topic: string;
   difficulty: string;
+  source_excerpt?: string | null;
 };
 
 // Shape of a row read directly from the match_answers table.
@@ -2882,6 +2883,28 @@ export default function ResultsPage() {
                     <div className="mt-3 break-words rounded-lg border border-white/10 bg-black/20 px-3.5 py-2.5 text-xs text-white/60 sm:text-sm">
                       {item.question.explanation}
                     </div>
+
+                    {/* Source citation: verified to actually appear in the
+                        student's own notes (see verifySourceExcerpts in
+                        generate-questions) -- never shown otherwise. */}
+                    {item.question.source_excerpt && (
+                      <Link
+                        href={`/decks/${item.question.deck_id}?highlight=${encodeURIComponent(
+                          item.question.source_excerpt
+                        )}`}
+                        className="mt-2 flex items-start gap-2 rounded-lg border border-cyan-400/20 bg-cyan-500/[0.06] px-3.5 py-2.5 text-xs text-cyan-100 transition hover:bg-cyan-500/[0.12] sm:text-sm"
+                      >
+                        <span aria-hidden className="mt-0.5">
+                          📄
+                        </span>
+                        <span className="break-words">
+                          From your notes: <span className="italic">&ldquo;{item.question.source_excerpt}&rdquo;</span>
+                          <span className="ml-1.5 whitespace-nowrap font-semibold underline underline-offset-2">
+                            View in notes →
+                          </span>
+                        </span>
+                      </Link>
+                    )}
 
                     {!item.isCorrect && mistakeBreakdown && confidenceStyle && (
                       <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] p-3.5">

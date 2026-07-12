@@ -33,6 +33,16 @@ type Question = {
   explanation: string;
   topic: string;
   difficulty: string;
+  question_type?: string;
+  rubric_points?: string[] | null;
+  reasoning_format?: string | null;
+};
+
+type OpenResponseGrade = {
+  score: number;
+  pointsAddressed: string[];
+  pointsMissed: string[];
+  feedback: string;
 };
 
 type Deck = {
@@ -531,6 +541,15 @@ export default function BattlePage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<AnswerRecord[]>([]);
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
+  // open_response answers are graded async (LLM rubric check), so
+  // correctness can't be derived from `selectedChoice === correct_answer`
+  // the way MC/TF can -- this holds the result of that grading call once it
+  // resolves, for both formats.
+  const [lastAnswerWasCorrect, setLastAnswerWasCorrect] = useState<boolean | null>(null);
+  const [openResponseDraft, setOpenResponseDraft] = useState("");
+  const [isGradingOpenResponse, setIsGradingOpenResponse] = useState(false);
+  const [openResponseError, setOpenResponseError] = useState<string | null>(null);
+  const [openResponseFeedback, setOpenResponseFeedback] = useState<OpenResponseGrade | null>(null);
 
   // Streak + points tracking
   const [currentStreak, setCurrentStreak] = useState(0);
@@ -613,6 +632,10 @@ export default function BattlePage() {
       setCurrentIndex(0);
       setAnswers([]);
       setSelectedChoice(null);
+      setLastAnswerWasCorrect(null);
+      setOpenResponseDraft("");
+      setOpenResponseFeedback(null);
+      setOpenResponseError(null);
       setCurrentStreak(0);
       setBestStreak(0);
       setTotalScore(0);
@@ -1197,27 +1220,11 @@ export default function BattlePage() {
     });
   };
 
-  const handleSelectAnswer = (choice: string) => {
-    if (selectedChoice || introCountdown !== null) return; // question already answered
-
-    const currentQuestion = questions[currentIndex];
-    const isCorrect = choice === currentQuestion.correct_answer;
-    const responseTimeMs = Math.max(
-      0,
-      (elapsedSeconds - questionStartSecondsRef.current) * 1000
-    );
-
-    setSelectedChoice(choice);
-    setAnswers((prev) => [
-      ...prev,
-      {
-        questionId: currentQuestion.id,
-        selectedAnswer: choice,
-        isCorrect,
-        responseTimeMs,
-      },
-    ]);
-
+  // Shared between handleSelectAnswer (instant MC/TF correctness) and
+  // handleSubmitOpenResponse (correctness known only after an async grading
+  // call resolves) -- streak/score/confetti/shake all react the same way to
+  // "this answer was right or wrong" regardless of how that was determined.
+  const applyAnswerOutcome = (isCorrect: boolean) => {
     if (isCorrect) {
       const newStreak = currentStreak + 1;
       const pointsEarned = calculatePointsForStreak(newStreak);
@@ -1249,8 +1256,42 @@ export default function BattlePage() {
         wrongShakeTimerRef.current = null;
       }, 420);
     }
+  };
 
-    if (effectiveStudyMode !== "rival" || !rivalReadiness) {
+  const handleSelectAnswer = (choice: string) => {
+    if (selectedChoice || introCountdown !== null) return; // question already answered
+
+    const currentQuestion = questions[currentIndex];
+    const isCorrect = choice === currentQuestion.correct_answer;
+    const responseTimeMs = Math.max(
+      0,
+      (elapsedSeconds - questionStartSecondsRef.current) * 1000
+    );
+
+    setSelectedChoice(choice);
+    setLastAnswerWasCorrect(isCorrect);
+    setAnswers((prev) => [
+      ...prev,
+      {
+        questionId: currentQuestion.id,
+        selectedAnswer: choice,
+        isCorrect,
+        responseTimeMs,
+      },
+    ]);
+
+    applyAnswerOutcome(isCorrect);
+
+    // Rival mode simulates a ghost/bot opponent picking one of
+    // answer_choices -- open_response questions have none, and rival
+    // battles against free-text grading aren't a meaningful mode, so this
+    // is skipped entirely for that format rather than trying to make the
+    // bot "answer" a rubric-graded prompt.
+    if (
+      effectiveStudyMode !== "rival" ||
+      !rivalReadiness ||
+      currentQuestion.question_type === "open_response"
+    ) {
       return;
     }
 
@@ -1382,6 +1423,75 @@ export default function BattlePage() {
     }, revealDelay);
   };
 
+  // open_response counterpart to handleSelectAnswer: correctness isn't
+  // known instantly, so this calls /api/grade-open-response and only
+  // applies the streak/score outcome once that grading resolves.
+  const handleSubmitOpenResponse = async () => {
+    if (selectedChoice || introCountdown !== null || isGradingOpenResponse) return;
+
+    const trimmedAnswer = openResponseDraft.trim();
+    if (!trimmedAnswer) return;
+
+    const currentQuestion = questions[currentIndex];
+    setIsGradingOpenResponse(true);
+    setOpenResponseError(null);
+
+    try {
+      const response = await fetch("/api/grade-open-response", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questionId: currentQuestion.id,
+          studentAnswer: trimmedAnswer,
+        }),
+      });
+
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        setOpenResponseError(`Server error (status ${response.status}). Please try again.`);
+        return;
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setOpenResponseError(data.error || "Failed to grade your answer.");
+        return;
+      }
+
+      const responseTimeMs = Math.max(
+        0,
+        (elapsedSeconds - questionStartSecondsRef.current) * 1000
+      );
+      const isCorrect = Boolean(data.isCorrect);
+
+      setSelectedChoice(trimmedAnswer);
+      setLastAnswerWasCorrect(isCorrect);
+      setOpenResponseFeedback({
+        score: typeof data.score === "number" ? data.score : 0,
+        pointsAddressed: Array.isArray(data.pointsAddressed) ? data.pointsAddressed : [],
+        pointsMissed: Array.isArray(data.pointsMissed) ? data.pointsMissed : [],
+        feedback: typeof data.feedback === "string" ? data.feedback : "",
+      });
+      setAnswers((prev) => [
+        ...prev,
+        {
+          questionId: currentQuestion.id,
+          selectedAnswer: trimmedAnswer,
+          isCorrect,
+          responseTimeMs,
+        },
+      ]);
+      applyAnswerOutcome(isCorrect);
+    } catch (error) {
+      setOpenResponseError(
+        error instanceof Error ? error.message : "Failed to grade your answer."
+      );
+    } finally {
+      setIsGradingOpenResponse(false);
+    }
+  };
+
   const handleNext = useCallback(async () => {
     if (effectiveStudyMode === "rival" && isRivalResolving) {
       return;
@@ -1393,6 +1503,10 @@ export default function BattlePage() {
       questionStartSecondsRef.current = elapsedSeconds;
       setCurrentIndex((prev) => prev + 1);
       setSelectedChoice(null);
+      setLastAnswerWasCorrect(null);
+      setOpenResponseDraft("");
+      setOpenResponseFeedback(null);
+      setOpenResponseError(null);
       return;
     }
 
@@ -2020,7 +2134,10 @@ export default function BattlePage() {
   const currentQuestion = questions[currentIndex];
   const progressPercent = ((currentIndex + 1) / questions.length) * 100;
   const showFeedback = selectedChoice !== null;
-  const answeredCorrectly = selectedChoice === currentQuestion.correct_answer;
+  const isOpenResponseQuestion = currentQuestion.question_type === "open_response";
+  const answeredCorrectly = isOpenResponseQuestion
+    ? lastAnswerWasCorrect === true
+    : selectedChoice === currentQuestion.correct_answer;
   const bonusForCurrentStreak =
     currentStreak >= 5
       ? STREAK_BONUS_TIER_2
@@ -2338,57 +2455,95 @@ export default function BattlePage() {
             {currentQuestion.question_text}
           </h2>
 
-          <div className="mt-5 flex flex-col gap-2.5 sm:mt-6 sm:gap-3">
-            {currentQuestion.answer_choices.map((choice, i) => {
-              const isSelected = selectedChoice === choice;
-              const isCorrectChoice = choice === currentQuestion.correct_answer;
-
-              // Default (unanswered) style
-              let choiceStyles =
-                "border-white/10 bg-black/30 hover:border-fuchsia-400/40 hover:bg-white/5";
-              let resultIcon: string | null = null;
-
-              if (showFeedback) {
-                if (isCorrectChoice) {
-                  // Always highlight the correct answer once answered
-                  choiceStyles =
-                    "border-emerald-400/50 bg-emerald-500/10";
-                  resultIcon = "✅";
-                } else if (isSelected) {
-                  // The wrong answer the user picked
-                  choiceStyles = "border-red-400/50 bg-red-500/10";
-                  resultIcon = "❌";
-                } else {
-                  // Other wrong answers — muted, not the focus
-                  choiceStyles = "border-white/5 bg-black/20 opacity-40";
-                  resultIcon = "❌";
-                }
-              }
-
-              return (
-                <button
-                  key={i}
-                  onClick={() => handleSelectAnswer(choice)}
-                  disabled={showFeedback}
-                  className={`flex min-h-[3.3rem] w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-all duration-200 disabled:cursor-default sm:min-h-[3.5rem] sm:py-3.5 sm:text-base ${choiceStyles}`}
-                >
-                  <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 text-xs font-bold text-white/70">
-                    {CHOICE_LETTERS[i]}
-                  </span>
-                  <span className="min-w-0 flex-1 break-words text-white/90">
-                    {choice}
-                  </span>
-                  {resultIcon && (
-                    <span className="flex-shrink-0 text-lg leading-none">
-                      {resultIcon}
-                    </span>
+          {isOpenResponseQuestion ? (
+            <div className="mt-5 sm:mt-6">
+              {!showFeedback ? (
+                <>
+                  <textarea
+                    value={openResponseDraft}
+                    onChange={(e) => setOpenResponseDraft(e.target.value)}
+                    disabled={isGradingOpenResponse}
+                    rows={6}
+                    placeholder={
+                      currentQuestion.reasoning_format === "step_by_step"
+                        ? "Show your work step by step, then state your final answer..."
+                        : "Take a position and back it up with evidence from your notes..."
+                    }
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white/90 placeholder:text-white/30 focus:border-fuchsia-400/50 focus:outline-none disabled:opacity-60 sm:text-base"
+                  />
+                  {openResponseError && (
+                    <p className="mt-2 text-xs text-red-300">{openResponseError}</p>
                   )}
-                </button>
-              );
-            })}
-          </div>
+                  <button
+                    onClick={handleSubmitOpenResponse}
+                    disabled={!openResponseDraft.trim() || isGradingOpenResponse}
+                    className="mt-3 w-full rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:text-base"
+                  >
+                    {isGradingOpenResponse ? "Grading your answer..." : "Submit Answer"}
+                  </button>
+                </>
+              ) : (
+                <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white/80 sm:text-base">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+                    Your answer
+                  </p>
+                  <p className="mt-1.5 whitespace-pre-wrap break-words">{selectedChoice}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-5 flex flex-col gap-2.5 sm:mt-6 sm:gap-3">
+              {currentQuestion.answer_choices.map((choice, i) => {
+                const isSelected = selectedChoice === choice;
+                const isCorrectChoice = choice === currentQuestion.correct_answer;
 
-          {/* Explanation shown after answering */}
+                // Default (unanswered) style
+                let choiceStyles =
+                  "border-white/10 bg-black/30 hover:border-fuchsia-400/40 hover:bg-white/5";
+                let resultIcon: string | null = null;
+
+                if (showFeedback) {
+                  if (isCorrectChoice) {
+                    // Always highlight the correct answer once answered
+                    choiceStyles =
+                      "border-emerald-400/50 bg-emerald-500/10";
+                    resultIcon = "✅";
+                  } else if (isSelected) {
+                    // The wrong answer the user picked
+                    choiceStyles = "border-red-400/50 bg-red-500/10";
+                    resultIcon = "❌";
+                  } else {
+                    // Other wrong answers — muted, not the focus
+                    choiceStyles = "border-white/5 bg-black/20 opacity-40";
+                    resultIcon = "❌";
+                  }
+                }
+
+                return (
+                  <button
+                    key={i}
+                    onClick={() => handleSelectAnswer(choice)}
+                    disabled={showFeedback}
+                    className={`flex min-h-[3.3rem] w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-all duration-200 disabled:cursor-default sm:min-h-[3.5rem] sm:py-3.5 sm:text-base ${choiceStyles}`}
+                  >
+                    <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 text-xs font-bold text-white/70">
+                      {CHOICE_LETTERS[i]}
+                    </span>
+                    <span className="min-w-0 flex-1 break-words text-white/90">
+                      {choice}
+                    </span>
+                    {resultIcon && (
+                      <span className="flex-shrink-0 text-lg leading-none">
+                        {resultIcon}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Explanation / grading feedback shown after answering */}
           {showFeedback && (
             <div
               className={`mt-5 rounded-xl border px-4 py-3.5 text-sm ${
@@ -2403,7 +2558,11 @@ export default function BattlePage() {
                     answeredCorrectly ? "text-emerald-300" : "text-red-300"
                   }`}
                 >
-                  {answeredCorrectly ? "Correct!" : "Not quite"}
+                  {isOpenResponseQuestion
+                    ? `Score: ${openResponseFeedback?.score ?? 0}/100`
+                    : answeredCorrectly
+                      ? "Correct!"
+                      : "Not quite"}
                 </p>
 
                 {answeredCorrectly && (
@@ -2418,25 +2577,68 @@ export default function BattlePage() {
                 )}
               </div>
 
-              {!answeredCorrectly && (
-                <p className="mt-2 break-words text-white/70">
-                  You chose{" "}
-                  <span className="font-semibold text-red-300">
-                    {selectedChoice}
-                  </span>
-                  . The correct answer is{" "}
-                  <span className="font-semibold text-emerald-300">
-                    {currentQuestion.correct_answer}
-                  </span>
-                  .
-                </p>
+              {isOpenResponseQuestion ? (
+                openResponseFeedback && (
+                  <div className="mt-2 space-y-2.5">
+                    <p className="break-words text-white/70">{openResponseFeedback.feedback}</p>
+
+                    {openResponseFeedback.pointsAddressed.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-300/80">
+                          Addressed
+                        </p>
+                        <ul className="mt-1 list-inside list-disc space-y-0.5 text-white/60">
+                          {openResponseFeedback.pointsAddressed.map((point, i) => (
+                            <li key={i} className="break-words">{point}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {openResponseFeedback.pointsMissed.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-red-300/80">
+                          Missed
+                        </p>
+                        <ul className="mt-1 list-inside list-disc space-y-0.5 text-white/60">
+                          {openResponseFeedback.pointsMissed.map((point, i) => (
+                            <li key={i} className="break-words">{point}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2.5">
+                      <p className="text-[11px] font-bold text-white/55">Model answer</p>
+                      <p className="mt-1 whitespace-pre-wrap break-words text-white/70">
+                        {currentQuestion.explanation}
+                      </p>
+                    </div>
+                  </div>
+                )
+              ) : (
+                <>
+                  {!answeredCorrectly && (
+                    <p className="mt-2 break-words text-white/70">
+                      You chose{" "}
+                      <span className="font-semibold text-red-300">
+                        {selectedChoice}
+                      </span>
+                      . The correct answer is{" "}
+                      <span className="font-semibold text-emerald-300">
+                        {currentQuestion.correct_answer}
+                      </span>
+                      .
+                    </p>
+                  )}
+
+                  <p className="mt-2 break-words text-white/60">
+                    {currentQuestion.explanation}
+                  </p>
+                </>
               )}
 
-              <p className="mt-2 break-words text-white/60">
-                {currentQuestion.explanation}
-              </p>
-
-              {effectiveStudyMode === "rival" && (
+              {effectiveStudyMode === "rival" && !isOpenResponseQuestion && (
                 <div className="mt-2 text-xs text-cyan-200/85">
                   {isRivalResolving ? (
                     <span className="inline-flex items-center gap-2">

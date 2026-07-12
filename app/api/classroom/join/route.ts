@@ -3,6 +3,7 @@ import {
   checkInMemoryRateLimit,
   getServiceSupabaseClient,
   getClientIpAddress,
+  getBearerToken,
   hashIdentifier,
 } from "@/lib/server/apiUtils";
 
@@ -16,6 +17,7 @@ type RoomRecord = {
   title: string;
   deck_id: string | null;
   is_live: boolean;
+  mode: string;
 };
 
 export async function POST(request: NextRequest) {
@@ -53,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     const { data, error } = await supabase
       .from("classroom_rooms")
-      .select("id, room_code, title, deck_id, is_live")
+      .select("id, room_code, title, deck_id, is_live, mode")
       .eq("room_code", roomCode)
       .maybeSingle();
 
@@ -93,11 +95,71 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    let tournamentJoined = false;
+
+    if (room.mode === "tournament") {
+      // Practice-mode join stays guest-friendly (matches by free-typed
+      // player_name is fine there since nothing downstream depends on it
+      // being exact). A tournament bracket has to resolve winners by
+      // comparing `matches` rows across two separate steps (join, then
+      // battle) -- a free-typed name typo'd differently at either step
+      // would silently break resolution. Requiring login lets bracket
+      // resolution match by user_id instead, which battle/finish already
+      // stamps reliably.
+      const token = getBearerToken(request);
+      if (!token) {
+        return NextResponse.json(
+          { error: "Please log in to join a tournament room." },
+          { status: 401 }
+        );
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser(token);
+
+      if (!user) {
+        return NextResponse.json(
+          { error: "Please log in to join a tournament room." },
+          { status: 401 }
+        );
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const playerName =
+        (typeof profile?.display_name === "string" && profile.display_name.trim()) ||
+        user.email?.split("@")[0] ||
+        "Player";
+
+      // Once round 1 exists the bracket is locked -- late joiners can still
+      // view/play the deck normally, they just won't be seeded into a slot.
+      const { count: round1Count } = await supabase
+        .from("classroom_tournament_matches")
+        .select("id", { count: "exact", head: true })
+        .eq("room_id", room.id)
+        .eq("round", 1);
+
+      if (!round1Count) {
+        const { error: memberError } = await supabase
+          .from("classroom_tournament_members")
+          .insert({ room_id: room.id, user_id: user.id, player_name: playerName });
+
+        // A unique-violation just means they already joined -- not an error.
+        tournamentJoined = !memberError;
+      }
+    }
+
     return NextResponse.json({
       room: {
         id: room.id,
         roomCode: room.room_code,
         title: room.title,
+        mode: room.mode,
       },
       deck: {
         id: deck.id,
@@ -105,6 +167,8 @@ export async function POST(request: NextRequest) {
         courseName: deck.course_name,
       },
       battleHref: `/battle/${deck.id}?classroomCode=${room.room_code}`,
+      tournamentHref: room.mode === "tournament" ? `/tournament/${room.room_code}` : null,
+      tournamentJoined,
     });
   } catch (error) {
     console.error("Classroom join error:", error);

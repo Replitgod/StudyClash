@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
@@ -47,6 +47,73 @@ function Background({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Lowercases, normalizes smart quotes, and collapses whitespace runs to a
+// single space -- mirroring verifySourceExcerpts() on the server -- while
+// keeping a per-character map back to the original string's indices. Notes
+// pasted from PDFs routinely wrap mid-sentence, so a citation the server
+// verified via whitespace-insensitive matching must be locatable the same
+// way here, or a "verified" citation would silently fail to highlight.
+function buildNormalizedWithIndexMap(text: string): {
+  normalized: string;
+  originalIndexAt: number[];
+} {
+  let normalized = "";
+  const originalIndexAt: number[] = [];
+  let inWhitespace = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (/\s/.test(ch)) {
+      if (!inWhitespace) {
+        normalized += " ";
+        originalIndexAt.push(i);
+        inWhitespace = true;
+      }
+      continue;
+    }
+    inWhitespace = false;
+    const normChar =
+      ch === "‘" || ch === "’"
+        ? "'"
+        : ch === "“" || ch === "”"
+        ? '"'
+        : ch.toLowerCase();
+    normalized += normChar;
+    originalIndexAt.push(i);
+  }
+
+  return { normalized, originalIndexAt };
+}
+
+// Finds a question's cited excerpt within the deck's raw notes (matching
+// whitespace-insensitively, same as the server-side verification), so it
+// can be wrapped in a <mark> and scrolled to. Returns null if the excerpt
+// (or an empty highlight) isn't found -- callers should fall back to
+// showing the notes without a highlight.
+function splitNotesAroundHighlight(
+  notes: string,
+  highlight: string
+): { before: string; match: string; after: string } | null {
+  const trimmedHighlight = highlight.trim();
+  if (!trimmedHighlight) return null;
+
+  const { normalized: normNotes, originalIndexAt } = buildNormalizedWithIndexMap(notes);
+  const { normalized: normHighlight } = buildNormalizedWithIndexMap(trimmedHighlight);
+  if (!normHighlight) return null;
+
+  const normIdx = normNotes.indexOf(normHighlight);
+  if (normIdx === -1) return null;
+
+  const startOrig = originalIndexAt[normIdx];
+  const endOrig = originalIndexAt[normIdx + normHighlight.length - 1] + 1;
+
+  return {
+    before: notes.slice(0, startOrig),
+    match: notes.slice(startOrig, endOrig),
+    after: notes.slice(endOrig),
+  };
+}
+
 // Rank badge labels/styles for the top 3 leaderboard spots
 const RANK_BADGES: Record<number, { label: string; color: string }> = {
   0: { label: "Champion", color: "from-yellow-300 to-amber-500" },
@@ -57,8 +124,15 @@ const RANK_BADGES: Record<number, { label: string; color: string }> = {
 export default function DeckDetailPage() {
   const params = useParams();
   const deckId = params.deckId as string;
+  const searchParams = useSearchParams();
+  const highlightExcerpt = searchParams.get("highlight") || "";
+  const highlightRef = useRef<HTMLElement | null>(null);
 
   const [deck, setDeck] = useState<Deck | null>(null);
+  // A "?highlight=" citation link should always land expanded, regardless of
+  // the manual toggle state -- derived directly rather than synced via effect.
+  const [manualShowFullNotes, setManualShowFullNotes] = useState(false);
+  const showFullNotes = manualShowFullNotes || Boolean(highlightExcerpt);
   const [questionCount, setQuestionCount] = useState(0);
   const [matchesPlayed, setMatchesPlayed] = useState(0);
   const [leaderboard, setLeaderboard] = useState<MatchEntry[]>([]);
@@ -139,6 +213,14 @@ export default function DeckDetailPage() {
       loadDeckDetail();
     }
   }, [deckId]);
+
+  // A "?highlight=" link from a missed question's citation should land here
+  // with the notes already scrolled to the cited excerpt.
+  useEffect(() => {
+    if (highlightExcerpt && deck && highlightRef.current) {
+      highlightRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [highlightExcerpt, deck]);
 
   const formatTime = (totalSeconds: number) => {
     const minutes = Math.floor(totalSeconds / 60);
@@ -348,12 +430,45 @@ export default function DeckDetailPage() {
           {/* Notes preview */}
           {deck.raw_notes && (
             <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
-                Notes Preview
-              </p>
-              <p className="mt-1.5 line-clamp-3 break-words text-sm text-white/60">
-                {deck.raw_notes}
-              </p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+                  {showFullNotes ? "Notes" : "Notes Preview"}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setManualShowFullNotes((prev) => !prev)}
+                  className="text-[10px] font-semibold text-cyan-300 hover:text-cyan-200"
+                >
+                  {showFullNotes ? "Show less" : "View full notes"}
+                </button>
+              </div>
+              {showFullNotes ? (
+                <p className="mt-1.5 whitespace-pre-wrap break-words text-sm text-white/70">
+                  {(() => {
+                    const split = splitNotesAroundHighlight(
+                      deck.raw_notes,
+                      highlightExcerpt
+                    );
+                    if (!split) return deck.raw_notes;
+                    return (
+                      <>
+                        {split.before}
+                        <mark
+                          ref={highlightRef}
+                          className="rounded bg-cyan-400/30 px-0.5 text-cyan-100"
+                        >
+                          {split.match}
+                        </mark>
+                        {split.after}
+                      </>
+                    );
+                  })()}
+                </p>
+              ) : (
+                <p className="mt-1.5 line-clamp-3 break-words text-sm text-white/60">
+                  {deck.raw_notes}
+                </p>
+              )}
             </div>
           )}
 

@@ -25,11 +25,19 @@ type GeneratedQuestion = {
   explanation: string;
   topic: string;
   difficulty: string;
+  // Short verbatim quote from the notes supporting the correct answer.
+  // Optional/best-effort: never required for validation, and cleared by
+  // verifySourceExcerpts() if it doesn't actually appear in the notes.
+  source_excerpt: string;
 };
 
-type QuestionType = "multiple_choice" | "true_false";
+type QuestionType = "multiple_choice" | "true_false" | "open_response";
 type DifficultyMode = "mixed" | "easy" | "medium" | "hard";
 type ExamTrack = "lsat" | "mcat" | "nclex" | "ap";
+// Only meaningful when questionType is "open_response": argumentation asks
+// the student to defend a thesis with evidence; step_by_step asks them to
+// work a multi-step problem, graded on process not just the final answer.
+type ReasoningFormat = "argumentation" | "step_by_step";
 
 const MIN_NOTES_WORD_COUNT = 30;
 const ALLOWED_QUESTION_COUNTS = [5, 10, 15, 20, 25];
@@ -42,9 +50,11 @@ const ALLOWED_DIFFICULTY_MODES: DifficultyMode[] = [
 const ALLOWED_QUESTION_TYPES: QuestionType[] = [
   "multiple_choice",
   "true_false",
+  "open_response",
 ];
+const ALLOWED_REASONING_FORMATS: ReasoningFormat[] = ["argumentation", "step_by_step"];
 
-type UploadKind = "manual" | "pdf" | "text" | "folder_text";
+type UploadKind = "manual" | "pdf" | "text" | "folder_text" | "image";
 
 const FREE_DAILY_BATTLE_CAP = 3;
 const FREE_DAILY_PDF_CAP = 2;
@@ -247,6 +257,7 @@ ${choiceInstructions}
 ${explanationRule}
 - "topic": a short label (2-4 words) for the subtopic this question covers
 - "difficulty": exactly one of "easy", "medium", or "hard"
+- "source_excerpt": a short EXACT quote (one sentence or clause, under 30 words) copied word-for-word from the notes below that directly supports the correct answer. Copy it verbatim — do not paraphrase, summarize, or fix typos. This lets the student click back to exactly where the answer came from.
 
 Difficulty mix (must match exactly):
 - Exactly ${easyCount} questions with difficulty "easy" (basic recall/definitions)
@@ -269,7 +280,8 @@ Return ONLY valid JSON in this exact shape, with no extra text, no markdown, no 
       "correct_answer": "...",
       "explanation": "...",
       "topic": "...",
-      "difficulty": "..."
+      "difficulty": "...",
+      "source_excerpt": "..."
     }
   ]
 }
@@ -535,6 +547,10 @@ function normalizeQuestionsFromUnknown(
       typeof candidate.explanation === "string" && candidate.explanation.trim()
         ? candidate.explanation.trim()
         : "Review your notes for why this answer is correct.";
+    const sourceExcerpt =
+      typeof candidate.source_excerpt === "string"
+        ? candidate.source_excerpt.trim().slice(0, 400)
+        : "";
 
     if (expected.questionType === "true_false") {
       const tf = normalizeTrueFalseChoices(
@@ -549,6 +565,7 @@ function normalizeQuestionsFromUnknown(
         explanation,
         topic,
         difficulty: "medium",
+        source_excerpt: sourceExcerpt,
       };
     }
 
@@ -570,6 +587,7 @@ function normalizeQuestionsFromUnknown(
       explanation,
       topic,
       difficulty: "medium",
+      source_excerpt: sourceExcerpt,
     };
   });
 
@@ -685,8 +703,135 @@ function validateQuestions(
   return null;
 }
 
+// Second-pass fact-check: asks the model to verify each generated question's
+// stated correct_answer and explanation are actually supported by the source
+// notes (not just structurally valid). Returns null if nothing is flagged
+// (or if the check itself fails — we fail open so a flaky check never blocks
+// generation), or a string describing what's ungrounded so it can be fed
+// back into the same retry loop that handles schema errors.
+async function runGroundingCheck(
+  notes: string,
+  questions: GeneratedQuestion[]
+): Promise<string | null> {
+  try {
+    const maxCompletionTokens = parsePositiveInt(
+      process.env.OPENAI_MAX_COMPLETION_TOKENS,
+      MAX_COMPLETION_TOKENS_DEFAULT
+    );
+
+    const questionList = questions
+      .map(
+        (q, i) =>
+          `${i}. Q: ${q.question_text}\nStated correct answer: ${q.correct_answer}\nStated explanation: ${q.explanation}`
+      )
+      .join("\n\n");
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: `You are a strict fact-checker for a study app. Below are SOURCE NOTES and a list of quiz questions generated from them, each with its stated correct answer and explanation.
+
+For each question, check ONLY:
+- Is the stated correct answer actually correct according to the source notes (not contradicted, not unsupported)?
+- Does the explanation accurately reflect what the notes say, with no invented facts?
+
+Flag a question ONLY if you find a clear, specific factual error or contradiction with the notes — not for style, phrasing, or difficulty.
+
+Return ONLY valid JSON, no markdown, no extra text:
+{"flagged": [{"index": 0, "reason": "short specific reason"}]}
+If nothing is wrong, return {"flagged": []}.
+
+SOURCE NOTES:
+"""
+${notes}
+"""
+
+QUESTIONS:
+${questionList}`,
+        },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0,
+      max_completion_tokens: Math.min(maxCompletionTokens, 1000),
+    });
+
+    const rawContent = completion.choices[0]?.message?.content;
+    if (!rawContent) return null;
+
+    const parsed = JSON.parse(rawContent) as {
+      flagged?: Array<{ index?: unknown; reason?: unknown }>;
+    };
+
+    const flagged = Array.isArray(parsed.flagged) ? parsed.flagged : [];
+    if (flagged.length === 0) return null;
+
+    const details = flagged
+      .slice(0, 5)
+      .map((f) => {
+        const idx = typeof f.index === "number" ? f.index : -1;
+        const reason =
+          typeof f.reason === "string" && f.reason.trim()
+            ? f.reason.trim()
+            : "unspecified issue";
+        const text = questions[idx]?.question_text || `question ${idx}`;
+        return `"${text}" — ${reason}`;
+      })
+      .join("; ");
+
+    return `Fact-check found ${flagged.length} question(s) not supported by the notes: ${details}`;
+  } catch {
+    return null;
+  }
+}
+
+// The direct-valid path casts parsed.questions straight to
+// GeneratedQuestion[] without going through normalizeQuestionsFromUnknown,
+// so source_excerpt (not enforced by validateQuestions) needs its own safe
+// extraction here rather than trusting the raw cast.
+function attachSourceExcerpts(
+  questions: Array<GeneratedQuestion & { source_excerpt?: unknown }>
+): GeneratedQuestion[] {
+  return questions.map((q) => ({
+    ...q,
+    source_excerpt:
+      typeof q.source_excerpt === "string" ? q.source_excerpt.trim().slice(0, 400) : "",
+  }));
+}
+
+function normalizeForExcerptMatch(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[‘’]/g, "'")
+    .replace(/[“”]/g, '"')
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isExcerptFoundInNotes(excerpt: string, notes: string): boolean {
+  const trimmed = excerpt.trim();
+  if (!trimmed) return false;
+  return normalizeForExcerptMatch(notes).includes(normalizeForExcerptMatch(trimmed));
+}
+
+// Safety net against fabricated citations: only keep a source_excerpt if it
+// actually appears in the notes (normalized for whitespace/smart quotes).
+// A missing citation degrades gracefully in the UI; a false one would not.
+function verifySourceExcerpts(
+  questions: GeneratedQuestion[],
+  notes: string
+): GeneratedQuestion[] {
+  return questions.map((q) => {
+    const excerpt = q.source_excerpt?.trim();
+    if (!excerpt) return { ...q, source_excerpt: "" };
+    return { ...q, source_excerpt: isExcerptFoundInNotes(excerpt, notes) ? excerpt : "" };
+  });
+}
+
 // Calls OpenAI once and returns either the validated questions or an
-// error describing what went wrong (parsing failure or validation failure).
+// error describing what went wrong (parsing failure, validation failure,
+// or a failed fact-check against the source notes).
 async function generateAndValidate(
   notes: string,
   genParams: {
@@ -758,7 +903,14 @@ async function generateAndValidate(
 
   const validationError = validateQuestions(parsed.questions, expected);
   if (!validationError) {
-    return { questions: parsed.questions as GeneratedQuestion[] };
+    const validQuestions = attachSourceExcerpts(
+      parsed.questions as GeneratedQuestion[]
+    );
+    const groundingError = await runGroundingCheck(notes, validQuestions);
+    if (groundingError) {
+      return { error: groundingError };
+    }
+    return { questions: validQuestions };
   }
 
   // When the model gives mostly-correct content but misses strict shape
@@ -773,6 +925,10 @@ async function generateAndValidate(
   );
 
   if (!normalizedValidationError) {
+    const groundingError = await runGroundingCheck(notes, normalizedQuestions);
+    if (groundingError) {
+      return { error: groundingError };
+    }
     return { questions: normalizedQuestions };
   }
 
@@ -787,6 +943,434 @@ async function generateAndValidate(
   }
 
   return { error: "Validation failed unexpectedly." };
+}
+
+// ---------------------------------------------------------------------
+// Open-response generation (argumentation / step-by-step battles)
+//
+// This is a deliberately separate pipeline from the multiple_choice/
+// true_false path above rather than another branch threaded through it:
+// the schema is different enough (rubric_points instead of answer_choices,
+// no single correct_answer for argumentation prompts) that reusing
+// validateQuestions/generateAndValidate would mean conditionals scattered
+// through code that's already carrying a lot of MC/TF-specific assumptions.
+// Caching and the fact-check grounding pass are intentionally skipped here
+// for now -- open-response answers are graded against rubric_points at
+// answer time (see /api/grade-open-response), which is itself a grounding
+// check of sorts, and the generation_cache/vector-similarity cache simply
+// stays a permanent miss for this type (harmless, just no speedup).
+// ---------------------------------------------------------------------
+
+type OpenResponseQuestion = {
+  question_text: string;
+  rubric_points: string[];
+  final_answer: string;
+  model_answer: string;
+  topic: string;
+  difficulty: string;
+  source_excerpt: string;
+};
+
+function buildOpenResponsePrompt(params: {
+  notes: string;
+  totalQuestions: number;
+  easyCount: number;
+  mediumCount: number;
+  hardCount: number;
+  reasoningFormat: ReasoningFormat;
+  gradeLevel?: string;
+  topicFocus?: string;
+  additionalGuidance?: string;
+}): string {
+  const {
+    notes,
+    totalQuestions,
+    easyCount,
+    mediumCount,
+    hardCount,
+    reasoningFormat,
+    gradeLevel,
+    topicFocus,
+    additionalGuidance,
+  } = params;
+
+  const gradeLevelLine = gradeLevel
+    ? `\nWrite every prompt at a vocabulary and complexity level appropriate for a ${gradeLevel} student.`
+    : "";
+
+  const topicFocusLine = topicFocus
+    ? `\nFocus ONLY on the following specific topic within the notes: "${topicFocus}". Ignore other topics in the notes.`
+    : "";
+
+  const extraGuidanceBlock = additionalGuidance
+    ? `\nAdditional correction guidance from a prior failed attempt:\n${additionalGuidance}`
+    : "";
+
+  const formatInstructions =
+    reasoningFormat === "step_by_step"
+      ? `Generate STEP-BY-STEP REASONING problems (math, physics, chemistry, or similar quantitative/procedural material from the notes). Each problem must require working through a multi-step process to reach an answer -- not a single-step lookup.
+- "question_text": a problem statement that requires multiple steps to solve, using only facts/formulas/methods present in the notes.
+- "rubric_points": an ORDERED array of 3-5 short strings, each naming one required step in the correct solution process (e.g., "Identify the known variables", "Apply the formula for X", "Solve for the unknown", "State the final answer with correct units"). These are graded against, never shown to the student before they answer.
+- "final_answer": the correct final numeric or short-form answer to the problem.
+- "model_answer": the full worked solution, step by step, ending in the final answer.`
+      : `Generate ARGUMENTATION prompts that ask the student to take and defend a position using evidence from the notes -- not a single-fact recall question.
+- "question_text": a claim, thesis, or "should/why" prompt that invites the student to argue a position and support it with specific evidence or reasoning drawn from the notes.
+- "rubric_points": an array of 2-4 short strings, each naming one specific piece of evidence or line of reasoning (grounded in the notes) that a strong answer should include. These are graded against, never shown to the student before they answer.
+- "final_answer": leave this as an empty string "" -- argumentation prompts don't have one single correct answer.
+- "model_answer": a strong example answer that hits every rubric point, 3-5 sentences.`;
+
+  return `
+You are a study-app quiz generator creating ${
+    reasoningFormat === "step_by_step" ? "step-by-step reasoning problems" : "argumentation prompts"
+  } for a battle mode called StudyClash that deliberately rewards slow, careful reasoning instead of fast recall.
+
+Read the notes below and create exactly ${totalQuestions} prompts. Every prompt must be answerable using ONLY the information in the notes below -- do not introduce outside facts.
+${gradeLevelLine}${topicFocusLine}
+
+${formatInstructions}
+
+Every item also needs:
+- "topic": a short label (2-4 words) for the subtopic this covers
+- "difficulty": exactly one of "easy", "medium", or "hard"
+- "source_excerpt": a short EXACT quote (under 30 words) copied word-for-word from the notes that this prompt is grounded in. Copy verbatim, do not paraphrase.
+
+Difficulty mix (must match exactly):
+- Exactly ${easyCount} questions with difficulty "easy"
+- Exactly ${mediumCount} questions with difficulty "medium"
+- Exactly ${hardCount} questions with difficulty "hard"
+
+No two prompts may test the same fact or process. Every prompt must be unique.
+
+Return ONLY valid JSON in this exact shape, with no extra text, no markdown, no code fences:
+{
+  "questions": [
+    {
+      "question_text": "...",
+      "rubric_points": ["...", "..."],
+      "final_answer": "...",
+      "model_answer": "...",
+      "topic": "...",
+      "difficulty": "...",
+      "source_excerpt": "..."
+    }
+  ]
+}
+${extraGuidanceBlock}
+
+Notes:
+"""
+${notes}
+"""
+`;
+}
+
+function validateOpenResponseQuestions(
+  questions: unknown,
+  expected: { total: number; easyCount: number; mediumCount: number; hardCount: number }
+): string | null {
+  if (!Array.isArray(questions)) {
+    return "AI response was not a list of questions.";
+  }
+
+  if (questions.length !== expected.total) {
+    return `Expected exactly ${expected.total} questions, got ${questions.length}.`;
+  }
+
+  const seenTexts = new Set<string>();
+  let easyCount = 0;
+  let mediumCount = 0;
+  let hardCount = 0;
+
+  for (let i = 0; i < questions.length; i++) {
+    const q = questions[i] as Partial<OpenResponseQuestion>;
+    const label = `Question ${i + 1}`;
+
+    if (!q || typeof q !== "object") {
+      return `${label} is not a valid object.`;
+    }
+
+    if (!q.question_text || typeof q.question_text !== "string" || !q.question_text.trim()) {
+      return `${label} is missing question_text.`;
+    }
+
+    if (!Array.isArray(q.rubric_points) || q.rubric_points.length < 2) {
+      return `${label} needs at least 2 rubric_points.`;
+    }
+
+    if (q.rubric_points.some((p) => typeof p !== "string" || !p.trim())) {
+      return `${label} has an empty rubric_points entry.`;
+    }
+
+    if (typeof q.final_answer !== "string") {
+      return `${label} is missing final_answer (use an empty string if not applicable).`;
+    }
+
+    if (!q.model_answer || typeof q.model_answer !== "string" || !q.model_answer.trim()) {
+      return `${label} is missing model_answer.`;
+    }
+
+    if (!q.topic || typeof q.topic !== "string" || !q.topic.trim()) {
+      return `${label} is missing a topic.`;
+    }
+
+    const difficulty = typeof q.difficulty === "string" ? q.difficulty.toLowerCase().trim() : "";
+    if (!["easy", "medium", "hard"].includes(difficulty)) {
+      return `${label} has an invalid difficulty value.`;
+    }
+
+    if (difficulty === "easy") easyCount++;
+    if (difficulty === "medium") mediumCount++;
+    if (difficulty === "hard") hardCount++;
+
+    const normalizedText = q.question_text.trim().toLowerCase();
+    if (seenTexts.has(normalizedText)) {
+      return `Duplicate question detected: "${q.question_text.trim()}"`;
+    }
+    seenTexts.add(normalizedText);
+  }
+
+  if (
+    easyCount !== expected.easyCount ||
+    mediumCount !== expected.mediumCount ||
+    hardCount !== expected.hardCount
+  ) {
+    return `Difficulty mix is incorrect. Expected ${expected.easyCount} easy, ${expected.mediumCount} medium, ${expected.hardCount} hard — got ${easyCount} easy, ${mediumCount} medium, ${hardCount} hard.`;
+  }
+
+  return null;
+}
+
+async function generateAndValidateOpenResponse(
+  notes: string,
+  genParams: {
+    totalQuestions: number;
+    easyCount: number;
+    mediumCount: number;
+    hardCount: number;
+    reasoningFormat: ReasoningFormat;
+    gradeLevel?: string;
+    topicFocus?: string;
+    additionalGuidance?: string;
+    temperature?: number;
+  }
+): Promise<{ questions: OpenResponseQuestion[] } | { error: string }> {
+  const maxCompletionTokens = parsePositiveInt(
+    process.env.OPENAI_MAX_COMPLETION_TOKENS,
+    MAX_COMPLETION_TOKENS_DEFAULT
+  );
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "user",
+        content: buildOpenResponsePrompt({ notes, ...genParams }),
+      },
+    ],
+    response_format: { type: "json_object" },
+    temperature: genParams.temperature ?? 0.5,
+    max_completion_tokens: maxCompletionTokens,
+  });
+
+  const rawContent = completion.choices[0]?.message?.content;
+
+  if (!rawContent) {
+    return { error: "OpenAI did not return any content." };
+  }
+
+  let parsed: { questions?: unknown };
+  try {
+    parsed = JSON.parse(rawContent);
+  } catch {
+    return { error: "Failed to parse AI response as JSON." };
+  }
+
+  const expected = {
+    total: genParams.totalQuestions,
+    easyCount: genParams.easyCount,
+    mediumCount: genParams.mediumCount,
+    hardCount: genParams.hardCount,
+  };
+
+  const validationError = validateOpenResponseQuestions(parsed.questions, expected);
+  if (validationError) {
+    return { error: validationError };
+  }
+
+  const rawQuestions = parsed.questions as Array<
+    OpenResponseQuestion & { source_excerpt?: unknown }
+  >;
+
+  const questions: OpenResponseQuestion[] = rawQuestions.map((q) => ({
+    question_text: q.question_text.trim(),
+    rubric_points: q.rubric_points.map((p) => p.trim()),
+    final_answer: q.final_answer.trim(),
+    model_answer: q.model_answer.trim(),
+    topic: q.topic.trim(),
+    difficulty: q.difficulty.toLowerCase().trim(),
+    source_excerpt:
+      typeof q.source_excerpt === "string" ? q.source_excerpt.trim().slice(0, 400) : "",
+  }));
+
+  return { questions };
+}
+
+// Mirrors the deck-creation tail of POST() (steps 8-11) but for the
+// open_response schema -- kept as its own function rather than folding into
+// POST's shared flow so neither path has to reason about the other's
+// column shape.
+async function handleOpenResponseGeneration(args: {
+  notes: string;
+  studentName: string;
+  courseName: string;
+  deckTitle: string;
+  userId: string;
+  activePlanId: string;
+  isPriorityPlan: boolean;
+  normalizedUploadKind: UploadKind;
+  clientIpHash: string;
+  userAgent: string;
+  totalQuestions: number;
+  easyCount: number;
+  mediumCount: number;
+  hardCount: number;
+  gradeLevel?: string;
+  topicFocus?: string;
+  reasoningFormat: ReasoningFormat;
+}): Promise<NextResponse> {
+  const {
+    notes,
+    studentName,
+    courseName,
+    deckTitle,
+    userId,
+    activePlanId,
+    isPriorityPlan,
+    normalizedUploadKind,
+    clientIpHash,
+    userAgent,
+    totalQuestions,
+    easyCount,
+    mediumCount,
+    hardCount,
+    gradeLevel,
+    topicFocus,
+    reasoningFormat,
+  } = args;
+
+  const baseParams = {
+    totalQuestions,
+    easyCount,
+    mediumCount,
+    hardCount,
+    reasoningFormat,
+    gradeLevel,
+    topicFocus,
+  };
+
+  let result = await generateAndValidateOpenResponse(notes, baseParams);
+
+  if ("error" in result) {
+    result = await generateAndValidateOpenResponse(notes, {
+      ...baseParams,
+      additionalGuidance:
+        `Your previous output failed strict validation: ${result.error}. ` +
+        "Return exactly the requested number of questions, valid rubric_points arrays, and an exact easy/medium/hard mix.",
+      temperature: 0.3,
+    });
+  }
+
+  if ("error" in result) {
+    result = await generateAndValidateOpenResponse(notes, {
+      ...baseParams,
+      additionalGuidance: `Second failure reason: ${result.error}. Do not change schema. Prioritize strict JSON correctness.`,
+      temperature: 0.2,
+    });
+  }
+
+  if ("error" in result) {
+    console.error("generate-questions (open_response) validation failure:", result.error);
+    return NextResponse.json(
+      {
+        error:
+          "We couldn't format a stable set of questions from this attempt. Your notes may still be fine. Please retry once.",
+      },
+      { status: 422 }
+    );
+  }
+
+  const verifiedQuestions = result.questions.map((q) => ({
+    ...q,
+    source_excerpt:
+      q.source_excerpt && isExcerptFoundInNotes(q.source_excerpt, notes) ? q.source_excerpt : "",
+  }));
+
+  const { data: deckData, error: deckError } = await supabase
+    .from("decks")
+    .insert({
+      student_name: studentName,
+      course_name: courseName,
+      title: deckTitle,
+      raw_notes: notes,
+      user_id: userId,
+    })
+    .select()
+    .single();
+
+  if (deckError) {
+    return NextResponse.json({ error: deckError.message }, { status: 500 });
+  }
+
+  const deckId = deckData.id;
+
+  const questionsToInsert = verifiedQuestions.map((q) => ({
+    deck_id: deckId,
+    question_text: q.question_text,
+    answer_choices: [] as string[],
+    correct_answer: q.final_answer,
+    explanation: q.model_answer,
+    topic: q.topic,
+    difficulty: q.difficulty,
+    source_excerpt: q.source_excerpt || null,
+    question_type: "open_response",
+    rubric_points: q.rubric_points,
+    reasoning_format: reasoningFormat,
+  }));
+
+  const { error: questionsError } = await supabase.from("questions").insert(questionsToInsert);
+
+  if (questionsError) {
+    await supabase.from("decks").delete().eq("id", deckId);
+    return NextResponse.json({ error: questionsError.message }, { status: 500 });
+  }
+
+  let { error: logError } = await supabase.from("generation_logs").insert({
+    user_id: userId,
+    deck_id: deckId,
+    source_kind: normalizedUploadKind,
+    is_priority: isPriorityPlan,
+    plan_id_snapshot: activePlanId,
+    ip_hash: clientIpHash,
+    user_agent_snapshot: userAgent || null,
+    notes_char_count: notes.trim().length,
+  });
+
+  if (logError) {
+    const fallback = await supabase.from("generation_logs").insert({
+      user_id: userId,
+      deck_id: deckId,
+      source_kind: normalizedUploadKind,
+      is_priority: isPriorityPlan,
+      plan_id_snapshot: activePlanId,
+    });
+    logError = fallback.error;
+  }
+
+  if (logError) {
+    console.error("Failed to insert generation log:", logError.message);
+  }
+
+  return NextResponse.json({ deckId });
 }
 
 export async function POST(req: NextRequest) {
@@ -849,6 +1433,7 @@ export async function POST(req: NextRequest) {
       difficulty,
       questionCount,
       questionType,
+      reasoningFormat,
       uploadKind,
       examTrack,
       examMode,
@@ -1094,6 +1679,12 @@ export async function POST(req: NextRequest) {
         ? (questionType as QuestionType)
         : "multiple_choice";
 
+    const sanitizedReasoningFormat: ReasoningFormat =
+      typeof reasoningFormat === "string" &&
+      ALLOWED_REASONING_FORMATS.includes(reasoningFormat as ReasoningFormat)
+        ? (reasoningFormat as ReasoningFormat)
+        : "argumentation";
+
     const sanitizedGradeLevel =
       typeof gradeLevel === "string" ? gradeLevel.trim().slice(0, 100) : "";
 
@@ -1124,6 +1715,32 @@ export async function POST(req: NextRequest) {
     const notesError = validateNotes(notes);
     if (notesError) {
       return NextResponse.json({ error: notesError }, { status: 400 });
+    }
+
+    // Open-response decks (argumentation / step-by-step) use a completely
+    // different schema and skip the MC/TF cache + retry machinery below --
+    // see handleOpenResponseGeneration for why this is a separate function
+    // rather than more conditionals threaded through the path below.
+    if (sanitizedQuestionType === "open_response") {
+      return await handleOpenResponseGeneration({
+        notes,
+        studentName,
+        courseName,
+        deckTitle,
+        userId: user.id,
+        activePlanId,
+        isPriorityPlan,
+        normalizedUploadKind,
+        clientIpHash,
+        userAgent,
+        totalQuestions: sanitizedQuestionCount,
+        easyCount: easy,
+        mediumCount: medium,
+        hardCount: hard,
+        gradeLevel: sanitizedGradeLevel || undefined,
+        topicFocus: sanitizedTopicFocus || undefined,
+        reasoningFormat: sanitizedReasoningFormat,
+      });
     }
 
     // 7. Generate + validate. If the first attempt fails validation
@@ -1295,7 +1912,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    questions = result.questions;
+    // Re-verify citations even for cache hits: cheap, and guards against any
+    // stale cached rows whose excerpt no longer matches (or predates this
+    // field entirely).
+    questions = verifySourceExcerpts(result.questions, notes);
 
     // 8. Save the deck first, so we get a deck_id to attach questions to
     const { data: deckData, error: deckError } = await supabase
@@ -1325,6 +1945,8 @@ export async function POST(req: NextRequest) {
       explanation: q.explanation.trim(),
       topic: q.topic.trim(),
       difficulty: q.difficulty.toLowerCase().trim(),
+      source_excerpt: q.source_excerpt?.trim() || null,
+      question_type: sanitizedQuestionType,
     }));
 
     const { error: questionsError } = await supabase
@@ -1403,7 +2025,7 @@ export async function POST(req: NextRequest) {
 
 function normalizeUploadKind(value: unknown): UploadKind {
   const raw = typeof value === "string" ? value : "manual";
-  const allowed: UploadKind[] = ["manual", "pdf", "text", "folder_text"];
+  const allowed: UploadKind[] = ["manual", "pdf", "text", "folder_text", "image"];
   return allowed.includes(raw as UploadKind) ? (raw as UploadKind) : "manual";
 }
 
