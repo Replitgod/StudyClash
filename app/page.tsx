@@ -373,9 +373,9 @@ export default function Home() {
             </p>
 
             <h1 className="mt-5 text-4xl font-black leading-tight sm:text-5xl lg:text-6xl">
-              StudyClash is{" "}
+              Stop Guessing What to Study.{" "}
               <span className="block bg-gradient-to-r from-cyan-300 via-sky-200 to-emerald-300 bg-clip-text text-transparent">
-                instant AI battle study.
+                Start Mastering It.
               </span>
             </h1>
 
