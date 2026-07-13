@@ -27,6 +27,14 @@ type ResourceLink = {
 	url: string;
 };
 
+type StudyResource = {
+	title: string;
+	source: string;
+	url: string;
+	whyChosen: string;
+	trustTier: "official" | "reputable" | "community";
+};
+
 type DemoTopicStat = {
 	topic: string;
 	correct: number;
@@ -407,6 +415,10 @@ export default function DemoBattlePage() {
 		pickDemoQuestions(QUESTIONS_PER_DEMO)
 	);
 	const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+	const [wrongAnswerResource, setWrongAnswerResource] = useState<StudyResource | null>(null);
+	const [isLoadingResource, setIsLoadingResource] = useState(false);
+	const [resourceDisclaimer, setResourceDisclaimer] = useState<string | null>(null);
+	const resourceRequestIdRef = useRef(0);
 
 	const questionStartSecondsRef = useRef(0);
 	const resultsRef = useRef<HTMLDivElement>(null);
@@ -474,6 +486,39 @@ export default function DemoBattlePage() {
 		questionStartSecondsRef.current = 0;
 		setLastPointsEarned(0);
 		setElapsedSeconds(0);
+		resourceRequestIdRef.current += 1;
+		setWrongAnswerResource(null);
+		setResourceDisclaimer(null);
+		setIsLoadingResource(false);
+	};
+
+	const fetchStudyResourceForMiss = (question: DemoQuestion) => {
+		const requestId = ++resourceRequestIdRef.current;
+		setWrongAnswerResource(null);
+		setResourceDisclaimer(null);
+		setIsLoadingResource(true);
+
+		fetch("/api/find-resources", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ topic: question.topic || question.question_text.slice(0, 120) }),
+		})
+			.then((res) => res.json())
+			.then((data) => {
+				if (resourceRequestIdRef.current !== requestId) return;
+				const resources: StudyResource[] = Array.isArray(data?.resources) ? data.resources : [];
+				setWrongAnswerResource(resources[0] || null);
+				if (resources.length === 0) {
+					setResourceDisclaimer(data?.disclaimer || "No study link found for this topic right now.");
+				}
+			})
+			.catch(() => {
+				if (resourceRequestIdRef.current !== requestId) return;
+				setResourceDisclaimer("Couldn't reach a study source right now.");
+			})
+			.finally(() => {
+				if (resourceRequestIdRef.current === requestId) setIsLoadingResource(false);
+			});
 	};
 
 	const handleSelectAnswer = (choice: string) => {
@@ -494,6 +539,10 @@ export default function DemoBattlePage() {
 			responseTimeMs,
 		};
 
+		if (!isCorrect) {
+			fetchStudyResourceForMiss(question);
+		}
+
 		setAnswers((prev) => [...prev, answerRecord]);
 		setSelectedChoice(choice);
 		setCurrentStreak(nextStreak);
@@ -503,6 +552,11 @@ export default function DemoBattlePage() {
 	};
 
 	const handleNext = () => {
+		resourceRequestIdRef.current += 1;
+		setWrongAnswerResource(null);
+		setResourceDisclaimer(null);
+		setIsLoadingResource(false);
+
 		if (currentIndex < totalQuestions - 1) {
 			setSelectedChoice(null);
 			setLastPointsEarned(0);
@@ -524,6 +578,10 @@ export default function DemoBattlePage() {
 		setTotalScore(0);
 		setLastPointsEarned(0);
 		setElapsedSeconds(0);
+		resourceRequestIdRef.current += 1;
+		setWrongAnswerResource(null);
+		setResourceDisclaimer(null);
+		setIsLoadingResource(false);
 	};
 
 	const formatTime = (totalSeconds: number) => {
@@ -726,6 +784,44 @@ export default function DemoBattlePage() {
 											Current streak: {currentStreak}
 										</span>
 									</div>
+
+									{selectedChoice !== currentQuestion.correct_answer && (
+										<div className="mt-4">
+											{isLoadingResource && (
+												<p className="text-xs text-white/50">Finding a study source for this topic...</p>
+											)}
+
+											{wrongAnswerResource && (
+												<a
+													href={wrongAnswerResource.url}
+													target="_blank"
+													rel="noopener noreferrer nofollow"
+													className="block rounded-xl border border-amber-300/25 bg-amber-500/[0.06] p-3 transition-colors hover:border-amber-300/45 hover:bg-amber-500/[0.1]"
+												>
+													<div className="flex items-start justify-between gap-2">
+														<p className="text-sm font-bold text-white/90">{wrongAnswerResource.title}</p>
+														<span
+															className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+																wrongAnswerResource.trustTier === "official"
+																	? "border-emerald-300/40 bg-emerald-500/15 text-emerald-200"
+																	: wrongAnswerResource.trustTier === "reputable"
+																		? "border-cyan-300/40 bg-cyan-500/15 text-cyan-200"
+																		: "border-white/20 bg-white/5 text-white/60"
+															}`}
+														>
+															{wrongAnswerResource.trustTier}
+														</span>
+													</div>
+													<p className="mt-1 text-xs text-white/50">{wrongAnswerResource.source}</p>
+													<p className="mt-1.5 text-xs text-white/75">{wrongAnswerResource.whyChosen}</p>
+												</a>
+											)}
+
+											{!isLoadingResource && !wrongAnswerResource && resourceDisclaimer && (
+												<p className="text-xs text-white/40">{resourceDisclaimer}</p>
+											)}
+										</div>
+									)}
 								</div>
 							)}
 

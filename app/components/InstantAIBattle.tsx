@@ -13,6 +13,15 @@ type Question = {
   choices: string[];
   correct: string;
   explanation?: string;
+  topic?: string;
+};
+
+type StudyResource = {
+  title: string;
+  source: string;
+  url: string;
+  whyChosen: string;
+  trustTier: "official" | "reputable" | "community";
 };
 
 type BattleRound = {
@@ -39,6 +48,7 @@ const FALLBACK_QUESTIONS: Question[] = [
     choices: ["11.5", "23", "46", "92"],
     correct: "23",
     explanation: "Meiosis halves the chromosome number so that fertilization restores the full 46, unlike mitosis which preserves it.",
+    topic: "Meiosis",
   },
   {
     id: "fallback-q2",
@@ -46,6 +56,7 @@ const FALLBACK_QUESTIONS: Question[] = [
     choices: ["10", "12", "14", "16"],
     correct: "14",
     explanation: "Distribute to get 6x - 12 = 5x + 2, then x = 14.",
+    topic: "Linear equations",
   },
   {
     id: "fallback-q3",
@@ -53,6 +64,7 @@ const FALLBACK_QUESTIONS: Question[] = [
     choices: ["Photosynthesis", "Cellular respiration", "Protein synthesis", "DNA replication"],
     correct: "Cellular respiration",
     explanation: "Mitochondria break down glucose via cellular respiration; photosynthesis happens in chloroplasts, not mitochondria.",
+    topic: "Cellular respiration",
   },
   {
     id: "fallback-q4",
@@ -65,6 +77,7 @@ const FALLBACK_QUESTIONS: Question[] = [
     ],
     correct: "Sharpen it into one specific, arguable claim",
     explanation: "A strong thesis takes a specific, defensible position -- listing both sides isn't an argument yet.",
+    topic: "Thesis statements",
   },
   {
     id: "fallback-q5",
@@ -72,6 +85,7 @@ const FALLBACK_QUESTIONS: Question[] = [
     choices: ["A shortage", "A surplus", "No change in quantity", "The price rises further"],
     correct: "A shortage",
     explanation: "A ceiling below equilibrium keeps price artificially low, so quantity demanded exceeds quantity supplied -- a shortage.",
+    topic: "Price controls",
   },
   {
     id: "fallback-q6",
@@ -84,6 +98,7 @@ const FALLBACK_QUESTIONS: Question[] = [
     ],
     correct: "Guess on every remaining question",
     explanation: "With no penalty for wrong answers, a guess has strictly positive expected value over leaving it blank.",
+    topic: "Test-taking strategy",
   },
   {
     id: "fallback-q7",
@@ -91,6 +106,7 @@ const FALLBACK_QUESTIONS: Question[] = [
     choices: ["0", "1/4", "1/2", "3/4"],
     correct: "1/4",
     explanation: "A Punnett square for Aa x Aa gives 1 AA : 2 Aa : 1 aa, so 1/4 show the recessive (aa) phenotype.",
+    topic: "Mendelian genetics",
   },
   {
     id: "fallback-q8",
@@ -103,6 +119,7 @@ const FALLBACK_QUESTIONS: Question[] = [
     ],
     correct: "A downward-opening parabola with vertex (0, 3)",
     explanation: "A negative leading coefficient opens the parabola downward, and the constant term 3 gives the vertex y-value when x = 0.",
+    topic: "Quadratic functions",
   },
 ];
 
@@ -223,10 +240,14 @@ export default function InstantAIBattle() {
   const [shake, setShake] = useState(false);
   const [lastAiCorrect, setLastAiCorrect] = useState<boolean | null>(null);
   const [soundOn, setSoundOn] = useState(true);
+  const [wrongAnswerResource, setWrongAnswerResource] = useState<StudyResource | null>(null);
+  const [isLoadingResource, setIsLoadingResource] = useState(false);
+  const [resourceDisclaimer, setResourceDisclaimer] = useState<string | null>(null);
 
   const aiTimerRef = useRef<number | null>(null);
   const roundStartMsRef = useRef<number>(0);
   const shakeTimerRef = useRef<number | null>(null);
+  const resourceRequestIdRef = useRef(0);
 
   const currentQuestion = battleQuestions[index] || null;
   const totalRounds = battleQuestions.length;
@@ -343,6 +364,7 @@ export default function InstantAIBattle() {
           answer_choices: string[];
           correct_answer: string;
           explanation: string;
+          topic: string;
         }>
       ).map((question, questionIndex) => ({
         id: `ai-battle-q${questionIndex}`,
@@ -350,6 +372,7 @@ export default function InstantAIBattle() {
         choices: question.answer_choices,
         correct: question.correct_answer,
         explanation: question.explanation,
+        topic: question.topic,
       }));
     } catch {
       nextQuestions = shuffle(FALLBACK_QUESTIONS).slice(0, 5);
@@ -365,7 +388,39 @@ export default function InstantAIBattle() {
     setRoundStats([]);
     setWaitingForAi(false);
     setLastAiCorrect(null);
+    setWrongAnswerResource(null);
+    setResourceDisclaimer(null);
+    setIsLoadingResource(false);
     roundStartMsRef.current = Date.now();
+  };
+
+  const fetchStudyResourceForMiss = (question: Question) => {
+    const requestId = ++resourceRequestIdRef.current;
+    setWrongAnswerResource(null);
+    setResourceDisclaimer(null);
+    setIsLoadingResource(true);
+
+    fetch("/api/find-resources", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ topic: question.topic || question.prompt.slice(0, 120) }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (resourceRequestIdRef.current !== requestId) return;
+        const resources: StudyResource[] = Array.isArray(data?.resources) ? data.resources : [];
+        setWrongAnswerResource(resources[0] || null);
+        if (resources.length === 0) {
+          setResourceDisclaimer(data?.disclaimer || "No study link found for this topic right now.");
+        }
+      })
+      .catch(() => {
+        if (resourceRequestIdRef.current !== requestId) return;
+        setResourceDisclaimer("Couldn't reach a study source right now.");
+      })
+      .finally(() => {
+        if (resourceRequestIdRef.current === requestId) setIsLoadingResource(false);
+      });
   };
 
   const handlePickChoice = (choice: string) => {
@@ -391,6 +446,8 @@ export default function InstantAIBattle() {
     const playerCorrect = choice === currentQuestion.correct;
     if (playerCorrect) {
       setPlayerScore((prev) => prev + 1);
+    } else {
+      fetchStudyResourceForMiss(currentQuestion);
     }
     if (soundOn) {
       if (playerCorrect) {
@@ -465,6 +522,10 @@ export default function InstantAIBattle() {
     setIndex((prev) => prev + 1);
     setRound({ playerChoice: null, aiChoice: null, aiResponseMs: null, playerResponseMs: null });
     setLastAiCorrect(null);
+    setWrongAnswerResource(null);
+    setResourceDisclaimer(null);
+    setIsLoadingResource(false);
+    resourceRequestIdRef.current += 1;
     roundStartMsRef.current = Date.now();
   };
 
@@ -670,6 +731,44 @@ export default function InstantAIBattle() {
           {round.aiChoice && currentQuestion.explanation && (
             <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/70">
               {currentQuestion.explanation}
+            </div>
+          )}
+
+          {round.playerChoice && round.playerChoice !== currentQuestion.correct && (
+            <div className="mt-3">
+              {isLoadingResource && (
+                <p className="text-xs text-white/50">Finding a study source for this topic...</p>
+              )}
+
+              {wrongAnswerResource && (
+                <a
+                  href={wrongAnswerResource.url}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="block rounded-xl border border-amber-300/25 bg-amber-500/[0.06] p-3 transition-colors hover:border-amber-300/45 hover:bg-amber-500/[0.1]"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-bold text-white/90">{wrongAnswerResource.title}</p>
+                    <span
+                      className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                        wrongAnswerResource.trustTier === "official"
+                          ? "border-emerald-300/40 bg-emerald-500/15 text-emerald-200"
+                          : wrongAnswerResource.trustTier === "reputable"
+                            ? "border-cyan-300/40 bg-cyan-500/15 text-cyan-200"
+                            : "border-white/20 bg-white/5 text-white/60"
+                      }`}
+                    >
+                      {wrongAnswerResource.trustTier}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-white/50">{wrongAnswerResource.source}</p>
+                  <p className="mt-1.5 text-xs text-white/75">{wrongAnswerResource.whyChosen}</p>
+                </a>
+              )}
+
+              {!isLoadingResource && !wrongAnswerResource && resourceDisclaimer && (
+                <p className="text-xs text-white/40">{resourceDisclaimer}</p>
+              )}
             </div>
           )}
         </div>
