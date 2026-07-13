@@ -359,7 +359,16 @@ export default function VyraCoach(props: VyraCoachProps) {
           ? data.reply.trim()
           : "I could not generate a strong response yet. Try another angle.";
 
-      setMessages((prev) => [...prev, createMessage("assistant", reply)]);
+      const resources: ResourceRecommendation[] = Array.isArray(data?.resources) ? data.resources : [];
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          ...createMessage("assistant", reply),
+          resources: resources.length > 0 ? resources : undefined,
+          resourcesDisclaimer: typeof data?.resourcesDisclaimer === "string" ? data.resourcesDisclaimer : undefined,
+        },
+      ]);
       setInput("");
     } catch {
       setError("VYRA could not analyze this right now. Try again, or ask about a specific question.");

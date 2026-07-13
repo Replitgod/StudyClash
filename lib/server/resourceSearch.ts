@@ -1,0 +1,258 @@
+// Shared, grounded study-resource lookup: live Tavily search, ranked by an
+// LLM that is only allowed to pick from what search actually returned, then
+// re-verified against the raw results before anything is trusted. Used by
+// both app/api/find-resources/route.ts (the explicit "Find Study Resources"
+// button) and app/api/vyra-chat/route.ts (free-text chat asking for sources)
+// so a student can ask VYRA for real resources on any subject, exam, or
+// institution -- AP, LSAT, MCAT, NCLEX, a specific coaching program, or
+// anything else -- through either surface.
+
+import OpenAI from "openai";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { hashIdentifier } from "@/lib/server/apiUtils";
+import { tavilySearch, type TavilySearchResult } from "@/lib/server/tavily";
+import { LUNA_TASK } from "@/lib/server/aiModels";
+
+const RESOURCE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const MAX_RESOURCES_RETURNED = 5;
+
+export type ExamTrack = "lsat" | "mcat" | "nclex" | "ap";
+
+export type ResourceRecommendation = {
+  title: string;
+  source: string;
+  url: string;
+  whyChosen: string;
+  estimatedStudyTime: string;
+  difficulty: "beginner" | "intermediate" | "advanced" | "mixed";
+  resourceType: string;
+  trustTier: "official" | "reputable" | "community";
+};
+
+export type FindResourcesPayload = {
+  topic?: string;
+  courseName?: string;
+  examTrack?: ExamTrack;
+  weakTopics?: string[];
+};
+
+export type FindResourcesOutcome =
+  | { ok: true; resources: ResourceRecommendation[]; query: string; disclaimer?: string }
+  | { ok: false; status: number; error: string };
+
+// Domains known to be official/authoritative for a given exam track, passed
+// to the model as a *hint* for ranking -- not a hard search filter, since a
+// hard include_domains restriction would return zero results for subjects
+// those sites don't happen to cover.
+const TRUSTED_DOMAIN_HINTS: Record<ExamTrack, string> = {
+  lsat: "lsac.org (official LSAT administrator), khanacademy.org",
+  mcat: "aamc.org (official MCAT administrator), khanacademy.org, ncbi.nlm.nih.gov",
+  nclex: "ncsbn.org (official NCLEX administrator/exam board)",
+  ap: "apstudents.collegeboard.org (official AP program), khanacademy.org",
+};
+const GENERAL_TRUSTED_HINTS =
+  ".gov and .edu domains, khanacademy.org, openstax.org, and official university, government, or well-known institution/curriculum pages";
+
+export function detectExamTrack(text: string): ExamTrack | undefined {
+  const lower = text.toLowerCase();
+  if (/\blsat\b/.test(lower)) return "lsat";
+  if (/\bmcat\b/.test(lower)) return "mcat";
+  if (/\bnclex\b/.test(lower)) return "nclex";
+  if (/\b(ap|advanced placement)\b/.test(lower)) return "ap";
+  return undefined;
+}
+
+export function isKnownExamTrack(value: unknown): value is ExamTrack {
+  return typeof value === "string" && value in TRUSTED_DOMAIN_HINTS;
+}
+
+function getOpenAIClient(): OpenAI | null {
+  if (!process.env.OPENAI_API_KEY) return null;
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
+
+function buildSearchQuery(payload: FindResourcesPayload): string {
+  const focus =
+    (payload.topic && payload.topic.trim()) ||
+    (payload.weakTopics && payload.weakTopics.length > 0 ? payload.weakTopics.slice(0, 2).join(" and ") : "");
+
+  const parts = [focus || "core concepts"];
+  if (payload.courseName) parts.push(`for ${payload.courseName}`);
+  parts.push("study guide OR official curriculum OR practice questions");
+
+  return parts.join(" ").trim();
+}
+
+function buildRankingPrompt(args: {
+  query: string;
+  payload: FindResourcesPayload;
+  results: TavilySearchResult[];
+}): string {
+  const { query, payload, results } = args;
+
+  const trustHint = payload.examTrack
+    ? TRUSTED_DOMAIN_HINTS[payload.examTrack]
+    : GENERAL_TRUSTED_HINTS;
+
+  const resultsBlock = results
+    .map(
+      (r, i) =>
+        `${i + 1}. Title: ${r.title}\n   URL: ${r.url}\n   Snippet: ${r.content || "(no snippet)"}`
+    )
+    .join("\n\n");
+
+  return `You are curating study resources for a student. Search query used: "${query}".
+
+Known trustworthy domains for this context (prefer these when present, but only from the list below): ${trustHint}.
+
+Below are REAL, live search results. You may ONLY recommend resources from this exact list -- never invent a title, source, or URL that is not present below. If none of these results are genuinely useful or trustworthy for a student studying this topic, return an empty "resources" array and explain why in "disclaimer".
+
+Search results:
+${resultsBlock}
+
+Select at most ${MAX_RESOURCES_RETURNED} of the BEST results (not all of them -- rank and prioritize, do not overwhelm the student). Prioritize official exam boards, government/university education sites, and well-known reputable educational platforms over generic blogs or content-mill sites. For each selected resource, return:
+- title: the exact title from the result (you may lightly clean it up, do not change its meaning)
+- source: the organization/site name (e.g. "Khan Academy", "College Board"), inferred from the URL/title
+- url: the EXACT url string from the result, character for character
+- whyChosen: one specific sentence on why this helps the student right now
+- estimatedStudyTime: a short estimate like "10-15 min" or "30-40 min"
+- difficulty: one of "beginner", "intermediate", "advanced", "mixed"
+- resourceType: one of "official_curriculum", "past_paper", "video", "study_guide", "practice_questions", "documentation", "interactive", "article"
+- trustTier: "official" if it's an exam board/government/university source, "reputable" if it's a well-known educational platform, "community" for anything else (forums, personal blogs, etc.)
+
+Return ONLY valid JSON in this exact shape, no markdown, no extra text:
+{
+  "resources": [
+    { "title": "...", "source": "...", "url": "...", "whyChosen": "...", "estimatedStudyTime": "...", "difficulty": "...", "resourceType": "...", "trustTier": "..." }
+  ],
+  "disclaimer": "optional string, only set if resources is empty or results are limited"
+}`;
+}
+
+function isValidRecommendation(value: unknown): value is ResourceRecommendation {
+  if (!value || typeof value !== "object") return false;
+  const c = value as Record<string, unknown>;
+  return (
+    typeof c.title === "string" &&
+    typeof c.source === "string" &&
+    typeof c.url === "string" &&
+    typeof c.whyChosen === "string" &&
+    typeof c.estimatedStudyTime === "string" &&
+    typeof c.difficulty === "string" &&
+    typeof c.resourceType === "string" &&
+    typeof c.trustTier === "string"
+  );
+}
+
+export async function findStudyResources(
+  payload: FindResourcesPayload,
+  supabase: SupabaseClient
+): Promise<FindResourcesOutcome> {
+  const query = buildSearchQuery(payload);
+  const cacheKey = hashIdentifier(`${query}|${payload.examTrack || ""}`);
+
+  const cacheCutoff = new Date(Date.now() - RESOURCE_CACHE_TTL_MS).toISOString();
+  const { data: cached } = await supabase
+    .from("resource_search_cache")
+    .select("id, resources, disclaimer, hit_count")
+    .eq("cache_key", cacheKey)
+    .gte("updated_at", cacheCutoff)
+    .maybeSingle();
+
+  if (cached) {
+    // Best-effort hit-count bump, awaited for the same reason as the write
+    // below -- not guaranteed to run once this function returns on a
+    // serverless runtime if left un-awaited.
+    await supabase
+      .from("resource_search_cache")
+      .update({ hit_count: (cached.hit_count || 0) + 1 })
+      .eq("id", cached.id);
+
+    return {
+      ok: true,
+      resources: cached.resources,
+      query,
+      disclaimer: cached.disclaimer || undefined,
+    };
+  }
+
+  const searchResult = await tavilySearch({ query, maxResults: 8 });
+  if ("error" in searchResult) {
+    return { ok: false, status: 503, error: searchResult.error };
+  }
+
+  if (searchResult.results.length === 0) {
+    return {
+      ok: true,
+      resources: [],
+      query,
+      disclaimer: "No resources were found for this topic right now. Try a more specific or differently-worded topic.",
+    };
+  }
+
+  const openai = getOpenAIClient();
+  if (!openai) {
+    return { ok: false, status: 503, error: "Resource ranking is not configured right now." };
+  }
+
+  const completion = await openai.chat.completions.create({
+    model: LUNA_TASK.model,
+    reasoning_effort: LUNA_TASK.reasoning_effort,
+    messages: [
+      { role: "user", content: buildRankingPrompt({ query, payload, results: searchResult.results }) },
+    ],
+    response_format: { type: "json_object" },
+    // Leaves headroom for LUNA's hidden reasoning tokens on top of the
+    // visible ranked-list output (1400 was sized for a non-reasoning model).
+    max_completion_tokens: 2200,
+  });
+
+  const rawContent = completion.choices[0]?.message?.content;
+  if (!rawContent) {
+    return { ok: false, status: 500, error: "Could not rank resources right now." };
+  }
+
+  let parsed: { resources?: unknown; disclaimer?: unknown };
+  try {
+    parsed = JSON.parse(rawContent);
+  } catch {
+    return { ok: false, status: 500, error: "Could not parse ranked resources." };
+  }
+
+  const candidateResources = Array.isArray(parsed.resources) ? parsed.resources : [];
+  const validUrls = new Set(searchResult.results.map((r) => r.url));
+
+  // Hard grounding check: even though the prompt forbids it, never trust
+  // the model's own claim that a URL is real -- only keep resources whose
+  // URL exactly matches one of the URLs Tavily actually returned.
+  const groundedResources: ResourceRecommendation[] = candidateResources
+    .filter(isValidRecommendation)
+    .filter((r) => validUrls.has(r.url))
+    .slice(0, MAX_RESOURCES_RETURNED);
+
+  const disclaimer =
+    typeof parsed.disclaimer === "string" && parsed.disclaimer.trim()
+      ? parsed.disclaimer.trim()
+      : groundedResources.length === 0
+        ? "VYRA could not confidently confirm a high-quality resource for this topic right now."
+        : undefined;
+
+  // Best-effort cache write, awaited for the same reason as the hit-count
+  // bump above. Only successful, non-empty results are worth caching; an
+  // empty/disclaimer-only result for a mistyped or obscure topic shouldn't
+  // get pinned for hours.
+  if (groundedResources.length > 0) {
+    await supabase.from("resource_search_cache").upsert(
+      {
+        cache_key: cacheKey,
+        query,
+        resources: groundedResources,
+        disclaimer: disclaimer || null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "cache_key" }
+    );
+  }
+
+  return { ok: true, resources: groundedResources, query, disclaimer };
+}

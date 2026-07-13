@@ -7,6 +7,11 @@ import {
 } from "@/lib/server/apiUtils";
 import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 import { TERRA_TASK } from "@/lib/server/aiModels";
+import {
+  findStudyResources,
+  detectExamTrack,
+  type ResourceRecommendation,
+} from "@/lib/server/resourceSearch";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -144,6 +149,20 @@ function getVyraOfflineFallback(message: string): string {
     "Next step",
     "Retry now, or share the exact question text and your selected answer.",
   ].join("\n");
+}
+
+// Freeform chat has no dedicated "find resources" action (that's a separate
+// button/endpoint -- see find-resources/route.ts), so a student typing
+// something like "can I get Deens Academy study source" or "any LSAT/MCAT
+// resources" only reaches VYRA as a normal "ask" message. Detect that intent
+// here and run a real grounded search alongside the reply so VYRA can answer
+// with actual links instead of declining (rule 7 below forbids it from
+// inventing sources on its own).
+const RESOURCE_INTENT_RE =
+  /\b(resources?|sources?|links?|websites?|study\s*guides?|study\s*materials?|prep\s*books?|past\s*papers?|practice\s*(tests?|questions?|exams?)|notes|pdf|video\s*course|where\s+(can|do)\s+i\s+(find|get)|recommend\b|any\s+good\b)\b/i;
+
+function wantsStudyResources(text: string): boolean {
+  return RESOURCE_INTENT_RE.test(text);
 }
 
 function stripMarkdownArtifacts(text: string): string {
@@ -788,10 +807,11 @@ export async function POST(req: NextRequest) {
       "3) If student got something wrong, explain: what they picked, why wrong, why right answer works, mistake type, and one mini practice question.",
       "4) If student asks for help before answering, provide hints first.",
       "5) If context is missing, ask student to choose deck, question, or topic.",
-      "6) If question is unrelated to studying, politely redirect.",
-      "7) Accuracy is critical: ground every explanation in the provided deck/question context first. If a question reaches beyond that context and you are not fully confident in a fact, formula, date, or figure, say so plainly instead of guessing -- a confident wrong answer actively misleads a student studying for a real exam. Never invent citations, statistics, or sources.",
+      "6) Study-resource requests are always in scope, for any subject, exam, institution, or coaching program -- AP exams, LSAT, MCAT, NCLEX, IB, SAT/ACT, a specific school or coaching brand like Deens Academy, or anything else a student names. Never refuse or redirect these; only redirect messages that are entirely unrelated to studying.",
+      "7) Accuracy is critical: ground every explanation in the provided deck/question context first. If a question reaches beyond that context and you are not fully confident in a fact, formula, date, or figure, say so plainly instead of guessing -- a confident wrong answer actively misleads a student studying for a real exam. Never invent citations, statistics, or sources yourself.",
       "8) If the student states an upcoming exam in one natural sentence (subject, and/or a date like 'next Friday' or 'in 2 weeks', and/or a topic), switch to the study-plan format below. Compute the exact calendar date and days-remaining yourself using 'Today's date' given in the context below -- never guess a relative date. If the student gave a topic, focus the plan on it and closely related weak topics from their StudyClash data; if they gave no topic, prioritize their actual weak topics. If they gave no date, ask for one before planning day-by-day.",
       "9) Plain text only -- the chat UI does not render markdown. Never use **bold**, *italics*, # headers, backtick code, or bullet characters like * or -. Write the required section headings below as plain words alone on their own line, with no symbols around them. For lists, write 'First, ...', 'Second, ...' or separate lines with plain sentences instead of bullet markers.",
+      "10) If the context below includes a 'Live resource search' note, a real-time grounded search is running in parallel and any trustworthy results will be shown to the student as clickable cards right after your reply. Do not list, invent, or guess any specific URLs, site names, or sources yourself in this case -- keep your reply focused on coaching (what to look for, how to use the resources once found) and let the cards carry the actual links.",
       "Response format rules:",
       "For normal questions use exactly: Quick answer, Simple explanation, Example, Next step.",
       "For missed questions use exactly: Your answer, Correct answer, Why yours was wrong, Why the correct answer works, Mistake DNA, Try this.",
@@ -799,6 +819,19 @@ export async function POST(req: NextRequest) {
       `Current action: ${action}`,
       `Current mode: ${mode}`,
     ].join("\n");
+
+    const resourceIntent = action === "ask" && wantsStudyResources(message);
+    const resourceSearchPromise = resourceIntent
+      ? findStudyResources(
+          {
+            topic: clampText(message, 200),
+            courseName: body.courseName || undefined,
+            examTrack: detectExamTrack(message),
+            weakTopics,
+          },
+          supabase
+        )
+      : null;
 
     const contextPrompt = [
       `Today's date: ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}`,
@@ -825,6 +858,11 @@ export async function POST(req: NextRequest) {
       `Mastery map: ${masterySummary}`,
       "Recent battle history:",
       battleHistorySummary,
+      ...(resourceIntent
+        ? [
+            "Live resource search: A real-time grounded search for external study resources on this request is running in parallel (see rule 10).",
+          ]
+        : []),
       "Student message:",
       message,
     ].join("\n\n");
@@ -835,27 +873,42 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ reply: fallbackReply });
     }
 
-    const completion = await openai.chat.completions.create({
-      model: TERRA_TASK.model,
-      reasoning_effort: TERRA_TASK.reasoning_effort,
-      // 300 was sized for gpt-4o-mini, where every token was visible output.
-      // TERRA's reasoning tokens count against this same budget, so 300 was
-      // getting eaten by hidden reasoning before the model wrote a single
-      // reply character -- reply came back empty and every chat message
-      // silently fell back to the canned offline response below.
-      max_completion_tokens: 2400,
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...history.map((entry) => ({ role: entry.role, content: entry.content })),
-        { role: "user", content: contextPrompt },
-      ],
-    });
+    const [completion, resourceOutcome] = await Promise.all([
+      openai.chat.completions.create({
+        model: TERRA_TASK.model,
+        reasoning_effort: TERRA_TASK.reasoning_effort,
+        // 300 was sized for gpt-4o-mini, where every token was visible output.
+        // TERRA's reasoning tokens count against this same budget, so 300 was
+        // getting eaten by hidden reasoning before the model wrote a single
+        // reply character -- reply came back empty and every chat message
+        // silently fell back to the canned offline response below.
+        max_completion_tokens: 2400,
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...history.map((entry) => ({ role: entry.role, content: entry.content })),
+          { role: "user", content: contextPrompt },
+        ],
+      }),
+      resourceSearchPromise ?? Promise.resolve(null),
+    ]);
+
+    let resources: ResourceRecommendation[] | undefined;
+    let resourcesDisclaimer: string | undefined;
+    if (resourceOutcome) {
+      if (resourceOutcome.ok) {
+        resources = resourceOutcome.resources.length > 0 ? resourceOutcome.resources : undefined;
+        resourcesDisclaimer = resourceOutcome.disclaimer;
+      } else {
+        resourcesDisclaimer =
+          "VYRA could not run a live resource search right now. Try the Find Study Resources button, or ask again shortly.";
+      }
+    }
 
     const reply = completion.choices[0]?.message?.content?.trim();
 
     if (!reply) {
       const fallbackReply = getVyraOfflineFallback(message);
-      return NextResponse.json({ reply: fallbackReply });
+      return NextResponse.json({ reply: fallbackReply, resources, resourcesDisclaimer });
     }
 
     const cleanedReply = stripMarkdownArtifacts(reply);
@@ -894,7 +947,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ reply: finalReply });
+    return NextResponse.json({ reply: finalReply, resources, resourcesDisclaimer });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "VYRA failed to respond.";
