@@ -6,8 +6,10 @@ import {
   requireAuthenticatedUser,
 } from "@/lib/server/apiUtils";
 import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
+import { LUNA_TASK } from "@/lib/server/aiModels";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 // Kept well under Vercel's ~4.5MB serverless request body limit -- unlike
 // extract-pdf's 8MB PDF cap, an oversized image here would fail at the
@@ -108,7 +110,8 @@ export async function POST(req: NextRequest) {
     const dataUri = `data:${inferMimeType(file)};base64,${base64}`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: LUNA_TASK.model,
+      reasoning_effort: LUNA_TASK.reasoning_effort,
       messages: [
         {
           role: "user",
@@ -130,7 +133,6 @@ The photo may contain handwriting, typed text, a diagram, a chart, or a mix. Rul
           ],
         },
       ],
-      temperature: 0.2,
       max_completion_tokens: 3000,
     });
 

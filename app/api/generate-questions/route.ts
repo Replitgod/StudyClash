@@ -3,6 +3,16 @@ import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import { createHash } from "node:crypto";
 import { FREE_PLAN_IDS, PRIORITY_PLAN_IDS } from "@/lib/plans";
+import { TERRA_TASK, type ReasoningEffort } from "@/lib/server/aiModels";
+
+// Reasoning-effort models spend part of max_completion_tokens on hidden
+// reasoning before writing visible output, unlike the flat-rate gpt-4o-mini
+// calls this route used before. Without this, generation was silently
+// truncating mid-JSON on every escalated retry (higher effort = more
+// reasoning tokens eaten from the same fixed budget), which is why battles
+// were both slow (three doomed attempts back-to-back) and failing outright.
+export const runtime = "nodejs";
+export const maxDuration = 180;
 
 // This client uses the SERVICE ROLE key, which is safe here because
 // this code only ever runs on the server (inside this API route).
@@ -69,6 +79,35 @@ const IP_BURST_WINDOW_SECONDS = 60;
 const IP_BURST_LIMIT_FREE = 6;
 const IP_BURST_LIMIT_PAID = 20;
 const MAX_COMPLETION_TOKENS_DEFAULT = 2200;
+
+// Hidden reasoning tokens for gpt-5.6-family models count against
+// max_completion_tokens, same budget the visible JSON output has to fit in.
+// Higher reasoning_effort means more of that budget gets spent thinking
+// before the model ever writes a character of output, so a flat token cap
+// that was tuned for a non-reasoning model truncates the response earlier
+// at "high"/"xhigh" than it does at "medium" -- exactly backwards from what
+// the retry ladder below needs. These headroom figures are deliberately
+// generous; the API only bills for tokens actually used.
+const REASONING_TOKEN_HEADROOM: Record<ReasoningEffort, number> = {
+  none: 200,
+  low: 800,
+  medium: 2000,
+  high: 5000,
+  xhigh: 10000,
+};
+
+function computeCompletionTokenBudget(args: {
+  itemCount: number;
+  perItemTokens: number;
+  baseTokens: number;
+  effort: ReasoningEffort;
+  floor: number;
+}): number {
+  const outputBudget = args.baseTokens + args.itemCount * args.perItemTokens;
+  const reasoningHeadroom =
+    REASONING_TOKEN_HEADROOM[args.effort] ?? REASONING_TOKEN_HEADROOM.medium;
+  return Math.max(args.floor, outputBudget + reasoningHeadroom);
+}
 
 function isGenerationDisabledByKillSwitch(): boolean {
   const raw = (process.env.GENERATION_KILL_SWITCH || "").trim().toLowerCase();
@@ -236,9 +275,11 @@ function buildPrompt(params: {
     questionType,
   });
 
-  const explanationRule = examTrack
-    ? `- "explanation": 2-4 concise sentences. Include why the correct answer is right AND why at least one strong distractor is wrong.`
-    : `- "explanation": 1-2 short sentences explaining why the correct answer is right`;
+  const explanationRule = isTrueFalse
+    ? `- "explanation": 1-2 concise sentences explaining why the statement is true or false based on the notes.`
+    : examTrack
+      ? `- "explanation": 2-4 concise sentences. Include why the correct answer is right AND why at least one strong distractor is wrong.`
+      : `- "explanation": 2-3 concise sentences. Include why the correct answer is right AND why the single most tempting wrong choice is wrong.`;
 
   return `
 You are a ${examTrack ? "high-stakes exam" : "quiz"} generator for a study app called StudyClash.
@@ -260,9 +301,9 @@ ${explanationRule}
 - "source_excerpt": a short EXACT quote (one sentence or clause, under 30 words) copied word-for-word from the notes below that directly supports the correct answer. Copy it verbatim — do not paraphrase, summarize, or fix typos. This lets the student click back to exactly where the answer came from.
 
 Difficulty mix (must match exactly):
-- Exactly ${easyCount} questions with difficulty "easy" (basic recall/definitions)
-- Exactly ${mediumCount} questions with difficulty "medium" (applying or connecting concepts)
-- Exactly ${hardCount} questions with difficulty "hard" (nuanced or multi-step reasoning)
+- Exactly ${easyCount} questions with difficulty "easy": a single fact or definition, stated close to how the notes phrase it.
+- Exactly ${mediumCount} questions with difficulty "medium": requires connecting two related facts from the notes, or applying a definition/rule to a new example not literally stated in the notes.
+- Exactly ${hardCount} questions with difficulty "hard": requires synthesizing multiple facts or steps from across the notes (not adjacent sentences), OR a scenario/application the notes never spell out that can only be solved by reasoning through the underlying concept. A hard question should NOT be answerable by matching keywords in the question to one sentence in the notes -- if you can point to a single line that gives away the answer, it is not hard. At least 2 of the 4 answer choices must be near-misses that a student with a common, specific misconception about this material would plausibly pick, not generic wrong answers.
 
 Other rules:
 - No two questions may test the exact same fact or be reworded duplicates of each other.
@@ -711,13 +752,17 @@ function validateQuestions(
 // back into the same retry loop that handles schema errors.
 async function runGroundingCheck(
   notes: string,
-  questions: GeneratedQuestion[]
+  questions: GeneratedQuestion[],
+  attempt = 1
 ): Promise<string | null> {
   try {
-    const maxCompletionTokens = parsePositiveInt(
-      process.env.OPENAI_MAX_COMPLETION_TOKENS,
-      MAX_COMPLETION_TOKENS_DEFAULT
-    );
+    const maxCompletionTokens = computeCompletionTokenBudget({
+      itemCount: questions.length,
+      perItemTokens: 60,
+      baseTokens: 300,
+      effort: TERRA_TASK.reasoning_effort,
+      floor: 1000,
+    });
 
     const questionList = questions
       .map(
@@ -727,7 +772,8 @@ async function runGroundingCheck(
       .join("\n\n");
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: TERRA_TASK.model,
+      reasoning_effort: TERRA_TASK.reasoning_effort,
       messages: [
         {
           role: "user",
@@ -753,8 +799,7 @@ ${questionList}`,
         },
       ],
       response_format: { type: "json_object" },
-      temperature: 0,
-      max_completion_tokens: Math.min(maxCompletionTokens, 1000),
+      max_completion_tokens: maxCompletionTokens,
     });
 
     const rawContent = completion.choices[0]?.message?.content;
@@ -781,7 +826,21 @@ ${questionList}`,
       .join("; ");
 
     return `Fact-check found ${flagged.length} question(s) not supported by the notes: ${details}`;
-  } catch {
+  } catch (error) {
+    // Transient network/rate-limit blips shouldn't silently disable fact
+    // -checking for an otherwise-fine generation, so retry once before
+    // giving up. Still fails open after that (rather than blocking
+    // generation outright) -- a flaky third-party call shouldn't be able to
+    // take down question generation entirely -- but it's now logged instead
+    // of vanishing silently.
+    if (attempt < 2) {
+      return runGroundingCheck(notes, questions, attempt + 1);
+    }
+
+    console.error(
+      "Grounding fact-check failed after retry, generation proceeding unverified:",
+      error instanceof Error ? error.message : error
+    );
     return null;
   }
 }
@@ -846,16 +905,24 @@ async function generateAndValidate(
     examTrack?: ExamTrack;
     examMode?: string;
     additionalGuidance?: string;
-    temperature?: number;
+    reasoningEffort?: ReasoningEffort;
   }
 ): Promise<{ questions: GeneratedQuestion[] } | { error: string }> {
-  const maxCompletionTokens = parsePositiveInt(
-    process.env.OPENAI_MAX_COMPLETION_TOKENS,
-    MAX_COMPLETION_TOKENS_DEFAULT
-  );
+  const effort = genParams.reasoningEffort ?? TERRA_TASK.reasoning_effort;
+  const maxCompletionTokens = computeCompletionTokenBudget({
+    itemCount: genParams.totalQuestions,
+    perItemTokens: 260,
+    baseTokens: 800,
+    effort,
+    floor: parsePositiveInt(
+      process.env.OPENAI_MAX_COMPLETION_TOKENS,
+      MAX_COMPLETION_TOKENS_DEFAULT
+    ),
+  });
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: TERRA_TASK.model,
+    reasoning_effort: effort,
     messages: [
       {
         role: "user",
@@ -875,7 +942,6 @@ async function generateAndValidate(
       },
     ],
     response_format: { type: "json_object" },
-    temperature: genParams.temperature ?? 0.5,
     max_completion_tokens: maxCompletionTokens,
   });
 
@@ -1151,16 +1217,26 @@ async function generateAndValidateOpenResponse(
     gradeLevel?: string;
     topicFocus?: string;
     additionalGuidance?: string;
-    temperature?: number;
+    reasoningEffort?: ReasoningEffort;
   }
 ): Promise<{ questions: OpenResponseQuestion[] } | { error: string }> {
-  const maxCompletionTokens = parsePositiveInt(
-    process.env.OPENAI_MAX_COMPLETION_TOKENS,
-    MAX_COMPLETION_TOKENS_DEFAULT
-  );
+  const effort = genParams.reasoningEffort ?? TERRA_TASK.reasoning_effort;
+  // Open-response items carry a full worked model_answer per question, so
+  // the per-item output footprint is much bigger than MC/TF's.
+  const maxCompletionTokens = computeCompletionTokenBudget({
+    itemCount: genParams.totalQuestions,
+    perItemTokens: 450,
+    baseTokens: 800,
+    effort,
+    floor: parsePositiveInt(
+      process.env.OPENAI_MAX_COMPLETION_TOKENS,
+      MAX_COMPLETION_TOKENS_DEFAULT
+    ),
+  });
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: TERRA_TASK.model,
+    reasoning_effort: effort,
     messages: [
       {
         role: "user",
@@ -1168,7 +1244,6 @@ async function generateAndValidateOpenResponse(
       },
     ],
     response_format: { type: "json_object" },
-    temperature: genParams.temperature ?? 0.5,
     max_completion_tokens: maxCompletionTokens,
   });
 
@@ -1270,21 +1345,20 @@ async function handleOpenResponseGeneration(args: {
 
   let result = await generateAndValidateOpenResponse(notes, baseParams);
 
+  // Only one retry, not two: with the token budget above sized to the
+  // reasoning effort actually in play, a first-attempt truncation was almost
+  // always the real cause of a failure here, not the model needing more
+  // "thinking" -- so escalating straight to a second and much slower
+  // "xhigh" attempt bought little beyond making a failing generation take
+  // three times as long. If the single retry (at "high") still fails, that's
+  // a genuine schema problem another slow attempt is unlikely to fix.
   if ("error" in result) {
     result = await generateAndValidateOpenResponse(notes, {
       ...baseParams,
       additionalGuidance:
         `Your previous output failed strict validation: ${result.error}. ` +
         "Return exactly the requested number of questions, valid rubric_points arrays, and an exact easy/medium/hard mix.",
-      temperature: 0.3,
-    });
-  }
-
-  if ("error" in result) {
-    result = await generateAndValidateOpenResponse(notes, {
-      ...baseParams,
-      additionalGuidance: `Second failure reason: ${result.error}. Do not change schema. Prioritize strict JSON correctness.`,
-      temperature: 0.2,
+      reasoningEffort: "high",
     });
   }
 
@@ -1881,23 +1955,16 @@ export async function POST(req: NextRequest) {
         ? ({ questions } as { questions: GeneratedQuestion[] })
         : await generateAndValidate(notes, genParams);
 
+    // Only one retry, not two -- see the matching comment in
+    // handleOpenResponseGeneration for why a second, "xhigh" attempt isn't
+    // worth the extra latency now that the token budget is sized correctly.
     if ("error" in result) {
       result = await generateAndValidate(notes, {
         ...genParams,
         additionalGuidance:
           `Your previous output failed strict validation: ${result.error}. ` +
           "Return exactly the requested number of questions, exact answer choice count per question type, and an exact easy/medium/hard mix.",
-        temperature: 0.3,
-      });
-    }
-
-    if ("error" in result) {
-      result = await generateAndValidate(notes, {
-        ...genParams,
-        additionalGuidance:
-          `Second failure reason: ${result.error}. ` +
-          "Do not change schema. Prioritize strict JSON correctness over variety.",
-        temperature: 0.2,
+        reasoningEffort: "high",
       });
     }
 

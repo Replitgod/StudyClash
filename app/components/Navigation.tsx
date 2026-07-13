@@ -240,7 +240,7 @@ export default function Navigation() {
         {/* Mobile hamburger button */}
         <button
           onClick={() => setIsMobileMenuOpen((prev) => !prev)}
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white md:hidden"
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white md:hidden"
           aria-label="Toggle menu"
           aria-expanded={isMobileMenuOpen}
         >

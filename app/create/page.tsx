@@ -217,7 +217,7 @@ function getPreferredDisplayName(profile: Profile | null, user: User | null): st
 // form inputs (the classic "typing loses focus after one letter" bug).
 function Background({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
         <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
@@ -231,7 +231,7 @@ function Background({ children }: { children: React.ReactNode }) {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className={`relative z-10 flex min-h-screen flex-col items-center px-4 py-10 sm:px-6 sm:py-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
+      <div className={`relative z-10 flex min-h-dvh flex-col items-center px-4 py-10 sm:px-6 sm:py-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {children}
       </div>
     </main>
@@ -633,7 +633,7 @@ export default function CreateDeck() {
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch("/api/extract-pdf", {
+        const response = await authFetch("/api/extract-pdf", {
           method: "POST",
           body: formData,
         });
@@ -671,7 +671,7 @@ export default function CreateDeck() {
         const formData = new FormData();
         formData.append("file", file);
 
-        const response = await fetch("/api/extract-image", {
+        const response = await authFetch("/api/extract-image", {
           method: "POST",
           body: formData,
         });

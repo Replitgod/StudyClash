@@ -336,7 +336,7 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#04070f] text-white">
+    <div className="relative min-h-dvh overflow-x-hidden bg-[#04070f] text-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}

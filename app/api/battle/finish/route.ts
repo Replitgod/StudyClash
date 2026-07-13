@@ -7,7 +7,7 @@ import {
   getClientIpAddress,
   hashIdentifier,
 } from "@/lib/server/apiUtils";
-import { getReviewIntervalDays, getTopicStatus } from "@/lib/srsSchedule";
+import { getQuestionStatus, getReviewIntervalDays, getTopicStatus } from "@/lib/srsSchedule";
 
 const CHALLENGE_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -98,6 +98,14 @@ function computeAuthoritativeScore(answers: AnswerPayload[]): number {
   return score;
 }
 
+// Generous ceilings, not realism checks -- these only exist to reject
+// obviously corrupted/overflowed payloads, not to second-guess a genuinely
+// slow thinker. The real anti-cheat check is the aggregate one below
+// (sum of per-answer times can't exceed the submitted total).
+const MAX_RESPONSE_TIME_MS = 60 * 60 * 1000; // 1 hour on a single question
+const MAX_TIME_TAKEN_SECONDS = 6 * 60 * 60; // 6 hours for a whole battle
+const TIME_CONSISTENCY_TOLERANCE_MS = 5000;
+
 function isValidAnswerPayload(value: unknown): value is AnswerPayload {
   if (!value || typeof value !== "object") return false;
 
@@ -108,7 +116,8 @@ function isValidAnswerPayload(value: unknown): value is AnswerPayload {
     typeof candidate.isCorrect === "boolean" &&
     typeof candidate.responseTimeMs === "number" &&
     Number.isFinite(candidate.responseTimeMs) &&
-    candidate.responseTimeMs >= 0
+    candidate.responseTimeMs >= 0 &&
+    candidate.responseTimeMs <= MAX_RESPONSE_TIME_MS
   );
 }
 
@@ -249,9 +258,27 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    if (body.timeTakenSeconds < 0) {
+    if (body.timeTakenSeconds < 0 || body.timeTakenSeconds > MAX_TIME_TAKEN_SECONDS) {
       return NextResponse.json(
         { error: "This battle reported an invalid completion time." },
+        { status: 400 }
+      );
+    }
+
+    // The client derives every answer's responseTimeMs from the same
+    // monotonically increasing elapsedSeconds clock that timeTakenSeconds is
+    // read from at submission (app/battle/[deckId]/page.tsx), so the sum of
+    // per-answer times can never legitimately exceed the total. A client
+    // that shrinks only timeTakenSeconds -- to win a leaderboard/tournament
+    // tiebreak without redoing the whole answer timeline -- trips this.
+    const sumResponseTimeMs = body.answers.reduce(
+      (total, answer) => total + answer.responseTimeMs,
+      0
+    );
+
+    if (sumResponseTimeMs > body.timeTakenSeconds * 1000 + TIME_CONSISTENCY_TOLERANCE_MS) {
+      return NextResponse.json(
+        { error: "This battle's timing did not add up." },
         { status: 400 }
       );
     }
@@ -397,6 +424,22 @@ export async function POST(req: NextRequest) {
       });
     } catch {
       // topic_review_schedule may not be deployed yet.
+    }
+
+    // Best-effort: same idea as the topic-level schedule above, but tracked
+    // per individual question (question_review_schedule) so weak-topic
+    // rematch can target the exact questions a student is missing instead
+    // of "anything tagged with this topic label." See getQuestionStatus in
+    // lib/srsSchedule.ts.
+    try {
+      await updateQuestionReviewSchedule({
+        deckId: body.deckId,
+        userId: authenticatedUserId,
+        playerName: body.playerName,
+        answers: body.answers,
+      });
+    } catch {
+      // question_review_schedule may not be deployed yet.
     }
 
     let crownTaken = false;
@@ -552,6 +595,70 @@ async function updateTopicReviewSchedule(args: {
       await supabase.from("topic_review_schedule").update(row).eq("id", existing.id);
     } else {
       await supabase.from("topic_review_schedule").insert(row);
+    }
+  }
+}
+
+// Per-question sibling of updateTopicReviewSchedule above. Status comes
+// from a correct-streak (getQuestionStatus), not accuracy -- a single
+// question's accuracy over a handful of attempts is too noisy to threshold
+// the way topic-level cumulative accuracy can. Interval growth reuses the
+// same getReviewIntervalDays math the topic schedule uses. Same
+// read-then-write justification as the topic version: one write per
+// student per completed battle, bounded by questions-per-battle.
+async function updateQuestionReviewSchedule(args: {
+  deckId: string;
+  userId: string | null;
+  playerName: string;
+  answers: AnswerPayload[];
+}): Promise<void> {
+  const { deckId, userId, playerName, answers } = args;
+
+  if (answers.length === 0) return;
+
+  const nowMs = Date.now();
+  const nowIso = new Date(nowMs).toISOString();
+
+  for (const answer of answers) {
+    let existingQuery = supabase
+      .from("question_review_schedule")
+      .select("id, correct_streak, correct_count, total_count")
+      .eq("deck_id", deckId)
+      .eq("question_id", answer.questionId);
+
+    existingQuery = userId
+      ? existingQuery.eq("user_id", userId)
+      : existingQuery.is("user_id", null).eq("player_name", playerName);
+
+    const { data: existing } = await existingQuery.maybeSingle();
+
+    const correctStreak = answer.isCorrect
+      ? (existing?.correct_streak || 0) + 1
+      : 0;
+    const correctCount = (existing?.correct_count || 0) + (answer.isCorrect ? 1 : 0);
+    const totalCount = (existing?.total_count || 0) + 1;
+    const status = getQuestionStatus(correctStreak);
+    const intervalDays = getReviewIntervalDays(status, totalCount);
+    const nextReviewAt = new Date(nowMs + intervalDays * 24 * 60 * 60 * 1000).toISOString();
+
+    const row = {
+      user_id: userId,
+      player_name: userId ? null : playerName,
+      deck_id: deckId,
+      question_id: answer.questionId,
+      status,
+      correct_streak: correctStreak,
+      correct_count: correctCount,
+      total_count: totalCount,
+      last_practiced_at: nowIso,
+      next_review_at: nextReviewAt,
+      updated_at: nowIso,
+    };
+
+    if (existing?.id) {
+      await supabase.from("question_review_schedule").update(row).eq("id", existing.id);
+    } else {
+      await supabase.from("question_review_schedule").insert(row);
     }
   }
 }

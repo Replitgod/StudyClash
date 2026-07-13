@@ -175,6 +175,13 @@ export default function AutoplayDemoRail() {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
+    // The global prefers-reduced-motion CSS rule (app/globals.css) only
+    // smooths out animation-duration/transition-duration -- it can't stop a
+    // JS setInterval from continuing to auto-advance scene content, so that
+    // has to be gated explicitly here.
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (query.matches) return;
+
     const id = window.setInterval(() => {
       setIndex((prev) => (prev + 1) % SCENES.length);
     }, SCENE_DURATION_MS);

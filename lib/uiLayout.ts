@@ -5,6 +5,11 @@ export const UI_Z_INDEX = {
   vyraPanel: 55,
   modal: 70,
   toast: 80,
+  // Must outrank every other tier -- it's the keyboard-focus skip-to-content
+  // link, sr-only until focused, so it needs to sit above whatever's
+  // currently on screen (including a toast or the VYRA panel) the instant a
+  // keyboard user tabs to it.
+  skipLink: 90,
 } as const;
 
 // Shared placement rules for all floating actions.

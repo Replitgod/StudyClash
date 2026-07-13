@@ -4,6 +4,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
 import { FLOATING_ACTION, UI_Z_INDEX } from "@/lib/uiLayout";
+import { Modal } from "@/app/components/ui/Modal";
 
 const FEEDBACK_DRAFT_KEY = "studyclash_feedback_draft";
 
@@ -127,51 +128,9 @@ export default function FeedbackButton() {
         Feedback
       </button>
 
-      {/* Modal overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 flex items-end justify-center bg-black/70 p-2 backdrop-blur-sm sm:items-center sm:p-4"
-          style={{ zIndex: UI_Z_INDEX.modal }}
-          onClick={handleClose}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                handleClose();
-              }
-            }}
-            className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#0a0a12] p-5 shadow-[0_0_60px_-15px_rgba(217,70,239,0.4)] sm:rounded-2xl sm:p-6"
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-black tracking-tight">
-                <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                  Send Feedback
-                </span>
-              </h2>
-              <button
-                onClick={handleClose}
-                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-white/50 transition-colors duration-150 hover:bg-white/10 hover:text-white"
-                aria-label="Close feedback form"
-              >
-                <svg
-                  className="h-5 w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {isSubmitted ? (
+      {/* Modal */}
+      <Modal isOpen={isOpen} onClose={handleClose} title="Send Feedback">
+        {isSubmitted ? (
               /* Success state */
               <div className="mt-6 flex flex-col items-center py-6 text-center">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
@@ -293,9 +252,7 @@ export default function FeedbackButton() {
                 </div>
               </form>
             )}
-          </div>
-        </div>
-      )}
+      </Modal>
     </>
   );
 }

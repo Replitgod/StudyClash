@@ -12,6 +12,7 @@ type Question = {
   prompt: string;
   choices: string[];
   correct: string;
+  explanation?: string;
 };
 
 type BattleRound = {
@@ -28,79 +29,80 @@ type RoundStats = {
   aiResponseMs: number;
 };
 
-const QUESTIONS: Question[] = [
+// Offline safety net only -- the live battle always tries AI-generated
+// questions first (see startBattle) so the set is different and harder
+// every time. This pool is what renders if that request fails.
+const FALLBACK_QUESTIONS: Question[] = [
   {
-    id: "q1",
-    prompt: "Which statement best describes mitosis?",
+    id: "fallback-q1",
+    prompt: "A cell with 46 chromosomes undergoes meiosis. How many chromosomes will each resulting gamete contain?",
+    choices: ["11.5", "23", "46", "92"],
+    correct: "23",
+    explanation: "Meiosis halves the chromosome number so that fertilization restores the full 46, unlike mitosis which preserves it.",
+  },
+  {
+    id: "fallback-q2",
+    prompt: "If 3(2x - 4) = 5x + 2, what is the value of x?",
+    choices: ["10", "12", "14", "16"],
+    correct: "14",
+    explanation: "Distribute to get 6x - 12 = 5x + 2, then x = 14.",
+  },
+  {
+    id: "fallback-q3",
+    prompt: "Mitochondria are called the cell's powerhouse because they carry out which process to generate ATP?",
+    choices: ["Photosynthesis", "Cellular respiration", "Protein synthesis", "DNA replication"],
+    correct: "Cellular respiration",
+    explanation: "Mitochondria break down glucose via cellular respiration; photosynthesis happens in chloroplasts, not mitochondria.",
+  },
+  {
+    id: "fallback-q4",
+    prompt: "A thesis reads: \"Social media has both positive and negative effects on teenagers.\" Which revision most strengthens it?",
     choices: [
-      "Creates two identical daughter cells",
-      "Creates four unique gametes",
-      "Only occurs in plant roots",
-      "Happens during photosynthesis",
+      "Add more transition words between paragraphs",
+      "Sharpen it into one specific, arguable claim",
+      "Insert a quote from a news article",
+      "Shorten it to a single short sentence",
     ],
-    correct: "Creates two identical daughter cells",
+    correct: "Sharpen it into one specific, arguable claim",
+    explanation: "A strong thesis takes a specific, defensible position -- listing both sides isn't an argument yet.",
   },
   {
-    id: "q2",
-    prompt: "In algebra, what is the solution to 2x + 6 = 18?",
-    choices: ["x = 3", "x = 6", "x = 9", "x = 12"],
-    correct: "x = 6",
+    id: "fallback-q5",
+    prompt: "A government sets a price ceiling below the market equilibrium price for an essential good. What is the most likely result?",
+    choices: ["A shortage", "A surplus", "No change in quantity", "The price rises further"],
+    correct: "A shortage",
+    explanation: "A ceiling below equilibrium keeps price artificially low, so quantity demanded exceeds quantity supplied -- a shortage.",
   },
   {
-    id: "q3",
-    prompt: "Which organelle is known as the cell's powerhouse?",
-    choices: ["Ribosome", "Mitochondrion", "Golgi apparatus", "Nucleus"],
-    correct: "Mitochondrion",
-  },
-  {
-    id: "q4",
-    prompt: "What is the primary purpose of a thesis statement?",
+    id: "fallback-q6",
+    prompt: "With 10 minutes left and 6 unanswered multiple-choice questions with no penalty for guessing, what is the best strategy?",
     choices: [
-      "List all sources",
-      "State the central argument",
-      "Summarize every paragraph",
-      "Give a final conclusion",
+      "Leave them blank to avoid risk",
+      "Only answer the ones you're fully sure of",
+      "Guess on every remaining question",
+      "Skip all of them and review earlier answers instead",
     ],
-    correct: "State the central argument",
+    correct: "Guess on every remaining question",
+    explanation: "With no penalty for wrong answers, a guess has strictly positive expected value over leaving it blank.",
   },
   {
-    id: "q5",
-    prompt: "If demand rises and supply stays constant, price usually:",
-    choices: ["Falls", "Stays fixed", "Rises", "Becomes zero"],
-    correct: "Rises",
+    id: "fallback-q7",
+    prompt: "In a cross between two heterozygous (Aa) pea plants, what fraction of offspring are expected to show the recessive phenotype?",
+    choices: ["0", "1/4", "1/2", "3/4"],
+    correct: "1/4",
+    explanation: "A Punnett square for Aa x Aa gives 1 AA : 2 Aa : 1 aa, so 1/4 show the recessive (aa) phenotype.",
   },
   {
-    id: "q6",
-    prompt: "Which SAT strategy is most effective for time pressure?",
+    id: "fallback-q8",
+    prompt: "Which best describes the graph of y = -2x^2 + 3?",
     choices: [
-      "Read every option twice",
-      "Skip all hard questions",
-      "Mark and return to blockers",
-      "Never guess",
+      "A downward-opening parabola with vertex (0, 3)",
+      "An upward-opening parabola with vertex (0, -3)",
+      "A straight line with slope -2",
+      "A downward-opening parabola with vertex (3, 0)",
     ],
-    correct: "Mark and return to blockers",
-  },
-  {
-    id: "q7",
-    prompt: "What does DNA stand for?",
-    choices: [
-      "Deoxyribonucleic acid",
-      "Dynamic nitrogen array",
-      "Digital neural axis",
-      "Dual nucleus assembly",
-    ],
-    correct: "Deoxyribonucleic acid",
-  },
-  {
-    id: "q8",
-    prompt: "Which graph shows a linear function?",
-    choices: [
-      "A straight line",
-      "A U-shaped parabola",
-      "A circle",
-      "An exponential curve",
-    ],
-    correct: "A straight line",
+    correct: "A downward-opening parabola with vertex (0, 3)",
+    explanation: "A negative leading coefficient opens the parabola downward, and the constant term 3 gives the vertex y-value when x = 0.",
   },
 ];
 
@@ -204,7 +206,8 @@ const SFX = {
 
 export default function InstantAIBattle() {
   const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
-  const [questionIds, setQuestionIds] = useState<string[]>([]);
+  const [battleQuestions, setBattleQuestions] = useState<Question[]>([]);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [index, setIndex] = useState(0);
   const [round, setRound] = useState<BattleRound>({
     playerChoice: null,
@@ -225,14 +228,9 @@ export default function InstantAIBattle() {
   const roundStartMsRef = useRef<number>(0);
   const shakeTimerRef = useRef<number | null>(null);
 
-  const questionList = useMemo(
-    () => questionIds.map((id) => QUESTIONS.find((q) => q.id === id)).filter(Boolean) as Question[],
-    [questionIds]
-  );
-
-  const currentQuestion = questionList[index] || null;
-  const totalRounds = questionList.length;
-  const battleStarted = Boolean(difficulty && questionList.length > 0);
+  const currentQuestion = battleQuestions[index] || null;
+  const totalRounds = battleQuestions.length;
+  const battleStarted = Boolean(difficulty && battleQuestions.length > 0);
   const battleFinished = battleStarted && index >= totalRounds;
 
   const avgPlayerMs =
@@ -315,13 +313,51 @@ export default function InstantAIBattle() {
     shakeTimerRef.current = window.setTimeout(() => setShake(false), 420);
   };
 
-  const startBattle = (level: Difficulty) => {
+  const startBattle = async (level: Difficulty) => {
     if (aiTimerRef.current) {
       window.clearTimeout(aiTimerRef.current);
     }
 
+    setIsLoadingQuestions(true);
+    setShowDifficultyPicker(false);
+    const avoidQuestionTexts = battleQuestions.map((question) => question.prompt);
+    let nextQuestions: Question[];
+
+    try {
+      const response = await fetch("/api/demo/generate-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avoidQuestionTexts, count: 5, subject: "general_academic" }),
+      });
+
+      if (!response.ok) throw new Error("Battle question generation failed");
+      const data = await response.json();
+
+      if (!Array.isArray(data.questions) || data.questions.length === 0) {
+        throw new Error("Battle question generation returned no questions");
+      }
+
+      nextQuestions = (
+        data.questions as Array<{
+          question_text: string;
+          answer_choices: string[];
+          correct_answer: string;
+          explanation: string;
+        }>
+      ).map((question, questionIndex) => ({
+        id: `ai-battle-q${questionIndex}`,
+        prompt: question.question_text,
+        choices: question.answer_choices,
+        correct: question.correct_answer,
+        explanation: question.explanation,
+      }));
+    } catch {
+      nextQuestions = shuffle(FALLBACK_QUESTIONS).slice(0, 5);
+    }
+
+    setIsLoadingQuestions(false);
     setDifficulty(level);
-    setQuestionIds(shuffle(QUESTIONS).slice(0, 5).map((q) => q.id));
+    setBattleQuestions(nextQuestions);
     setIndex(0);
     setRound({ playerChoice: null, aiChoice: null, aiResponseMs: null, playerResponseMs: null });
     setPlayerScore(0);
@@ -329,7 +365,6 @@ export default function InstantAIBattle() {
     setRoundStats([]);
     setWaitingForAi(false);
     setLastAiCorrect(null);
-    setShowDifficultyPicker(false);
     roundStartMsRef.current = Date.now();
   };
 
@@ -490,9 +525,10 @@ export default function InstantAIBattle() {
             </div>
             <button
               onClick={() => startBattle("adaptive")}
-              className="rounded-xl bg-cyan-300 px-5 py-2.5 text-sm font-black text-[#032236] transition-transform duration-200 active:scale-95"
+              disabled={isLoadingQuestions}
+              className="rounded-xl bg-cyan-300 px-5 py-2.5 text-sm font-black text-[#032236] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Battle Now
+              {isLoadingQuestions ? "Preparing questions..." : "Battle Now"}
             </button>
           </div>
 
@@ -512,7 +548,8 @@ export default function InstantAIBattle() {
                 <button
                   key={level}
                   onClick={() => startBattle(level)}
-                  className="rounded-xl border border-cyan-300/30 bg-cyan-500/10 px-4 py-2 text-sm font-bold text-cyan-100 transition-transform duration-200 hover:bg-cyan-500/20 active:scale-95"
+                  disabled={isLoadingQuestions}
+                  className="rounded-xl border border-cyan-300/30 bg-cyan-500/10 px-4 py-2 text-sm font-bold text-cyan-100 transition-transform duration-200 hover:bg-cyan-500/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                   title={DIFFICULTY_CONFIG[level].summary}
                 >
                   {DIFFICULTY_CONFIG[level].label}
@@ -629,6 +666,12 @@ export default function InstantAIBattle() {
               {index >= totalRounds - 1 ? "Finish" : "Next"}
             </button>
           </div>
+
+          {round.aiChoice && currentQuestion.explanation && (
+            <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-xs text-white/70">
+              {currentQuestion.explanation}
+            </div>
+          )}
         </div>
       )}
 
@@ -647,9 +690,10 @@ export default function InstantAIBattle() {
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             <button
               onClick={() => startBattle(difficulty || "adaptive")}
-              className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-black text-[#052914] transition-transform duration-200 active:scale-95"
+              disabled={isLoadingQuestions}
+              className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-black text-[#052914] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Rematch
+              {isLoadingQuestions ? "Preparing questions..." : "Rematch"}
             </button>
             {(Object.keys(DIFFICULTY_CONFIG) as Difficulty[])
               .filter((level) => level !== difficulty)
@@ -657,7 +701,8 @@ export default function InstantAIBattle() {
                 <button
                   key={`rematch-${level}`}
                   onClick={() => startBattle(level)}
-                  className="rounded-xl border border-emerald-300/40 bg-emerald-500/15 px-4 py-2 text-sm font-bold text-emerald-100"
+                  disabled={isLoadingQuestions}
+                  className="rounded-xl border border-emerald-300/40 bg-emerald-500/15 px-4 py-2 text-sm font-bold text-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Try {DIFFICULTY_CONFIG[level].label}
                 </button>

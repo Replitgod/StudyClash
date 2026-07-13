@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
 import { GRADIENTS } from "@/lib/theme";
 
@@ -19,6 +19,8 @@ export type ModalProps = {
 // works regardless of where focus currently is — the original only closed
 // on Escape if focus happened to already be inside the dialog.
 export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -29,6 +31,13 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
+
+    // Not a full focus trap (Tab can still leave the dialog), but without
+    // this, opening the dialog leaves keyboard/screen-reader focus wherever
+    // it was on the trigger button, so Tab from there walks through the
+    // page behind the overlay instead of into the dialog that's actually
+    // visible and interactive.
+    panelRef.current?.focus();
 
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -46,11 +55,13 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
       role="presentation"
     >
       <div
+        ref={panelRef}
+        tabIndex={-1}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#0a0a12] p-5 shadow-glow-fuchsia-md sm:rounded-2xl sm:p-6 ${className || ""}`}
+        className={`max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#0a0a12] p-5 shadow-glow-fuchsia-md sm:rounded-2xl sm:p-6 outline-none ${className || ""}`}
       >
         {title && (
           <div className="flex items-center justify-between">

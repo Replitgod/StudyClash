@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 
 type DeckRow = {
   id: string;
@@ -330,6 +331,26 @@ export async function GET(req: NextRequest) {
 
     if (userError || !user) {
       return NextResponse.json({ error: "Please log in." }, { status: 401 });
+    }
+
+    // This endpoint recomputes leaderboards from a full 45-day matches scan
+    // on every call -- expensive enough that it needs its own cap, separate
+    // from any per-route limiter, so it can't be hammered into a cost/DoS
+    // vector even though it's already login-gated.
+    const rateLimit = await checkDistributedRateLimit({
+      key: `clashrank:${user.id}`,
+      limit: 20,
+      windowSeconds: 60,
+    });
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many ClashRank requests. Please slow down." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+        }
+      );
     }
 
     const since = new Date(Date.now() - 1000 * 60 * 60 * 24 * 45).toISOString();

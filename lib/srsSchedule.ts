@@ -16,6 +16,17 @@ export function getTopicStatus(accuracy: number): TopicStatus {
   return "weak";
 }
 
+// Per-question status (question_review_schedule) uses a correct-streak
+// instead of accuracy -- a single question's accuracy over a handful of
+// attempts is too noisy to threshold the way topic-level cumulative
+// accuracy can. N correct in a row to graduate, any miss resets it, same
+// idea as Knowt's per-card review mechanic.
+export function getQuestionStatus(correctStreak: number): TopicStatus {
+  if (correctStreak >= 3) return "mastered";
+  if (correctStreak >= 1) return "improving";
+  return "weak";
+}
+
 // Weak topics come back fast (cram pressure), improving topics get a short
 // gap, and mastered topics get a growing interval the more times they've
 // been drilled -- a topic mastered 8 times gets left alone longer than one

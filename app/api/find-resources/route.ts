@@ -8,6 +8,17 @@ import {
 } from "@/lib/server/apiUtils";
 import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 import { tavilySearch, type TavilySearchResult } from "@/lib/server/tavily";
+import { LUNA_TASK } from "@/lib/server/aiModels";
+
+// Repeated identical searches (multiple students hitting the same weak
+// topic the same day) skip both the Tavily call and the OpenAI ranking call
+// entirely within this window. Short enough that "real-time" resource
+// discovery still feels live, long enough to absorb the actual repeat-query
+// traffic this exists for.
+const RESOURCE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 // Real-time, grounded study-resource discovery. Unlike generate-questions
 // and vyra-chat (which only ever draw on the model's own knowledge), this
@@ -212,6 +223,36 @@ export async function POST(req: NextRequest) {
     }
 
     const query = buildSearchQuery(payload);
+    const cacheKey = hashIdentifier(`${query}|${payload.examTrack || ""}`);
+    const supabase = getServiceSupabaseClient();
+
+    const cacheCutoff = new Date(Date.now() - RESOURCE_CACHE_TTL_MS).toISOString();
+    const { data: cached } = await supabase
+      .from("resource_search_cache")
+      .select("id, resources, disclaimer, hit_count")
+      .eq("cache_key", cacheKey)
+      .gte("updated_at", cacheCutoff)
+      .maybeSingle();
+
+    if (cached) {
+      // Best-effort hit-count bump. Awaited (not fire-and-forget) --
+      // an un-awaited write here is not guaranteed to complete once this
+      // handler returns its response, especially on a serverless runtime
+      // that can freeze execution immediately after the response is sent.
+      // The Supabase client resolves to { error } rather than throwing on
+      // an ordinary write failure, so this can't itself crash the request.
+      await supabase
+        .from("resource_search_cache")
+        .update({ hit_count: (cached.hit_count || 0) + 1 })
+        .eq("id", cached.id);
+
+      return NextResponse.json({
+        resources: cached.resources,
+        query,
+        disclaimer: cached.disclaimer || undefined,
+      });
+    }
+
     const searchResult = await tavilySearch({ query, maxResults: 8 });
 
     if ("error" in searchResult) {
@@ -232,13 +273,15 @@ export async function POST(req: NextRequest) {
     }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: LUNA_TASK.model,
+      reasoning_effort: LUNA_TASK.reasoning_effort,
       messages: [
         { role: "user", content: buildRankingPrompt({ query, payload, results: searchResult.results }) },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.2,
-      max_completion_tokens: 1400,
+      // Leaves headroom for LUNA's hidden reasoning tokens on top of the
+      // visible ranked-list output (1400 was sized for a non-reasoning model).
+      max_completion_tokens: 2200,
     });
 
     const rawContent = completion.choices[0]?.message?.content;
@@ -270,6 +313,23 @@ export async function POST(req: NextRequest) {
         : groundedResources.length === 0
           ? "VYRA could not confidently confirm a high-quality resource for this topic right now."
           : undefined;
+
+    // Best-effort cache write, awaited for the same reason as the hit-count
+    // bump above. Only successful, non-empty results are worth caching; an
+    // empty/disclaimer-only result for a mistyped or obscure topic shouldn't
+    // get pinned for hours.
+    if (groundedResources.length > 0) {
+      await supabase.from("resource_search_cache").upsert(
+        {
+          cache_key: cacheKey,
+          query,
+          resources: groundedResources,
+          disclaimer: disclaimer || null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "cache_key" }
+      );
+    }
 
     return NextResponse.json({ resources: groundedResources, query, disclaimer });
   } catch (err) {

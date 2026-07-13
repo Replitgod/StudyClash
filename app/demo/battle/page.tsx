@@ -54,62 +54,172 @@ const DEMO_DECK = {
 	student_name: "Demo Student",
 };
 
-const DEMO_QUESTIONS: DemoQuestion[] = [
+const QUESTIONS_PER_DEMO = 6;
+
+const QUESTION_POOL: DemoQuestion[] = [
 	{
-		id: "demo-q1",
-		question_text: "Solve for x: 3x + 7 = 22",
-		answer_choices: ["x = 3", "x = 5", "x = 7", "x = 9"],
-		correct_answer: "x = 5",
-		explanation: "Subtract 7 from both sides to get 3x = 15, then divide by 3.",
+		id: "pool-linear-1",
+		question_text: "If 4(2x - 3) - 2x = 3x + 9, what is the value of x?",
+		answer_choices: ["x = 5", "x = 6", "x = 7", "x = 9"],
+		correct_answer: "x = 7",
+		explanation: "Distribute to get 8x - 12 - 2x = 3x + 9, so 6x - 12 = 3x + 9, then 3x = 21 and x = 7.",
 		topic: "Linear equations",
-		difficulty: "Easy",
+		difficulty: "Medium",
 	},
 	{
-		id: "demo-q2",
-		question_text: "What is the slope of the line y = 4x - 1?",
-		answer_choices: ["-1", "0", "4", "1/4"],
-		correct_answer: "4",
-		explanation: "In slope-intercept form y = mx + b, the slope is m.",
-		topic: "Slope",
-		difficulty: "Easy",
-	},
-	{
-		id: "demo-q3",
-		question_text: "Solve the system: y = 2x + 1 and y = -x + 10",
-		answer_choices: ["x = 2, y = 5", "x = 3, y = 7", "x = 4, y = 9", "x = 5, y = 11"],
-		correct_answer: "x = 3, y = 7",
-		explanation: "Set the equations equal: 2x + 1 = -x + 10, so 3x = 9 and x = 3.",
+		id: "pool-systems-1",
+		question_text: "Gym A charges a $45 sign-up fee plus $15 per month. Gym B charges no fee but $22.50 per month. After how many months is the total cost the same?",
+		answer_choices: ["4 months", "5 months", "6 months", "8 months"],
+		correct_answer: "6 months",
+		explanation: "Set 45 + 15m = 22.5m. Then 45 = 7.5m, so m = 6.",
 		topic: "Systems of equations",
 		difficulty: "Medium",
 	},
 	{
-		id: "demo-q4",
-		question_text: "Which inequality means 'a number at least 12'?",
-		answer_choices: ["x > 12", "x < 12", "x ≥ 12", "x ≤ 12"],
-		correct_answer: "x ≥ 12",
-		explanation: "'At least' means greater than or equal to.",
-		topic: "Inequalities",
-		difficulty: "Easy",
+		id: "pool-systems-2",
+		question_text: "The sum of two numbers is 24 and their difference is 6. What is the product of the two numbers?",
+		answer_choices: ["108", "126", "135", "144"],
+		correct_answer: "135",
+		explanation: "Solving the system gives 15 and 9, since 15 + 9 = 24 and 15 - 9 = 6. Their product is 135.",
+		topic: "Systems of equations",
+		difficulty: "Hard",
 	},
 	{
-		id: "demo-q5",
-		question_text: "Simplify: 2^3 × 2^4",
-		answer_choices: ["2^12", "2^7", "4^7", "8^4"],
-		correct_answer: "2^7",
-		explanation: "When multiplying powers with the same base, add the exponents.",
+		id: "pool-quadratic-1",
+		question_text: "The equation x^2 - 5x - 14 = 0 has two solutions. What is the sum of the two solutions?",
+		answer_choices: ["-14", "-5", "5", "14"],
+		correct_answer: "5",
+		explanation: "For x^2 + bx + c = 0, the sum of the roots is -b. Here that sum is -(-5) = 5.",
+		topic: "Quadratic equations",
+		difficulty: "Medium",
+	},
+	{
+		id: "pool-quadratic-2",
+		question_text: "What is the positive root of x^2 + x - 12 = 0?",
+		answer_choices: ["-4", "-3", "3", "4"],
+		correct_answer: "3",
+		explanation: "Factor to get (x + 4)(x - 3) = 0, so x = -4 or x = 3. The positive root is 3.",
+		topic: "Quadratic equations",
+		difficulty: "Medium",
+	},
+	{
+		id: "pool-functions-1",
+		question_text: "If f(x) = 2x^2 - 3x + 1, what is f(-2)?",
+		answer_choices: ["-3", "3", "9", "15"],
+		correct_answer: "15",
+		explanation: "f(-2) = 2(4) - 3(-2) + 1 = 8 + 6 + 1 = 15.",
+		topic: "Functions",
+		difficulty: "Medium",
+	},
+	{
+		id: "pool-functions-2",
+		question_text: "If f(x) = 3x + 2 and g(x) = x^2 - 1, what is f(g(2))?",
+		answer_choices: ["8", "9", "11", "13"],
+		correct_answer: "11",
+		explanation: "g(2) = 4 - 1 = 3, then f(3) = 3(3) + 2 = 11.",
+		topic: "Function composition",
+		difficulty: "Hard",
+	},
+	{
+		id: "pool-exponents-1",
+		question_text: "Simplify: (x^3)^2 / x^4",
+		answer_choices: ["x", "x^2", "x^6", "x^8"],
+		correct_answer: "x^2",
+		explanation: "(x^3)^2 = x^6, and x^6 / x^4 = x^2.",
 		topic: "Exponents",
-		difficulty: "Easy",
+		difficulty: "Medium",
 	},
 	{
-		id: "demo-q6",
-		question_text: "Solve for x: 5(x - 2) = 3x + 8",
-		answer_choices: ["x = 5", "x = 6", "x = 7", "x = 9"],
-		correct_answer: "x = 9",
-		explanation: "Distribute first: 5x - 10 = 3x + 8, then solve 2x = 18.",
-		topic: "Linear equations",
+		id: "pool-exponents-2",
+		question_text: "A bacteria population doubles every 3 hours. If it starts at 200, what is the population after 9 hours?",
+		answer_choices: ["800", "1,200", "1,600", "3,200"],
+		correct_answer: "1,600",
+		explanation: "9 hours is 3 doubling periods, so the population is 200 x 2^3 = 1,600.",
+		topic: "Exponential growth",
+		difficulty: "Medium",
+	},
+	{
+		id: "pool-ratios-1",
+		question_text: "A recipe calls for flour and sugar in a ratio of 5:3. If a baker uses 12 cups of sugar, how many cups of flour are needed?",
+		answer_choices: ["15", "18", "20", "24"],
+		correct_answer: "20",
+		explanation: "Flour = 12 x (5/3) = 20 cups.",
+		topic: "Ratios and proportions",
+		difficulty: "Medium",
+	},
+	{
+		id: "pool-percent-1",
+		question_text: "A jacket priced at $80 is discounted 25%, then an additional 10% off the discounted price. What is the final price?",
+		answer_choices: ["$52", "$54", "$56", "$60"],
+		correct_answer: "$54",
+		explanation: "80 x 0.75 = 60, then 60 x 0.9 = 54.",
+		topic: "Percentages",
+		difficulty: "Hard",
+	},
+	{
+		id: "pool-absvalue-1",
+		question_text: "What is the sum of all solutions to |2x - 3| = 9?",
+		answer_choices: ["-3", "3", "6", "9"],
+		correct_answer: "3",
+		explanation: "2x - 3 = 9 gives x = 6, and 2x - 3 = -9 gives x = -3. Their sum is 3.",
+		topic: "Absolute value",
+		difficulty: "Medium",
+	},
+	{
+		id: "pool-inequalities-1",
+		question_text: "Which value of x is NOT a solution to -3 < 2x + 1 ≤ 7?",
+		answer_choices: ["-2", "0", "2", "3"],
+		correct_answer: "-2",
+		explanation: "Solving gives -2 < x ≤ 3. Since the inequality is strict on the left, x = -2 is excluded.",
+		topic: "Inequalities",
+		difficulty: "Hard",
+	},
+	{
+		id: "pool-geometry-1",
+		question_text: "A right triangle has legs of length 9 and 12. What is the length of the hypotenuse?",
+		answer_choices: ["13", "15", "16", "21"],
+		correct_answer: "15",
+		explanation: "By the Pythagorean theorem, sqrt(9^2 + 12^2) = sqrt(225) = 15.",
+		topic: "Right triangles",
+		difficulty: "Medium",
+	},
+	{
+		id: "pool-geometry-2",
+		question_text: "A circle has a circumference of 18π. What is its radius?",
+		answer_choices: ["3", "6", "9", "18"],
+		correct_answer: "9",
+		explanation: "Circumference = 2πr, so 18π = 2πr and r = 9.",
+		topic: "Circles",
+		difficulty: "Medium",
+	},
+	{
+		id: "pool-statistics-1",
+		question_text: "The mean of five numbers is 12. Four of the numbers are 8, 10, 14, and 16. What is the fifth number?",
+		answer_choices: ["8", "10", "12", "14"],
+		correct_answer: "12",
+		explanation: "The five numbers sum to 60. The four given numbers sum to 48, so the fifth is 60 - 48 = 12.",
+		topic: "Statistics",
 		difficulty: "Medium",
 	},
 ];
+
+function shuffleArray<T>(items: T[]): T[] {
+	const result = [...items];
+	for (let i = result.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[result[i], result[j]] = [result[j], result[i]];
+	}
+	return result;
+}
+
+function pickDemoQuestions(count: number): DemoQuestion[] {
+	return shuffleArray(QUESTION_POOL)
+		.slice(0, count)
+		.map((question) => ({
+			...question,
+			answer_choices: shuffleArray(question.answer_choices),
+		}));
+}
 
 const BASE_POINTS_PER_CORRECT = 100;
 const STREAK_BONUS_TIER_1 = 25;
@@ -208,15 +318,15 @@ function buildResourceLinks(topic: string): ResourceLink[] {
 	];
 }
 
-function buildTopicStats(answers: DemoAnswer[]): DemoTopicStat[] {
+function buildTopicStats(answers: DemoAnswer[], demoQuestions: DemoQuestion[]): DemoTopicStat[] {
 	const stats = new Map<string, { correct: number; total: number }>();
 
-	for (const question of DEMO_QUESTIONS) {
+	for (const question of demoQuestions) {
 		stats.set(question.topic, { correct: 0, total: 0 });
 	}
 
 	for (const answer of answers) {
-		const question = DEMO_QUESTIONS.find((item) => item.id === answer.questionId);
+		const question = demoQuestions.find((item) => item.id === answer.questionId);
 		if (!question) continue;
 
 		const entry = stats.get(question.topic) || { correct: 0, total: 0 };
@@ -293,12 +403,16 @@ export default function DemoBattlePage() {
 	const [totalScore, setTotalScore] = useState(0);
 	const [lastPointsEarned, setLastPointsEarned] = useState(0);
 	const [elapsedSeconds, setElapsedSeconds] = useState(0);
+	const [demoQuestions, setDemoQuestions] = useState<DemoQuestion[]>(() =>
+		pickDemoQuestions(QUESTIONS_PER_DEMO)
+	);
+	const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 
 	const questionStartSecondsRef = useRef(0);
 	const resultsRef = useRef<HTMLDivElement>(null);
 
-	const currentQuestion = DEMO_QUESTIONS[currentIndex];
-	const totalQuestions = DEMO_QUESTIONS.length;
+	const currentQuestion = demoQuestions[currentIndex];
+	const totalQuestions = demoQuestions.length;
 
 	useEffect(() => {
 		if (phase !== "quiz") return;
@@ -322,7 +436,35 @@ export default function DemoBattlePage() {
 		}
 	}, [phase]);
 
-	const handleStartDemo = () => {
+	const handleStartDemo = async () => {
+		setIsGeneratingQuestions(true);
+		const avoidQuestionTexts = demoQuestions.map((question) => question.question_text);
+		let nextQuestions: DemoQuestion[];
+
+		try {
+			const response = await fetch("/api/demo/generate-questions", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ avoidQuestionTexts, count: QUESTIONS_PER_DEMO, subject: "sat_math" }),
+			});
+
+			if (!response.ok) throw new Error("Demo generation request failed");
+			const data = await response.json();
+
+			if (!Array.isArray(data.questions) || data.questions.length === 0) {
+				throw new Error("Demo generation returned no questions");
+			}
+
+			nextQuestions = (data.questions as Omit<DemoQuestion, "id">[]).map((question, index) => ({
+				...question,
+				id: `ai-demo-q${index}`,
+			}));
+		} catch {
+			nextQuestions = pickDemoQuestions(QUESTIONS_PER_DEMO);
+		}
+
+		setIsGeneratingQuestions(false);
+		setDemoQuestions(nextQuestions);
 		setPhase("quiz");
 		setCurrentIndex(0);
 		setSelectedChoice(null);
@@ -336,7 +478,7 @@ export default function DemoBattlePage() {
 
 	const handleSelectAnswer = (choice: string) => {
 		if (selectedChoice || phase !== "quiz") return;
-		const question = DEMO_QUESTIONS[currentIndex];
+		const question = demoQuestions[currentIndex];
 		const isCorrect = choice === question.correct_answer;
 		const responseTimeMs = Math.max(
 			0,
@@ -397,7 +539,7 @@ export default function DemoBattlePage() {
 		answers.length > 0
 			? Math.round(answers.reduce((sum, answer) => sum + answer.responseTimeMs, 0) / answers.length)
 			: 0;
-	const topicStats = buildTopicStats(answers);
+	const topicStats = buildTopicStats(answers, demoQuestions);
 	const weakTopics = buildWeakTopics(topicStats);
 	const studyTopics = weakTopics.length > 0 ? topicStats.filter((topic) => weakTopics.some((weakTopic) => weakTopic.topic === topic.topic)) : topicStats.slice(0, 3);
 	const studyPlan = buildStudyPlan(studyTopics);
@@ -405,7 +547,7 @@ export default function DemoBattlePage() {
 	const demoMissedQuestions = answers
 		.filter((answer) => !answer.isCorrect)
 		.map((answer) => {
-			const question = DEMO_QUESTIONS.find((item) => item.id === answer.questionId);
+			const question = demoQuestions.find((item) => item.id === answer.questionId);
 			if (!question) return null;
 
 			return {
@@ -461,13 +603,13 @@ export default function DemoBattlePage() {
 						</p>
 
 						<p className="mx-auto mt-3 max-w-xl rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-center text-xs font-semibold text-cyan-100 sm:text-sm">
-							No account needed. Tap Start Demo Battle and answer 6 questions to see the full loop.
+							No account needed. Tap Start Demo Battle and answer {QUESTIONS_PER_DEMO} questions to see the full loop.
 						</p>
 
 						<div className="mt-8 grid gap-4 md:grid-cols-3">
 							{[
 								{ title: "1. Start instantly", text: "No upload, no deck setup, no login required." },
-								{ title: "2. Answer 6 questions", text: "A quick SAT Math set that feels like the real battle." },
+								{ title: `2. Answer ${QUESTIONS_PER_DEMO} questions`, text: "A fresh, randomized SAT Math set every run — real exam-style depth." },
 								{ title: "3. Review what matters", text: "Weak-topic report, study links, and a 3-day plan." },
 							].map((item) => (
 								<div key={item.title} className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -481,9 +623,10 @@ export default function DemoBattlePage() {
 							<button
 								type="button"
 								onClick={handleStartDemo}
-								className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
+								disabled={isGeneratingQuestions}
+								className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:hover:scale-[1.02]"
 							>
-								Start Demo Battle
+								{isGeneratingQuestions ? "Generating fresh questions..." : "Start Demo Battle"}
 							</button>
 							<Link
 								href="/create"

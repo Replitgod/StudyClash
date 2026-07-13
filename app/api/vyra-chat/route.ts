@@ -6,6 +6,10 @@ import {
   hashIdentifier,
 } from "@/lib/server/apiUtils";
 import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
+import { TERRA_TASK } from "@/lib/server/aiModels";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type CoachAction =
   | "ask"
@@ -142,8 +146,14 @@ function getVyraOfflineFallback(message: string): string {
   ].join("\n");
 }
 
-function buildNoContextReply(): string {
-  return "Play a battle first, and I'll analyze your weak topics. You can also ask me about a topic directly.";
+function stripMarkdownArtifacts(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/__(.+?)__/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^(\s*)[*-](\s+)/gm, "$1-$2")
+    .replace(/`([^`]+)`/g, "$1")
+    .trim();
 }
 
 function ensureStructuredReply(reply: string, action: CoachAction): string {
@@ -249,29 +259,6 @@ function normalizeMode(value: unknown): CoachMode {
 
   const raw = typeof value === "string" ? value : "explain";
   return allowed.includes(raw as CoachMode) ? (raw as CoachMode) : "explain";
-}
-
-function isLikelyStudyRequest(input: string): boolean {
-  const clean = input.toLowerCase();
-  const studySignals = [
-    "question",
-    "answer",
-    "topic",
-    "deck",
-    "battle",
-    "mistake",
-    "quiz",
-    "hint",
-    "explain",
-    "study",
-    "practice",
-    "rematch",
-    "concept",
-    "mastery",
-    "accuracy",
-  ];
-
-  return studySignals.some((signal) => clean.includes(signal));
 }
 
 function firstMissedQuestion(
@@ -687,26 +674,6 @@ export async function POST(req: NextRequest) {
         content: clampText(entry.content, 1400),
       }));
 
-    if (!isLikelyStudyRequest(message) && mode !== "quiz") {
-      return NextResponse.json({
-        reply:
-          "I can help only with studying inside StudyClash. Ask about a deck, missed question, weak topic, hint, quiz, or study plan.\n\nNext step: tell me one topic you want to improve and I will coach you.",
-      });
-    }
-
-    const contextIsThin =
-      weakTopics.length === 0 &&
-      missedQuestions.length === 0 &&
-      mistakeDna.length === 0 &&
-      !body.deckId &&
-      !body.currentQuestion?.questionText;
-
-    if (contextIsThin) {
-      return NextResponse.json({
-        reply: buildNoContextReply(),
-      });
-    }
-
     const missed = firstMissedQuestion(body.currentQuestion, missedQuestions);
     const firstDna = mistakeDna[0] || null;
 
@@ -824,6 +791,7 @@ export async function POST(req: NextRequest) {
       "6) If question is unrelated to studying, politely redirect.",
       "7) Accuracy is critical: ground every explanation in the provided deck/question context first. If a question reaches beyond that context and you are not fully confident in a fact, formula, date, or figure, say so plainly instead of guessing -- a confident wrong answer actively misleads a student studying for a real exam. Never invent citations, statistics, or sources.",
       "8) If the student states an upcoming exam in one natural sentence (subject, and/or a date like 'next Friday' or 'in 2 weeks', and/or a topic), switch to the study-plan format below. Compute the exact calendar date and days-remaining yourself using 'Today's date' given in the context below -- never guess a relative date. If the student gave a topic, focus the plan on it and closely related weak topics from their StudyClash data; if they gave no topic, prioritize their actual weak topics. If they gave no date, ask for one before planning day-by-day.",
+      "9) Plain text only -- the chat UI does not render markdown. Never use **bold**, *italics*, # headers, backtick code, or bullet characters like * or -. Write the required section headings below as plain words alone on their own line, with no symbols around them. For lists, write 'First, ...', 'Second, ...' or separate lines with plain sentences instead of bullet markers.",
       "Response format rules:",
       "For normal questions use exactly: Quick answer, Simple explanation, Example, Next step.",
       "For missed questions use exactly: Your answer, Correct answer, Why yours was wrong, Why the correct answer works, Mistake DNA, Try this.",
@@ -868,9 +836,14 @@ export async function POST(req: NextRequest) {
     }
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      temperature: 0.3,
-      max_tokens: 300,
+      model: TERRA_TASK.model,
+      reasoning_effort: TERRA_TASK.reasoning_effort,
+      // 300 was sized for gpt-4o-mini, where every token was visible output.
+      // TERRA's reasoning tokens count against this same budget, so 300 was
+      // getting eaten by hidden reasoning before the model wrote a single
+      // reply character -- reply came back empty and every chat message
+      // silently fell back to the canned offline response below.
+      max_completion_tokens: 2400,
       messages: [
         { role: "system", content: systemPrompt },
         ...history.map((entry) => ({ role: entry.role, content: entry.content })),
@@ -885,9 +858,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ reply: fallbackReply });
     }
 
-    const postProcessedReply = /(study more|review more|keep practicing)/i.test(reply)
-      ? `${reply}\n\nNext step\nDo one mini question now: explain why your selected answer was wrong and the correct answer was right.`
-      : reply;
+    const cleanedReply = stripMarkdownArtifacts(reply);
+
+    const postProcessedReply = /(study more|review more|keep practicing)/i.test(cleanedReply)
+      ? `${cleanedReply}\n\nNext step\nDo one mini question now: explain why your selected answer was wrong and the correct answer was right.`
+      : cleanedReply;
 
     const finalReply = ensureStructuredReply(postProcessedReply, action);
 

@@ -7,26 +7,44 @@ const EXAM_TRACKS = [
     name: "MCAT",
     monthly: "Included in Exam Tunnel ($9/mo)",
     promise: "AAMC-style multi-step reasoning with passage-heavy science prompts.",
+    officialLabel: "AAMC free practice exam",
+    officialUrl:
+      "https://students-residents.aamc.org/prepare-mcat-exam/practice-mcat-exam-official-low-cost-products",
   },
   {
     slug: "lsat",
     name: "LSAT",
     monthly: "Included in Exam Tunnel ($9/mo)",
     promise: "Argument structure, logical flaws, and timed pressure drills.",
+    officialLabel: "LSAC free PrepTests (LawHub)",
+    officialUrl: "https://www.lsac.org/lsat/prepare/official-lsat-practice-tests",
   },
   {
     slug: "nclex",
     name: "NCLEX",
     monthly: "Included in Exam Tunnel ($9/mo)",
     promise: "Clinical judgment drills with safety-first prioritization patterns.",
+    officialLabel: "Official NCLEX prep resources",
+    officialUrl: "https://www.nclex.com/prepare.page",
   },
   {
     slug: "ap",
     name: "AP Exams",
     monthly: "Included in Exam Tunnel ($9/mo)",
     promise: "AP-style stems and depth tuned for class exams and AP scoring bands.",
+    officialLabel: "Free-response Qs from past AP exams",
+    officialUrl: "https://apcentral.collegeboard.org/courses/past-exam-questions",
   },
 ];
+
+// SAT has no generated drill track (College Board's own released practice
+// tests are already the best-in-class prep material for it) -- this card
+// only ever points to College Board's official free practice, never to a
+// StudyClash-generated substitute.
+const SAT_OFFICIAL_PRACTICE = {
+  label: "Full-length official SAT practice tests",
+  url: "https://satsuite.collegeboard.org/practice",
+};
 
 export default function ExamsLandingPage() {
   return (
@@ -87,11 +105,44 @@ export default function ExamsLandingPage() {
                   Compare Plans
                 </Link>
               </div>
+
+              {/* Real retired/official exams are copyrighted by their issuing
+                  org (AAMC, LSAC, NCSBN, College Board) -- StudyClash never
+                  hosts or reproduces them. This links straight to each org's
+                  own free official practice instead. */}
+              <a
+                href={track.officialUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-white/50 underline underline-offset-2 hover:text-white/80"
+              >
+                {track.officialLabel} ↗
+              </a>
             </article>
           ))}
         </div>
 
-        <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center sm:p-6">
+        <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">SAT</p>
+              <p className="mt-1 text-sm text-white/70">
+                We don&rsquo;t generate SAT drills -- College Board&rsquo;s own free, official
+                practice tests are the most accurate prep available, so we send you straight there.
+              </p>
+            </div>
+            <a
+              href={SAT_OFFICIAL_PRACTICE.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-bold text-white/85 hover:bg-white/10"
+            >
+              {SAT_OFFICIAL_PRACTICE.label} ↗
+            </a>
+          </div>
+        </div>
+
+        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center sm:p-6">
           <p className="text-sm text-white/70">
             Main StudyClash flow still applies: create or try a deck, battle, review weak topics,
             rematch, improve. Exam tunnels add stricter format and higher coaching depth.

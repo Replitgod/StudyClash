@@ -45,6 +45,15 @@ async function findBestPostPairingResult(args: {
   return { score: data.score, timeTakenSeconds: data.time_taken_seconds };
 }
 
+// Without this, a bracket slot where one paired player simply never plays
+// stays "pending" forever, permanently blocking the round (and everyone
+// else's progress) since resolveRoundInPlace only used to advance once BOTH
+// players had posted a result. Tournaments here are async/self-paced
+// (classroom_tournaments.sql: "no live/real-time layer"), so a generous
+// window is used -- long enough that a same-day classroom session never
+// trips it, short enough that a multi-day room doesn't stall indefinitely.
+const FORFEIT_TIMEOUT_MS = 48 * 60 * 60 * 1000;
+
 async function resolveRoundInPlace(args: {
   supabase: ReturnType<typeof getServiceSupabaseClient>;
   deckId: string;
@@ -73,9 +82,67 @@ async function resolveRoundInPlace(args: {
         }),
       ]);
 
-      // Only resolve once BOTH players have posted a result -- no
-      // auto-forfeit in this version.
-      if (!resultA || !resultB) return match;
+      const pairedAtMs = new Date(match.created_at).getTime();
+      const timedOut = Date.now() - pairedAtMs >= FORFEIT_TIMEOUT_MS;
+
+      if (!resultA && !resultB) {
+        // Neither player has played this pairing yet. Nothing to resolve
+        // unless the forfeit window has elapsed, in which case the bracket
+        // needs *a* winner to keep the round moving -- player A advances,
+        // the same arbitrary-but-deterministic tiebreak convention already
+        // used below for a genuine score tie.
+        if (!timedOut) return match;
+
+        const updated = {
+          ...match,
+          winner_user_id: match.player_a_user_id,
+          winner_name: match.player_a_name,
+          status: "complete" as const,
+        };
+
+        await supabase
+          .from("classroom_tournament_matches")
+          .update({
+            winner_user_id: updated.winner_user_id,
+            winner_name: updated.winner_name,
+            status: updated.status,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", match.id);
+
+        return updated;
+      }
+
+      if (!resultA || !resultB) {
+        // Exactly one player has played. Resolve immediately by forfeit
+        // once the window elapses; otherwise keep waiting for the other
+        // player -- they may still be about to submit.
+        if (!timedOut) return match;
+
+        const winnerIsA = Boolean(resultA);
+        const updated = {
+          ...match,
+          player_a_score: resultA?.score ?? null,
+          player_b_score: resultB?.score ?? null,
+          winner_user_id: winnerIsA ? match.player_a_user_id : match.player_b_user_id,
+          winner_name: winnerIsA ? match.player_a_name : match.player_b_name,
+          status: "complete" as const,
+        };
+
+        await supabase
+          .from("classroom_tournament_matches")
+          .update({
+            player_a_score: updated.player_a_score,
+            player_b_score: updated.player_b_score,
+            winner_user_id: updated.winner_user_id,
+            winner_name: updated.winner_name,
+            status: updated.status,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", match.id);
+
+        return updated;
+      }
 
       // Same tiebreak as didBeatMatch() in battle/finish: higher score wins,
       // ties broken by faster time. A genuine exact tie on both keeps A in

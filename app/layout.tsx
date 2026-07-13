@@ -3,6 +3,7 @@ import FloatingBattleCTA from "./components/FloatingBattleCTA";
 import HashAnchorScroller from "./components/HashAnchorScroller";
 import Navigation from "./components/Navigation";
 import { AuthProvider } from "@/lib/useAuth";
+import { UI_Z_INDEX } from "@/lib/uiLayout";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -143,7 +144,8 @@ export default function RootLayout({
           <HashAnchorScroller />
           <a
             href="#main-content"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[120] focus:rounded-lg focus:bg-[#0b1f2a] focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-cyan-100"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:rounded-lg focus:bg-[#0b1f2a] focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-cyan-100"
+            style={{ zIndex: UI_Z_INDEX.skipLink }}
           >
             Skip to main content
           </a>

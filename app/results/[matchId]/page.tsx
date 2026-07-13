@@ -634,7 +634,7 @@ function buildStudyPlan(weakTopics: WeakTopic[]): StudyDay[] {
 
 function Background({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
         <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
@@ -648,7 +648,7 @@ function Background({ children }: { children: React.ReactNode }) {
           backgroundSize: "48px 48px",
         }}
       />
-      <div className="relative z-10 flex min-h-screen flex-col items-center px-4 py-10 pb-28 sm:px-6 sm:py-14 sm:pb-24 md:pb-20">
+      <div className="relative z-10 flex min-h-dvh flex-col items-center px-4 py-10 pb-28 sm:px-6 sm:py-14 sm:pb-24 md:pb-20">
         {children}
       </div>
     </main>
@@ -2887,7 +2887,7 @@ export default function ResultsPage() {
                     {/* Source citation: verified to actually appear in the
                         student's own notes (see verifySourceExcerpts in
                         generate-questions) -- never shown otherwise. */}
-                    {item.question.source_excerpt && (
+                    {item.question.source_excerpt ? (
                       <Link
                         href={`/decks/${item.question.deck_id}?highlight=${encodeURIComponent(
                           item.question.source_excerpt
@@ -2904,6 +2904,27 @@ export default function ResultsPage() {
                           </span>
                         </span>
                       </Link>
+                    ) : (
+                      !item.isCorrect && (
+                        // No verified exact-quote match for this question (common for
+                        // exam-track prompts or notes phrased loosely) -- still give the
+                        // student a way back to the source material instead of a dead end.
+                        <Link
+                          href={`/decks/${item.question.deck_id}`}
+                          className="mt-2 flex items-start gap-2 rounded-lg border border-cyan-400/20 bg-cyan-500/[0.06] px-3.5 py-2.5 text-xs text-cyan-100 transition hover:bg-cyan-500/[0.12] sm:text-sm"
+                        >
+                          <span aria-hidden className="mt-0.5">
+                            📄
+                          </span>
+                          <span className="break-words">
+                            <span className="font-semibold">{item.question.topic}</span> — review this
+                            deck&rsquo;s notes
+                            <span className="ml-1.5 whitespace-nowrap font-semibold underline underline-offset-2">
+                              Study this topic →
+                            </span>
+                          </span>
+                        </Link>
+                      )
                     )}
 
                     {!item.isCorrect && mistakeBreakdown && confidenceStyle && (

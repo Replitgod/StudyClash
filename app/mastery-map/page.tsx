@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { authFetch } from "@/lib/authFetch";
 import { useAuth } from "@/lib/useAuth";
 import VyraCoach from "@/app/components/VyraCoach";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
@@ -53,6 +54,12 @@ type MistakeRow = {
   confidence_rating: string;
 };
 
+type DueQuestionItem = {
+  questionId: string;
+  topic: string;
+  status: string;
+};
+
 type TopicNode = {
   topic: string;
   accuracy: number;
@@ -87,6 +94,8 @@ type SubjectMastery = {
     href: string;
     reason: string;
   }>;
+  dueQuestionCount: number;
+  dueReviewHref: string | null;
 };
 
 function Background({ children }: { children: React.ReactNode }) {
@@ -115,6 +124,21 @@ function Background({ children }: { children: React.ReactNode }) {
 function normalizeTopic(topic: string): string {
   const trimmed = (topic || "General").trim();
   return trimmed || "General";
+}
+
+// Prefers the exact due/weak question IDs from question_review_schedule
+// (via /api/mastery/due-questions) when available -- targets precisely
+// what this student is missing instead of "anything tagged with this topic
+// label." Falls back to the existing topics= fuzzy match for a topic with
+// no per-question history yet (e.g. it was only just practiced).
+function buildRematchHref(args: { deckId: string; topic: string; questionIds?: string[] }): string {
+  const { deckId, topic, questionIds } = args;
+
+  if (questionIds && questionIds.length > 0) {
+    return `/battle/${deckId}?mode=review_missed&questionIds=${encodeURIComponent(questionIds.join(","))}&limit=8`;
+  }
+
+  return `/battle/${deckId}?mode=review_missed&topics=${encodeURIComponent(topic)}&limit=8`;
 }
 
 function formatDate(isoDate: string | null): string {
@@ -231,6 +255,27 @@ function MasteryMapPageContent() {
           profile?.display_name?.trim() ||
           user.email?.split("@")[0]?.trim() ||
           null;
+
+        // Per-question due/weak data (question_review_schedule via
+        // /api/mastery/due-questions) sharpens rematch links below to the
+        // exact questions this student is missing, instead of matching by
+        // topic label alone. Best-effort per deck -- a failed or empty
+        // response just means that deck's rematch links fall back to the
+        // existing topic-string matching, never blocks the rest of the page.
+        const dueByDeck = new Map<string, DueQuestionItem[]>();
+        await Promise.all(
+          deckIds.map(async (id) => {
+            try {
+              const response = await authFetch(`/api/mastery/due-questions?deckId=${id}`);
+              if (!response.ok) return;
+              const data = await response.json();
+              const items = Array.isArray(data?.items) ? (data.items as DueQuestionItem[]) : [];
+              if (items.length > 0) dueByDeck.set(id, items);
+            } catch {
+              // Best-effort -- leave this deck's rematch links on the topic-string fallback.
+            }
+          })
+        );
 
         const matchQuery = supabase
           .from("matches")
@@ -367,6 +412,15 @@ function MasteryMapPageContent() {
             topMistakeByTopic.set(topic, top ? top[0] : "");
           }
 
+          const deckDueItems = dueByDeck.get(deck.id) || [];
+          const dueQuestionIdsByTopic = new Map<string, string[]>();
+          for (const item of deckDueItems) {
+            const topic = normalizeTopic(item.topic);
+            const bucket = dueQuestionIdsByTopic.get(topic) || [];
+            bucket.push(item.questionId);
+            dueQuestionIdsByTopic.set(topic, bucket);
+          }
+
           const allTopics: TopicNode[] = Array.from(topicMap.entries())
             .map(([topic, stats]) => {
               const accuracy =
@@ -394,7 +448,11 @@ function MasteryMapPageContent() {
                 recommendedAction: getRecommendedAction(status, stats.misses),
                 status,
                 practiceHref: `/battle/${deck.id}?mode=weak_topic&topics=${encodeURIComponent(topic)}&limit=8`,
-                rematchHref: `/battle/${deck.id}?mode=review_missed&topics=${encodeURIComponent(topic)}&limit=8`,
+                rematchHref: buildRematchHref({
+                  deckId: deck.id,
+                  topic,
+                  questionIds: dueQuestionIdsByTopic.get(topic),
+                }),
                 bossHref: `/battle/${deck.id}?mode=boss`,
                 attemptedCount: stats.total,
                 missedCount: stats.misses,
@@ -454,6 +512,10 @@ function MasteryMapPageContent() {
               : `Boss battle is open for ${deck.course_name}. Defeat it to prove subject mastery.`,
           });
 
+          const allDueQuestionIds = Array.from(
+            new Set(deckDueItems.map((item) => item.questionId))
+          );
+
           return {
             deckId: deck.id,
             subjectName: deck.course_name,
@@ -466,6 +528,11 @@ function MasteryMapPageContent() {
             bossLocked,
             lockedBossReason,
             recommendedNextBattles,
+            dueQuestionCount: allDueQuestionIds.length,
+            dueReviewHref:
+              allDueQuestionIds.length > 0
+                ? `/battle/${deck.id}?mode=review_missed&questionIds=${encodeURIComponent(allDueQuestionIds.join(","))}`
+                : null,
           };
         });
 
@@ -753,6 +820,21 @@ function MasteryMapPageContent() {
 
                   <aside className="flex flex-col gap-3 rounded-xl border border-white/10 bg-black/25 p-4">
                     <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-white/50">Battle guidance</h3>
+
+                    {subject.dueQuestionCount > 0 && subject.dueReviewHref && (
+                      <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-amber-200">Due for review</p>
+                        <p className="mt-1 text-xs text-white/75">
+                          {subject.dueQuestionCount} question{subject.dueQuestionCount === 1 ? "" : "s"} you missed or haven&apos;t locked in yet -- a short rematch keeps them from slipping.
+                        </p>
+                        <Link
+                          href={subject.dueReviewHref}
+                          className="mt-2 inline-flex items-center justify-center rounded-lg border border-amber-400/40 bg-amber-500/15 px-3 py-2 text-xs font-bold text-amber-100"
+                        >
+                          Review {subject.dueQuestionCount} Now
+                        </Link>
+                      </div>
+                    )}
 
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
                       <p className="text-[11px] font-bold uppercase tracking-wider text-fuchsia-200">Locked boss battles</p>
