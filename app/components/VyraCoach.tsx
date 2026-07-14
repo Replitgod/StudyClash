@@ -2,8 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { authFetch } from "@/lib/authFetch";
 import { FLOATING_ACTION, UI_Z_INDEX } from "@/lib/uiLayout";
+import { VYRA_STREAM_HEADER, VYRA_STREAM_META_DELIMITER, type VyraStreamMeta } from "@/lib/vyraStream";
+import { popIn, pressableSubtle } from "@/lib/motion";
 
 type CoachAction =
   | "ask"
@@ -34,6 +37,13 @@ type ResourceRecommendation = {
   trustTier: "official" | "reputable" | "community";
 };
 
+type BlindspotDeck = {
+  deckId: string;
+  deckTitle: string;
+  topics: string[];
+  accuracy: number;
+};
+
 type CoachMessage = {
   id: string;
   role: "user" | "assistant";
@@ -41,6 +51,7 @@ type CoachMessage = {
   createdAt: number;
   resources?: ResourceRecommendation[];
   resourcesDisclaimer?: string;
+  blindspotDecks?: BlindspotDeck[];
 };
 
 type MissedQuestion = {
@@ -347,29 +358,92 @@ export default function VyraCoach(props: VyraCoachProps) {
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
+        let data: { error?: string } | null = null;
+        try {
+          data = await response.json();
+        } catch {
+          // Non-JSON error body (e.g. a proxy/server error page) -- fall through to the generic message.
+        }
         setError(data?.error || "VYRA could not analyze this right now. Try again, or ask about a specific question.");
         return;
       }
 
-      const reply =
-        typeof data?.reply === "string" && data.reply.trim().length > 0
-          ? data.reply.trim()
-          : "I could not generate a strong response yet. Try another angle.";
+      const isStreamed = response.headers.get(VYRA_STREAM_HEADER) === "1";
 
-      const resources: ResourceRecommendation[] = Array.isArray(data?.resources) ? data.resources : [];
+      if (!isStreamed || !response.body) {
+        const data = await response.json();
+        const reply =
+          typeof data?.reply === "string" && data.reply.trim().length > 0
+            ? data.reply.trim()
+            : "I could not generate a strong response yet. Try another angle.";
 
+        const resources: ResourceRecommendation[] = Array.isArray(data?.resources) ? data.resources : [];
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            ...createMessage("assistant", reply),
+            resources: resources.length > 0 ? resources : undefined,
+            resourcesDisclaimer: typeof data?.resourcesDisclaimer === "string" ? data.resourcesDisclaimer : undefined,
+          },
+        ]);
+        setInput("");
+        return;
+      }
+
+      // Streamed reply: render an empty assistant bubble immediately, then
+      // fill it in token-by-token as chunks arrive. The server appends a
+      // VYRA_STREAM_META_DELIMITER-prefixed JSON blob after the raw text
+      // (see lib/vyraStream.ts) carrying the finalized, post-processed reply
+      // plus any grounded resource cards -- swapped in once the stream ends.
+      const assistantId = `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       setMessages((prev) => [
         ...prev,
-        {
-          ...createMessage("assistant", reply),
-          resources: resources.length > 0 ? resources : undefined,
-          resourcesDisclaimer: typeof data?.resourcesDisclaimer === "string" ? data.resourcesDisclaimer : undefined,
-        },
+        { id: assistantId, role: "assistant", content: "", createdAt: Date.now() },
       ]);
       setInput("");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (value) {
+          fullText += decoder.decode(value, { stream: !done });
+          const delimiterIndex = fullText.indexOf(VYRA_STREAM_META_DELIMITER);
+          const displayText = delimiterIndex === -1 ? fullText : fullText.slice(0, delimiterIndex);
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, content: displayText } : m))
+          );
+        }
+        if (done) break;
+      }
+
+      const delimiterIndex = fullText.indexOf(VYRA_STREAM_META_DELIMITER);
+      if (delimiterIndex !== -1) {
+        try {
+          const meta = JSON.parse(
+            fullText.slice(delimiterIndex + VYRA_STREAM_META_DELIMITER.length)
+          ) as VyraStreamMeta;
+
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    content: meta.finalReply || m.content,
+                    resources: meta.resources && meta.resources.length > 0 ? meta.resources : undefined,
+                    resourcesDisclaimer: meta.resourcesDisclaimer,
+                  }
+                : m
+            )
+          );
+        } catch {
+          // Streamed text is already displayed in full; metadata just won't attach.
+        }
+      }
     } catch {
       setError("VYRA could not analyze this right now. Try again, or ask about a specific question.");
     } finally {
@@ -438,6 +512,45 @@ export default function VyraCoach(props: VyraCoachProps) {
     }
   }
 
+  // Widens the existing weak-topic rematch (buildWeakTopicHref, scoped to
+  // one deck) to every deck the signed-in student has, by reading the same
+  // topic_review_schedule signal Mastery Map already reads -- see
+  // app/api/blindspot-quiz/route.ts.
+  async function handleBlindspotQuiz() {
+    const userEntry = createMessage("user", "Find my weak spots across all my decks.");
+    setMessages((prev) => [...prev, userEntry]);
+    setIsSending(true);
+    setError(null);
+
+    try {
+      const response = await authFetch("/api/blindspot-quiz");
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data?.error || "VYRA could not check your blindspots right now. Try again shortly.");
+        return;
+      }
+
+      const decks: BlindspotDeck[] = Array.isArray(data?.decks) ? data.decks : [];
+      const summary =
+        decks.length > 0
+          ? `Found ${decks.length} deck${decks.length === 1 ? "" : "s"} with topics worth a rematch:`
+          : data?.message || "No blindspots found yet -- keep battling and VYRA will start spotting patterns.";
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          ...createMessage("assistant", summary),
+          blindspotDecks: decks.length > 0 ? decks : undefined,
+        },
+      ]);
+    } catch {
+      setError("VYRA could not check your blindspots right now. Try again shortly.");
+    } finally {
+      setIsSending(false);
+    }
+  }
+
   // z-index is set via inline style={{ zIndex: UI_Z_INDEX.vyraPanel }} below,
   // not a hardcoded Tailwind z-* class, so the shared uiLayout.ts tier stays
   // the single source of truth for stacking order.
@@ -499,6 +612,7 @@ export default function VyraCoach(props: VyraCoachProps) {
               setSelectedMode={setSelectedMode}
               onQuickAction={handleQuickAction}
             onFindResources={handleFindResources}
+              onBlindspotQuiz={handleBlindspotQuiz}
               hasBattleData={hasBattleData}
               closePanel={() => setIsOpen(false)}
               listEndRef={listEndRef}
@@ -523,6 +637,7 @@ export default function VyraCoach(props: VyraCoachProps) {
             setSelectedMode={setSelectedMode}
             onQuickAction={handleQuickAction}
             onFindResources={handleFindResources}
+            onBlindspotQuiz={handleBlindspotQuiz}
             hasBattleData={hasBattleData}
             closePanel={() => setIsOpen(false)}
             listEndRef={listEndRef}
@@ -547,6 +662,7 @@ export default function VyraCoach(props: VyraCoachProps) {
           setSelectedMode={setSelectedMode}
           onQuickAction={handleQuickAction}
           onFindResources={handleFindResources}
+          onBlindspotQuiz={handleBlindspotQuiz}
           hasBattleData={hasBattleData}
           closePanel={() => setIsOpen(false)}
           listEndRef={listEndRef}
@@ -572,6 +688,7 @@ function ChatPanel(props: {
   setSelectedMode: (mode: CoachMode) => void;
   onQuickAction: (entry: (typeof QUICK_ACTIONS)[number]) => Promise<void>;
   onFindResources: () => Promise<void>;
+  onBlindspotQuiz: () => Promise<void>;
   hasBattleData: boolean;
   closePanel: () => void;
   listEndRef: React.RefObject<HTMLDivElement | null>;
@@ -592,6 +709,7 @@ function ChatPanel(props: {
     setSelectedMode,
     onQuickAction,
     onFindResources,
+    onBlindspotQuiz,
     hasBattleData,
     closePanel,
     listEndRef,
@@ -636,10 +754,11 @@ function ChatPanel(props: {
 
       <div className="mb-2 flex flex-wrap gap-1.5">
         {modeButtons.map((entry) => (
-          <button
+          <motion.button
             key={entry.mode}
             type="button"
             onClick={() => setSelectedMode(entry.mode)}
+            {...pressableSubtle}
             className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
               selectedMode === entry.mode
                 ? "border-cyan-300/45 bg-cyan-400/15 text-cyan-100"
@@ -647,17 +766,18 @@ function ChatPanel(props: {
             }`}
           >
             {entry.label}
-          </button>
+          </motion.button>
         ))}
       </div>
 
       <div className="mb-2 grid grid-cols-2 gap-2">
         {QUICK_ACTIONS.map((entry) => (
-          <button
+          <motion.button
             key={entry.label}
             type="button"
             onClick={() => void onQuickAction(entry)}
             disabled={isSending}
+            {...(!isSending ? pressableSubtle : {})}
             className={`rounded-xl border px-2.5 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
               entry.primary
                 ? "border-cyan-400/35 bg-cyan-500/15 text-cyan-100 hover:bg-cyan-500/25"
@@ -665,7 +785,7 @@ function ChatPanel(props: {
             }`}
           >
             {entry.label}
-          </button>
+          </motion.button>
         ))}
       </div>
 
@@ -689,6 +809,17 @@ function ChatPanel(props: {
           </svg>
           Find Study Resources
         </button>
+        <button
+          type="button"
+          onClick={() => void onBlindspotQuiz()}
+          disabled={isSending}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-rose-400/35 bg-rose-500/15 px-3 py-2 text-xs font-bold text-rose-100 transition-colors hover:bg-rose-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l-3 3m0 0l3 3m-3-3h10.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          My Blindspots
+        </button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/25 p-3">
@@ -702,7 +833,13 @@ function ChatPanel(props: {
         ) : (
           <div className="flex flex-col gap-3">
             {messages.map((message) => (
-              <div key={message.id} className="flex flex-col gap-2">
+              <motion.div
+                key={message.id}
+                initial="hidden"
+                animate="visible"
+                variants={popIn}
+                className="flex flex-col gap-2"
+              >
                 <div
                   className={`max-w-[96%] whitespace-pre-wrap break-words rounded-xl px-3 py-2.5 text-sm leading-relaxed ${
                     message.role === "assistant"
@@ -752,7 +889,30 @@ function ChatPanel(props: {
                 {message.resourcesDisclaimer && (
                   <p className="max-w-[96%] self-start text-[11px] text-white/40">{message.resourcesDisclaimer}</p>
                 )}
-              </div>
+
+                {message.blindspotDecks && message.blindspotDecks.length > 0 && (
+                  <div className="flex flex-col gap-2 self-start w-full max-w-[96%]">
+                    {message.blindspotDecks.map((deck) => (
+                      <Link
+                        key={deck.deckId}
+                        href={buildWeakTopicHref(deck.deckId, deck.topics)}
+                        className="rounded-xl border border-rose-300/25 bg-rose-500/[0.06] p-3 transition-colors hover:border-rose-300/45 hover:bg-rose-500/[0.1]"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-bold text-white/90">{deck.deckTitle}</p>
+                          <span className="flex-shrink-0 rounded-full border border-rose-300/40 bg-rose-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-200">
+                            {deck.accuracy}% acc
+                          </span>
+                        </div>
+                        <p className="mt-1.5 text-xs text-white/75">{deck.topics.join(", ")}</p>
+                        <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-rose-100/80">
+                          Start rematch
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
             ))}
 
             {isSending && (
@@ -793,13 +953,14 @@ function ChatPanel(props: {
           }
           className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-400/40"
         />
-        <button
+        <motion.button
           type="submit"
           disabled={isSending || !input.trim()}
+          {...(!isSending && input.trim() ? pressableSubtle : {})}
           className="rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-3.5 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
           Send
-        </button>
+        </motion.button>
       </form>
     </div>
   );

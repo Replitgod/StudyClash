@@ -12,6 +12,11 @@ import {
   detectExamTrack,
   type ResourceRecommendation,
 } from "@/lib/server/resourceSearch";
+import {
+  VYRA_STREAM_META_DELIMITER,
+  VYRA_STREAM_HEADER,
+  type VyraStreamMeta,
+} from "@/lib/vyraStream";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -873,81 +878,111 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ reply: fallbackReply });
     }
 
-    const [completion, resourceOutcome] = await Promise.all([
-      openai.chat.completions.create({
-        model: TERRA_TASK.model,
-        reasoning_effort: TERRA_TASK.reasoning_effort,
-        // 300 was sized for gpt-4o-mini, where every token was visible output.
-        // TERRA's reasoning tokens count against this same budget, so 300 was
-        // getting eaten by hidden reasoning before the model wrote a single
-        // reply character -- reply came back empty and every chat message
-        // silently fell back to the canned offline response below.
-        max_completion_tokens: 2400,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...history.map((entry) => ({ role: entry.role, content: entry.content })),
-          { role: "user", content: contextPrompt },
-        ],
-      }),
-      resourceSearchPromise ?? Promise.resolve(null),
-    ]);
-
-    let resources: ResourceRecommendation[] | undefined;
-    let resourcesDisclaimer: string | undefined;
-    if (resourceOutcome) {
-      if (resourceOutcome.ok) {
-        resources = resourceOutcome.resources.length > 0 ? resourceOutcome.resources : undefined;
-        resourcesDisclaimer = resourceOutcome.disclaimer;
-      } else {
-        resourcesDisclaimer =
-          "VYRA could not run a live resource search right now. Try the Find Study Resources button, or ask again shortly.";
-      }
-    }
-
-    const reply = completion.choices[0]?.message?.content?.trim();
-
-    if (!reply) {
-      const fallbackReply = getVyraOfflineFallback(message);
-      return NextResponse.json({ reply: fallbackReply, resources, resourcesDisclaimer });
-    }
-
-    const cleanedReply = stripMarkdownArtifacts(reply);
-
-    const postProcessedReply = /(study more|review more|keep practicing)/i.test(cleanedReply)
-      ? `${cleanedReply}\n\nNext step\nDo one mini question now: explain why your selected answer was wrong and the correct answer was right.`
-      : cleanedReply;
-
-    const finalReply = ensureStructuredReply(postProcessedReply, action);
+    // Streamed so the student sees VYRA's reply appear token-by-token
+    // instead of waiting out the full ~2400-token generation in silence.
+    // 300 was sized for gpt-4o-mini, where every token was visible output.
+    // TERRA's reasoning tokens count against this same budget, so 300 was
+    // getting eaten by hidden reasoning before the model wrote a single
+    // reply character -- reply came back empty and every chat message
+    // silently fell back to the canned offline response below.
+    const completionStream = await openai.chat.completions.create({
+      model: TERRA_TASK.model,
+      reasoning_effort: TERRA_TASK.reasoning_effort,
+      max_completion_tokens: 2400,
+      stream: true,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...history.map((entry) => ({ role: entry.role, content: entry.content })),
+        { role: "user", content: contextPrompt },
+      ],
+    });
 
     const sessionId = clampText(
       body.sessionId || `vyra-${body.matchId || body.deckId || "global"}`,
       120
     );
 
-    await saveChatIfTableExists({
-      sessionId,
-      userId: authedUserId,
-      deckId: body.deckId,
-      matchId: body.matchId,
-      userMessage: message,
-      assistantReply: finalReply,
+    const encoder = new TextEncoder();
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        let rawReply = "";
+
+        try {
+          for await (const chunk of completionStream) {
+            const delta = chunk.choices[0]?.delta?.content;
+            if (delta) {
+              rawReply += delta;
+              controller.enqueue(encoder.encode(delta));
+            }
+          }
+
+          const resourceOutcome = await (resourceSearchPromise ?? Promise.resolve(null));
+          let resources: ResourceRecommendation[] | undefined;
+          let resourcesDisclaimer: string | undefined;
+          if (resourceOutcome) {
+            if (resourceOutcome.ok) {
+              resources = resourceOutcome.resources.length > 0 ? resourceOutcome.resources : undefined;
+              resourcesDisclaimer = resourceOutcome.disclaimer;
+            } else {
+              resourcesDisclaimer =
+                "VYRA could not run a live resource search right now. Try the Find Study Resources button, or ask again shortly.";
+            }
+          }
+
+          const trimmedReply = rawReply.trim();
+          let finalReply: string;
+
+          if (!trimmedReply) {
+            finalReply = getVyraOfflineFallback(message);
+            controller.enqueue(encoder.encode(finalReply));
+          } else {
+            const cleanedReply = stripMarkdownArtifacts(trimmedReply);
+            const postProcessedReply = /(study more|review more|keep practicing)/i.test(cleanedReply)
+              ? `${cleanedReply}\n\nNext step\nDo one mini question now: explain why your selected answer was wrong and the correct answer was right.`
+              : cleanedReply;
+            finalReply = ensureStructuredReply(postProcessedReply, action);
+          }
+
+          await saveChatIfTableExists({
+            sessionId,
+            userId: authedUserId,
+            deckId: body.deckId,
+            matchId: body.matchId,
+            userMessage: message,
+            assistantReply: finalReply,
+          });
+
+          if (authedUserId) {
+            const plan = await supabase
+              .from("profiles")
+              .select("plan")
+              .eq("id", authedUserId)
+              .single();
+
+            await logVyraUsage({
+              userId: authedUserId,
+              deckId: body.deckId,
+              planId: String(plan.data?.plan || "free_beta"),
+            });
+          }
+
+          const meta: VyraStreamMeta = { finalReply, resources, resourcesDisclaimer };
+          controller.enqueue(encoder.encode(VYRA_STREAM_META_DELIMITER + JSON.stringify(meta)));
+          controller.close();
+        } catch (err) {
+          controller.error(err);
+        }
+      },
     });
 
-    if (authedUserId) {
-      const plan = await supabase
-        .from("profiles")
-        .select("plan")
-        .eq("id", authedUserId)
-        .single();
-
-      await logVyraUsage({
-        userId: authedUserId,
-        deckId: body.deckId,
-        planId: String(plan.data?.plan || "free_beta"),
-      });
-    }
-
-    return NextResponse.json({ reply: finalReply, resources, resourcesDisclaimer });
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "X-Content-Type-Options": "nosniff",
+        [VYRA_STREAM_HEADER]: "1",
+      },
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "VYRA failed to respond.";

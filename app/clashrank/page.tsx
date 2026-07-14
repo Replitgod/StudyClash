@@ -5,6 +5,7 @@ import Link from "next/link";
 import { authFetch } from "@/lib/authFetch";
 import { useAuth } from "@/lib/useAuth";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { Button } from "@/app/components/ui/Button";
 
 type RankedEntry = {
   rank: number;
@@ -239,12 +240,12 @@ export default function ClashRankPage() {
               ClashRank rewards learning progress, not pure grinding.
             </p>
             <div className="mt-5 flex flex-col gap-3">
-              <Link href="/login?redirect=/clashrank" className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-500 px-5 py-3 text-sm font-bold text-white">
+              <Button href="/login?redirect=/clashrank" variant="secondary">
                 Log In
-              </Link>
-              <Link href="/signup?redirect=/clashrank" className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white/90">
+              </Button>
+              <Button href="/signup?redirect=/clashrank" variant="ghost">
                 Sign Up
-              </Link>
+              </Button>
             </div>
           </div>
         </div>

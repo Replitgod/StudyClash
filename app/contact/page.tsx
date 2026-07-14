@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { Reveal } from "@/app/components/ui/Reveal";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyclash.com";
 
@@ -53,7 +54,7 @@ export default function ContactPage() {
           __html: JSON.stringify(contactPageSchema),
         }}
       />
-      <div className="mx-auto w-full max-w-3xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-8">
+      <Reveal className="mx-auto w-full max-w-3xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-8">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">StudyClash Support</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight">Contact</h1>
         <p className="mt-3 text-sm text-white/65">
@@ -74,7 +75,7 @@ export default function ContactPage() {
         <p className="mt-6 text-sm text-white/70">
           For privacy requests, include the email on your account and mention Privacy Request in the subject.
         </p>
-      </div>
+      </Reveal>
     </main>
   );
 }

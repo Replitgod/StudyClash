@@ -5,6 +5,8 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { Button } from "@/app/components/ui/Button";
+import { HoverLiftArticle } from "@/app/components/ui/HoverLift";
 
 type Deck = {
   id: string;
@@ -20,11 +22,44 @@ const DEMO_DECK = {
   student_name: "Demo Student",
 };
 
+// Unpaginated growth here means both an ever-larger Supabase query and an
+// ever-larger unvirtualized DOM list -- most students have a handful of
+// decks, but nothing capped this page for a student who has been generating
+// decks all year. Fetching in pages of 30 keeps first paint fast regardless
+// of how many decks someone has accumulated.
+const DECKS_PAGE_SIZE = 30;
+
 export default function DecksPage() {
   const { user, isLoggedIn, isLoading: isAuthLoading } = useAuth();
   const [decks, setDecks] = useState<Deck[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreDecks, setHasMoreDecks] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+
+  async function loadMoreDecks() {
+    if (!user?.id || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+
+    const { data, error } = await supabase
+      .from("decks")
+      .select("id, student_name, course_name, title, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .range(decks.length, decks.length + DECKS_PAGE_SIZE - 1);
+
+    if (error) {
+      setLoadError(error.message);
+      setIsLoadingMore(false);
+      return;
+    }
+
+    const page = data || [];
+    setDecks((prev) => [...prev, ...page]);
+    setHasMoreDecks(page.length === DECKS_PAGE_SIZE);
+    setIsLoadingMore(false);
+  }
 
   useEffect(() => {
     async function loadDecks() {
@@ -43,7 +78,8 @@ export default function DecksPage() {
         .from("decks")
         .select("id, student_name, course_name, title, created_at")
         .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(0, DECKS_PAGE_SIZE - 1);
 
       if (error) {
         setLoadError(error.message);
@@ -51,7 +87,9 @@ export default function DecksPage() {
         return;
       }
 
-      setDecks(data || []);
+      const page = data || [];
+      setDecks(page);
+      setHasMoreDecks(page.length === DECKS_PAGE_SIZE);
       setIsLoading(false);
     }
 
@@ -134,15 +172,15 @@ export default function DecksPage() {
             <h1 className="mt-4 text-xl font-bold text-white">Please sign in to view your decks</h1>
             <p className="mt-2 text-sm text-white/50">Your decks are private to your account, so you need to be signed in to see them.</p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
-              <Link href="/demo/battle" className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-5 py-3 text-sm font-bold text-cyan-200">
+              <Button href="/demo/battle" variant="secondary">
                 Try Demo Deck
-              </Link>
-              <Link href="/login?redirect=/decks" className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-5 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)]">
+              </Button>
+              <Button href="/login?redirect=/decks" variant="primary">
                 Log In
-              </Link>
-              <Link href="/signup?redirect=/decks" className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white/90">
+              </Button>
+              <Button href="/signup?redirect=/decks" variant="ghost">
                 Sign Up
-              </Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -363,7 +401,7 @@ export default function DecksPage() {
             </div>
 
             {decks.map((deck) => (
-              <div
+              <HoverLiftArticle
                 key={deck.id}
                 className="group flex flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm transition-colors duration-200 hover:border-fuchsia-400/30 hover:bg-white/[0.06] sm:p-6"
               >
@@ -432,15 +470,25 @@ export default function DecksPage() {
                     <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover/btn:translate-x-full" />
                   </Link>
 
-                  <Link
-                    href={`/decks/${deck.id}`}
-                    className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-400/40 hover:bg-white/10 sm:py-3"
-                  >
+                  <Button href={`/decks/${deck.id}`} variant="ghost">
                     View Deck
-                  </Link>
+                  </Button>
                 </div>
-              </div>
+              </HoverLiftArticle>
             ))}
+          </div>
+        )}
+
+        {!isLoading && !loadError && hasMoreDecks && (
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={() => void loadMoreDecks()}
+              disabled={isLoadingMore}
+              className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white/85 backdrop-blur-sm transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoadingMore ? "Loading more decks..." : "Load more decks"}
+            </button>
           </div>
         )}
       </div>

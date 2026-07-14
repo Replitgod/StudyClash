@@ -3,9 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { Button } from "@/app/components/ui/Button";
+import { springSmooth } from "@/lib/motion";
 
 const LAST_LOGIN_EMAIL_KEY = "studyclash_last_login_email";
 
@@ -183,26 +186,30 @@ export default function LoginPage() {
         </p>
 
         {/* Form card */}
-        <div className="mt-8 w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:mt-10 sm:p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 16, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={springSmooth}
+          className="mt-8 w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:mt-10 sm:p-6"
+        >
           {/* Google OAuth button */}
-          <button
+          <Button
             type="button"
             onClick={handleGoogleLogin}
             disabled={isAnyLoading}
-            className="flex w-full items-center justify-center gap-2.5 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white/90 transition-colors duration-150 hover:border-white/20 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+            isLoading={isGoogleLoading}
+            loadingLabel="Continue with Google"
+            variant="ghost"
+            fullWidth
           >
-            {isGoogleLoading ? (
-              <SpinnerIcon />
-            ) : (
-              <svg className="h-4.5 w-4.5 flex-shrink-0" viewBox="0 0 24 24">
-                <path
-                  fill="#EA4335"
-                  d="M12 10.2v3.9h5.5c-.24 1.3-1.66 3.8-5.5 3.8-3.31 0-6.02-2.74-6.02-6.1s2.7-6.1 6.02-6.1c1.89 0 3.16.8 3.88 1.5l2.65-2.55C16.9 3.06 14.7 2 12 2 6.98 2 2.93 6.06 2.93 11s4.05 9 9.07 9c5.24 0 8.71-3.68 8.71-8.86 0-.6-.07-1.05-.15-1.5H12z"
-                />
-              </svg>
-            )}
+            <svg className="h-4.5 w-4.5 flex-shrink-0" viewBox="0 0 24 24">
+              <path
+                fill="#EA4335"
+                d="M12 10.2v3.9h5.5c-.24 1.3-1.66 3.8-5.5 3.8-3.31 0-6.02-2.74-6.02-6.1s2.7-6.1 6.02-6.1c1.89 0 3.16.8 3.88 1.5l2.65-2.55C16.9 3.06 14.7 2 12 2 6.98 2 2.93 6.06 2.93 11s4.05 9 9.07 9c5.24 0 8.71-3.68 8.71-8.86 0-.6-.07-1.05-.15-1.5H12z"
+              />
+            </svg>
             Continue with Google
-          </button>
+          </Button>
 
           {/* Divider */}
           <div className="my-5 flex items-center gap-3">
@@ -307,7 +314,7 @@ export default function LoginPage() {
               </div>
             )}
           </form>
-        </div>
+        </motion.div>
 
         <p className="mt-6 text-center text-sm text-white/40">
           Don&apos;t have an account?{" "}

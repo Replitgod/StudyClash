@@ -1,12 +1,14 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { authFetch } from "@/lib/authFetch";
 import { useAuth } from "@/lib/useAuth";
 import VyraCoach from "@/app/components/VyraCoach";
+import { Button } from "@/app/components/ui/Button";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import {
   getTopicStatus,
@@ -14,6 +16,8 @@ import {
   type TopicStatus,
   type ReviewUrgency,
 } from "@/lib/srsSchedule";
+
+const MASTERY_MAP_MAX_DECKS = 30;
 
 type DeckLite = {
   id: string;
@@ -235,11 +239,19 @@ function MasteryMapPageContent() {
       setSubjects([]);
 
       try {
+        // Capped (unlike the plain decks list, which paginates) because
+        // every deck here fans out into its own due-questions request plus
+        // shares in the matches/questions/mistake_breakdowns .in() queries
+        // below -- an unbounded deck count would make this page's cost
+        // scale with a student's lifetime deck count, not their current
+        // course load. Most recent decks are what a mastery view should
+        // prioritize anyway.
         const { data: deckRows, error: deckError } = await supabase
           .from("decks")
           .select("id, title, course_name")
           .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
+          .range(0, MASTERY_MAP_MAX_DECKS - 1);
 
         if (deckError) throw deckError;
 
@@ -607,14 +619,30 @@ function MasteryMapPageContent() {
   }
 
   if (isLoading || isLoadingMap) {
+    // Skeleton shaped like the real subject-card stack below (title bar +
+    // stat row + topic grid) instead of a bare spinner, so the layout
+    // doesn't jump/reflow once the real cards mount -- see the "What can
+    // affect streaming" / CLS guidance in Next's streaming docs.
     return (
       <Background>
-        <div className="flex min-h-[60vh] flex-col items-center justify-center">
-          <svg className="h-10 w-10 animate-spin text-cyan-400" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-          </svg>
-          <p className="mt-4 text-sm text-white/50">Loading Mastery Map...</p>
+        <div className="flex w-full flex-col gap-6">
+          <div className="h-24 w-full animate-pulse rounded-2xl border border-white/10 bg-white/[0.03]" />
+          <div className="grid gap-3 sm:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-20 animate-pulse rounded-2xl border border-white/10 bg-white/[0.03]" />
+            ))}
+          </div>
+          {[0, 1].map((i) => (
+            <div key={i} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+              <div className="h-5 w-1/3 animate-pulse rounded bg-white/10" />
+              <div className="mt-3 h-3 w-1/2 animate-pulse rounded bg-white/5" />
+              <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {[0, 1, 2].map((j) => (
+                  <div key={j} className="h-16 animate-pulse rounded-xl border border-white/10 bg-white/[0.04]" />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </Background>
     );
@@ -630,12 +658,12 @@ function MasteryMapPageContent() {
               Track topic mastery, weak lanes, and boss unlock progress across every subject.
             </p>
             <div className="mt-5 flex flex-col gap-3">
-              <Link href="/login?redirect=/mastery-map" className="rounded-xl bg-gradient-to-r from-cyan-500 to-fuchsia-500 px-5 py-3 text-sm font-bold text-white">
+              <Button href="/login?redirect=/mastery-map" variant="secondary">
                 Log In
-              </Link>
-              <Link href="/signup?redirect=/mastery-map" className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white/90">
+              </Button>
+              <Button href="/signup?redirect=/mastery-map" variant="ghost">
                 Sign Up
-              </Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -700,9 +728,12 @@ function MasteryMapPageContent() {
           </div>
         ) : (
           <div className="flex flex-col gap-6">
-            {subjects.map((subject) => (
-              <section
+            {subjects.map((subject, index) => (
+              <motion.section
                 key={subject.deckId}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.32, delay: Math.min(index * 0.06, 0.3), ease: "easeOut" }}
                 className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:p-5"
               >
                 <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-end sm:justify-between">
@@ -861,15 +892,18 @@ function MasteryMapPageContent() {
                       <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-200">Mastery percentage</p>
                       <p className="mt-1 text-2xl font-black text-white">{subject.masteryPercent}%</p>
                       <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-emerald-400 transition-all duration-700 ease-out"
-                          style={{ width: `${subject.masteryPercent}%` }}
+                        <motion.div
+                          initial={{ width: 0 }}
+                          whileInView={{ width: `${subject.masteryPercent}%` }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.9, ease: "easeOut", delay: 0.15 }}
+                          className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-emerald-400"
                         />
                       </div>
                     </div>
                   </aside>
                 </div>
-              </section>
+              </motion.section>
             ))}
           </div>
         )}

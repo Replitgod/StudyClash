@@ -30,5 +30,16 @@ export const FLOATING_ACTION = {
   // (FloatingBattleCTA) can be on screen at once, so page content needs to
   // clear both. Tapers down at md, where the CTA hides and VYRA's launcher
   // moves to a side rail, leaving only the base row.
-  mobileBottomPadding: "pb-36 md:pb-24",
+  //
+  // The 9rem figure alone only clears the zero-safe-area case. `base` and
+  // `raisedRow` both push their `bottom` offset up by
+  // env(safe-area-inset-bottom) (for the home-indicator strip on notched/
+  // Dynamic Island iPhones), but a plain `pb-36` never grew to match --
+  // on exactly those devices the floating stack rides higher than the
+  // reserved padding, and page content peeked out from behind it. This
+  // mirrors that same safe-area term so the reserved space always tracks
+  // where the floating row actually sits. md+ stays a plain value since
+  // the raised row disappears there and safe-area insets are a mobile/
+  // notch concept in practice.
+  mobileBottomPadding: "pb-[calc(9rem+env(safe-area-inset-bottom,0px))] md:pb-24",
 } as const;

@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useAuth } from "@/lib/useAuth";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { PUBLIC_PLANS, getPlanMetadata } from "@/lib/plans";
+import { Button } from "@/app/components/ui/Button";
+import { HoverLiftArticle } from "@/app/components/ui/HoverLift";
 
 const PLANS = PUBLIC_PLANS;
 
@@ -104,7 +105,7 @@ export default function PricingPage() {
             const current = isCurrentPlan(plan.id);
 
             return (
-              <div
+              <HoverLiftArticle
                 key={plan.id}
                 className={`relative flex flex-col rounded-2xl border p-5 backdrop-blur-sm sm:p-6 ${
                   plan.highlight
@@ -177,31 +178,22 @@ export default function PricingPage() {
                     {getButtonLabel(plan.id)}
                   </div>
                 ) : plan.id === "free_beta" || !isLoggedIn ? (
-                  <Link
-                    href={getPlanHref(plan.id)}
-                    className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02] ${
-                      plan.highlight
-                        ? "bg-gradient-to-r from-fuchsia-500 to-violet-600 text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)]"
-                        : "border border-white/10 bg-white/5 text-white/80 hover:border-fuchsia-400/30 hover:bg-white/10"
-                    }`}
-                  >
+                  <Button href={getPlanHref(plan.id)} variant={plan.highlight ? "primary" : "ghost"} fullWidth className="mt-6">
                     {getButtonLabel(plan.id)}
-                  </Link>
+                  </Button>
                 ) : (
-                  <a
+                  <Button
                     href={getPlanHref(plan.id)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`mt-6 flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-sm font-bold transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02] ${
-                      plan.highlight
-                        ? "bg-gradient-to-r from-fuchsia-500 to-violet-600 text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)]"
-                        : "border border-white/10 bg-white/5 text-white/80 hover:border-fuchsia-400/30 hover:bg-white/10"
-                    }`}
+                    variant={plan.highlight ? "primary" : "ghost"}
+                    fullWidth
+                    className="mt-6"
                   >
                     {getButtonLabel(plan.id)}
-                  </a>
+                  </Button>
                 )}
-              </div>
+              </HoverLiftArticle>
             );
           })}
         </div>
@@ -215,12 +207,9 @@ export default function PricingPage() {
             Core AI battles stay free. Pro Premium unlocks unlimited play and the full VYRA coach.
           </p>
           {!isLoggedIn && (
-            <Link
-              href="/signup"
-              className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-105"
-            >
+            <Button href="/signup" variant="primary" className="mt-3">
               Sign Up for Free Beta
-            </Link>
+            </Button>
           )}
         </div>
       </div>

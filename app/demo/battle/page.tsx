@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import VyraCoach from "@/app/components/VyraCoach";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { Button } from "@/app/components/ui/Button";
 
 type DemoQuestion = {
 	id: string;
@@ -678,20 +679,19 @@ export default function DemoBattlePage() {
 						</div>
 
 						<div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-							<button
+							<Button
 								type="button"
 								onClick={handleStartDemo}
 								disabled={isGeneratingQuestions}
-								className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:hover:scale-[1.02]"
+								isLoading={isGeneratingQuestions}
+								loadingLabel="Generating fresh questions..."
+								variant="primary"
 							>
-								{isGeneratingQuestions ? "Generating fresh questions..." : "Start Demo Battle"}
-							</button>
-							<Link
-								href="/create"
-								className="rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-bold text-white/90 text-center transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10"
-							>
+								Start Demo Battle
+							</Button>
+							<Button href="/create" variant="ghost">
 								Create Your Own Deck
-							</Link>
+							</Button>
 						</div>
 					</section>
 				)}

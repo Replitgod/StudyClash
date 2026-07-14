@@ -1,5 +1,7 @@
-import Link from "next/link";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { Button } from "@/app/components/ui/Button";
+import { HoverLiftArticle } from "@/app/components/ui/HoverLift";
+import { Reveal } from "@/app/components/ui/Reveal";
 
 const EXAM_TRACKS = [
   {
@@ -73,7 +75,7 @@ export default function ExamsLandingPage() {
 
         <div className="mt-10 grid gap-4 md:grid-cols-2">
           {EXAM_TRACKS.map((track) => (
-            <article
+            <HoverLiftArticle
               key={track.slug}
               className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-sm"
             >
@@ -92,18 +94,12 @@ export default function ExamsLandingPage() {
               <p className="mt-3 text-sm leading-relaxed text-white/70">{track.promise}</p>
 
               <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-                <Link
-                  href={`/create?track=${track.slug}`}
-                  className="flex-1 rounded-xl bg-gradient-to-r from-cyan-500 to-fuchsia-500 px-4 py-3 text-center text-sm font-bold text-white"
-                >
+                <Button href={`/create?track=${track.slug}`} variant="primary" className="flex-1">
                   Start {track.name} Drill
-                </Link>
-                <Link
-                  href="/pricing"
-                  className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-bold text-white/85"
-                >
+                </Button>
+                <Button href="/pricing" variant="ghost" className="flex-1">
                   Compare Plans
-                </Link>
+                </Button>
               </div>
 
               {/* Real retired/official exams are copyrighted by their issuing
@@ -118,11 +114,11 @@ export default function ExamsLandingPage() {
               >
                 {track.officialLabel} ↗
               </a>
-            </article>
+            </HoverLiftArticle>
           ))}
         </div>
 
-        <div className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
+        <Reveal className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">SAT</p>
@@ -140,14 +136,14 @@ export default function ExamsLandingPage() {
               {SAT_OFFICIAL_PRACTICE.label} ↗
             </a>
           </div>
-        </div>
+        </Reveal>
 
-        <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center sm:p-6">
+        <Reveal className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center sm:p-6" delay={0.08}>
           <p className="text-sm text-white/70">
             Main StudyClash flow still applies: create or try a deck, battle, review weak topics,
             rematch, improve. Exam tunnels add stricter format and higher coaching depth.
           </p>
-        </div>
+        </Reveal>
       </div>
     </main>
   );

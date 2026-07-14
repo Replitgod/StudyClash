@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { trackEvent } from "@/lib/trackEvent";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { Button } from "@/app/components/ui/Button";
+import { InlineBanner } from "@/app/components/ui/InlineBanner";
 
 function Background({ children }: { children: React.ReactNode }) {
   return (
@@ -110,18 +111,12 @@ export default function ClassroomPage() {
         </p>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <Link
-            href="/classroom/join"
-            className="rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-5 py-4 text-center text-sm font-bold text-cyan-100"
-          >
+          <Button href="/classroom/join" variant="secondary" size="lg">
             Join with Room Code
-          </Link>
-          <Link
-            href="/dashboard"
-            className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-5 py-4 text-center text-sm font-bold text-white"
-          >
+          </Button>
+          <Button href="/dashboard" variant="primary" size="lg">
             Open Teacher Dashboard
-          </Link>
+          </Button>
         </div>
 
         <div className="mt-8 rounded-xl border border-amber-400/25 bg-amber-500/10 p-4">
@@ -173,34 +168,26 @@ export default function ClassroomPage() {
           />
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button
+            <Button
               type="button"
               onClick={handleLeadSubmit}
               disabled={isSubmitting}
-              className="rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2 text-sm font-bold text-white disabled:opacity-60"
+              isLoading={isSubmitting}
+              loadingLabel="Submitting..."
+              variant="primary"
+              size="sm"
             >
-              {isSubmitting ? "Submitting..." : "Request Pilot"}
-            </button>
-            <Link
-              href="/pricing"
-              className="rounded-lg border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-white/90"
-            >
+              Request Pilot
+            </Button>
+            <Button href="/pricing" variant="ghost" size="sm">
               View Pricing
-            </Link>
+            </Button>
           </div>
 
           {submitStatus && (
-            <p
-              role={submitStatus.type === "error" ? "alert" : "status"}
-              aria-live={submitStatus.type === "error" ? "assertive" : "polite"}
-              className={`mt-3 rounded-lg border px-3 py-2 text-xs ${
-                submitStatus.type === "error"
-                  ? "border-red-400/30 bg-red-500/10 text-red-200"
-                  : "border-emerald-400/30 bg-emerald-500/10 text-emerald-200"
-              }`}
-            >
+            <InlineBanner variant={submitStatus.type === "error" ? "error" : "success"} className="mt-3">
               {submitStatus.message}
-            </p>
+            </InlineBanner>
           )}
         </div>
       </div>

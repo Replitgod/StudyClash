@@ -11,6 +11,10 @@ import VyraCoach from "@/app/components/VyraCoach";
 import ConfettiBurst from "@/app/components/ConfettiBurst";
 import { OpponentFace, moodFromStreak } from "@/app/components/OpponentFace";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
+import { useVoiceStudyMode } from "@/lib/useVoiceStudyMode";
+import { motion } from "framer-motion";
+import { pressable, springBouncy, springSnappy } from "@/lib/motion";
+import { useCountUp } from "@/lib/useCountUp";
 import {
   calculateLevel,
   getGoalProgress,
@@ -57,6 +61,15 @@ type AnswerRecord = {
   selectedAnswer: string;
   isCorrect: boolean;
   responseTimeMs: number;
+};
+
+type FinishedSummary = {
+  correctCount: number;
+  totalQuestions: number;
+  totalScore: number;
+  bestStreak: number;
+  elapsedSeconds: number;
+  topicBreakdown: Array<{ topic: string; missed: number; total: number }>;
 };
 
 type LeaderboardEntry = {
@@ -390,6 +403,42 @@ function clampNumber(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
+// Maps a spoken transcript ("B", "option B", "the second one", or the
+// choice's own text read back) to one of a question's answer_choices.
+// No AI call needed here -- unlike open_response grading, matching a fixed
+// set of choices is a closed problem simple heuristics handle well.
+function matchSpokenChoice(transcript: string, choices: string[]): string | null {
+  const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  const spoken = normalize(transcript);
+  if (!spoken) return null;
+
+  const letterMatch = spoken.match(/\b([a-e])\b/);
+  const letterIndex = letterMatch ? letterMatch[1].charCodeAt(0) - "a".charCodeAt(0) : -1;
+  if (letterIndex >= 0 && choices[letterIndex]) return choices[letterIndex];
+
+  const ordinalWords = ["first", "second", "third", "fourth", "fifth"];
+  const ordinalIndex = ordinalWords.findIndex((word) => spoken.includes(word));
+  if (ordinalIndex !== -1 && choices[ordinalIndex]) return choices[ordinalIndex];
+
+  const exactMatch = choices.find((choice) => normalize(choice) === spoken);
+  if (exactMatch) return exactMatch;
+
+  const substringMatch = choices.find(
+    (choice) => spoken.includes(normalize(choice)) || normalize(choice).includes(spoken)
+  );
+  if (substringMatch) return substringMatch;
+
+  const spokenWords = new Set(spoken.split(" ").filter(Boolean));
+  let best: { choice: string; overlap: number } | null = null;
+  for (const choice of choices) {
+    const overlap = normalize(choice)
+      .split(" ")
+      .filter((word) => word && spokenWords.has(word)).length;
+    if (overlap > 0 && (!best || overlap > best.overlap)) best = { choice, overlap };
+  }
+  return best?.choice || null;
+}
+
 function parseRivalRank(input: string | null): RivalRank | null {
   if (!input) return null;
   const normalized = input.trim().toLowerCase();
@@ -561,6 +610,14 @@ export default function BattlePage() {
   const [lastAnswerWasCorrect, setLastAnswerWasCorrect] = useState<boolean | null>(null);
   const [openResponseDraft, setOpenResponseDraft] = useState("");
   const [isGradingOpenResponse, setIsGradingOpenResponse] = useState(false);
+
+  // Hands-free voice study: VYRA reads the question aloud, then listens for
+  // a spoken answer -- lets a student practice while walking/driving
+  // instead of only reading and typing. Gated behind isSupported since
+  // Firefox has no SpeechRecognition.
+  const voice = useVoiceStudyMode();
+  const [voiceModeEnabled, setVoiceModeEnabled] = useState(false);
+  const voicePromptedQuestionIdRef = useRef<string | null>(null);
   const [openResponseError, setOpenResponseError] = useState<string | null>(null);
   const [openResponseFeedback, setOpenResponseFeedback] = useState<OpenResponseGrade | null>(null);
 
@@ -568,6 +625,7 @@ export default function BattlePage() {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [bestStreak, setBestStreak] = useState(0);
   const [totalScore, setTotalScore] = useState(0);
+  const displayedScore = useCountUp(totalScore);
   const [lastPointsEarned, setLastPointsEarned] = useState(0);
 
   // Timer (counts up in seconds while the battle is in progress)
@@ -588,6 +646,13 @@ export default function BattlePage() {
   // Saving the finished match
   const [isFinishing, setIsFinishing] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // Everything needed to render the finished-battle summary is already
+  // known client-side (answers, score, streak) the instant the last
+  // question resolves -- computed and shown immediately so the student
+  // isn't staring at a bare spinner for the /api/battle/finish round-trip.
+  // The real save still runs in the background; only the matchId-dependent
+  // navigation to /results/[matchId] waits on it.
+  const [finishedSummary, setFinishedSummary] = useState<FinishedSummary | null>(null);
   const [bossReadiness, setBossReadiness] = useState<BossReadiness | null>(null);
   const [isBossLoading, setIsBossLoading] = useState(false);
   const [rivalReadiness, setRivalReadiness] = useState<RivalReadiness | null>(null);
@@ -1456,10 +1521,13 @@ export default function BattlePage() {
   // open_response counterpart to handleSelectAnswer: correctness isn't
   // known instantly, so this calls /api/grade-open-response and only
   // applies the streak/score outcome once that grading resolves.
-  const handleSubmitOpenResponse = async () => {
+  // `answerOverride` lets voice mode submit a spoken transcript directly
+  // without first round-tripping through openResponseDraft state (whose
+  // setter wouldn't be visible to this closure until the next render).
+  const handleSubmitOpenResponse = async (answerOverride?: string) => {
     if (selectedChoice || introCountdown !== null || isGradingOpenResponse) return;
 
-    const trimmedAnswer = openResponseDraft.trim();
+    const trimmedAnswer = (answerOverride ?? openResponseDraft).trim();
     if (!trimmedAnswer) return;
 
     const currentQuestion = questions[currentIndex];
@@ -1522,6 +1590,52 @@ export default function BattlePage() {
     }
   };
 
+  // Voice mode: read the current question aloud, then listen for a spoken
+  // answer, once per question. Guarded by voicePromptedQuestionIdRef so
+  // this doesn't re-fire on unrelated re-renders of the same question (only
+  // a real question change, toggling voice mode on, or the intro countdown
+  // clearing should re-trigger it).
+  useEffect(() => {
+    if (!voiceModeEnabled || !voice.isSupported) return;
+    if (!hasStarted || introCountdown !== null || isFinishing) return;
+
+    const activeQuestion = questions[currentIndex];
+    if (!activeQuestion || selectedChoice || isGradingOpenResponse) return;
+    if (voicePromptedQuestionIdRef.current === activeQuestion.id) return;
+
+    voicePromptedQuestionIdRef.current = activeQuestion.id;
+    let cancelled = false;
+
+    async function promptAndListen() {
+      const isOpenResponse = activeQuestion.question_type === "open_response";
+      const prompt = isOpenResponse
+        ? activeQuestion.question_text
+        : `${activeQuestion.question_text} Your options are: ${activeQuestion.answer_choices
+            .map((choice, i) => `${String.fromCharCode(65 + i)}, ${choice}`)
+            .join(". ")}`;
+
+      await voice.speak(prompt);
+      if (cancelled) return;
+
+      const transcript = await voice.listenOnce();
+      if (cancelled || !transcript) return;
+
+      if (isOpenResponse) {
+        void handleSubmitOpenResponse(transcript);
+      } else {
+        const matched = matchSpokenChoice(transcript, activeQuestion.answer_choices);
+        if (matched) handleSelectAnswer(matched);
+      }
+    }
+
+    void promptAndListen();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voiceModeEnabled, voice.isSupported, hasStarted, introCountdown, isFinishing, currentIndex, selectedChoice, isGradingOpenResponse, questions]);
+
   const handleNext = useCallback(async () => {
     if (effectiveStudyMode === "rival" && isRivalResolving) {
       return;
@@ -1546,10 +1660,30 @@ export default function BattlePage() {
     if (hasFinishedRef.current) return;
     hasFinishedRef.current = true;
 
+    const correctCount = answers.filter((a) => a.isCorrect).length;
+
+    const topicStats = new Map<string, { missed: number; total: number }>();
+    for (const answer of answers) {
+      const topic = questions.find((q) => q.id === answer.questionId)?.topic || "General";
+      const entry = topicStats.get(topic) || { missed: 0, total: 0 };
+      entry.total += 1;
+      if (!answer.isCorrect) entry.missed += 1;
+      topicStats.set(topic, entry);
+    }
+
+    setFinishedSummary({
+      correctCount,
+      totalQuestions: questions.length,
+      totalScore,
+      bestStreak,
+      elapsedSeconds,
+      topicBreakdown: Array.from(topicStats.entries())
+        .map(([topic, stats]) => ({ topic, ...stats }))
+        .sort((a, b) => b.missed - a.missed)
+        .slice(0, 5),
+    });
     setIsFinishing(true);
     setSaveError(null);
-
-    const correctCount = answers.filter((a) => a.isCorrect).length;
 
     let response: Response;
 
@@ -2127,35 +2261,87 @@ export default function BattlePage() {
   }
 
   // ---------- Saving state ----------
+  // The score, streak, and topic breakdown are already known from local
+  // state the instant the last question resolves, so they render here
+  // immediately instead of behind a bare spinner -- the /api/battle/finish
+  // save (and the redirect to the server-rendered /results/[matchId] page)
+  // continues in the background underneath this preview.
   if (isFinishing) {
+    const accuracyPercent = finishedSummary
+      ? Math.round((finishedSummary.correctCount / Math.max(1, finishedSummary.totalQuestions)) * 100)
+      : 0;
+
     return (
       <Background>
-        <svg
-          className="h-10 w-10 animate-spin text-fuchsia-400"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            strokeWidth="4"
-          />
-          <path
-            className="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-          />
-        </svg>
-        <p className="mt-4 text-sm text-white/50">Saving your results...</p>
+        <div className="w-full max-w-md text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-fuchsia-300/80">
+            Battle Complete
+          </p>
 
-        {saveError && (
-          <div className="mt-5 w-full max-w-md rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-center text-sm text-red-300">
-            {saveError}
+          {finishedSummary ? (
+            <>
+              <p className="mt-3 text-5xl font-black text-white">{finishedSummary.totalScore}</p>
+              <p className="mt-1 text-sm text-white/50">points</p>
+
+              <div className="mt-6 grid grid-cols-3 gap-3">
+                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+                  <p className="text-xl font-bold text-white">
+                    {finishedSummary.correctCount}/{finishedSummary.totalQuestions}
+                  </p>
+                  <p className="mt-1 text-[11px] uppercase tracking-wider text-white/45">Correct</p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+                  <p className="text-xl font-bold text-white">{accuracyPercent}%</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-wider text-white/45">Accuracy</p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+                  <p className="text-xl font-bold text-white">{finishedSummary.bestStreak}</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-wider text-white/45">Best streak</p>
+                </div>
+              </div>
+
+              {finishedSummary.topicBreakdown.some((entry) => entry.missed > 0) && (
+                <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4 text-left">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-white/45">
+                    Topics to review
+                  </p>
+                  <div className="mt-2 flex flex-col gap-1.5">
+                    {finishedSummary.topicBreakdown
+                      .filter((entry) => entry.missed > 0)
+                      .map((entry) => (
+                        <div key={entry.topic} className="flex items-center justify-between text-sm">
+                          <span className="text-white/80">{entry.topic}</span>
+                          <span className="text-white/45">
+                            {entry.missed}/{entry.total} missed
+                          </span>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="mt-3 text-2xl font-bold text-white">Wrapping up...</p>
+          )}
+
+          <div className="mt-6 flex items-center justify-center gap-2 text-sm text-white/50">
+            <svg className="h-4 w-4 animate-spin text-fuchsia-400" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              />
+            </svg>
+            Preparing your full results...
           </div>
-        )}
+
+          {saveError && (
+            <div className="mt-5 w-full rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-center text-sm text-red-300">
+              {saveError}
+            </div>
+          )}
+        </div>
       </Background>
     );
   }
@@ -2392,14 +2578,20 @@ export default function BattlePage() {
 
         {/* Score + streak bar */}
         <div className="mb-5 flex flex-wrap items-center justify-between gap-2 sm:mb-6">
-          <div className="flex items-center gap-1.5 rounded-full border border-fuchsia-400/20 bg-fuchsia-500/10 px-3 py-1">
-            <span className="text-sm font-black text-fuchsia-300">
-              {totalScore}
+          <motion.div
+            key={totalScore}
+            initial={{ scale: 0.85 }}
+            animate={{ scale: 1 }}
+            transition={springBouncy}
+            className="flex items-center gap-1.5 rounded-full border border-fuchsia-400/20 bg-fuchsia-500/10 px-3 py-1"
+          >
+            <span className="text-sm font-black text-fuchsia-300 tabular-nums">
+              {displayedScore}
             </span>
             <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-300/70">
               pts
             </span>
-          </div>
+          </motion.div>
 
           <div className="flex items-center gap-2">
             {bestStreak > 0 && (
@@ -2407,8 +2599,12 @@ export default function BattlePage() {
                 Best: {bestStreak}
               </span>
             )}
-            <div
-              className={`flex items-center gap-1.5 rounded-full border px-3 py-1 transition-colors duration-200 ${
+            <motion.div
+              key={currentStreak}
+              initial={currentStreak > 0 ? { scale: 0.7 } : false}
+              animate={{ scale: 1 }}
+              transition={springBouncy}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1 ${
                 currentStreak >= 5
                   ? "border-orange-400/40 bg-orange-500/15"
                   : currentStreak >= 3
@@ -2420,7 +2616,7 @@ export default function BattlePage() {
                 {currentStreak >= 3 ? "🔥" : "⚡"}
               </span>
               <span
-                className={`text-sm font-bold ${
+                className={`text-sm font-bold tabular-nums ${
                   currentStreak >= 5
                     ? "text-orange-300"
                     : currentStreak >= 3
@@ -2435,9 +2631,40 @@ export default function BattlePage() {
                   (+{bonusForCurrentStreak})
                 </span>
               )}
-            </div>
+            </motion.div>
           </div>
         </div>
+
+        {voice.isSupported && (
+          <div className="mb-4 flex items-center justify-between gap-2 sm:mb-5">
+            <button
+              type="button"
+              onClick={() => {
+                if (voiceModeEnabled) {
+                  voice.stopListening();
+                  voice.cancelSpeech();
+                  voicePromptedQuestionIdRef.current = null;
+                }
+                setVoiceModeEnabled((prev) => !prev);
+              }}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                voiceModeEnabled
+                  ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-200"
+                  : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10"
+              }`}
+            >
+              <span aria-hidden>🎙️</span>
+              Voice Mode {voiceModeEnabled ? "On" : "Off"}
+            </button>
+
+            {voiceModeEnabled && (voice.isSpeaking || voice.isListening) && (
+              <span className="flex items-center gap-1.5 text-[11px] font-semibold text-white/50">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                {voice.isSpeaking ? "VYRA is reading the question..." : "Listening for your answer..."}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Progress bar */}
         <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-white/10 sm:mb-8">
@@ -2505,7 +2732,7 @@ export default function BattlePage() {
                     <p className="mt-2 text-xs text-red-300">{openResponseError}</p>
                   )}
                   <button
-                    onClick={handleSubmitOpenResponse}
+                    onClick={() => handleSubmitOpenResponse()}
                     disabled={!openResponseDraft.trim() || isGradingOpenResponse}
                     className="mt-3 w-full rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:text-base"
                   >
@@ -2550,11 +2777,25 @@ export default function BattlePage() {
                 }
 
                 return (
-                  <button
+                  <motion.button
                     key={i}
                     onClick={() => handleSelectAnswer(choice)}
                     disabled={showFeedback}
-                    className={`flex min-h-[3.3rem] w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-all duration-200 disabled:cursor-default sm:min-h-[3.5rem] sm:py-3.5 sm:text-base ${choiceStyles}`}
+                    initial={false}
+                    animate={
+                      showFeedback && (isCorrectChoice || isSelected)
+                        ? { scale: [1, 1.035, 1] }
+                        : { scale: 1 }
+                    }
+                    // Multi-keyframe arrays aren't supported by spring/inertia
+                    // transitions (framer-motion only allows two keyframes
+                    // there) -- this pop needs a tween, not springBouncy.
+                    // whileHover/whileTap get their own spring transition
+                    // below instead of inheriting this tween.
+                    transition={{ duration: 0.32, ease: "easeOut" }}
+                    whileHover={!showFeedback ? { scale: 1.015, x: 2, transition: springSnappy } : undefined}
+                    whileTap={!showFeedback ? { scale: 0.97, transition: springSnappy } : undefined}
+                    className={`flex min-h-[3.3rem] w-full items-center gap-3 rounded-xl border px-4 py-3.5 text-left text-sm transition-colors duration-200 disabled:cursor-default sm:min-h-[3.5rem] sm:py-3.5 sm:text-base ${choiceStyles}`}
                   >
                     <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-white/10 text-xs font-bold text-white/70">
                       {CHOICE_LETTERS[i]}
@@ -2563,11 +2804,16 @@ export default function BattlePage() {
                       {choice}
                     </span>
                     {resultIcon && (
-                      <span className="flex-shrink-0 text-lg leading-none">
+                      <motion.span
+                        initial={{ scale: 0, rotate: -20 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        transition={springBouncy}
+                        className="flex-shrink-0 text-lg leading-none"
+                      >
                         {resultIcon}
-                      </span>
+                      </motion.span>
                     )}
-                  </button>
+                  </motion.button>
                 );
               })}
             </div>

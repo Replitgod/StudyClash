@@ -8,6 +8,8 @@ import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
 import VyraCoach from "@/app/components/VyraCoach";
 import { EmptyState } from "@/app/components/ui/EmptyState";
+import { Button } from "@/app/components/ui/Button";
+import { StatCard } from "@/app/components/ui/StatCard";
 import {
   ACHIEVEMENTS,
   calculateLevel,
@@ -856,15 +858,15 @@ export default function DashboardPage() {
             <h1 className="mt-4 text-xl font-bold text-white">Sign in to see your dashboard</h1>
             <p className="mt-2 text-sm text-white/50">Track your decks, matches, and daily generation usage from one place.</p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-              <Link href="/demo/battle" className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-5 py-3 text-sm font-bold text-cyan-200">
+              <Button href="/demo/battle" variant="secondary">
                 Try Demo Battle
-              </Link>
-              <Link href="/login?redirect=/dashboard" className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-5 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)]">
+              </Button>
+              <Button href="/login?redirect=/dashboard" variant="primary">
                 Log In
-              </Link>
-              <Link href="/signup?redirect=/dashboard" className="rounded-xl border border-white/10 bg-white/5 px-5 py-3 text-sm font-bold text-white/90">
+              </Button>
+              <Button href="/signup?redirect=/dashboard" variant="ghost">
                 Sign Up
-              </Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -1421,34 +1423,22 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm">
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">Total decks created</p>
-            <p className="mt-3 text-3xl font-black text-white">{isLoadingStats ? "—" : totalDecks}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm">
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">Battles played</p>
-            <p className="mt-3 text-3xl font-black text-white">{isLoadingStats ? "—" : battlesPlayed}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm">
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">Average accuracy</p>
-            <p className="mt-3 text-3xl font-black text-white">{isLoadingStats ? "—" : `${averageAccuracy}%`}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm">
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">Decks generated today</p>
-            <p className="mt-3 text-3xl font-black text-white">{isLoadingStats ? "—" : decksGeneratedToday}</p>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm">
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">Remaining generations today</p>
-            <p className="mt-3 text-3xl font-black text-white">
-              {isLoadingStats ? "—" : remainingGenerationsToday == null ? "Unlimited" : remainingGenerationsToday}
-            </p>
-            {planInfo?.label ? <p className="mt-2 text-sm text-white/45">{planInfo.label}</p> : null}
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm">
-            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">Plan</p>
-            <p className="mt-3 text-xl font-bold text-fuchsia-300">{profile?.plan || "free_beta"}</p>
-            <p className="mt-2 text-sm text-white/45">{planInfo?.description || "Daily generation limits apply based on your plan."}</p>
-          </div>
+          <StatCard label="Total decks created" value={totalDecks} isLoading={isLoadingStats} />
+          <StatCard label="Battles played" value={battlesPlayed} isLoading={isLoadingStats} />
+          <StatCard label="Average accuracy" value={averageAccuracy} suffix="%" isLoading={isLoadingStats} />
+          <StatCard label="Decks generated today" value={decksGeneratedToday} isLoading={isLoadingStats} />
+          <StatCard
+            label="Remaining generations today"
+            value={remainingGenerationsToday == null ? "Unlimited" : remainingGenerationsToday}
+            isLoading={isLoadingStats}
+            hint={planInfo?.label}
+          />
+          <StatCard
+            label="Plan"
+            value={profile?.plan || "free_beta"}
+            valueClassName="text-xl text-fuchsia-300"
+            hint={planInfo?.description || "Daily generation limits apply based on your plan."}
+          />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
