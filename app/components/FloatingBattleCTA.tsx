@@ -5,7 +5,13 @@ import BattleAILink from "./BattleAILink";
 import { FLOATING_ACTION, UI_Z_INDEX } from "@/lib/uiLayout";
 
 const HIDE_ON_PREFIXES = ["/battle/", "/challenge/", "/results/"];
-const HIDE_ON_EXACT = new Set(["/demo/battle"]);
+// "/" is included because the homepage hero already has its own
+// equally-prominent "Start Instant Battle (No Signup)" CTA right above the
+// fold -- on mobile, the floating duplicate doesn't just repeat that
+// button, it visually sits on top of the AutoplayDemoRail content that
+// follows it, reading as cluttered/broken rather than as a second chance
+// to convert.
+const HIDE_ON_EXACT = new Set(["/demo/battle", "/"]);
 
 export default function FloatingBattleCTA() {
   const pathname = usePathname();

@@ -294,6 +294,7 @@ ${gradeLevelLine}${topicFocusLine}${examGuidanceBlock}
 
 Rules for every question:
 - "question_text": a clear question based directly on the notes
+- Math notation: whenever "question_text", an answer choice, or "explanation" contains a mathematical expression, equation, exponent, fraction, chemical formula, or similar notation, write it in LaTeX wrapped in single dollar signs for inline math (e.g. "$x^2 + 3x - 4 = 0$") or double dollar signs for a standalone/display equation (e.g. "$$\\int_0^1 x^2 \\, dx$$"). Do not use LaTeX for plain prose that happens to contain a number.
 ${choiceInstructions}
 ${explanationRule}
 - "topic": a short label (2-4 words) for the subtopic this question covers
@@ -1076,6 +1077,7 @@ function buildOpenResponsePrompt(params: {
     reasoningFormat === "step_by_step"
       ? `Generate STEP-BY-STEP REASONING problems (math, physics, chemistry, or similar quantitative/procedural material from the notes). Each problem must require working through a multi-step process to reach an answer -- not a single-step lookup.
 - "question_text": a problem statement that requires multiple steps to solve, using only facts/formulas/methods present in the notes.
+- Math notation: write every equation, formula, exponent, fraction, or chemical formula in LaTeX -- wrap inline math in single dollar signs (e.g. "$F = ma$") and standalone/display equations in double dollar signs (e.g. "$$\\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$$"). This applies to "question_text" and "model_answer" alike.
 - "rubric_points": an ORDERED array of 3-5 short strings, each naming one required step in the correct solution process (e.g., "Identify the known variables", "Apply the formula for X", "Solve for the unknown", "State the final answer with correct units"). These are graded against, never shown to the student before they answer.
 - "final_answer": the correct final numeric or short-form answer to the problem.
 - "model_answer": the full worked solution, step by step, ending in the final answer.`

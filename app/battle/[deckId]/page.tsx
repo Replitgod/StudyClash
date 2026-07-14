@@ -16,6 +16,7 @@ import { useVoiceStudyMode } from "@/lib/useVoiceStudyMode";
 import { motion } from "framer-motion";
 import { pressable, springBouncy, springSnappy } from "@/lib/motion";
 import { useCountUp } from "@/lib/useCountUp";
+import { MathText } from "@/app/components/ui/MathText";
 import {
   calculateLevel,
   getGoalProgress,
@@ -2749,7 +2750,7 @@ export default function BattlePage() {
             {currentQuestion.topic}
           </span>
           <h2 className="mt-3 text-base font-bold leading-snug break-words sm:text-lg md:text-xl">
-            {currentQuestion.question_text}
+            <MathText text={currentQuestion.question_text} />
           </h2>
 
           {isOpenResponseQuestion ? (
@@ -2841,7 +2842,7 @@ export default function BattlePage() {
                       {CHOICE_LETTERS[i]}
                     </span>
                     <span className="min-w-0 flex-1 break-words text-white/90">
-                      {choice}
+                      <MathText text={choice} />
                     </span>
                     {resultIcon && (
                       <motion.span
@@ -2927,7 +2928,7 @@ export default function BattlePage() {
                     <div className="rounded-lg border border-white/10 bg-black/20 px-3 py-2.5">
                       <p className="text-[11px] font-bold text-white/55">Model answer</p>
                       <p className="mt-1 whitespace-pre-wrap break-words text-white/70">
-                        {currentQuestion.explanation}
+                        <MathText text={currentQuestion.explanation} />
                       </p>
                     </div>
                   </div>
@@ -2938,18 +2939,18 @@ export default function BattlePage() {
                     <p className="mt-2 break-words text-white/70">
                       You chose{" "}
                       <span className="font-semibold text-red-300">
-                        {selectedChoice}
+                        <MathText text={selectedChoice || ""} />
                       </span>
                       . The correct answer is{" "}
                       <span className="font-semibold text-emerald-300">
-                        {currentQuestion.correct_answer}
+                        <MathText text={currentQuestion.correct_answer} />
                       </span>
                       .
                     </p>
                   )}
 
                   <p className="mt-2 break-words text-white/60">
-                    {currentQuestion.explanation}
+                    <MathText text={currentQuestion.explanation} />
                   </p>
                 </>
               )}
