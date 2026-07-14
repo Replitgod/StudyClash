@@ -4,7 +4,7 @@ import { forwardRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { GRADIENTS } from "@/lib/theme";
-import { springSnappy } from "@/lib/motion";
+import { springBouncy, springSnappy } from "@/lib/motion";
 
 const MotionLink = motion.create(Link);
 
@@ -111,7 +111,16 @@ export const Button = forwardRef<HTMLButtonElement | HTMLAnchorElement, ButtonPr
 
     const composedClassName = buildClassName({ variant, size, fullWidth, className });
     const isInteractive = !isLoading && !("disabled" in rest && rest.disabled);
-    const gesture = isInteractive ? { whileHover: { scale: 1.03 }, whileTap: { scale: 0.95 } } : {};
+    // Hover lifts on the crisp/snappy spring; tap "presses down" -- a
+    // slight downward offset plus a brightness dip standing in for a
+    // pressed shadow -- on the bouncier, lower-damping spring so the
+    // release has a satisfying tactile give instead of just snapping back.
+    const gesture = isInteractive
+      ? {
+          whileHover: { scale: 1.03, y: -1, transition: springSnappy },
+          whileTap: { scale: 0.95, y: 1, filter: "brightness(0.92)", transition: springBouncy },
+        }
+      : {};
 
     if ("href" in props && props.href !== undefined) {
       const { href, ...linkRest } = rest as Omit<ButtonAsLink, keyof CommonProps>;

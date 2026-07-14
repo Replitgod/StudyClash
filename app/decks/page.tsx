@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/useAuth";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { Button } from "@/app/components/ui/Button";
 import { HoverLiftArticle } from "@/app/components/ui/HoverLift";
+import { Skeleton } from "@/app/components/ui/Skeleton";
 
 type Deck = {
   id: string;
@@ -235,29 +236,28 @@ export default function DecksPage() {
           </Link>
         )}
 
-        {/* Loading state */}
+        {/* Loading state -- shaped like the real deck-card grid below (badge,
+            title, two meta rows, two stacked buttons) rather than a bare
+            spinner, so mounting the real grid doesn't reflow/shift the page. */}
         {isLoading && (
-          <div className="mt-14 flex flex-col items-center sm:mt-16">
-            <svg
-              className="h-10 w-10 animate-spin text-fuchsia-400"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              />
-            </svg>
-            <p className="mt-4 text-sm text-white/50">Loading decks...</p>
+          <div className="mt-10 grid w-full grid-cols-1 gap-4 sm:mt-12 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <div
+                key={i}
+                className="flex flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6"
+              >
+                <div className="min-w-0">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="mt-3 h-5 w-4/5" />
+                  <Skeleton className="mt-4 h-3 w-1/2" />
+                  <Skeleton className="mt-1.5 h-3 w-1/3" />
+                </div>
+                <div className="mt-6 flex flex-col gap-2.5">
+                  <Skeleton className="h-11 w-full rounded-xl" />
+                  <Skeleton className="h-11 w-full rounded-xl" />
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
