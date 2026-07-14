@@ -109,6 +109,13 @@ type VyraCoachProps = {
   currentQuestion?: CurrentQuestionContext;
   recentBattleHistory?: BattleHistoryEntry[];
   layout?: "floating" | "docked";
+  // Set by the caller to a value that changes once per missed question (e.g.
+  // `${questionId}:${selectedAnswer}`) to have VYRA open with a mistake
+  // breakdown automatically, instead of waiting for the student to click
+  // "Why was I wrong?" themselves. Leave undefined/null for on-demand-only
+  // coaching (e.g. the Mastery Map, where there's no single "just missed"
+  // question to react to).
+  autoAnalyzeSignal?: string | null;
 };
 
 function buildWeakTopicHref(deckId: string, weakTopics: string[]): string {
@@ -237,6 +244,7 @@ export default function VyraCoach(props: VyraCoachProps) {
     currentQuestion,
     recentBattleHistory = [],
     layout = "floating",
+    autoAnalyzeSignal = null,
   } = props;
 
   const isDocked = layout === "docked";
@@ -464,6 +472,36 @@ export default function VyraCoach(props: VyraCoachProps) {
       userMessage: entry.message,
     });
   }
+
+  // Fires the same "Why was I wrong?" breakdown a student would click
+  // themselves, but automatically the moment a new missed question comes in
+  // -- the ref guards against re-firing on every re-render (the signal only
+  // changes once per newly-missed question, but effects re-run on any
+  // prop/state change in the same render pass).
+  const lastAutoAnalyzedSignalRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!autoAnalyzeSignal || autoAnalyzeSignal === lastAutoAnalyzedSignalRef.current) return;
+    lastAutoAnalyzedSignalRef.current = autoAnalyzeSignal;
+
+    const mistakeAction = QUICK_ACTIONS.find((entry) => entry.action === "mistake_mode");
+    if (!mistakeAction) return;
+
+    // Deferred a tick (same pattern as app/decks/page.tsx's guest-state
+    // reset) so the setState calls below don't run synchronously inside the
+    // effect body itself -- see react-hooks/set-state-in-effect.
+    void Promise.resolve().then(() => {
+      setSelectedMode(mistakeAction.mode);
+      void sendCoachMessage({
+        action: mistakeAction.action,
+        mode: mistakeAction.mode,
+        userMessage: mistakeAction.message,
+      });
+    });
+    // sendCoachMessage/setSelectedMode are recreated every render; the ref
+    // check above (not the dependency array) is what prevents duplicate
+    // sends, so only autoAnalyzeSignal needs to be tracked here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoAnalyzeSignal]);
 
   async function handleFindResources() {
     const topic = weakTopics[0] || deckTitle || undefined;

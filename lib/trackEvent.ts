@@ -8,6 +8,8 @@ export type AnalyticsEventName =
   | "deck_generation_started"
   | "deck_generation_success"
   | "deck_generation_failed"
+  | "deck_imported_quizlet"
+  | "deck_imported_anki"
   | "battle_started"
   | "battle_finished"
   | "feedback_submitted"

@@ -362,6 +362,22 @@ export default function CreateDeck() {
   const [betaAccessCode, setBetaAccessCode] = useState("");
   const [hasUserEditedDeckTitle, setHasUserEditedDeckTitle] = useState(false);
 
+  // Import from Quizlet -- deliberately its own small isolated flow (own
+  // state, own handler, own card in the JSX) rather than threaded into the
+  // notes/file-upload form above: it skips the whole generation form
+  // entirely (no subject/notes/question-count to fill in) and goes
+  // straight from a pasted URL to a playable deck.
+  const [quizletUrl, setQuizletUrl] = useState("");
+  const [isImportingQuizlet, setIsImportingQuizlet] = useState(false);
+  const [quizletImportError, setQuizletImportError] = useState<string | null>(null);
+
+  // Import from Anki .apkg -- same "own isolated flow" reasoning as Quizlet
+  // above.
+  const ankiFileInputRef = useRef<HTMLInputElement>(null);
+  const [ankiFileName, setAnkiFileName] = useState<string | null>(null);
+  const [isImportingAnki, setIsImportingAnki] = useState(false);
+  const [ankiImportError, setAnkiImportError] = useState<string | null>(null);
+
   // Guided generation fields. None of these are stored on the deck itself —
   // they only shape the OpenAI prompt and validation at generation time.
   const [topicFocus, setTopicFocus] = useState("");
@@ -838,6 +854,87 @@ export default function CreateDeck() {
     if (folderInputRef.current) folderInputRef.current.value = "";
   };
 
+  const handleQuizletImport = async () => {
+    if (isImportingQuizlet) return;
+
+    const trimmedUrl = quizletUrl.trim();
+    if (!trimmedUrl) {
+      setQuizletImportError("Paste a Quizlet set URL first.");
+      return;
+    }
+
+    setIsImportingQuizlet(true);
+    setQuizletImportError(null);
+
+    try {
+      const response = await authFetch("/api/import/quizlet", {
+        method: "POST",
+        body: JSON.stringify({
+          url: trimmedUrl,
+          studentName: accountDisplayName || studentName,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setQuizletImportError(data?.error || "Could not import this Quizlet set.");
+        return;
+      }
+
+      trackEvent("deck_imported_quizlet", { deckId: data.deckId, termCount: data.termCount });
+      router.push(`/decks/${data.deckId}`);
+    } catch {
+      setQuizletImportError("Could not reach the import service. Please try again.");
+    } finally {
+      setIsImportingQuizlet(false);
+    }
+  };
+
+  const handleAnkiFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    setAnkiImportError(null);
+    setAnkiFileName(file ? file.name : null);
+  };
+
+  const handleAnkiImport = async () => {
+    if (isImportingAnki) return;
+
+    const file = ankiFileInputRef.current?.files?.[0];
+    if (!file) {
+      setAnkiImportError("Choose a .apkg file first.");
+      return;
+    }
+
+    setIsImportingAnki(true);
+    setAnkiImportError(null);
+
+    try {
+      const formPayload = new FormData();
+      formPayload.append("file", file);
+      formPayload.append("studentName", accountDisplayName || studentName);
+
+      const response = await authFetch("/api/import/anki", {
+        method: "POST",
+        body: formPayload,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setAnkiImportError(data?.error || "Could not import this Anki deck.");
+        return;
+      }
+
+      trackEvent("deck_imported_anki", { deckId: data.deckId, termCount: data.termCount });
+      router.push(`/decks/${data.deckId}`);
+    } catch {
+      setAnkiImportError("Could not reach the import service. Please try again.");
+    } finally {
+      setIsImportingAnki(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -1120,6 +1217,67 @@ export default function CreateDeck() {
 
       <div className="mt-5 w-full max-w-2xl rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.05] px-4 py-3 text-sm text-cyan-100/90 backdrop-blur-sm sm:px-5">
         {fastPathLabel}
+      </div>
+
+      {/* Import from Quizlet -- a separate, smaller entry point above the
+          main form: pasting a URL skips subject/notes/question-count
+          entirely and goes straight to a playable deck. */}
+      <div className="mt-5 w-full max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:p-5">
+        <p className="text-xs font-bold uppercase tracking-wider text-white/60">Already have a Quizlet set?</p>
+        <p className="mt-1 text-sm text-white/50">Paste a public set URL to import it as a battle deck.</p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <input
+            type="url"
+            value={quizletUrl}
+            onChange={(e) => setQuizletUrl(e.target.value)}
+            placeholder="https://quizlet.com/123456789/set-name"
+            className="w-full min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-500/20"
+          />
+          <button
+            type="button"
+            onClick={handleQuizletImport}
+            disabled={isImportingQuizlet}
+            className="flex-shrink-0 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-sm font-bold text-cyan-100 transition-colors duration-150 hover:border-cyan-300/45 hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isImportingQuizlet ? "Importing..." : "Import Set"}
+          </button>
+        </div>
+        {quizletImportError && (
+          <p className="mt-2 text-xs text-red-300">{quizletImportError}</p>
+        )}
+      </div>
+
+      {/* Import from Anki .apkg -- same isolated-flow reasoning as Quizlet. */}
+      <div className="mt-4 w-full max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:p-5">
+        <p className="text-xs font-bold uppercase tracking-wider text-white/60">Already have an Anki deck?</p>
+        <p className="mt-1 text-sm text-white/50">Upload a .apkg export to import it as a battle deck.</p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+          <input
+            ref={ankiFileInputRef}
+            type="file"
+            accept=".apkg"
+            onChange={handleAnkiFileSelected}
+            className="hidden"
+            id="ankiFileInput"
+          />
+          <label
+            htmlFor="ankiFileInput"
+            className="flex w-full min-w-0 flex-1 cursor-pointer items-center rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/70 transition-colors duration-150 hover:border-cyan-400/40"
+          >
+            {ankiFileName || "Choose a .apkg file..."}
+          </label>
+          <button
+            type="button"
+            onClick={handleAnkiImport}
+            disabled={isImportingAnki}
+            className="flex-shrink-0 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-sm font-bold text-cyan-100 transition-colors duration-150 hover:border-cyan-300/45 hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isImportingAnki ? "Importing..." : "Import Deck"}
+          </button>
+        </div>
+        {ankiImportError && (
+          <p className="mt-2 text-xs text-red-300">{ankiImportError}</p>
+        )}
       </div>
 
       {/* Form card */}

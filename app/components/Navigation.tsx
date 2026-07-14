@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
+import { UI_SFX } from "@/lib/uiSound";
+import { springSnappy } from "@/lib/motion";
 import BattleAILink from "./BattleAILink";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
 
@@ -74,6 +77,15 @@ export default function Navigation() {
   };
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen((prev) => {
+      const next = !prev;
+      if (next) UI_SFX.menuOpen();
+      else UI_SFX.menuClose();
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!pathname) return;
@@ -239,7 +251,7 @@ export default function Navigation() {
 
         {/* Mobile hamburger button */}
         <button
-          onClick={() => setIsMobileMenuOpen((prev) => !prev)}
+          onClick={toggleMobileMenu}
           className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white md:hidden"
           aria-label="Toggle menu"
           aria-expanded={isMobileMenuOpen}
@@ -277,8 +289,14 @@ export default function Navigation() {
       </div>
 
       {/* Mobile menu panel */}
+      <AnimatePresence>
       {isMobileMenuOpen && (
-        <div className="border-t border-white/10 bg-[#05050a]/95 px-4 py-4 backdrop-blur-md md:hidden">
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={springSnappy}
+          className="border-t border-white/10 bg-[#05050a]/95 px-4 py-4 backdrop-blur-md md:hidden">
           <div className="flex flex-col gap-1">
             <BattleAILink
               onClick={closeMobileMenu}
@@ -378,8 +396,9 @@ export default function Navigation() {
               </div>
             )}
           </div>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </nav>
   );
 }

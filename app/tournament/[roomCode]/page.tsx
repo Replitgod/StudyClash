@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { authFetch } from "@/lib/authFetch";
 import { useAuth } from "@/lib/useAuth";
+import { supabase } from "@/lib/supabase";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 type BracketPlayer = { userId: string; name: string } | null;
@@ -31,9 +32,12 @@ type TournamentState = {
 };
 
 // Refetching also re-runs lazy bracket resolution server-side (see
-// /api/classroom/tournament/[roomCode]) -- there's no live/websocket layer
-// in this app, so polling is how students see the bracket advance without
-// a manual refresh.
+// /api/classroom/tournament/[roomCode]). This poll is now a fallback --
+// the effect below pushes an immediate refetch over Supabase Realtime for
+// logged-in participants -- kept short so a guest who only has the room
+// code (Realtime requires an authenticated, RLS-scoped subscription; see
+// 20260714_classroom_tournament_realtime.sql) still sees the bracket move
+// without a manual refresh.
 const POLL_INTERVAL_MS = 20_000;
 
 function Background({ children }: { children: React.ReactNode }) {
@@ -173,6 +177,36 @@ export default function TournamentPage() {
       clearInterval(interval);
     };
   }, [roomCode, refreshKey]);
+
+  // Pushes an immediate refetch the moment a match/member row changes,
+  // instead of waiting up to POLL_INTERVAL_MS -- this is what makes the
+  // bracket feel "live" for a room being projected in a classroom. Only
+  // wired up for logged-in users: the RLS policies backing this channel
+  // (20260714_classroom_tournament_realtime.sql) scope reads to the room
+  // owner or a registered member, so an anonymous viewer can't subscribe
+  // anyway and just keeps using the poll above.
+  const roomId = state?.room?.id;
+  useEffect(() => {
+    if (!isLoggedIn || !roomId) return;
+
+    const channel = supabase
+      .channel(`tournament:${roomId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "classroom_tournament_matches", filter: `room_id=eq.${roomId}` },
+        () => setRefreshKey((key) => key + 1)
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "classroom_tournament_members", filter: `room_id=eq.${roomId}` },
+        () => setRefreshKey((key) => key + 1)
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [isLoggedIn, roomId]);
 
   const handleStart = async () => {
     setIsStarting(true);

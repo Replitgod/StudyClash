@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
 import VyraCoach from "@/app/components/VyraCoach";
+import { StudyModeReview } from "@/app/components/StudyModeReview";
 import ConfettiBurst from "@/app/components/ConfettiBurst";
 import { OpponentFace, moodFromStreak } from "@/app/components/OpponentFace";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
@@ -591,6 +592,12 @@ export default function BattlePage() {
   const [playerName, setPlayerName] = useState("");
   const [isEditingPlayerName, setIsEditingPlayerName] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
+  // Lower-stress alternative to the AI battle -- flip through the same
+  // question set as classic flashcards with no scoring/streak/timer. Kept as
+  // a separate boolean (not folded into `hasStarted`/StudyMode) so it can
+  // short-circuit to its own render branch without touching any battle
+  // scoring/streak/rival state.
+  const [studyModeActive, setStudyModeActive] = useState(false);
   const [introCountdown, setIntroCountdown] = useState<number | null>(null);
   const [showRewardBurst, setShowRewardBurst] = useState(false);
   const [wrongShake, setWrongShake] = useState(false);
@@ -1872,6 +1879,19 @@ export default function BattlePage() {
     );
   }
 
+  // ---------- Study Mode (flashcard flip-through, no scoring) ----------
+  if (studyModeActive) {
+    return (
+      <Background>
+        <StudyModeReview
+          deckTitle={deck.title}
+          questions={questions}
+          onExit={() => setStudyModeActive(false)}
+        />
+      </Background>
+    );
+  }
+
   // ---------- Start screen ----------
   if (!hasStarted) {
     return (
@@ -2154,6 +2174,17 @@ export default function BattlePage() {
               Boss is locked. Complete more weak-topic practice first.
             </p>
           )}
+
+          {/* Its own row below the primary CTA, not beside it -- a lower-
+              commitment secondary action shouldn't sit close enough to
+              "Start Battle" to invite a mis-tap into the wrong mode. */}
+          <button
+            type="button"
+            onClick={() => setStudyModeActive(true)}
+            className="mt-3 w-full rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white/70 transition-colors duration-150 hover:border-cyan-400/30 hover:bg-white/10 hover:text-cyan-100"
+          >
+            Or preview as flashcards (Study Mode)
+          </button>
         </div>
 
         {/* Scoring rules reminder */}
@@ -2354,6 +2385,15 @@ export default function BattlePage() {
   const answeredCorrectly = isOpenResponseQuestion
     ? lastAnswerWasCorrect === true
     : selectedChoice === currentQuestion.correct_answer;
+  // Changes once per newly-missed MC/TF question -- VyraCoach uses this to
+  // auto-open with a mistake breakdown instead of waiting for the student to
+  // click "Why was I wrong?" themselves. Scoped to MC/TF only: open_response
+  // already shows its own rubric-based feedback (pointsAddressed/Missed)
+  // inline, which isn't the same shape as a single selected-vs-correct diff.
+  const autoAnalyzeSignal =
+    showFeedback && !answeredCorrectly && !isOpenResponseQuestion
+      ? `${currentQuestion.id}:${selectedChoice}`
+      : null;
   const bonusForCurrentStreak =
     currentStreak >= 5
       ? STREAK_BONUS_TIER_2
@@ -2989,6 +3029,7 @@ export default function BattlePage() {
             }}
             contextLabel="Battle"
             layout="docked"
+            autoAnalyzeSignal={autoAnalyzeSignal}
           />
         </div>
       </div>

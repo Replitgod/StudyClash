@@ -9,6 +9,7 @@ import { Badge } from "./components/ui/Badge";
 import { Reveal } from "./components/ui/Reveal";
 import { HoverLiftArticle } from "./components/ui/HoverLift";
 import { HeroReveal, HeroRevealItem } from "./components/HeroReveal";
+import { HeroCtaSound } from "./components/HeroCtaSound";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyclash.com";
 
@@ -73,30 +74,6 @@ const HERO_TRUST = [
   "No setup confusion",
   "One-click instant match",
   "Adaptive AI realism",
-];
-
-const FIRST_TIME_PATHS = [
-  {
-    title: "Try a no-signup demo",
-    time: "90 seconds",
-    description: "See the full battle + results flow before creating anything.",
-    href: "/demo/battle",
-    cta: "Start Demo",
-  },
-  {
-    title: "Upload your notes",
-    time: "2-3 minutes",
-    description: "Generate your first personalized battle deck from text or PDF.",
-    href: "/create",
-    cta: "Create My Deck",
-  },
-  {
-    title: "Battle instantly",
-    time: "60 seconds",
-    description: "Jump into instant AI mode with no room setup required.",
-    href: "/#battle-ai",
-    cta: "Battle an AI",
-  },
 ];
 
 const DIFFERENTIATORS = [
@@ -423,29 +400,25 @@ export default function Home() {
               </p>
             </HeroRevealItem>
 
-            <HeroRevealItem className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-              <Button href="#battle-ai" variant="battle" size="lg" className="text-lg">
-                Battle an AI Now
-              </Button>
+            {/* One high-contrast primary action, one low-contrast secondary --
+                the old third button (a separate "no signup demo" path) is
+                gone: the primary CTA below already jumps to the same
+                no-signup instant battle, so a third option was a competing
+                path to the identical outcome, not a distinct one. */}
+            <HeroRevealItem className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <HeroCtaSound href="#battle-ai" variant="battle" size="lg" className="text-lg">
+                Start Instant Battle (No Signup)
+              </HeroCtaSound>
               <Button href="/create" variant="ghost" size="lg">
-                Upload Notes
-              </Button>
-              <Button href="/demo/battle" variant="success" size="lg">
-                Try Demo (No Signup)
+                Upload Notes (PDF/Text)
               </Button>
             </HeroRevealItem>
 
-            <HeroRevealItem className="mt-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200/85">
-                First time here? Start with Demo, then create your own deck.
-              </p>
-            </HeroRevealItem>
-
-            <HeroRevealItem className="mt-7">
-              <ul className="grid gap-2 text-sm text-white/70 sm:grid-cols-2">
+            <HeroRevealItem className="mt-5">
+              <ul className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs font-semibold text-white/60">
                 {HERO_TRUST.map((item) => (
-                  <li key={item} className="inline-flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-300" />
+                  <li key={item} className="inline-flex items-center gap-1.5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
                     {item}
                   </li>
                 ))}
@@ -456,48 +429,34 @@ export default function Home() {
           <AutoplayDemoRail />
         </header>
 
-        <section aria-label="First-time start options">
-          <Reveal className="mt-10 rounded-3xl border border-cyan-300/20 bg-cyan-500/10 p-5 sm:p-6">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <h2 className="text-2xl font-black text-white sm:text-3xl">Start in the way that matches you</h2>
-              <p className="text-sm text-cyan-100/85">No account setup required for demo and instant battle.</p>
+        {/* One zone instead of three: the old "Start in the way that matches
+            you" cards and "What you see in 18 seconds" step strip both just
+            re-described what the hero's AutoplayDemoRail already shows --
+            this replaces both with the actual playable widget, plus the two
+            alternate paths (guided demo, upload notes) as plain links
+            instead of their own full card sections. */}
+        <section aria-label="Play a test round">
+          <Reveal className="mt-12">
+            <div className="text-center">
+              <h2 className="text-2xl font-black text-white sm:text-3xl">Now try it yourself</h2>
+              <p className="mx-auto mt-2 max-w-xl text-sm text-white/60">
+                Same widget as above -- pick a difficulty and answer 5 questions against the AI.
+              </p>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-3">
-              {FIRST_TIME_PATHS.map((path) => (
-                <HoverLiftArticle key={path.title} className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-cyan-200">{path.time}</p>
-                  <h3 className="mt-1 text-lg font-black text-white">{path.title}</h3>
-                  <p className="mt-2 text-sm text-white/70">{path.description}</p>
-                  <Button href={path.href} variant="secondary" size="sm" className="mt-4">
-                    {path.cta}
-                  </Button>
-                </HoverLiftArticle>
-              ))}
+            <div className="mt-6">
+              <InstantAIBattle />
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm">
+              <Link href="/demo/battle" className="font-semibold text-cyan-200/85 transition-colors duration-150 hover:text-cyan-100">
+                Prefer a guided 90-second walkthrough? Try the demo &rarr;
+              </Link>
+              <Link href="/create" className="font-semibold text-cyan-200/85 transition-colors duration-150 hover:text-cyan-100">
+                Or upload your own notes &rarr;
+              </Link>
             </div>
           </Reveal>
-        </section>
-
-        <section aria-label="Product flow overview">
-          <Reveal className="mt-12 rounded-3xl border border-white/15 bg-white/[0.03] p-5 sm:p-7">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-2xl font-black text-white sm:text-3xl">What you see in 18 seconds</h2>
-              <span className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-100">
-                Autoplay demo above the fold
-              </span>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
-              {DEMO_STEPS.map((step) => (
-                <div key={step} className="rounded-xl border border-white/15 bg-white/[0.03] px-3 py-2 text-center text-xs font-semibold text-white/85">
-                  {step}
-                </div>
-              ))}
-            </div>
-          </Reveal>
-        </section>
-
-        <section className="mt-12">
-          <InstantAIBattle />
         </section>
 
         <section id="features">
@@ -563,33 +522,45 @@ export default function Home() {
               </table>
             </div>
 
-            {/* Card layout: below md. Same data, one capability per card. */}
-            <div className="mt-5 grid gap-3 md:hidden">
-              {COMPARISON_ROWS.map((row) => (
-                <div key={row.label} className="rounded-2xl border border-white/10 bg-white/[0.02] p-4">
-                  <p className="text-sm font-bold text-white/85">{row.label}</p>
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
-                    <div className="rounded-lg border border-cyan-300/25 bg-cyan-500/10 px-2 py-2">
-                      <p className="font-bold uppercase tracking-wide text-cyan-200/80">StudyClash</p>
-                      <p className="mt-1 flex justify-center">
-                        <ComparisonValue value={row.studyclash} />
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2">
-                      <p className="font-bold uppercase tracking-wide text-white/50">Quizlet</p>
-                      <p className="mt-1 flex justify-center">
-                        <ComparisonValue value={row.quizlet} />
-                      </p>
-                    </div>
-                    <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2">
-                      <p className="font-bold uppercase tracking-wide text-white/50">Knowt</p>
-                      <p className="mt-1 flex justify-center">
-                        <ComparisonValue value={row.knowt} />
-                      </p>
+            {/* Carousel: below md. Native CSS scroll-snap, so swiping works
+                with no JS -- one capability per card, snapped to center. */}
+            <div className="mt-5 md:hidden">
+              <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-white/40">
+                Swipe to compare
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </p>
+              <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 -mx-4 px-4">
+                {COMPARISON_ROWS.map((row) => (
+                  <div
+                    key={row.label}
+                    className="w-[78%] flex-shrink-0 snap-center rounded-2xl border border-white/10 bg-white/[0.02] p-4"
+                  >
+                    <p className="text-sm font-bold text-white/85">{row.label}</p>
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                      <div className="rounded-lg border border-cyan-300/25 bg-cyan-500/10 px-2 py-2">
+                        <p className="font-bold uppercase tracking-wide text-cyan-200/80">StudyClash</p>
+                        <p className="mt-1 flex justify-center">
+                          <ComparisonValue value={row.studyclash} />
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2">
+                        <p className="font-bold uppercase tracking-wide text-white/50">Quizlet</p>
+                        <p className="mt-1 flex justify-center">
+                          <ComparisonValue value={row.quizlet} />
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2">
+                        <p className="font-bold uppercase tracking-wide text-white/50">Knowt</p>
+                        <p className="mt-1 flex justify-center">
+                          <ComparisonValue value={row.knowt} />
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </Reveal>
         </section>

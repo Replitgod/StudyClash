@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import ConfettiBurst from "./ConfettiBurst";
 import { OpponentFace, type OpponentMood } from "./OpponentFace";
+import { playTone } from "@/lib/uiSound";
 
 type Difficulty = "easy" | "medium" | "hard" | "adaptive";
 
@@ -173,38 +174,9 @@ function pickWrongChoice(question: Question): string {
   return wrong[Math.floor(Math.random() * wrong.length)] || question.choices[0];
 }
 
-// Lightweight synthesized SFX (no audio assets needed) — chirps for correct/
-// wrong/win/lose, all triggered from a user gesture (button click) so no
-// autoplay-policy issues.
-function playTone(notes: Array<{ freq: number; startMs: number; durationMs: number; type?: OscillatorType }>) {
-  try {
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-
-    notes.forEach(({ freq, startMs, durationMs, type = "sine" }) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = type;
-      osc.frequency.value = freq;
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-
-      const start = ctx.currentTime + startMs / 1000;
-      const end = start + durationMs / 1000;
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(0.14, start + 0.01);
-      gain.gain.linearRampToValueAtTime(0, end);
-      osc.start(start);
-      osc.stop(end + 0.02);
-    });
-
-    window.setTimeout(() => ctx.close(), 1200);
-  } catch {
-    // Web Audio unsupported or blocked — sound is a nice-to-have, fail silent.
-  }
-}
-
+// Battle-specific tone presets built on the shared playTone engine
+// (lib/uiSound.ts) -- kept local since these are specific to battle
+// outcomes, not generic UI moments.
 const SFX = {
   playerCorrect: () => playTone([{ freq: 720, startMs: 0, durationMs: 90 }, { freq: 980, startMs: 90, durationMs: 120 }]),
   playerWrong: () => playTone([{ freq: 220, startMs: 0, durationMs: 180, type: "sawtooth" }]),
