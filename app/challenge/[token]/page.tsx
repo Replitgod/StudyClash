@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { trackEvent } from "@/lib/trackEvent";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 type Match = {
@@ -176,6 +177,17 @@ export default function ChallengeLandingPage() {
       setMatch(normalizedMatch);
       setDeck(normalizedDeck);
       setIsLoading(false);
+
+      // The top-of-funnel signal the rest of the funnel was missing:
+      // challenge_link_copied only tells us a link was generated, and
+      // battle_started/finished carry challengeFromMatchId only once
+      // someone actually plays -- neither one says whether the friend a
+      // link was sent to ever opened it at all.
+      void trackEvent("challenge_link_opened", {
+        matchId: normalizedMatch.id,
+        deckId: normalizedDeck.id,
+        challengerName: normalizedMatch.player_name,
+      });
     }
 
     if (token) {
@@ -271,7 +283,7 @@ export default function ChallengeLandingPage() {
           </div>
 
           <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.06] p-4 text-sm leading-relaxed text-white/75">
-            StudyClash turns practice into friendly competition. Open the same deck, try to beat the original score, and compare your result when you finish.
+            StudyJoust turns practice into friendly competition. Open the same deck, try to beat the original score, and compare your result when you finish.
           </div>
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -308,7 +320,7 @@ export default function ChallengeLandingPage() {
         <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-5 text-sm text-white/65 backdrop-blur-sm">
           <p className="font-bold text-white/85">How it works</p>
           <p className="mt-2 leading-relaxed">
-            Pick up the same questions, finish the deck, and StudyClash will show whether you beat the challenge score. No extra setup, no social accounts, just a quick contest.
+            Pick up the same questions, finish the deck, and StudyJoust will show whether you beat the challenge score. No extra setup, no social accounts, just a quick contest.
           </p>
         </div>
       </div>

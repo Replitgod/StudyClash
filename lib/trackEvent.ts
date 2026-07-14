@@ -16,6 +16,7 @@ export type AnalyticsEventName =
   | "question_report_submitted"
   | "challenge_link_copied"
   | "challenge_link_copy_failed"
+  | "challenge_link_opened"
   | "study_resource_opened"
   | "results_rematch_clicked"
   | "results_weak_topics_practice_clicked"

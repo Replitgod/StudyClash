@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "StudyClash Pricing | AI Study App and Quizlet Alternative",
+  title: "StudyJoust Pricing | AI Study App and Quizlet Alternative",
   description:
-    "Compare StudyClash pricing for students and classrooms, including Free Beta and paid tiers for AI study battles, flashcard battle loops, and exam prep.",
+    "Compare StudyJoust pricing for students and classrooms, including Free Beta and paid tiers for AI study battles, flashcard battle loops, and exam prep.",
   alternates: {
     canonical: "/pricing",
   },
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     "student study app subscription",
   ],
   openGraph: {
-    title: "StudyClash Pricing | Free And Pro Plans",
+    title: "StudyJoust Pricing | Free And Pro Plans",
     description:
       "Compare Free Beta, Pro, Team, and Exam Tunnel pricing options.",
     url: "/pricing",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "StudyClash Pricing | AI Study App Plans",
+    title: "StudyJoust Pricing | AI Study App Plans",
     description:
       "See Free Beta and paid plans for AI study battles, adaptive practice, and exam prep.",
     images: ["/twitter-image"],

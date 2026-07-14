@@ -1,4 +1,4 @@
--- Stores rich per-missed-question diagnostics so StudyClash can track
+-- Stores rich per-missed-question diagnostics so StudyJoust can track
 -- repeated mistake patterns over time.
 
 create table if not exists public.mistake_breakdowns (

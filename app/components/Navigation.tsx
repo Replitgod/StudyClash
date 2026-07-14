@@ -11,7 +11,7 @@ import { springSnappy } from "@/lib/motion";
 import BattleAILink from "./BattleAILink";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
 
-const CONTINUE_PATH_STORAGE_KEY = "studyclash_last_path";
+const CONTINUE_PATH_STORAGE_KEY = "studyjoust_last_path";
 const CONTINUE_PATH_EXCLUDE = new Set([
   "/login",
   "/signup",
@@ -153,7 +153,7 @@ export default function Navigation() {
         >
           <VyraMiniIcon />
           <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-            StudyClash
+            StudyJoust
           </span>
         </Link>
 

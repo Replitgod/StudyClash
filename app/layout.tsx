@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyclash.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -31,17 +31,17 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "StudyClash | AI Study App for Battle-Based Learning",
-    template: "%s | StudyClash",
+    default: "StudyJoust | AI Study App for Battle-Based Learning",
+    template: "%s | StudyJoust",
   },
   description:
-    "StudyClash is an AI study app where students upload notes, battle an AI, and improve with weak-topic diagnostics, rematches, and exam-focused practice loops.",
-  applicationName: "StudyClash",
+    "StudyJoust is an AI study app where students upload notes, battle an AI, and improve with weak-topic diagnostics, rematches, and exam-focused practice loops.",
+  applicationName: "StudyJoust",
   category: "education",
   referrer: "origin-when-cross-origin",
-  creator: "StudyClash",
-  publisher: "StudyClash",
-  authors: [{ name: "StudyClash" }],
+  creator: "StudyJoust",
+  publisher: "StudyJoust",
+  authors: [{ name: "StudyJoust" }],
   keywords: [
     "AI Study App",
     "Quizlet Alternative",
@@ -63,10 +63,10 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    title: "StudyClash | AI Study App for Competitive Learning",
+    title: "StudyJoust | AI Study App for Competitive Learning",
     description:
       "Turn notes into AI study battles with weak-topic diagnostics, flashcard battle loops, and exam-ready practice.",
-    siteName: "StudyClash",
+    siteName: "StudyJoust",
     url: "/",
     locale: "en_US",
     images: [
@@ -74,13 +74,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "StudyClash AI study battles preview",
+        alt: "StudyJoust AI study battles preview",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "StudyClash | AI Study App and Quizlet Alternative",
+    title: "StudyJoust | AI Study App and Quizlet Alternative",
     description:
       "Upload notes, battle an AI instantly, and improve with weak-topic diagnostics.",
     images: ["/twitter-image"],
@@ -102,11 +102,11 @@ const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   "@id": `${siteUrl}/#organization`,
-  name: "StudyClash",
+  name: "StudyJoust",
   url: siteUrl,
   logo: `${siteUrl}/opengraph-image`,
   description:
-    "StudyClash is an AI study platform for interactive quiz battles, weak-topic analysis, and personalized study improvement.",
+    "StudyJoust is an AI study platform for interactive quiz battles, weak-topic analysis, and personalized study improvement.",
   sameAs: [
     `${siteUrl}/`,
   ],

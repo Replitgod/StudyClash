@@ -10,7 +10,7 @@ import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { Button } from "@/app/components/ui/Button";
 import { springSmooth } from "@/lib/motion";
 
-const LAST_LOGIN_EMAIL_KEY = "studyclash_last_login_email";
+const LAST_LOGIN_EMAIL_KEY = "studyjoust_last_login_email";
 
 // Reads a "?redirect=" query param directly from window.location instead of
 // using Next.js's useSearchParams() hook. useSearchParams() requires a

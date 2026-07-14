@@ -260,12 +260,12 @@ export default function VyraCoach(props: VyraCoachProps) {
 
   const storageKey = useMemo(() => {
     const keyRoot = matchId || deckId || "global";
-    return `studyclash:vyra:session:${keyRoot}`;
+    return `studyjoust:vyra:session:${keyRoot}`;
   }, [deckId, matchId]);
 
   const legacyStorageKey = useMemo(() => {
     const keyRoot = matchId || deckId || "global";
-    return `studyclash:giggles:session:${keyRoot}`;
+    return `studyjoust:giggles:session:${keyRoot}`;
   }, [deckId, matchId]);
 
   const [messages, setMessages] = useState<CoachMessage[]>(() => {

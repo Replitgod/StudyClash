@@ -11,12 +11,12 @@ import { HoverLiftArticle } from "./components/ui/HoverLift";
 import { HeroReveal, HeroRevealItem } from "./components/HeroReveal";
 import { HeroCtaSound } from "./components/HeroCtaSound";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyclash.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com";
 
 export const metadata: Metadata = {
-  title: "AI Study App | StudyClash Battle-Based Quizlet Alternative",
+  title: "AI Study App | StudyJoust Battle-Based Quizlet Alternative",
   description:
-    "StudyClash is an AI study app and Quizlet alternative where students turn notes into instant study battles, flashcard battle loops, and adaptive AI practice for SAT and AP prep.",
+    "StudyJoust is an AI study app and Quizlet alternative where students turn notes into instant study battles, flashcard battle loops, and adaptive AI practice for SAT and AP prep.",
   alternates: {
     canonical: "/",
   },
@@ -35,24 +35,24 @@ export const metadata: Metadata = {
     "AP Study App",
   ],
   openGraph: {
-    title: "StudyClash | AI Study App, Flashcard Battle, Quizlet Alternative",
+    title: "StudyJoust | AI Study App, Flashcard Battle, Quizlet Alternative",
     description:
       "Upload notes, auto-generate questions, battle an AI, and improve with weak-topic recovery loops.",
     url: "/",
-    siteName: "StudyClash",
+    siteName: "StudyJoust",
     type: "website",
     images: [
       {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "StudyClash AI study battle preview",
+        alt: "StudyJoust AI study battle preview",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "StudyClash | AI Study App and Competitive Learning",
+    title: "StudyJoust | AI Study App and Competitive Learning",
     description:
       "Study faster with AI study battles, adaptive opponents, and weak-topic remediation.",
     images: ["/twitter-image"],
@@ -151,31 +151,31 @@ function readVerifiedUsageMetrics(): UsageMetric[] {
 const COMPARISON_ROWS = [
   {
     label: "Instant AI battle from homepage",
-    studyclash: "Yes",
+    studyjoust: "Yes",
     quizlet: "No",
     knowt: "No",
   },
   {
     label: "Adaptive opponent behavior",
-    studyclash: "Yes",
+    studyjoust: "Yes",
     quizlet: "No",
     knowt: "No",
   },
   {
     label: "Weak-topic rematch loops",
-    studyclash: "Yes",
+    studyjoust: "Yes",
     quizlet: "Limited",
     knowt: "Limited",
   },
   {
     label: "Real-time duel scoring",
-    studyclash: "Yes",
+    studyjoust: "Yes",
     quizlet: "No",
     knowt: "No",
   },
   {
     label: "Battle-first motivation",
-    studyclash: "High",
+    studyjoust: "High",
     quizlet: "Low",
     knowt: "Low",
   },
@@ -201,12 +201,12 @@ const FEEDBACK_THEMES = [
 
 const FAQ_ITEMS = [
   {
-    q: "What is StudyClash?",
-    a: "StudyClash is an AI study platform where your notes become live quiz battles with instant feedback and weak-topic diagnostics.",
+    q: "What is StudyJoust?",
+    a: "StudyJoust is an AI study platform where your notes become live quiz battles with instant feedback and weak-topic diagnostics.",
   },
   {
     q: "How is this different from Quizlet or Knowt?",
-    a: "StudyClash is battle-first, with realistic AI opponents, live duel scoring, and targeted rematch loops instead of passive flashcard scrolling.",
+    a: "StudyJoust is battle-first, with realistic AI opponents, live duel scoring, and targeted rematch loops instead of passive flashcard scrolling.",
   },
   {
     q: "Can I battle instantly without creating a room?",
@@ -219,7 +219,7 @@ const FAQ_ITEMS = [
 ];
 
 // Turns the comparison table's plain "Yes"/"No"/"Limited"/"High"/"Low"
-// strings into a check/cross so the StudyClash-vs-competitor scan reads at
+// strings into a check/cross so the StudyJoust-vs-competitor scan reads at
 // a glance instead of requiring the reader to parse text in every cell.
 function ComparisonValue({ value }: { value: string }) {
   if (value === "Yes" || value === "High") {
@@ -268,7 +268,7 @@ export default function Home() {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "@id": `${siteUrl}/#software`,
-    name: "StudyClash",
+    name: "StudyJoust",
     mainEntityOfPage: `${siteUrl}/`,
     url: siteUrl,
     applicationCategory: "EducationalApplication",
@@ -305,7 +305,7 @@ export default function Home() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "@id": `${siteUrl}/#website`,
-    name: "StudyClash",
+    name: "StudyJoust",
     url: siteUrl,
     description:
       "AI learning platform for study battles, weak-topic insights, and rematch-based mastery.",
@@ -319,7 +319,7 @@ export default function Home() {
     "@context": "https://schema.org",
     "@type": "WebPage",
     "@id": `${siteUrl}/#home`,
-    name: "StudyClash Homepage",
+    name: "StudyJoust Homepage",
     url: siteUrl,
     isPartOf: {
       "@id": `${siteUrl}/#website`,
@@ -328,13 +328,13 @@ export default function Home() {
       "@id": `${siteUrl}/#software`,
     },
     description:
-      "Homepage for StudyClash, an AI study app focused on battle-style learning and weak-topic recovery.",
+      "Homepage for StudyJoust, an AI study app focused on battle-style learning and weak-topic recovery.",
   };
 
   const howToSchema = {
     "@context": "https://schema.org",
     "@type": "HowTo",
-    name: "How to study with StudyClash",
+    name: "How to study with StudyJoust",
     description:
       "Turn notes into battle-based study sessions and improve weak topics quickly.",
     totalTime: "PT18M",
@@ -498,7 +498,7 @@ export default function Home() {
                 <thead className="bg-white/[0.04] text-white/80">
                   <tr>
                     <th className="px-4 py-3 font-bold">Capability</th>
-                    <th className="px-4 py-3 font-bold text-cyan-200">StudyClash</th>
+                    <th className="px-4 py-3 font-bold text-cyan-200">StudyJoust</th>
                     <th className="px-4 py-3 font-bold">Quizlet</th>
                     <th className="px-4 py-3 font-bold">Knowt</th>
                   </tr>
@@ -508,7 +508,7 @@ export default function Home() {
                     <tr key={row.label} className="border-t border-white/10">
                       <td className="px-4 py-3 text-white/80">{row.label}</td>
                       <td className="bg-cyan-500/[0.05] px-4 py-3 font-semibold">
-                        <ComparisonValue value={row.studyclash} />
+                        <ComparisonValue value={row.studyjoust} />
                       </td>
                       <td className="px-4 py-3">
                         <ComparisonValue value={row.quizlet} />
@@ -540,9 +540,9 @@ export default function Home() {
                     <p className="text-sm font-bold text-white/85">{row.label}</p>
                     <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
                       <div className="rounded-lg border border-cyan-300/25 bg-cyan-500/10 px-2 py-2">
-                        <p className="font-bold uppercase tracking-wide text-cyan-200/80">StudyClash</p>
+                        <p className="font-bold uppercase tracking-wide text-cyan-200/80">StudyJoust</p>
                         <p className="mt-1 flex justify-center">
-                          <ComparisonValue value={row.studyclash} />
+                          <ComparisonValue value={row.studyjoust} />
                         </p>
                       </div>
                       <div className="rounded-lg border border-white/10 bg-white/5 px-2 py-2">
@@ -597,7 +597,7 @@ export default function Home() {
 
             {!hasVerifiedUsageMetrics && (
               <p className="mt-4 text-sm text-white/65">
-                StudyClash is in active early access. We are onboarding students and educators in small waves, collecting feedback, and improving weekly before wider release.
+                StudyJoust is in active early access. We are onboarding students and educators in small waves, collecting feedback, and improving weekly before wider release.
               </p>
             )}
           </Reveal>
@@ -704,7 +704,7 @@ export default function Home() {
 
         <footer className="mt-16 border-t border-white/15 pt-6 text-sm text-white/65">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p>StudyClash · Competitive studying for the AI era</p>
+            <p>StudyJoust · Competitive studying for the AI era</p>
             <nav className="flex flex-wrap gap-4" aria-label="Footer links">
               <Link href="/create" className="hover:text-white">Create</Link>
               <Link href="/demo/battle" className="hover:text-white">Demo</Link>
@@ -717,10 +717,10 @@ export default function Home() {
 
           <details className="mt-6 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-xs text-white/45" aria-labelledby="answer-engine-facts">
             <summary id="answer-engine-facts" className="cursor-pointer select-none font-semibold text-white/50">
-              About StudyClash
+              About StudyJoust
             </summary>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <p>StudyClash is an AI study app that converts notes into competitive quiz battles with instant feedback.</p>
+              <p>StudyJoust is an AI study app that converts notes into competitive quiz battles with instant feedback.</p>
               <p>Built for high school and college students, tutors, teachers, and exam-prep learners.</p>
               <p>Combines timed AI battles, weak-topic diagnosis, and one-click rematch loops instead of passive flashcard review.</p>
               <p>

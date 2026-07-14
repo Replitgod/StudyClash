@@ -330,7 +330,7 @@ function getProgressStorageKey(match: Match): string {
     ? `user:${match.user_id}`
     : `player:${normalizeProgressScope(match.player_name || "guest")}`;
 
-  return `studyclash-progression:v1:${scope}`;
+  return `studyjoust-progression:v1:${scope}`;
 }
 
 function loadProgressSnapshot(storageKey: string): ProgressSnapshot {
@@ -593,7 +593,7 @@ function buildStudyPlan(weakTopics: WeakTopic[]): StudyDay[] {
         day: 3,
         title: "Stay Sharp",
         tasks: [
-          "Replay this StudyClash deck to confirm you're still at 85%+ accuracy.",
+          "Replay this StudyJoust deck to confirm you're still at 85%+ accuracy.",
           "If you have newer notes, generate a fresh deck to keep testing yourself.",
         ],
       },
@@ -624,7 +624,7 @@ function buildStudyPlan(weakTopics: WeakTopic[]): StudyDay[] {
       day: 3,
       title: "Retest & Confirm",
       tasks: [
-        "Replay this StudyClash deck.",
+        "Replay this StudyJoust deck.",
         "Aim for 85%+ accuracy this time.",
         "Review anything you still miss, one more time, before moving on.",
       ],
@@ -2649,9 +2649,12 @@ export default function ResultsPage() {
           </div>
 
           {/* Copy challenge link */}
+          <p className="mt-6 text-center text-xs font-semibold text-white/50">
+            Send this to 2-3 friends -- see who beats your score first.
+          </p>
           <button
             onClick={handleCopyLink}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-400/40 hover:bg-white/10"
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-400/40 hover:bg-white/10"
           >
             {linkCopied ? (
               <>

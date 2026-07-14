@@ -31,7 +31,15 @@ type AdminAnalytics = {
   classroomInviteCopiedToday: number;
   classroomJoinSuccessToday: number;
   enterpriseLeadSubmittedToday: number;
+  challengeLinkCopiedToday: number;
+  challengeLinkOpenedToday: number;
 };
+
+type AdminRetention = {
+  day7CohortSize: number;
+  day7RetainedSize: number;
+  day7RetentionRatePercent: number | null;
+} | null;
 
 type FeedbackReport = {
   id: string;
@@ -74,6 +82,7 @@ type AdminData = {
     decks: RecentDeck[];
     events: AnalyticsEvent[];
   };
+  retention: AdminRetention;
 };
 
 type TutorStudyLink = {
@@ -597,7 +606,7 @@ export default function AdminPage() {
   }
 
   // ---------- Admin dashboard ----------
-  const { stats, analytics, recent } = data;
+  const { stats, analytics, recent, retention } = data;
 
   const statCards = [
     { label: "Total Users", value: stats.totalUsers, color: "text-fuchsia-300" },
@@ -624,6 +633,8 @@ export default function AdminPage() {
     { label: "Classroom Invites Copied", value: analytics.classroomInviteCopiedToday, color: "text-cyan-300" },
     { label: "Classroom Joins", value: analytics.classroomJoinSuccessToday, color: "text-emerald-300" },
     { label: "Enterprise Leads", value: analytics.enterpriseLeadSubmittedToday, color: "text-fuchsia-300" },
+    { label: "Challenge Links Copied", value: analytics.challengeLinkCopiedToday, color: "text-fuchsia-300" },
+    { label: "Challenge Links Opened", value: analytics.challengeLinkOpenedToday, color: "text-cyan-300" },
   ];
 
   const hasAnalyticsToday = analytics.eventsToday > 0;
@@ -643,7 +654,7 @@ export default function AdminPage() {
         </span>
       </h1>
       <p className="mt-3 max-w-md text-center text-sm text-white/50 sm:text-base">
-        Live overview of StudyClash usage and reports.
+        Live overview of StudyJoust usage and reports.
       </p>
 
       {/* Stat grid */}
@@ -726,6 +737,50 @@ export default function AdminPage() {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Growth loop health: the concrete numeric targets from the growth
+          plan (challenge-link open rate, day-7 retention) instead of just
+          raw daily counts -- those two ratios are what actually says
+          whether the share loop works, not the individual event totals
+          above. */}
+      <div className="mt-10 w-full rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.04] p-5 backdrop-blur-sm sm:p-6">
+        <h2 className="text-lg font-black text-cyan-100">Growth Loop Health</h2>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+              Challenge open rate (today)
+            </p>
+            <p className="mt-2 text-2xl font-black text-cyan-300">
+              {analytics.challengeLinkCopiedToday === 0
+                ? "-"
+                : `${Math.round((analytics.challengeLinkOpenedToday / analytics.challengeLinkCopiedToday) * 100)}%`}
+            </p>
+            <p className="mt-1 text-[11px] text-white/35">
+              {analytics.challengeLinkOpenedToday} opened / {analytics.challengeLinkCopiedToday} copied
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+              Day-7 retention (rolling cohort)
+            </p>
+            <p className="mt-2 text-2xl font-black text-emerald-300">
+              {retention?.day7RetentionRatePercent == null ? "-" : `${retention.day7RetentionRatePercent}%`}
+            </p>
+            <p className="mt-1 text-[11px] text-white/35">
+              {retention
+                ? `${retention.day7RetainedSize} / ${retention.day7CohortSize} returned`
+                : "Not enough data yet"}
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Target</p>
+            <p className="mt-2 text-sm font-bold text-white/80">20%+ return within 7 days</p>
+            <p className="mt-1 text-[11px] text-white/35">25%+ of finishers send a challenge</p>
+          </div>
+        </div>
       </div>
 
       {/* Recent data grid */}

@@ -654,7 +654,7 @@ export default function DemoBattlePage() {
 
 						<h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
 							<span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-								Try the StudyClash flow in 60 seconds.
+								Try the StudyJoust flow in 60 seconds.
 							</span>
 						</h1>
 						<p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-white/60 sm:text-base">
@@ -860,7 +860,7 @@ export default function DemoBattlePage() {
 							</span>
 						</h2>
 						<p className="mx-auto mt-3 max-w-2xl text-center text-sm text-white/55 sm:text-base">
-							Here is the same StudyClash feedback loop tutoring centers can show instantly, without making a full deck first.
+							Here is the same StudyJoust feedback loop tutoring centers can show instantly, without making a full deck first.
 						</p>
 
 						<div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

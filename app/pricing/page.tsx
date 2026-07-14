@@ -19,7 +19,7 @@ export default function PricingPage() {
     isLoggedIn && currentPlanMeta !== null && !currentPlanMeta.publiclyListed;
 
   const requestAccessHref =
-    "mailto:studyclashbeta@gmail.com?subject=StudyClash%20Plan%20Access%20Request";
+    "mailto:studyjoustbeta@gmail.com?subject=StudyJoust%20Plan%20Access%20Request";
 
   const getButtonLabel = (planId: string): string => {
     if (isLoggedIn && profile?.plan === planId) {

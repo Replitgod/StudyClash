@@ -5,9 +5,14 @@ import Link from "next/link";
 import ConfettiBurst from "./ConfettiBurst";
 import { OpponentFace, type OpponentMood } from "./OpponentFace";
 import { playTone } from "@/lib/uiSound";
+import { difficultyToBeta, probabilityCorrect, updateAbility } from "@/lib/irt";
 
 type Difficulty = "easy" | "medium" | "hard" | "adaptive";
 
+// Named `itemDifficulty` (not `difficulty`) to avoid reading like the
+// battle-mode `difficulty` state below -- this is the IRT item parameter
+// (beta, via difficultyToBeta) for one specific question, unrelated to
+// which Difficulty mode the player picked for the whole battle.
 type Question = {
   id: string;
   prompt: string;
@@ -15,6 +20,7 @@ type Question = {
   correct: string;
   explanation?: string;
   topic?: string;
+  itemDifficulty?: string;
 };
 
 type StudyResource = {
@@ -37,6 +43,11 @@ type RoundStats = {
   aiCorrect: boolean;
   playerResponseMs: number;
   aiResponseMs: number;
+  // IRT-predicted P(correct) for this question, computed from the
+  // player's ability estimate *before* this round's outcome was known --
+  // this is the "moving probability" the model predicted, not a
+  // retrospective fit.
+  predictedProbability: number;
 };
 
 // Offline safety net only -- the live battle always tries AI-generated
@@ -208,6 +219,10 @@ export default function InstantAIBattle() {
   const [aiScore, setAiScore] = useState(0);
   const [waitingForAi, setWaitingForAi] = useState(false);
   const [roundStats, setRoundStats] = useState<RoundStats[]>([]);
+  // IRT ability estimate (theta), logit scale, reset to 0 (average) at the
+  // start of each battle -- see lib/irt.ts. Drives the Adaptive AI's
+  // accuracy target in handlePickChoice below.
+  const [playerTheta, setPlayerTheta] = useState(0);
   const [showDifficultyPicker, setShowDifficultyPicker] = useState(false);
   const [shake, setShake] = useState(false);
   const [lastAiCorrect, setLastAiCorrect] = useState<boolean | null>(null);
@@ -260,26 +275,23 @@ export default function InstantAIBattle() {
         )
       : null;
 
+  // Derived directly from playerTheta (the same IRT ability estimate that
+  // drives the AI's actual accuracy target in handlePickChoice) so this
+  // label and the numbers shown alongside it always tell the same story,
+  // rather than being two independently-tuned "adaptive" signals that
+  // could disagree with each other.
   const adaptivePressure = useMemo(() => {
     if (difficulty !== "adaptive") return "Standard";
     if (roundStats.length < 2) return "Calibrating";
-
-    const recent = roundStats.slice(-2);
-    const playerRecentAccuracy =
-      recent.filter((item) => item.playerCorrect).length / recent.length;
-    const playerRecentSpeedMs =
-      recent.reduce((sum, item) => sum + item.playerResponseMs, 0) / recent.length;
-
-    if (playerRecentAccuracy >= 1 && playerRecentSpeedMs < 3200) {
-      return "Pushing Hard";
-    }
-
-    if (playerRecentAccuracy <= 0.5 || playerRecentSpeedMs > 6000) {
-      return "Supportive";
-    }
-
+    if (playerTheta >= 0.6) return "Pushing Hard";
+    if (playerTheta <= -0.6) return "Supportive";
     return "Balanced";
-  }, [difficulty, roundStats]);
+  }, [difficulty, roundStats.length, playerTheta]);
+
+  const nextItemPredictedProbability = useMemo(() => {
+    if (!currentQuestion) return null;
+    return probabilityCorrect(playerTheta, difficultyToBeta(currentQuestion.itemDifficulty || "medium"));
+  }, [currentQuestion, playerTheta]);
 
   const aiMood: OpponentMood = useMemo(() => {
     if (battleFinished) return aiScore >= playerScore ? "victorious" : "defeated";
@@ -337,6 +349,7 @@ export default function InstantAIBattle() {
           correct_answer: string;
           explanation: string;
           topic: string;
+          difficulty?: string;
         }>
       ).map((question, questionIndex) => ({
         id: `ai-battle-q${questionIndex}`,
@@ -345,6 +358,7 @@ export default function InstantAIBattle() {
         correct: question.correct_answer,
         explanation: question.explanation,
         topic: question.topic,
+        itemDifficulty: question.difficulty,
       }));
     } catch {
       nextQuestions = shuffle(FALLBACK_QUESTIONS).slice(0, 5);
@@ -353,6 +367,7 @@ export default function InstantAIBattle() {
     setIsLoadingQuestions(false);
     setDifficulty(level);
     setBattleQuestions(nextQuestions);
+    setPlayerTheta(0);
     setIndex(0);
     setRound({ playerChoice: null, aiChoice: null, aiResponseMs: null, playerResponseMs: null });
     setPlayerScore(0);
@@ -403,6 +418,14 @@ export default function InstantAIBattle() {
     const cfg = DIFFICULTY_CONFIG[difficulty];
     const playerResponseMs = Math.max(500, Date.now() - roundStartMsRef.current);
 
+    // IRT: predicted P(correct) for THIS question, from the player's
+    // ability estimate going into this round (built from every prior
+    // round's outcome, not this one) -- computed before we know whether
+    // they get it right, which is what makes it a genuine prediction
+    // rather than a number fitted after the fact.
+    const itemBeta = difficultyToBeta(currentQuestion.itemDifficulty || "medium");
+    const predictedProbability = probabilityCorrect(playerTheta, itemBeta);
+
     const adaptiveOffset =
       difficulty === "adaptive"
         ? Math.max(-700, Math.min(700, Math.floor((4500 - playerResponseMs) / 5)))
@@ -429,6 +452,11 @@ export default function InstantAIBattle() {
       }
     }
 
+    // The player's outcome is already known the instant they pick an
+    // answer, so the ability update happens now rather than being deferred
+    // to the AI's simulated "thinking" delay below.
+    setPlayerTheta((prevTheta) => updateAbility(prevTheta, itemBeta, playerCorrect));
+
     setRound({
       playerChoice: choice,
       aiChoice: null,
@@ -438,13 +466,14 @@ export default function InstantAIBattle() {
     setWaitingForAi(true);
 
     aiTimerRef.current = window.setTimeout(() => {
-      const adaptiveAccuracyBoost =
-        difficulty === "adaptive"
-          ? playerCorrect
-            ? 0.07
-            : -0.08
-          : 0;
-      const aiCorrect = Math.random() < Math.max(0.35, Math.min(0.95, cfg.accuracy + adaptiveAccuracyBoost));
+      // Adaptive mode: the AI's accuracy this round is anchored directly to
+      // the model's prediction of how the player would do on this same
+      // question, instead of a flat difficulty-config accuracy nudged by a
+      // hand-tuned +-0.07/0.08 constant -- a student the model rates as
+      // likely to succeed faces a sharper opponent; one it rates as
+      // struggling gets more breathing room.
+      const aiTargetAccuracy = difficulty === "adaptive" ? predictedProbability : cfg.accuracy;
+      const aiCorrect = Math.random() < Math.max(0.35, Math.min(0.95, aiTargetAccuracy));
       const aiChoice = aiCorrect ? currentQuestion.correct : pickWrongChoice(currentQuestion);
 
       if (aiChoice === currentQuestion.correct) {
@@ -467,6 +496,7 @@ export default function InstantAIBattle() {
           aiCorrect,
           playerResponseMs,
           aiResponseMs: clampedResponseMs,
+          predictedProbability,
         },
       ]);
 
@@ -634,8 +664,18 @@ export default function InstantAIBattle() {
       </div>
 
       {difficulty === "adaptive" && battleStarted && (
-        <div className="mt-3 rounded-xl border border-fuchsia-300/25 bg-fuchsia-500/10 px-4 py-2 text-xs text-fuchsia-100">
-          Adaptive pressure: <strong>{adaptivePressure}</strong>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-fuchsia-300/25 bg-fuchsia-500/10 px-4 py-2 text-xs text-fuchsia-100">
+          <span>
+            Adaptive pressure: <strong>{adaptivePressure}</strong>
+          </span>
+          <span className="text-fuchsia-100/70">
+            Ability (&theta;): <strong>{playerTheta.toFixed(2)}</strong>
+          </span>
+          {!battleFinished && nextItemPredictedProbability !== null && (
+            <span className="text-fuchsia-100/70">
+              P(next correct): <strong>{Math.round(nextItemPredictedProbability * 100)}%</strong>
+            </span>
+          )}
         </div>
       )}
 

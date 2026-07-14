@@ -42,7 +42,7 @@ const EXAM_TRACKS = [
 // SAT has no generated drill track (College Board's own released practice
 // tests are already the best-in-class prep material for it) -- this card
 // only ever points to College Board's official free practice, never to a
-// StudyClash-generated substitute.
+// StudyJoust-generated substitute.
 const SAT_OFFICIAL_PRACTICE = {
   label: "Full-length official SAT practice tests",
   url: "https://satsuite.collegeboard.org/practice",
@@ -103,7 +103,7 @@ export default function ExamsLandingPage() {
               </div>
 
               {/* Real retired/official exams are copyrighted by their issuing
-                  org (AAMC, LSAC, NCSBN, College Board) -- StudyClash never
+                  org (AAMC, LSAC, NCSBN, College Board) -- StudyJoust never
                   hosts or reproduces them. This links straight to each org's
                   own free official practice instead. */}
               <a
@@ -140,7 +140,7 @@ export default function ExamsLandingPage() {
 
         <Reveal className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center sm:p-6" delay={0.08}>
           <p className="text-sm text-white/70">
-            Main StudyClash flow still applies: create or try a deck, battle, review weak topics,
+            Main StudyJoust flow still applies: create or try a deck, battle, review weak topics,
             rematch, improve. Exam tunnels add stricter format and higher coaching depth.
           </p>
         </Reveal>

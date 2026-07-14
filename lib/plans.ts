@@ -1,5 +1,5 @@
 // Canonical plan metadata — the single source of truth for every plan id
-// StudyClash recognizes, whether or not it's publicly sold on /pricing.
+// StudyJoust recognizes, whether or not it's publicly sold on /pricing.
 //
 // This exists because /api/generate-questions previously hardcoded its own
 // plan-id allowlist (FREE_PLAN_IDS/PRIORITY_PLAN_IDS) independently from the

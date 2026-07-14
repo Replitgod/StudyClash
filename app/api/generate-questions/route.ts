@@ -282,7 +282,7 @@ function buildPrompt(params: {
       : `- "explanation": 2-3 concise sentences. Include why the correct answer is right AND why the single most tempting wrong choice is wrong.`;
 
   return `
-You are a ${examTrack ? "high-stakes exam" : "quiz"} generator for a study app called StudyClash.
+You are a ${examTrack ? "high-stakes exam" : "quiz"} generator for a study app called StudyJoust.
 
 Read the notes below and create exactly ${totalQuestions} ${
     isTrueFalse ? "true/false" : "multiple-choice"
@@ -1088,7 +1088,7 @@ function buildOpenResponsePrompt(params: {
   return `
 You are a study-app quiz generator creating ${
     reasoningFormat === "step_by_step" ? "step-by-step reasoning problems" : "argumentation prompts"
-  } for a battle mode called StudyClash that deliberately rewards slow, careful reasoning instead of fast recall.
+  } for a battle mode called StudyJoust that deliberately rewards slow, careful reasoning instead of fast recall.
 
 Read the notes below and create exactly ${totalQuestions} prompts. Every prompt must be answerable using ONLY the information in the notes below -- do not introduce outside facts.
 ${gradeLevelLine}${topicFocusLine}

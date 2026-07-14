@@ -112,8 +112,12 @@ export async function GET(req: NextRequest) {
       classroomInviteCopiedTodayResult,
       classroomJoinSuccessTodayResult,
       enterpriseLeadSubmittedTodayResult,
+      challengeLinkCopiedTodayResult,
+      challengeLinkOpenedTodayResult,
       // Analytics: latest 20 raw events
       recentEventsResult,
+      // Retention: rolling day-7 cohort (see 20260715_day7_retention.sql)
+      day7RetentionResult,
     ] = await Promise.all([
       supabase.from("profiles").select("id", { count: "exact", head: true }),
       supabase.from("decks").select("id", { count: "exact", head: true }),
@@ -167,11 +171,23 @@ export async function GET(req: NextRequest) {
       countEventToday("classroom_invite_copied", startOfTodayIso),
       countEventToday("classroom_join_success", startOfTodayIso),
       countEventToday("enterprise_lead_submitted", startOfTodayIso),
+      countEventToday("challenge_link_copied", startOfTodayIso),
+      countEventToday("challenge_link_opened", startOfTodayIso),
       supabase
         .from("analytics_events")
         .select("id, user_id, event_name, page_url, metadata, created_at")
         .order("created_at", { ascending: false })
         .limit(20),
+      (() => {
+        const cohortEnd = new Date(startOfToday);
+        cohortEnd.setDate(cohortEnd.getDate() - 7);
+        const cohortStart = new Date(cohortEnd);
+        cohortStart.setDate(cohortStart.getDate() - 14);
+        return supabase.rpc("compute_day7_retention", {
+          cohort_start: cohortStart.toISOString(),
+          cohort_end: cohortEnd.toISOString(),
+        });
+      })(),
     ]);
 
     // Collect any query errors so a single failing table doesn't silently
@@ -201,7 +217,15 @@ export async function GET(req: NextRequest) {
       classroomInviteCopiedTodayResult.error,
       classroomJoinSuccessTodayResult.error,
       enterpriseLeadSubmittedTodayResult.error,
+      challengeLinkCopiedTodayResult.error,
+      challengeLinkOpenedTodayResult.error,
       recentEventsResult.error,
+      // day7RetentionResult is intentionally excluded from this hard-fail
+      // list: retention is a "nice to have" analytics figure, not core
+      // dashboard data, and cohort_size legitimately hits 0 (returning a
+      // null retention_rate, not an error) for a brand-new app with no
+      // users old enough yet -- that shouldn't take down the whole
+      // dashboard the way a real query error should.
     ].filter((e) => e !== null && e !== undefined);
 
     if (queryErrors.length > 0) {
@@ -237,6 +261,8 @@ export async function GET(req: NextRequest) {
         classroomInviteCopiedToday: classroomInviteCopiedTodayResult.count,
         classroomJoinSuccessToday: classroomJoinSuccessTodayResult.count,
         enterpriseLeadSubmittedToday: enterpriseLeadSubmittedTodayResult.count,
+        challengeLinkCopiedToday: challengeLinkCopiedTodayResult.count,
+        challengeLinkOpenedToday: challengeLinkOpenedTodayResult.count,
       },
       recent: {
         feedback: recentFeedbackResult.data || [],
@@ -244,6 +270,21 @@ export async function GET(req: NextRequest) {
         decks: recentDecksResult.data || [],
         events: recentEventsResult.data || [],
       },
+      retention: (() => {
+        if (day7RetentionResult.error) {
+          console.error("day7 retention query failed:", day7RetentionResult.error.message);
+          return null;
+        }
+        const row = day7RetentionResult.data?.[0] as
+          | { cohort_size: number; retained_size: number; retention_rate: number | null }
+          | undefined;
+        if (!row) return null;
+        return {
+          day7CohortSize: row.cohort_size,
+          day7RetainedSize: row.retained_size,
+          day7RetentionRatePercent: row.retention_rate,
+        };
+      })(),
     });
   } catch (err) {
     const message =

@@ -162,9 +162,9 @@ const DECK_TITLE_EXAMPLES = [
 
 const MIN_NOTES_CHARACTERS = 300;
 const LONG_NOTES_CHARACTERS = 15000;
-const LAST_COURSE_STORAGE_KEY = "studyclash_last_course";
-const BETA_ACCESS_CODE_STORAGE_KEY = "studyclash_beta_access_code";
-const CREATE_PREFS_STORAGE_KEY = "studyclash_create_prefs_v1";
+const LAST_COURSE_STORAGE_KEY = "studyjoust_last_course";
+const BETA_ACCESS_CODE_STORAGE_KEY = "studyjoust_beta_access_code";
+const CREATE_PREFS_STORAGE_KEY = "studyjoust_create_prefs_v1";
 
 type CreatePrefs = {
   studentName?: string;
@@ -377,6 +377,15 @@ export default function CreateDeck() {
   const [ankiFileName, setAnkiFileName] = useState<string | null>(null);
   const [isImportingAnki, setIsImportingAnki] = useState(false);
   const [ankiImportError, setAnkiImportError] = useState<string | null>(null);
+
+  // Import from a Google Doc/Sheet link -- different shape from the other
+  // two: it doesn't create a deck itself, it just fetches plain text and
+  // fills in the same `notes` textarea the manual/paste flow already uses,
+  // so subject/title/question-count/difficulty still go through the real
+  // form below instead of a second, cruder generation path.
+  const [googleDocUrl, setGoogleDocUrl] = useState("");
+  const [isImportingGoogleDoc, setIsImportingGoogleDoc] = useState(false);
+  const [googleDocImportError, setGoogleDocImportError] = useState<string | null>(null);
 
   // Guided generation fields. None of these are stored on the deck itself —
   // they only shape the OpenAI prompt and validation at generation time.
@@ -932,6 +941,42 @@ export default function CreateDeck() {
       setAnkiImportError("Could not reach the import service. Please try again.");
     } finally {
       setIsImportingAnki(false);
+    }
+  };
+
+  const handleGoogleDocImport = async () => {
+    if (isImportingGoogleDoc) return;
+
+    const trimmedUrl = googleDocUrl.trim();
+    if (!trimmedUrl) {
+      setGoogleDocImportError("Paste a Google Docs or Sheets link first.");
+      return;
+    }
+
+    setIsImportingGoogleDoc(true);
+    setGoogleDocImportError(null);
+
+    try {
+      const response = await authFetch("/api/import/google-doc", {
+        method: "POST",
+        body: JSON.stringify({ url: trimmedUrl }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setGoogleDocImportError(data?.error || "Could not import this document.");
+        return;
+      }
+
+      setNotes(data.notes);
+      setErrorMessage(null);
+      setUploadError(null);
+      setUploadedFileName(null);
+    } catch {
+      setGoogleDocImportError("Could not reach the import service. Please try again.");
+    } finally {
+      setIsImportingGoogleDoc(false);
     }
   };
 
@@ -1835,6 +1880,34 @@ export default function CreateDeck() {
           {!uploadError && uploadWarning && (
             <p role="status" className="mt-3 text-xs text-amber-300">{uploadWarning}</p>
           )}
+
+          {/* Import from Google Docs/Sheets -- fills the textarea below
+              instead of creating a deck directly, so subject/title/
+              question-count/difficulty still go through the real form. */}
+          <div className="mt-5 rounded-xl border border-white/10 bg-black/20 p-3.5">
+            <p className="text-xs font-bold uppercase tracking-wider text-white/50">Or import from Google Docs/Sheets</p>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <input
+                type="url"
+                value={googleDocUrl}
+                onChange={(e) => setGoogleDocUrl(e.target.value)}
+                placeholder="https://docs.google.com/document/d/..."
+                className="w-full min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-500/20"
+              />
+              <button
+                type="button"
+                onClick={handleGoogleDocImport}
+                disabled={isImportingGoogleDoc}
+                className="flex-shrink-0 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2.5 text-xs font-bold text-cyan-100 transition-colors duration-150 hover:border-cyan-300/45 hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isImportingGoogleDoc ? "Fetching..." : "Fetch Text"}
+              </button>
+            </div>
+            <p className="mt-1.5 text-[11px] text-white/30">Sharing must be set to &quot;Anyone with the link.&quot;</p>
+            {googleDocImportError && (
+              <p className="mt-2 text-xs text-red-300">{googleDocImportError}</p>
+            )}
+          </div>
 
           {/* Notes textarea */}
           <div className="mt-5 flex flex-col gap-2">
