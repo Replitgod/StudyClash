@@ -52,6 +52,49 @@ export async function requireAuthenticatedUser(
   return { userId: user.id, errorResponse: null };
 }
 
+// Parses the comma-separated ADMIN_EMAILS env var, same convention already
+// duplicated in app/api/admin/stats and app/api/admin/enterprise-leads --
+// centralized here so new admin routes (diagnostic-questions review/publish)
+// don't add a third copy.
+export function getAdminEmails(): string[] {
+  const raw = process.env.ADMIN_EMAILS || "";
+  return raw
+    .split(",")
+    .map((email) => email.trim().toLowerCase())
+    .filter((email) => email.length > 0);
+}
+
+export async function requireAdminUser(
+  request: NextRequest
+): Promise<{ userId: string | null; email: string | null; errorStatus: number | null; errorMessage: string | null }> {
+  const token = getBearerToken(request);
+  if (!token) {
+    return { userId: null, email: null, errorStatus: 401, errorMessage: "Unauthorized" };
+  }
+
+  const supabase = getServiceSupabaseClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser(token);
+
+  if (error || !user) {
+    return { userId: null, email: null, errorStatus: 401, errorMessage: "Unauthorized" };
+  }
+
+  const adminEmails = getAdminEmails();
+  if (!adminEmails.includes((user.email || "").toLowerCase())) {
+    return {
+      userId: null,
+      email: null,
+      errorStatus: 403,
+      errorMessage: "You do not have admin access.",
+    };
+  }
+
+  return { userId: user.id, email: user.email || null, errorStatus: null, errorMessage: null };
+}
+
 export function getClientIpAddress(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for") || "";
   const firstForwarded = forwarded

@@ -45,6 +45,7 @@ const NAV_LINKS = [
   { label: "Create", href: "/create" },
   { label: "Decks", href: "/decks", authOnly: true },
   { label: "Dashboard", href: "/dashboard", authOnly: true },
+  { label: "Diagnostics", href: "/diagnostics" },
   { label: "Exams", href: "/exams" },
   { label: "Pricing", href: "/pricing" },
   { label: "Contact", href: "/contact" },

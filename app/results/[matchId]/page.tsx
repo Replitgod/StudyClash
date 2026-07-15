@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
 import type { AnalyticsEventName } from "@/lib/trackEvent";
+import { copyTextToClipboard } from "@/lib/clipboard";
 import VyraCoach from "@/app/components/VyraCoach";
 import ConfettiBurst from "@/app/components/ConfettiBurst";
+import UpcomingAssessmentPrompt from "@/app/components/UpcomingAssessmentPrompt";
+import { useAuth } from "@/lib/useAuth";
 import {
   buildClashPathReport,
   type ClashPathAttempt,
@@ -757,6 +760,7 @@ export default function ResultsPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const matchId = params.matchId as string;
+  const { isLoggedIn } = useAuth();
 
   const [match, setMatch] = useState<Match | null>(null);
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -764,6 +768,7 @@ export default function ResultsPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
+  const shareTokenRequestRef = useRef(false);
 
   // Weak topic report state.
   const [weakTopics, setWeakTopics] = useState<WeakTopic[] | null>(null);
@@ -1460,6 +1465,35 @@ export default function ResultsPage() {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  // Creates the share token as soon as the match/deck are known, well
+  // before the user ever clicks "copy" -- Safari (and to a lesser extent
+  // other browsers) revokes a click's "user activation" the instant an
+  // `await` on a real network call sits between the click and
+  // navigator.clipboard.writeText(), silently rejecting the write with a
+  // permissions error. Creating the token here means the click handler
+  // below no longer has to await anything before writing to the
+  // clipboard, which is what was actually causing "an error when you
+  // copy it" -- not a broken API call, a lost user gesture.
+  useEffect(() => {
+    if (!match || shareTokenRequestRef.current) return;
+    shareTokenRequestRef.current = true;
+
+    fetch("/api/challenge/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ matchId: match.id }),
+    })
+      .then((response) => response.json().catch(() => null))
+      .then((data) => {
+        if (typeof data?.token === "string") setShareToken(data.token);
+      })
+      .catch(() => {
+        // Pre-fetch is best-effort -- handleCopyLink below still falls
+        // back to creating the token on click if this didn't finish in
+        // time, it just loses the Safari-safety guarantee in that case.
+      });
+  }, [match]);
+
   const handleCopyLink = async () => {
     if (!deck || !match) return;
 
@@ -1467,8 +1501,12 @@ export default function ResultsPage() {
       (match.correct_answers / match.total_questions) * 100
     );
 
+    // If the proactive pre-fetch above hasn't resolved yet (e.g. a very
+    // fast click right after the page loads), fall back to creating the
+    // token here -- rare in practice, and still better than not copying
+    // anything.
+    let token = shareToken;
     try {
-      let token = shareToken;
       if (!token) {
         const response = await fetch("/api/challenge/create", {
           method: "POST",
@@ -1482,26 +1520,27 @@ export default function ResultsPage() {
         token = data.token as string;
         setShareToken(token);
       }
-
-      const challengeLink = `${window.location.origin}/challenge/${token}`;
-      const shareMessage = `${buildChallengeMessage(deck.title, accuracyPercent)} ${challengeLink}`;
-
-      await navigator.clipboard.writeText(shareMessage);
-      setLinkCopied(true);
-      safeTrackEvent("challenge_link_copied", {
-        matchId: match.id,
-        deckId: deck.id,
-        accuracyPercent,
-      });
-      setTimeout(() => setLinkCopied(false), 2000);
     } catch {
       setLinkCopied(false);
-      setLoadError("Could not copy challenge message. Please copy the challenge link manually.");
-      safeTrackEvent("challenge_link_copy_failed", {
-        matchId: match.id,
-        deckId: deck.id,
-      });
+      setLoadError("Could not create a challenge link right now. Please try again.");
+      safeTrackEvent("challenge_link_copy_failed", { matchId: match.id, deckId: deck.id });
+      return;
     }
+
+    const challengeLink = `${window.location.origin}/challenge/${token}`;
+    const shareMessage = `${buildChallengeMessage(deck.title, accuracyPercent)} ${challengeLink}`;
+    const copied = await copyTextToClipboard(shareMessage);
+
+    if (copied) {
+      setLinkCopied(true);
+      safeTrackEvent("challenge_link_copied", { matchId: match.id, deckId: deck.id, accuracyPercent });
+      setTimeout(() => setLinkCopied(false), 2000);
+      return;
+    }
+
+    setLinkCopied(false);
+    setLoadError("Could not copy the challenge message. Please copy the challenge link manually.");
+    safeTrackEvent("challenge_link_copy_failed", { matchId: match.id, deckId: deck.id });
   };
 
   // Get (or create a default) report state for a given question
@@ -3293,6 +3332,10 @@ export default function ResultsPage() {
             Create New Deck
           </Link>
         </div>
+
+        {isLoggedIn && (
+          <UpcomingAssessmentPrompt matchId={match.id} deckTitle={deck.title} />
+        )}
 
         {/* View leaderboard */}
         <Link

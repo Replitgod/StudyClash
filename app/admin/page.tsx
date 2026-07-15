@@ -33,6 +33,23 @@ type AdminAnalytics = {
   enterpriseLeadSubmittedToday: number;
   challengeLinkCopiedToday: number;
   challengeLinkOpenedToday: number;
+  diagnosticStartedToday: number;
+  diagnosticCompletedToday: number;
+  diagnosticResultsViewedToday: number;
+  resourceClickedToday: number;
+  studyPlanCreatedToday: number;
+};
+
+type AdminDiagnostics = {
+  totalAttempts: number;
+  completedAttempts: number;
+  completionRatePercent: number | null;
+  averageEstimatedLow: number | null;
+  averageEstimatedHigh: number | null;
+  mostCommonWeakSkills: { skill: string; count: number }[];
+  plansCreated: number;
+  taskCompletionRatePercent: number | null;
+  resourceClickRatePercent: number | null;
 };
 
 type AdminRetention = {
@@ -76,6 +93,7 @@ type AnalyticsEvent = {
 type AdminData = {
   stats: AdminStats;
   analytics: AdminAnalytics;
+  diagnostics: AdminDiagnostics;
   recent: {
     feedback: FeedbackReport[];
     questionReports: QuestionReport[];
@@ -606,7 +624,7 @@ export default function AdminPage() {
   }
 
   // ---------- Admin dashboard ----------
-  const { stats, analytics, recent, retention } = data;
+  const { stats, analytics, recent, retention, diagnostics } = data;
 
   const statCards = [
     { label: "Total Users", value: stats.totalUsers, color: "text-fuchsia-300" },
@@ -656,6 +674,13 @@ export default function AdminPage() {
       <p className="mt-3 max-w-md text-center text-sm text-white/50 sm:text-base">
         Live overview of StudyJoust usage and reports.
       </p>
+
+      <Link
+        href="/admin/diagnostics"
+        className="mt-4 rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-2 text-xs font-bold text-cyan-100"
+      >
+        Review Diagnostic Question Bank →
+      </Link>
 
       {/* Stat grid */}
       <div className="mt-8 grid w-full grid-cols-2 gap-3 sm:mt-10 sm:grid-cols-4 sm:gap-4">
@@ -781,6 +806,76 @@ export default function AdminPage() {
             <p className="mt-1 text-[11px] text-white/35">25%+ of finishers send a challenge</p>
           </div>
         </div>
+      </div>
+
+      <div className="mt-10 w-full rounded-2xl border border-violet-400/20 bg-violet-500/[0.04] p-5 backdrop-blur-sm sm:p-6">
+        <h2 className="text-lg font-black text-violet-100">Diagnostics &amp; Study Plans</h2>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
+            <p className="text-2xl font-black text-white">{analytics.diagnosticStartedToday}</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Diagnostics Started Today</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
+            <p className="text-2xl font-black text-emerald-300">{analytics.diagnosticCompletedToday}</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Diagnostics Completed Today</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
+            <p className="text-2xl font-black text-cyan-300">
+              {diagnostics.completionRatePercent == null ? "-" : `${diagnostics.completionRatePercent}%`}
+            </p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
+              All-Time Completion Rate ({diagnostics.completedAttempts}/{diagnostics.totalAttempts})
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
+            <p className="text-2xl font-black text-fuchsia-300">
+              {diagnostics.averageEstimatedLow == null
+                ? "-"
+                : `${diagnostics.averageEstimatedLow}–${diagnostics.averageEstimatedHigh}`}
+            </p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
+              Average Estimated Range (last 200)
+            </p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
+            <p className="text-2xl font-black text-white">{diagnostics.plansCreated}</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Study Plans Created</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
+            <p className="text-2xl font-black text-emerald-300">
+              {diagnostics.taskCompletionRatePercent == null ? "-" : `${diagnostics.taskCompletionRatePercent}%`}
+            </p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Task Completion Rate</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
+            <p className="text-2xl font-black text-cyan-300">
+              {diagnostics.resourceClickRatePercent == null ? "-" : `${diagnostics.resourceClickRatePercent}%`}
+            </p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Resource Click Rate (today)</p>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
+            <p className="text-2xl font-black text-amber-300">{analytics.resourceClickedToday}</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Resource Clicks Today</p>
+          </div>
+        </div>
+
+        {diagnostics.mostCommonWeakSkills.length > 0 && (
+          <div className="mt-5">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+              Most Common Weak Skills (last 200 results)
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {diagnostics.mostCommonWeakSkills.map((entry) => (
+                <span
+                  key={entry.skill}
+                  className="rounded-full border border-amber-400/25 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-200"
+                >
+                  {entry.skill} ({entry.count})
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Recent data grid */}

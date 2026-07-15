@@ -111,6 +111,24 @@ type GoalProgressState = {
   weeklyAccuracy: number;
 };
 
+type StudyPlanTaskSummary = {
+  id: string;
+  title: string;
+  scheduled_date: string;
+  completed: boolean;
+  estimated_minutes: number;
+};
+
+type StudyPlanSummary = {
+  id: string;
+  title: string;
+  assessment_name: string | null;
+  assessment_date: string;
+  todayTasks: StudyPlanTaskSummary[];
+  overdueCount: number;
+  weekCompletionPercent: number;
+};
+
 type LocalProgressState = {
   totalXp: number;
   currentStreakDays: number;
@@ -183,6 +201,8 @@ export default function DashboardPage() {
     weeklyAccuracy: 0,
   });
   const [localProgress, setLocalProgress] = useState<LocalProgressState | null>(null);
+  const [studyPlans, setStudyPlans] = useState<StudyPlanSummary[]>([]);
+  const [isLoadingStudyPlans, setIsLoadingStudyPlans] = useState(true);
 
   useEffect(() => {
     async function loadDashboard() {
@@ -402,6 +422,69 @@ export default function DashboardPage() {
     }
 
     loadDeckInsights();
+  }, [isLoggedIn, user]);
+
+  useEffect(() => {
+    async function loadStudyPlans() {
+      if (!isLoggedIn || !user) {
+        setStudyPlans([]);
+        setIsLoadingStudyPlans(false);
+        return;
+      }
+
+      try {
+        const { data: plans } = await supabase
+          .from("study_plans")
+          .select("id, title, assessment_name, assessment_date")
+          .eq("user_id", user.id)
+          .eq("status", "active")
+          .order("assessment_date", { ascending: true })
+          .limit(5);
+
+        const planRows = plans || [];
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+        const weekStartIso = weekStart.toISOString().slice(0, 10);
+
+        const summaries = await Promise.all(
+          planRows.map(async (plan) => {
+            const { data: tasks } = await supabase
+              .from("study_plan_tasks")
+              .select("id, title, scheduled_date, completed, estimated_minutes")
+              .eq("study_plan_id", plan.id)
+              .gte("scheduled_date", weekStartIso);
+
+            const allTasks = tasks || [];
+            const todayTasks = allTasks.filter((t) => t.scheduled_date === todayIso);
+            const overdueCount = allTasks.filter((t) => !t.completed && t.scheduled_date < todayIso).length;
+            const weekTasks = allTasks.filter((t) => t.scheduled_date >= weekStartIso);
+            const weekCompletionPercent =
+              weekTasks.length > 0
+                ? Math.round((weekTasks.filter((t) => t.completed).length / weekTasks.length) * 100)
+                : 0;
+
+            return {
+              id: plan.id,
+              title: plan.title,
+              assessment_name: plan.assessment_name,
+              assessment_date: plan.assessment_date,
+              todayTasks,
+              overdueCount,
+              weekCompletionPercent,
+            } as StudyPlanSummary;
+          })
+        );
+
+        setStudyPlans(summaries);
+      } catch (err) {
+        console.error("Failed to load study plans:", err);
+      } finally {
+        setIsLoadingStudyPlans(false);
+      }
+    }
+
+    loadStudyPlans();
   }, [isLoggedIn, user]);
 
   useEffect(() => {
@@ -1141,6 +1224,78 @@ export default function DashboardPage() {
               />
             </svg>
           </Link>
+        </div>
+
+        <div className="rounded-2xl border border-violet-400/25 bg-violet-500/[0.06] p-5 backdrop-blur-sm sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-violet-300">
+                Study Plans
+              </p>
+              <h2 className="mt-1 text-lg font-bold text-white">
+                {studyPlans.length > 0 ? "Your active plans" : "No active study plan yet"}
+              </h2>
+            </div>
+            <Link
+              href="/diagnostics"
+              className="rounded-xl border border-violet-400/25 bg-violet-500/10 px-3.5 py-2 text-xs font-bold text-violet-100"
+            >
+              Take a Diagnostic
+            </Link>
+          </div>
+
+          {isLoadingStudyPlans ? (
+            <p className="mt-4 text-sm text-white/55">Loading study plans...</p>
+          ) : studyPlans.length === 0 ? (
+            <p className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-white/55">
+              Complete a diagnostic or set an upcoming assessment after a battle to get a personalized
+              day-by-day plan here.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {studyPlans.map((plan) => {
+                const daysRemaining = Math.max(
+                  0,
+                  Math.ceil(
+                    (new Date(`${plan.assessment_date}T00:00:00`).getTime() - renderTimestampMs) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                );
+
+                return (
+                  <div key={plan.id} className="rounded-xl border border-white/10 bg-black/20 px-4 py-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-white">{plan.title}</p>
+                        <p className="mt-1 text-xs text-white/55">
+                          {daysRemaining} day{daysRemaining === 1 ? "" : "s"} remaining &middot; {plan.weekCompletionPercent}% this week
+                          {plan.overdueCount > 0 && (
+                            <span className="text-amber-300"> &middot; {plan.overdueCount} overdue</span>
+                          )}
+                        </p>
+                      </div>
+                      <Link
+                        href={`/study-plans/${plan.id}`}
+                        className="rounded-lg bg-gradient-to-r from-violet-500 to-cyan-400 px-3 py-1.5 text-xs font-bold text-white"
+                      >
+                        Open Plan
+                      </Link>
+                    </div>
+
+                    {plan.todayTasks.length > 0 && (
+                      <div className="mt-2.5 space-y-1">
+                        {plan.todayTasks.map((task) => (
+                          <p key={task.id} className={`text-xs ${task.completed ? "text-white/35 line-through" : "text-white/70"}`}>
+                            Today: {task.title} ({task.estimated_minutes} min)
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-cyan-400/25 bg-cyan-500/[0.06] p-5 backdrop-blur-sm sm:p-6">

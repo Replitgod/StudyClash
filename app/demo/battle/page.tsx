@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import VyraCoach from "@/app/components/VyraCoach";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { Button } from "@/app/components/ui/Button";
+import { copyTextToClipboard } from "@/lib/clipboard";
+import { trackEvent } from "@/lib/trackEvent";
 
 type DemoQuestion = {
 	id: string;
@@ -417,6 +419,7 @@ export default function DemoBattlePage() {
 	);
 	const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
 	const [wrongAnswerResource, setWrongAnswerResource] = useState<StudyResource | null>(null);
+	const [resultLinkCopied, setResultLinkCopied] = useState(false);
 	const [isLoadingResource, setIsLoadingResource] = useState(false);
 	const [resourceDisclaimer, setResourceDisclaimer] = useState<string | null>(null);
 	const resourceRequestIdRef = useRef(0);
@@ -594,6 +597,25 @@ export default function DemoBattlePage() {
 	const correctAnswers = answers.filter((answer) => answer.isCorrect).length;
 	const wrongAnswers = totalQuestions - correctAnswers;
 	const accuracyPercent = Math.round((correctAnswers / totalQuestions) * 100);
+
+	// The demo has no signed-in user and no real `matches` row to attach a
+	// share token to (it's fully client-side/ephemeral by design, so anyone
+	// can try it with zero setup) -- so this shares a plain message pointing
+	// back to the demo itself, rather than a personalized /challenge/[token]
+	// comparison link like the real battle results page uses.
+	const handleCopyDemoResult = async () => {
+		const shareMessage = `I scored ${accuracyPercent}% on the StudyJoust SAT Math demo. Try to beat me: ${window.location.origin}/demo/battle`;
+		const copied = await copyTextToClipboard(shareMessage);
+
+		if (copied) {
+			setResultLinkCopied(true);
+			void trackEvent("challenge_link_copied", { source: "demo_battle", accuracyPercent });
+			setTimeout(() => setResultLinkCopied(false), 2000);
+			return;
+		}
+
+		void trackEvent("challenge_link_copy_failed", { source: "demo_battle" });
+	};
 	const averageResponseTimeMs =
 		answers.length > 0
 			? Math.round(answers.reduce((sum, answer) => sum + answer.responseTimeMs, 0) / answers.length)
@@ -883,6 +905,17 @@ export default function DemoBattlePage() {
 								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-white/40">Time</p>
 							</div>
 						</div>
+
+						{/* Share result -- no signup needed, matches the same
+						    no-signup-to-share principle as the real battle results
+						    page. */}
+						<button
+							type="button"
+							onClick={handleCopyDemoResult}
+							className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-fuchsia-400/40 hover:bg-white/10"
+						>
+							{resultLinkCopied ? "Copied! Send it to a friend." : "Copy Result to Challenge a Friend"}
+						</button>
 
 						<div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4">
 							<p className="text-xs font-bold uppercase tracking-wider text-white/45">Demo summary</p>

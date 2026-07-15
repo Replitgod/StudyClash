@@ -6,6 +6,8 @@ import ConfettiBurst from "./ConfettiBurst";
 import { OpponentFace, type OpponentMood } from "./OpponentFace";
 import { playTone } from "@/lib/uiSound";
 import { difficultyToBeta, probabilityCorrect, updateAbility } from "@/lib/irt";
+import { copyTextToClipboard } from "@/lib/clipboard";
+import { trackEvent } from "@/lib/trackEvent";
 
 type Difficulty = "easy" | "medium" | "hard" | "adaptive";
 
@@ -223,6 +225,7 @@ export default function InstantAIBattle() {
   // start of each battle -- see lib/irt.ts. Drives the Adaptive AI's
   // accuracy target in handlePickChoice below.
   const [playerTheta, setPlayerTheta] = useState(0);
+  const [resultCopied, setResultCopied] = useState(false);
   const [showDifficultyPicker, setShowDifficultyPicker] = useState(false);
   const [shake, setShake] = useState(false);
   const [lastAiCorrect, setLastAiCorrect] = useState<boolean | null>(null);
@@ -531,6 +534,26 @@ export default function InstantAIBattle() {
     roundStartMsRef.current = Date.now();
   };
 
+  // No account/backend record needed to share -- this is a plain result
+  // message pointing back to the homepage widget, not a personalized
+  // /challenge/[token] comparison link (that needs a real signed-in
+  // user's persisted match, which an anonymous Instant Battle never
+  // creates). Matches the same "don't gate sharing behind signup"
+  // principle the real battle results page and demo already use.
+  const handleCopyResult = async () => {
+    const shareMessage = `I scored ${playerScore}-${aiScore} against the AI on StudyJoust${playerAccuracy != null ? ` (${playerAccuracy}% accuracy)` : ""}. Beat me: ${window.location.origin}/#battle-ai`;
+    const copied = await copyTextToClipboard(shareMessage);
+
+    if (copied) {
+      setResultCopied(true);
+      void trackEvent("challenge_link_copied", { source: "instant_battle", playerScore, aiScore });
+      setTimeout(() => setResultCopied(false), 2000);
+      return;
+    }
+
+    void trackEvent("challenge_link_copy_failed", { source: "instant_battle" });
+  };
+
   const getRoundPillClass = (choice: string) => {
     if (!currentQuestion) return "border-white/15 bg-white/5";
     if (choice === currentQuestion.correct) {
@@ -822,12 +845,21 @@ export default function InstantAIBattle() {
 
           <div className="mt-5 rounded-xl border border-fuchsia-300/30 bg-fuchsia-500/10 p-4">
             <p className="text-sm font-bold text-fuchsia-100">Beat the AI? Prove it.</p>
-            <p className="mt-1 text-xs text-fuchsia-100/80">Create an account to challenge a friend to beat your score.</p>
+            <p className="mt-1 text-xs text-fuchsia-100/80">
+              No account needed to share -- copy your result and send it to a friend.
+            </p>
+            <button
+              type="button"
+              onClick={handleCopyResult}
+              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-400 to-violet-400 px-5 py-2.5 text-sm font-black text-[#1a0524] transition-transform duration-200 active:scale-95"
+            >
+              {resultCopied ? "Copied! Send it to a friend." : "Copy Result to Challenge a Friend"}
+            </button>
             <Link
               href={`/signup?redirect=${encodeURIComponent("/create")}`}
-              className="mt-3 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-400 to-violet-400 px-5 py-2.5 text-sm font-black text-[#1a0524] transition-transform duration-200 active:scale-95"
+              className="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-fuchsia-300/30 bg-transparent px-5 py-2 text-xs font-bold text-fuchsia-100/80 transition-colors duration-150 hover:bg-fuchsia-500/10"
             >
-              Challenge a Friend
+              Or create an account to save this result
             </Link>
           </div>
         </div>

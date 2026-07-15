@@ -114,10 +114,22 @@ export async function GET(req: NextRequest) {
       enterpriseLeadSubmittedTodayResult,
       challengeLinkCopiedTodayResult,
       challengeLinkOpenedTodayResult,
+      diagnosticStartedTodayResult,
+      diagnosticCompletedTodayResult,
+      diagnosticResultsViewedTodayResult,
+      resourceClickedTodayResult,
+      studyPlanCreatedTodayResult,
       // Analytics: latest 20 raw events
       recentEventsResult,
       // Retention: rolling day-7 cohort (see 20260715_day7_retention.sql)
       day7RetentionResult,
+      // Diagnostic center + study plans (see 20260715_diagnostics_and_study_plans.sql)
+      totalDiagnosticAttemptsResult,
+      completedDiagnosticAttemptsResult,
+      recentDiagnosticResultsResult,
+      totalStudyPlansResult,
+      totalStudyPlanTasksResult,
+      completedStudyPlanTasksResult,
     ] = await Promise.all([
       supabase.from("profiles").select("id", { count: "exact", head: true }),
       supabase.from("decks").select("id", { count: "exact", head: true }),
@@ -173,6 +185,11 @@ export async function GET(req: NextRequest) {
       countEventToday("enterprise_lead_submitted", startOfTodayIso),
       countEventToday("challenge_link_copied", startOfTodayIso),
       countEventToday("challenge_link_opened", startOfTodayIso),
+      countEventToday("diagnostic_started", startOfTodayIso),
+      countEventToday("diagnostic_completed", startOfTodayIso),
+      countEventToday("diagnostic_results_viewed", startOfTodayIso),
+      countEventToday("recommended_resource_clicked", startOfTodayIso),
+      countEventToday("study_plan_created", startOfTodayIso),
       supabase
         .from("analytics_events")
         .select("id, user_id, event_name, page_url, metadata, created_at")
@@ -188,6 +205,22 @@ export async function GET(req: NextRequest) {
           cohort_end: cohortEnd.toISOString(),
         });
       })(),
+      supabase.from("diagnostic_attempts").select("id", { count: "exact", head: true }),
+      supabase
+        .from("diagnostic_attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "completed"),
+      supabase
+        .from("diagnostic_results")
+        .select("estimated_score_low, estimated_score_high, weakest_skills")
+        .order("created_at", { ascending: false })
+        .limit(200),
+      supabase.from("study_plans").select("id", { count: "exact", head: true }),
+      supabase.from("study_plan_tasks").select("id", { count: "exact", head: true }),
+      supabase
+        .from("study_plan_tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("completed", true),
     ]);
 
     // Collect any query errors so a single failing table doesn't silently
@@ -219,7 +252,18 @@ export async function GET(req: NextRequest) {
       enterpriseLeadSubmittedTodayResult.error,
       challengeLinkCopiedTodayResult.error,
       challengeLinkOpenedTodayResult.error,
+      diagnosticStartedTodayResult.error,
+      diagnosticCompletedTodayResult.error,
+      diagnosticResultsViewedTodayResult.error,
+      resourceClickedTodayResult.error,
+      studyPlanCreatedTodayResult.error,
       recentEventsResult.error,
+      totalDiagnosticAttemptsResult.error,
+      completedDiagnosticAttemptsResult.error,
+      recentDiagnosticResultsResult.error,
+      totalStudyPlansResult.error,
+      totalStudyPlanTasksResult.error,
+      completedStudyPlanTasksResult.error,
       // day7RetentionResult is intentionally excluded from this hard-fail
       // list: retention is a "nice to have" analytics figure, not core
       // dashboard data, and cohort_size legitimately hits 0 (returning a
@@ -263,7 +307,72 @@ export async function GET(req: NextRequest) {
         enterpriseLeadSubmittedToday: enterpriseLeadSubmittedTodayResult.count,
         challengeLinkCopiedToday: challengeLinkCopiedTodayResult.count,
         challengeLinkOpenedToday: challengeLinkOpenedTodayResult.count,
+        diagnosticStartedToday: diagnosticStartedTodayResult.count,
+        diagnosticCompletedToday: diagnosticCompletedTodayResult.count,
+        diagnosticResultsViewedToday: diagnosticResultsViewedTodayResult.count,
+        resourceClickedToday: resourceClickedTodayResult.count,
+        studyPlanCreatedToday: studyPlanCreatedTodayResult.count,
       },
+      diagnostics: (() => {
+        const totalAttempts = totalDiagnosticAttemptsResult.count || 0;
+        const completedAttempts = completedDiagnosticAttemptsResult.count || 0;
+        const completionRatePercent =
+          totalAttempts > 0 ? Math.round((completedAttempts / totalAttempts) * 1000) / 10 : null;
+
+        const resultsSample = (recentDiagnosticResultsResult.data || []) as {
+          estimated_score_low: number | null;
+          estimated_score_high: number | null;
+          weakest_skills: { skill: string; accuracy: number }[] | null;
+        }[];
+
+        const scoredRows = resultsSample.filter(
+          (r) => typeof r.estimated_score_low === "number" && typeof r.estimated_score_high === "number"
+        );
+        const averageEstimatedLow =
+          scoredRows.length > 0
+            ? Math.round(scoredRows.reduce((sum, r) => sum + (r.estimated_score_low || 0), 0) / scoredRows.length)
+            : null;
+        const averageEstimatedHigh =
+          scoredRows.length > 0
+            ? Math.round(scoredRows.reduce((sum, r) => sum + (r.estimated_score_high || 0), 0) / scoredRows.length)
+            : null;
+
+        // Most common weak skills across the most recent 200 diagnostic
+        // results -- a simple frequency count, not a new SQL aggregate
+        // function, since this only needs to run once per admin page load.
+        const weakSkillCounts = new Map<string, number>();
+        resultsSample.forEach((row) => {
+          (row.weakest_skills || []).forEach((entry) => {
+            weakSkillCounts.set(entry.skill, (weakSkillCounts.get(entry.skill) || 0) + 1);
+          });
+        });
+        const mostCommonWeakSkills = Array.from(weakSkillCounts.entries())
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 8)
+          .map(([skill, count]) => ({ skill, count }));
+
+        const totalTasks = totalStudyPlanTasksResult.count || 0;
+        const completedTasks = completedStudyPlanTasksResult.count || 0;
+        const taskCompletionRatePercent =
+          totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 1000) / 10 : null;
+
+        const resourceClicks = resourceClickedTodayResult.count || 0;
+        const resultsViews = diagnosticResultsViewedTodayResult.count || 0;
+        const resourceClickRatePercent =
+          resultsViews > 0 ? Math.round((resourceClicks / resultsViews) * 1000) / 10 : null;
+
+        return {
+          totalAttempts,
+          completedAttempts,
+          completionRatePercent,
+          averageEstimatedLow,
+          averageEstimatedHigh,
+          mostCommonWeakSkills,
+          plansCreated: totalStudyPlansResult.count || 0,
+          taskCompletionRatePercent,
+          resourceClickRatePercent,
+        };
+      })(),
       recent: {
         feedback: recentFeedbackResult.data || [],
         questionReports: recentQuestionReportsResult.data || [],

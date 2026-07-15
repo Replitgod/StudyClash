@@ -709,6 +709,7 @@ export default function Home() {
               <Link href="/create" className="hover:text-white">Create</Link>
               <Link href="/demo/battle" className="hover:text-white">Demo</Link>
               <Link href="/pricing" className="hover:text-white">Pricing</Link>
+              <Link href="/diagnostics" className="hover:text-white">SAT Diagnostic</Link>
               <Link href="/exams" className="hover:text-white">Premium Tunnel Options</Link>
               <Link href="/privacy" className="hover:text-white">Privacy</Link>
               <Link href="/terms" className="hover:text-white">Terms</Link>

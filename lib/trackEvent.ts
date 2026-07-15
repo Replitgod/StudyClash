@@ -33,7 +33,19 @@ export type AnalyticsEventName =
   | "classroom_join_success"
   | "classroom_join_failed"
   | "enterprise_lead_submitted"
-  | "enterprise_lead_submit_failed";
+  | "enterprise_lead_submit_failed"
+  | "diagnostic_viewed"
+  | "diagnostic_started"
+  | "diagnostic_module_completed"
+  | "diagnostic_completed"
+  | "diagnostic_abandoned"
+  | "diagnostic_results_viewed"
+  | "diagnostic_retake_started"
+  | "study_plan_created"
+  | "study_plan_task_completed"
+  | "study_plan_rescheduled"
+  | "upcoming_assessment_added"
+  | "recommended_resource_clicked";
 
 // Fire-and-forget analytics logging. This intentionally never throws —
 // a failed analytics insert (network hiccup, RLS misconfiguration, etc.)
