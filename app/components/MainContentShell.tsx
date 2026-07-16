@@ -1,17 +1,14 @@
 "use client";
 
-import { useAuth } from "@/lib/useAuth";
-
-// Reserves space for the fixed left icon rail that Navigation renders for
-// logged-in users at md+ (see app/components/Navigation.tsx). Split out as
-// its own client component because the root layout is a server component
-// and can't read auth state itself.
+// The left icon rail (see app/components/Navigation.tsx) is now a
+// hover-reveal overlay rather than a permanent gutter -- it fades in over
+// content instead of pushing it, so this no longer needs to reserve space
+// or read auth state. Kept as its own component so the root layout (a
+// server component) has a stable place to hang the "Skip to main content"
+// anchor target.
 export default function MainContentShell({ children }: { children: React.ReactNode }) {
-  const { isLoggedIn, isLoading } = useAuth();
-  const railOffset = isLoggedIn && !isLoading ? "md:pl-[72px]" : "";
-
   return (
-    <div id="main-content" className={`flex-1 ${railOffset}`}>
+    <div id="main-content" className="flex-1">
       {children}
     </div>
   );

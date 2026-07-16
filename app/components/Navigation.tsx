@@ -188,6 +188,7 @@ export default function Navigation() {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [continuePath, setContinuePath] = useState<string | null>(null);
+  const [isRailOpen, setIsRailOpen] = useState(false);
 
   const isActive = (href: string) => {
     if (href.includes("#")) {
@@ -257,10 +258,28 @@ export default function Navigation() {
   if (isLoggedIn && !isLoading) {
     return (
       <>
-        <nav
-          className="fixed left-0 top-0 hidden h-screen w-[72px] flex-col items-center gap-1 border-r border-white/10 bg-[#0a0a0c] py-5 md:flex"
+        {/* Thin always-on edge strip: hovering it (or the rail itself once
+            open) reveals the full rail. Keeps the rail off-screen at rest
+            so it doesn't eat a permanent 72px gutter from every page. */}
+        <div
+          className="fixed left-0 top-0 hidden h-screen w-3 md:block"
           style={{ zIndex: UI_Z_INDEX.stickyHeader }}
+          onMouseEnter={() => setIsRailOpen(true)}
+        />
+        <div className="pointer-events-none fixed left-0 top-1/2 hidden h-10 w-1 -translate-y-1/2 rounded-r-full bg-white/15 md:block" />
+
+        <motion.nav
+          initial={false}
+          animate={{ opacity: isRailOpen ? 1 : 0, x: isRailOpen ? 0 : -16 }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          style={{ zIndex: UI_Z_INDEX.stickyHeader, pointerEvents: isRailOpen ? "auto" : "none" }}
+          className="fixed left-0 top-0 hidden h-screen w-[72px] flex-col items-center gap-1 border-r border-white/10 bg-[#0a0a0c] py-5 shadow-2xl md:flex"
           aria-label="Primary"
+          onMouseEnter={() => setIsRailOpen(true)}
+          onMouseLeave={() => {
+            setIsRailOpen(false);
+            setIsMoreOpen(false);
+          }}
         >
           <Link href="/dashboard" className="mb-5 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-black text-white">
             S
@@ -316,7 +335,7 @@ export default function Navigation() {
             <RailButton icon={RAIL_ICONS.account} tip="Account" href="/account" active={isActive("/account")} />
             <RailButton icon={RAIL_ICONS.logout} tip={isLoggingOut ? "Logging out…" : "Logout"} onClick={handleLogout} active={false} />
           </div>
-        </nav>
+        </motion.nav>
 
         {/* Mobile stays a top bar even when logged in -- the rail is a
             desktop app-shell pattern, not something worth cramming into a
