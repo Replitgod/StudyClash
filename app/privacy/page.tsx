@@ -44,12 +44,12 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-base font-bold text-white">AI processing</h2>
-            <p className="mt-1">When you use AI features, relevant study context (your notes, uploaded material, and battle history) is sent to our AI provider from secure server routes to generate questions, explanations, and coaching responses. API keys are never exposed in the browser. We do not use your uploaded material to train StudyClash&apos;s own models.</p>
+            <p className="mt-1">When you use AI features, relevant study context (your notes, uploaded material, and battle history) is sent to OpenAI from secure server routes to generate questions, explanations, and coaching responses. API keys are never exposed in the browser. We do not use your uploaded material to train StudyClash&apos;s own models. We don&apos;t control or independently verify how OpenAI itself retains or uses API data on its end &mdash; see <a href="https://openai.com/enterprise-privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-200 hover:text-indigo-100">OpenAI&apos;s own data usage policy</a> for their current terms.</p>
           </section>
 
           <section>
             <h2 className="text-base font-bold text-white">Uploaded notes and study material</h2>
-            <p className="mt-1">Notes and PDFs you upload are stored so your decks stay available across sessions and devices, and so the app can regenerate or reference material you&apos;ve already added. They are not shared publicly or with other users.</p>
+            <p className="mt-1">Notes and PDFs you upload are stored so your decks stay available across sessions and devices, and so the app can regenerate or reference material you&apos;ve already added. They are not shared publicly or with other users. We don&apos;t currently run an automatic deletion schedule &mdash; uploaded material is kept until you delete the deck yourself or request account deletion (see below).</p>
           </section>
 
           <section>
@@ -58,8 +58,13 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-base font-bold text-white">Deleting your data</h2>
-            <p className="mt-1">To delete your account and associated data, <Link href="/contact" className="text-indigo-200 hover:text-indigo-100">contact us</Link> from the email on your account. We don&apos;t yet have a self-service delete option in the app itself.</p>
+            <h2 className="text-base font-bold text-white">Deleting your account and uploads</h2>
+            <p className="mt-1">To delete your account, your decks, and any notes or files you&apos;ve uploaded, <Link href="/contact" className="text-indigo-200 hover:text-indigo-100">contact us</Link> from the email on your account. We don&apos;t yet have a self-service delete option inside the app itself &mdash; deletion requests are handled manually.</p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-white">Younger students</h2>
+            <p className="mt-1">StudyClash does not currently ask for or collect a student&apos;s age or date of birth, and we don&apos;t have a separate parental-consent flow for younger users. If you&apos;re a parent or guardian with questions about a student&apos;s account, <Link href="/contact" className="text-indigo-200 hover:text-indigo-100">contact us</Link> and we&apos;ll help directly.</p>
           </section>
 
           <section>

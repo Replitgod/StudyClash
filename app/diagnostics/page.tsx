@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
+import { useLoadingTimeout } from "@/lib/useLoadingTimeout";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 type ExamCard = {
@@ -14,6 +15,28 @@ type ExamCard = {
   status: "available" | "coming_soon" | "disabled";
   disclaimer: string;
 };
+
+function RecoveryPanel({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="mx-auto mt-10 flex max-w-md flex-col items-center rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-8 text-center backdrop-blur-sm">
+      <p className="text-sm font-semibold text-white/80">{message}</p>
+      <div className="mt-4 flex items-center gap-2.5">
+        <button
+          onClick={onRetry}
+          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition-colors duration-150 hover:bg-indigo-500"
+        >
+          Retry
+        </button>
+        <Link
+          href="/"
+          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
+        >
+          Return Home
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 function Background({ children }: { children: React.ReactNode }) {
   return (
@@ -32,19 +55,39 @@ function Background({ children }: { children: React.ReactNode }) {
 export default function DiagnosticsLandingPage() {
   const [exams, setExams] = useState<ExamCard[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const loadTimedOut = useLoadingTimeout(isLoading);
 
-  useEffect(() => {
-    void trackEvent("page_view", { page: "diagnostics_landing" });
+  const fetchExams = () => {
+    setIsLoading(true);
+    setLoadError(false);
 
     supabase
       .from("exam_definitions")
       .select("id, slug, name, provider, status, disclaimer")
       .order("status", { ascending: true })
       .order("name", { ascending: true })
-      .then(({ data }) => {
-        setExams((data || []) as ExamCard[]);
-        setIsLoading(false);
-      });
+      .then(
+        ({ data, error }) => {
+          if (error) {
+            console.error("Failed to load diagnostics:", error.message);
+            setLoadError(true);
+          } else {
+            setExams((data || []) as ExamCard[]);
+          }
+          setIsLoading(false);
+        },
+        (err: unknown) => {
+          console.error("Failed to load diagnostics:", err instanceof Error ? err.message : err);
+          setLoadError(true);
+          setIsLoading(false);
+        }
+      );
+  };
+
+  useEffect(() => {
+    void trackEvent("page_view", { page: "diagnostics_landing" });
+    fetchExams();
   }, []);
 
   const available = exams.filter((e) => e.status === "available");
@@ -67,8 +110,14 @@ export default function DiagnosticsLandingPage() {
         breakdown, and turn it into a study plan that runs all the way to test day.
       </p>
 
-      {isLoading ? (
-        <p className="mt-10 text-center text-sm text-white/50">Loading diagnostics...</p>
+      {loadError ? (
+        <RecoveryPanel message="Something went wrong loading diagnostics." onRetry={fetchExams} />
+      ) : isLoading ? (
+        loadTimedOut ? (
+          <RecoveryPanel message="This is taking longer than expected." onRetry={fetchExams} />
+        ) : (
+          <p className="mt-10 text-center text-sm text-white/50">Loading diagnostics...</p>
+        )
       ) : (
         <>
           <h2 className="mt-10 text-xs font-bold uppercase tracking-[0.25em] text-green-300">Available now</h2>

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
+import { useLoadingTimeout } from "@/lib/useLoadingTimeout";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { Button } from "@/app/components/ui/Button";
 import { HoverLiftArticle } from "@/app/components/ui/HoverLift";
@@ -18,8 +19,8 @@ type Deck = {
 };
 
 const DEMO_DECK = {
-  title: "SAT Math Demo Deck",
-  course_name: "SAT Math / Algebra",
+  title: "Algebra Skills Battle",
+  course_name: "High School Algebra",
   student_name: "Demo Student",
 };
 
@@ -32,6 +33,7 @@ const DECKS_PAGE_SIZE = 30;
 
 export default function DecksPage() {
   const { user, isLoggedIn, isLoading: isAuthLoading } = useAuth();
+  const authTimedOut = useLoadingTimeout(isAuthLoading);
   const [decks, setDecks] = useState<Deck[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -136,11 +138,33 @@ export default function DecksPage() {
         />
         <div className="relative z-10 flex min-h-dvh items-center justify-center px-4">
           <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-8 text-center backdrop-blur-sm">
-            <svg className="h-10 w-10 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-            </svg>
-            <p className="mt-4 text-sm text-white/50">Checking your account...</p>
+            {authTimedOut ? (
+              <>
+                <p className="text-sm font-semibold text-white/80">This is taking longer than expected.</p>
+                <div className="mt-4 flex items-center gap-2.5">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition-colors duration-150 hover:bg-indigo-500"
+                  >
+                    Retry
+                  </button>
+                  <Link
+                    href="/"
+                    className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
+                  >
+                    Return Home
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <svg className="h-10 w-10 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+                <p className="mt-4 text-sm text-white/50">Checking your account...</p>
+              </>
+            )}
           </div>
         </div>
       </main>

@@ -4,8 +4,8 @@ export async function GET() {
 	return NextResponse.json({
 		deck: {
 			id: "demo-deck",
-			title: "SAT Math Demo Deck",
-			course_name: "SAT Math / Algebra",
+			title: "Algebra Skills Battle",
+			course_name: "High School Algebra",
 		},
 		questions: [
 			{

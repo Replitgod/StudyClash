@@ -47,7 +47,7 @@ function clampQuestionCount(value: unknown): number {
 }
 
 const SUBJECT_MIX_PRESETS = {
-  sat_math:
+  algebra:
     "linear equations, systems of equations, quadratic equations, functions and function composition, exponents and exponential growth, ratios and proportions, percentages, absolute value, compound inequalities, right triangles, circles, statistics",
   general_academic:
     "algebra and functions, biology (cell structure, genetics), economics (supply and demand, market forces), reading comprehension and argument structure, chemistry fundamentals, U.S. history reasoning, statistics and data interpretation, geometry",
@@ -56,7 +56,7 @@ const SUBJECT_MIX_PRESETS = {
 type SubjectMix = keyof typeof SUBJECT_MIX_PRESETS;
 
 function resolveSubjectMix(value: unknown): SubjectMix {
-  return value === "general_academic" ? "general_academic" : "sat_math";
+  return value === "general_academic" ? "general_academic" : "algebra";
 }
 
 // Best-effort per-instance limiter. This is intentionally not backed by a
@@ -117,7 +117,7 @@ function buildPrompt(args: {
           .join("\n")}`
       : "";
 
-  return `You are writing a short practice set for a product demo. The demo's whole point is to show that this app asks genuinely challenging, exam-realistic questions -- not simple one-step recall.
+  return `You are writing a short practice set for a product demo. The demo's whole point is to show that this app asks genuinely challenging, skill-realistic questions -- not simple one-step recall.
 
 Create exactly ${totalQuestions} multiple-choice questions covering a MIX of different topics (choose from: ${subjectMix}). No two questions may share the same topic.
 
@@ -127,7 +127,7 @@ Difficulty requirements:
 - Do NOT include any "easy" single-step questions.
 
 Rules for every question:
-- "question_text": a clear, self-contained SAT-style question. No references to notes or external material -- these are general SAT Math questions.
+- "question_text": a clear, self-contained question. No references to notes or external material -- these are general high-school algebra questions, not tied to any specific standardized test.
 - "answer_choices": an array of EXACTLY 4 short answer strings. Wrong choices must be realistic distractors.
 - "correct_answer": must be an EXACT character-for-character match to one of the 4 strings in "answer_choices".
 - "explanation": 2-3 concise sentences showing the key step(s) and why the correct answer is right.

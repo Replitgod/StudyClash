@@ -60,8 +60,8 @@ type StudyDay = {
 const CHOICE_LETTERS = ["A", "B", "C", "D"];
 
 const DEMO_DECK = {
-	title: "SAT Math Demo Deck",
-	course_name: "SAT Math / Algebra",
+	title: "Algebra Skills Battle",
+	course_name: "High School Algebra",
 	student_name: "Demo Student",
 };
 
@@ -281,29 +281,29 @@ function resolveKhanAcademyUrl(topic: string): string {
 	}
 
 	if (/slope/.test(normalizedTopic)) {
-		return "https://www.khanacademy.org/search?page_search_query=slope%20SAT%20Math";
+		return "https://www.khanacademy.org/search?page_search_query=slope%20Algebra";
 	}
 
 	if (/systems? of equations?/.test(normalizedTopic)) {
-		return "https://www.khanacademy.org/search?page_search_query=systems%20of%20equations%20SAT%20Math";
+		return "https://www.khanacademy.org/search?page_search_query=systems%20of%20equations%20Algebra";
 	}
 
 	if (/inequalit/.test(normalizedTopic)) {
-		return "https://www.khanacademy.org/search?page_search_query=inequalities%20SAT%20Math";
+		return "https://www.khanacademy.org/search?page_search_query=inequalities%20Algebra";
 	}
 
 	if (/exponent/.test(normalizedTopic)) {
-		return "https://www.khanacademy.org/search?page_search_query=exponents%20SAT%20Math";
+		return "https://www.khanacademy.org/search?page_search_query=exponents%20Algebra";
 	}
 
 	return `https://www.khanacademy.org/search?page_search_query=${encodeURIComponent(
-		`${topic} SAT Math`
+		`${topic} high school algebra`
 	)}`;
 }
 
 function buildResourceLinks(topic: string): ResourceLink[] {
 	const cleanTopic = topic.trim();
-	const topicQuery = encodeURIComponent(`${cleanTopic} SAT Math`);
+	const topicQuery = encodeURIComponent(`${cleanTopic} high school algebra`);
 
 	return [
 		{
@@ -313,7 +313,7 @@ function buildResourceLinks(topic: string): ResourceLink[] {
 		{
 			label: "YouTube",
 			url: `https://www.youtube.com/results?search_query=${encodeURIComponent(
-				`${cleanTopic} SAT Math lesson walkthrough`
+				`${cleanTopic} Algebra lesson walkthrough`
 			)}`,
 		},
 		{
@@ -374,7 +374,7 @@ function buildWeakTopics(topicStats: DemoTopicStat[]): DemoWeakTopic[] {
 }
 
 function buildStudyPlan(topicsForReview: DemoTopicStat[]): StudyDay[] {
-	const topTopic = topicsForReview[0]?.topic || "SAT Math";
+	const topTopic = topicsForReview[0]?.topic || "Algebra";
 
 	return [
 		{
@@ -462,7 +462,7 @@ export default function DemoBattlePage() {
 			const response = await fetch("/api/demo/generate-questions", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ avoidQuestionTexts, count: QUESTIONS_PER_DEMO, subject: "sat_math" }),
+				body: JSON.stringify({ avoidQuestionTexts, count: QUESTIONS_PER_DEMO, subject: "algebra" }),
 			});
 
 			if (!response.ok) throw new Error("Demo generation request failed");
@@ -610,7 +610,7 @@ export default function DemoBattlePage() {
 	// back to the demo itself, rather than a personalized /challenge/[token]
 	// comparison link like the real battle results page uses.
 	const handleCopyDemoResult = async () => {
-		const shareMessage = `I scored ${accuracyPercent}% on the StudyClash SAT Math demo. Try to beat me: ${window.location.origin}/demo/battle`;
+		const shareMessage = `I scored ${accuracyPercent}% on the StudyClash Algebra Skills Battle demo. Try to beat me: ${window.location.origin}/demo/battle`;
 		const copied = await copyTextToClipboard(shareMessage);
 
 		if (copied) {
@@ -686,7 +686,7 @@ export default function DemoBattlePage() {
 							</span>
 						</h1>
 						<p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-white/60 sm:text-base">
-							This SAT Math / Algebra practice deck shows the exact tutoring-center experience: answer questions, see your score, review weak topics, and jump straight into topic-specific study links.
+							This Algebra Skills Battle shows the full StudyClash loop: answer questions, see your score, review weak topics, and jump straight into topic-specific study links. Inspired by common high-school algebra skills — not an official SAT practice test.
 						</p>
 
 						<p className="mx-auto mt-3 max-w-xl rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-4 py-2 text-center text-xs font-semibold text-indigo-100 sm:text-sm">
@@ -696,7 +696,7 @@ export default function DemoBattlePage() {
 						<div className="mt-8 grid gap-4 md:grid-cols-3">
 							{[
 								{ title: "1. Start instantly", text: "No upload, no deck setup, no login required." },
-								{ title: `2. Answer ${QUESTIONS_PER_DEMO} questions`, text: "A fresh, randomized SAT Math set every run — real exam-style depth." },
+								{ title: `2. Answer ${QUESTIONS_PER_DEMO} questions`, text: "A fresh, randomized algebra question set every run." },
 								{ title: "3. Review what matters", text: "Weak-topic report, study links, and a 3-day plan." },
 							].map((item) => (
 								<div key={item.title} className="rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -729,7 +729,7 @@ export default function DemoBattlePage() {
 						<div className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-end sm:justify-between">
 							<div>
 								<div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-indigo-200">
-									SAT Math Demo
+									Algebra Skills Demo
 								</div>
 								<h2 className="text-2xl font-black tracking-tight sm:text-3xl">
 									{DEMO_DECK.title}
@@ -910,7 +910,7 @@ export default function DemoBattlePage() {
 							</span>
 						</h2>
 						<p className="mx-auto mt-3 max-w-2xl text-center text-sm text-white/55 sm:text-base">
-							Here is the same StudyClash feedback loop tutoring centers can show instantly, without making a full deck first.
+							Here is the same StudyClash feedback loop you get instantly, without making a full deck first.
 						</p>
 
 						<div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -973,7 +973,7 @@ export default function DemoBattlePage() {
 
 							{weakTopics.length === 0 ? (
 								<p className="mt-4 text-sm text-white/60">
-									No weak topics in this demo run. That still makes the demo useful: the study links below are anchored to the deck&apos;s core SAT Math skills so centers can show the next-step workflow immediately.
+									No weak topics in this demo run. That still makes the demo useful: the study links below are anchored to the deck&apos;s core algebra skills so you can see the next-step workflow immediately.
 								</p>
 							) : (
 								<div className="mt-4 flex flex-col gap-3">

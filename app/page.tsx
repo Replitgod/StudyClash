@@ -105,7 +105,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is there a free plan?",
-    a: `Yes. Battle loops are free forever. ${PLAN_METADATA.pro_individual.label} unlocks unlimited play and the full VYRA coach.`,
+    a: `Yes. Core battles stay free. Free accounts receive up to three battles per day; ${PLAN_METADATA.pro_individual.label} unlocks unlimited battles and the full VYRA coach.`,
   },
 ];
 

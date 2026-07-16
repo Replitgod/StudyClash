@@ -589,16 +589,23 @@ export default function VyraCoach(props: VyraCoachProps) {
     }
   }
 
+  // One panel, not two: a single <aside> whose Tailwind classes reposition
+  // it per breakpoint (bottom sheet on mobile, right-side panel on desktop)
+  // instead of mounting two separate fixed-overlay instances gated by
+  // `hidden`/`md:hidden`. Two parallel copies of the same interactive
+  // ChatPanel (message list, textarea, buttons) sitting in the DOM
+  // simultaneously -- even with one CSS-hidden -- reads as duplicated
+  // interactive content to anything doing DOM-level inspection rather than
+  // full layout/visibility evaluation. Tailwind v4 composes translate-x/
+  // translate-y into one `transform` via separate CSS custom properties, so
+  // the mobile Y-axis slide and desktop X-axis slide can coexist here
+  // without fighting each other.
   // z-index is set via inline style={{ zIndex: UI_Z_INDEX.vyraPanel }} below,
   // not a hardcoded Tailwind z-* class, so the shared uiLayout.ts tier stays
   // the single source of truth for stacking order.
-  const desktopPanelClass = `fixed right-0 top-0 hidden h-full w-full max-w-[460px] border-l border-indigo-300/15 bg-[#040a12]/95 shadow-[-26px_0_72px_-36px_rgba(16,185,129,0.55)] backdrop-blur-xl transition-transform duration-300 ease-out md:block ${
-    isOpen ? "translate-x-0" : "pointer-events-none translate-x-full"
-  }`;
-
-  const mobilePanelClass = `fixed inset-x-0 bottom-0 h-[88dvh] rounded-t-3xl border border-indigo-300/20 bg-[#040a12]/95 p-3 shadow-[0_-24px_70px_-30px_rgba(16,185,129,0.6)] backdrop-blur-xl transition-transform duration-300 ease-out ${
-    isDocked ? "xl:hidden" : "md:hidden"
-  } ${isOpen ? "translate-y-0" : "pointer-events-none translate-y-full"}`;
+  const overlayPanelClass = `fixed inset-x-0 bottom-0 h-[88dvh] rounded-t-3xl border border-indigo-300/20 bg-[#040a12]/95 p-3 shadow-[0_-24px_70px_-30px_rgba(16,185,129,0.6)] backdrop-blur-xl transition-transform duration-300 ease-out md:inset-x-auto md:right-0 md:top-0 md:bottom-auto md:h-full md:w-full md:max-w-[460px] md:translate-y-0 md:rounded-t-none md:rounded-none md:border md:border-y-0 md:border-r-0 md:border-l md:border-indigo-300/15 md:shadow-[-26px_0_72px_-36px_rgba(16,185,129,0.55)] ${
+    isDocked ? "xl:hidden" : ""
+  } ${isOpen ? "translate-y-0 md:translate-x-0" : "pointer-events-none translate-y-full md:translate-x-full"}`;
 
   const launcherClass = isDocked
     ? `${FLOATING_ACTION.base} ${FLOATING_ACTION.right} flex items-center gap-2 rounded-full border border-indigo-300/40 bg-[#06121f]/90 px-3.5 py-2.5 text-sm font-semibold text-indigo-100 shadow-[0_0_34px_-16px_rgba(79,70,229,0.85)] backdrop-blur transition duration-200 hover:scale-[1.02] xl:hidden`
@@ -629,7 +636,13 @@ export default function VyraCoach(props: VyraCoachProps) {
         />
       )}
 
-      {isDocked ? (
+      {/* Docked mode's xl+ sidebar is a genuinely different layout (sticky,
+          in document flow, max-width column) from the fixed overlay below,
+          not just a repositioned copy of it -- so unlike the desktop/mobile
+          overlay pair, this one legitimately stays a separate element. The
+          two never show at the same breakpoint: this is xl:block-only, and
+          the overlay below turns itself off at xl via isDocked. */}
+      {isDocked && (
         <aside className="hidden w-full max-w-[440px] xl:block">
           <div
             className="sticky top-20 h-[calc(100dvh-6rem)] rounded-2xl border border-indigo-300/15 bg-[#040a12]/95 p-3 shadow-[-26px_0_72px_-36px_rgba(16,185,129,0.45)] backdrop-blur-xl"
@@ -658,33 +671,9 @@ export default function VyraCoach(props: VyraCoachProps) {
             />
           </div>
         </aside>
-      ) : (
-        <aside className={desktopPanelClass} style={{ zIndex: UI_Z_INDEX.vyraPanel }}>
-          <ChatPanel
-            isSending={isSending}
-            messages={messages}
-            input={input}
-            setInput={setInput}
-            onSubmit={handleAskSubmit}
-            error={error}
-            rematchHref={rematchHref}
-            contextLabel={contextLabel}
-            deckTitle={deckTitle}
-            courseName={courseName}
-            selectedMode={selectedMode}
-            setSelectedMode={setSelectedMode}
-            onQuickAction={handleQuickAction}
-            onFindResources={handleFindResources}
-            onBlindspotQuiz={handleBlindspotQuiz}
-            hasBattleData={hasBattleData}
-            closePanel={() => setIsOpen(false)}
-            listEndRef={listEndRef}
-            showCloseButton
-          />
-        </aside>
       )}
 
-      <aside className={mobilePanelClass} style={{ zIndex: UI_Z_INDEX.vyraPanel }}>
+      <aside className={overlayPanelClass} style={{ zIndex: UI_Z_INDEX.vyraPanel }}>
         <ChatPanel
           isSending={isSending}
           messages={messages}

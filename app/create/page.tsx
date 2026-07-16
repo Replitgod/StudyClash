@@ -1290,16 +1290,16 @@ export default function CreateDeck() {
           <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-lg font-black text-white">
             S
           </div>
-          <p className="text-base font-bold text-white">We could not load your workspace.</p>
+          <p className="text-base font-bold text-white">This is taking longer than expected.</p>
           <p className="mt-1.5 max-w-xs text-center text-sm text-white/50">
-            Your connection may be slow or interrupted. You can try again or head back home.
+            Your connection may be slow or interrupted. Retry or return home.
           </p>
           <div className="mt-5 flex items-center gap-2.5">
             <button
               onClick={() => window.location.reload()}
               className="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white transition-transform duration-200 active:scale-95 sm:hover:scale-[1.03]"
             >
-              Try Again
+              Retry
             </button>
             <button
               onClick={() => router.push("/")}

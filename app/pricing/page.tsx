@@ -88,7 +88,7 @@ export default function PricingPage() {
           </span>
         </h1>
         <p className="mt-3 max-w-lg text-center text-sm text-white/50 sm:text-base">
-          Battle loops are free, forever. Upgrade for unlimited play and full AI coaching.
+          Core battles stay free. Free accounts receive up to three battles per day; Pro unlocks unlimited battles.
         </p>
 
         {isOnUnlistedPlan && currentPlanMeta && (
@@ -205,10 +205,10 @@ export default function PricingPage() {
         {/* Bottom note */}
         <div className="mt-10 flex w-full max-w-2xl flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center backdrop-blur-sm sm:mt-12 sm:p-6">
           <p className="text-sm font-semibold text-white/80">
-            Free battle loops, forever
+            Core battles stay free
           </p>
           <p className="text-xs text-white/40">
-            Core AI battles stay free. {PLAN_METADATA.pro_individual.label} unlocks unlimited play and the full VYRA coach.
+            Free accounts receive up to three battles per day. {PLAN_METADATA.pro_individual.label} unlocks unlimited battles and the full VYRA coach.
           </p>
           {!isLoggedIn && (
             <Button href="/signup" variant="primary" className="mt-3">
