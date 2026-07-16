@@ -122,6 +122,11 @@ const RAIL_ICONS: Record<string, React.ReactNode> = {
 // and fades straight back out on leave -- no delay either direction would
 // flicker distractingly across five adjacent icons, and no fade at all
 // reads dead, so the delay is on entry only.
+// A single rail entry. Collapsed (the rail's resting state) it's a
+// centered icon with a floating tooltip on individual hover; once the whole
+// rail is expanded (see Navigation's isRailOpen), every item switches to an
+// icon + inline label row instead -- the tooltip would be redundant once
+// the label is already sitting right there.
 function RailButton({
   icon,
   tip,
@@ -129,6 +134,7 @@ function RailButton({
   href,
   onClick,
   as,
+  expanded,
 }: {
   icon: React.ReactNode;
   tip: string;
@@ -136,12 +142,13 @@ function RailButton({
   href?: string;
   onClick?: () => void;
   as?: "battle";
+  expanded: boolean;
 }) {
-  const className = `group relative flex w-14 flex-col items-center gap-1 rounded-xl border border-transparent py-2.5 transition-colors duration-150 ${
-    active ? "text-indigo-400" : "text-white/50 hover:text-white"
-  }`;
+  const className = `group relative flex flex-shrink-0 items-center rounded-xl border border-transparent transition-colors duration-150 ${
+    expanded ? "w-full justify-start gap-3 px-4 py-2.5" : "mx-auto w-14 flex-col justify-center gap-1 py-2.5"
+  } ${active ? "text-indigo-400" : "text-white/50 hover:text-white"}`;
 
-  const tooltip = (
+  const tooltip = !expanded && (
     <span className="pointer-events-none absolute left-full top-1/2 z-20 ml-2.5 -translate-y-1/2 translate-x-[-4px] whitespace-nowrap rounded-lg border border-white/10 bg-[#131316] px-2.5 py-1.5 text-xs font-semibold text-white opacity-0 shadow-lg transition-all duration-150 delay-0 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300">
       {tip}
     </span>
@@ -149,9 +156,26 @@ function RailButton({
 
   const inner = (
     <>
-      <motion.span whileHover={{ scale: 1.08, y: -1 }} whileTap={{ scale: 0.92 }} transition={springSnappy}>
+      <motion.span
+        className="flex-shrink-0"
+        whileHover={{ scale: 1.08, y: -1 }}
+        whileTap={{ scale: 0.92 }}
+        transition={springSnappy}
+      >
         {icon}
       </motion.span>
+      <AnimatePresence>
+        {expanded && (
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, transition: { delay: 0.08, duration: 0.15 } }}
+            exit={{ opacity: 0, transition: { duration: 0.08 } }}
+            className="whitespace-nowrap text-sm font-semibold"
+          >
+            {tip}
+          </motion.span>
+        )}
+      </AnimatePresence>
       {tooltip}
     </>
   );
@@ -261,19 +285,12 @@ export default function Navigation() {
         {/* Thin always-on edge strip: hovering it (or the rail itself once
             open) reveals the full rail. Keeps the rail off-screen at rest
             so it doesn't eat a permanent 72px gutter from every page. */}
-        <div
-          className="fixed left-0 top-0 hidden h-screen w-3 md:block"
-          style={{ zIndex: UI_Z_INDEX.stickyHeader }}
-          onMouseEnter={() => setIsRailOpen(true)}
-        />
-        <div className="pointer-events-none fixed left-0 top-1/2 hidden h-10 w-1 -translate-y-1/2 rounded-r-full bg-white/15 md:block" />
-
         <motion.nav
           initial={false}
-          animate={{ opacity: isRailOpen ? 1 : 0, x: isRailOpen ? 0 : -16 }}
+          animate={{ width: isRailOpen ? 232 : 72 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          style={{ zIndex: UI_Z_INDEX.stickyHeader, pointerEvents: isRailOpen ? "auto" : "none" }}
-          className="fixed left-0 top-0 hidden h-screen w-[72px] flex-col items-center gap-1 border-r border-white/10 bg-[#0a0a0c] py-5 shadow-2xl md:flex"
+          style={{ zIndex: UI_Z_INDEX.stickyHeader }}
+          className="fixed left-0 top-0 hidden h-screen flex-col overflow-hidden border-r border-white/10 bg-[#0a0a0c] py-5 shadow-2xl md:flex"
           aria-label="Primary"
           onMouseEnter={() => setIsRailOpen(true)}
           onMouseLeave={() => {
@@ -281,23 +298,24 @@ export default function Navigation() {
             setIsMoreOpen(false);
           }}
         >
-          <Link href="/dashboard" className="mb-5 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-sm font-black text-white">
+          <Link href="/dashboard" className="mx-auto mb-5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-sm font-black text-white">
             S
           </Link>
 
-          <RailButton icon={RAIL_ICONS.home} tip="Home" href="/dashboard" active={isActive("/dashboard")} />
-          <RailButton icon={RAIL_ICONS.battle} tip="Battle" as="battle" active={isActive("/#battle-ai")} />
-          <RailButton icon={RAIL_ICONS.plan} tip="Study Plan" href="/study-plans/new" active={isActive("/study-plans")} />
-          <RailButton icon={RAIL_ICONS.decks} tip="Decks" href="/decks" active={isActive("/decks")} />
-          <RailButton icon={RAIL_ICONS.diagnostics} tip="Diagnostics" href="/diagnostics" active={isActive("/diagnostics")} />
+          <RailButton icon={RAIL_ICONS.home} tip="Home" href="/dashboard" active={isActive("/dashboard")} expanded={isRailOpen} />
+          <RailButton icon={RAIL_ICONS.battle} tip="Battle" as="battle" active={isActive("/#battle-ai")} expanded={isRailOpen} />
+          <RailButton icon={RAIL_ICONS.plan} tip="Study Plan" href="/study-plans/new" active={isActive("/study-plans")} expanded={isRailOpen} />
+          <RailButton icon={RAIL_ICONS.decks} tip="Decks" href="/decks" active={isActive("/decks")} expanded={isRailOpen} />
+          <RailButton icon={RAIL_ICONS.diagnostics} tip="Diagnostics" href="/diagnostics" active={isActive("/diagnostics")} expanded={isRailOpen} />
 
-          <div className="mt-auto flex flex-col items-center gap-1">
+          <div className="mt-auto flex flex-col gap-1">
             <div className="relative">
               <RailButton
                 icon={RAIL_ICONS.more}
                 tip="More"
                 active={isMoreOpen}
                 onClick={() => setIsMoreOpen((v) => !v)}
+                expanded={isRailOpen}
               />
               <AnimatePresence>
                 {isMoreOpen && (
@@ -332,8 +350,14 @@ export default function Navigation() {
                 )}
               </AnimatePresence>
             </div>
-            <RailButton icon={RAIL_ICONS.account} tip="Account" href="/account" active={isActive("/account")} />
-            <RailButton icon={RAIL_ICONS.logout} tip={isLoggingOut ? "Logging out…" : "Logout"} onClick={handleLogout} active={false} />
+            <RailButton icon={RAIL_ICONS.account} tip="Account" href="/account" active={isActive("/account")} expanded={isRailOpen} />
+            <RailButton
+              icon={RAIL_ICONS.logout}
+              tip={isLoggingOut ? "Logging out…" : "Logout"}
+              onClick={handleLogout}
+              active={false}
+              expanded={isRailOpen}
+            />
           </div>
         </motion.nav>
 
