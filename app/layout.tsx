@@ -1,6 +1,7 @@
 import FeedbackButton from "./components/FeedbackButton";
 import FloatingBattleCTA from "./components/FloatingBattleCTA";
 import HashAnchorScroller from "./components/HashAnchorScroller";
+import MainContentShell from "./components/MainContentShell";
 import Navigation from "./components/Navigation";
 import { PageTransition } from "./components/PageTransition";
 import { AuthProvider } from "@/lib/useAuth";
@@ -151,9 +152,9 @@ export default function RootLayout({
             Skip to main content
           </a>
           <Navigation />
-          <div id="main-content" className="flex-1">
+          <MainContentShell>
             <PageTransition>{children}</PageTransition>
-          </div>
+          </MainContentShell>
           <FloatingBattleCTA />
           <FeedbackButton />
         </AuthProvider>

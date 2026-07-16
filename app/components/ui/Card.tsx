@@ -1,6 +1,6 @@
 import { SURFACE } from "@/lib/theme";
 
-export type CardTone = "neutral" | "cyan" | "fuchsia" | "emerald" | "violet" | "amber" | "danger";
+export type CardTone = "neutral" | "cyan" | "fuchsia" | "emerald" | "violet" | "amber" | "danger" | "indigo" | "sky";
 
 const TONE_CLASSES: Record<CardTone, string> = {
   neutral: SURFACE.neutralSubtle,
@@ -10,6 +10,8 @@ const TONE_CLASSES: Record<CardTone, string> = {
   violet: SURFACE.violetSubtle,
   amber: SURFACE.amberSubtle,
   danger: SURFACE.dangerSubtle,
+  indigo: SURFACE.indigoSubtle,
+  sky: SURFACE.skySubtle,
 };
 
 export type CardProps = React.HTMLAttributes<HTMLDivElement> & {

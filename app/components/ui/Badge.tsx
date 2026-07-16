@@ -1,4 +1,4 @@
-export type BadgeTone = "neutral" | "cyan" | "fuchsia" | "emerald" | "violet" | "amber" | "danger";
+export type BadgeTone = "neutral" | "cyan" | "fuchsia" | "emerald" | "violet" | "amber" | "danger" | "indigo" | "sky";
 
 const TONE_CLASSES: Record<BadgeTone, string> = {
   neutral: "border-white/20 bg-white/5 text-white/60",
@@ -8,6 +8,8 @@ const TONE_CLASSES: Record<BadgeTone, string> = {
   violet: "border-violet-300/40 bg-violet-500/15 text-violet-200",
   amber: "border-amber-300/40 bg-amber-500/15 text-amber-200",
   danger: "border-red-300/40 bg-red-500/15 text-red-200",
+  indigo: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
+  sky: "border-sky-300/40 bg-sky-500/15 text-sky-200",
 };
 
 const SIZE_CLASSES = {

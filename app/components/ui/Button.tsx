@@ -3,7 +3,7 @@
 import { forwardRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { GRADIENTS } from "@/lib/theme";
+import { BRAND, GRADIENTS } from "@/lib/theme";
 import { springBouncy, springSnappy } from "@/lib/motion";
 
 const MotionLink = motion.create(Link);
@@ -12,7 +12,7 @@ export type ButtonVariant = "primary" | "battle" | "secondary" | "success" | "gh
 export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
-  primary: `${GRADIENTS.brandPrimary} text-white shadow-glow-fuchsia-sm hover:shadow-glow-fuchsia-md`,
+  primary: BRAND.indigo,
   battle: `${GRADIENTS.battle} text-[#052538] shadow-glow-cyan-sm hover:shadow-glow-cyan-md`,
   secondary:
     "border border-cyan-400/30 bg-cyan-500/10 text-cyan-100 hover:border-cyan-300/45 hover:bg-cyan-500/20",

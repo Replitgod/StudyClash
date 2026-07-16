@@ -10,15 +10,28 @@
 // violet battle-game palette is unchanged.
 
 // The two dominant CTA gradients, plus the two secondary/decorative ones.
+//
+// brandPrimary/brandHeading carry the site's indigo/blue brand identity
+// (see BRAND below); the cyan/fuchsia/emerald/violet battle-game palette
+// stays for in-battle state colors (streaks, correctness, etc.) below.
 export const GRADIENTS = {
   /** Primary action gradient — signup, submit, main CTAs. */
-  brandPrimary: "bg-gradient-to-r from-fuchsia-500 to-violet-600",
+  brandPrimary: "bg-gradient-to-r from-indigo-600 to-indigo-500",
   /** Wordmark/heading gradient — logo text, feature headings. */
-  brandHeading: "bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400",
+  brandHeading: "bg-gradient-to-r from-indigo-400 via-indigo-500 to-sky-400",
   /** High-urgency "Battle AI" entry points. */
   battle: "bg-gradient-to-r from-cyan-300 to-emerald-300",
   /** Secondary/decorative accent. */
   accent: "bg-gradient-to-r from-cyan-500 to-fuchsia-500",
+} as const;
+
+// Solid brand colors — the new indigo/blue system. Prefer these over
+// GRADIENTS.brandPrimary for buttons and controls: gradients and glow
+// shadows read as "AI slop"; a flat fill with a one-step hover shift reads
+// as a considered product.
+export const BRAND = {
+  indigo: "bg-indigo-600 text-white hover:bg-indigo-500",
+  indigoOutline: "border border-white/15 text-white hover:border-white/25 hover:bg-white/[0.04]",
 } as const;
 
 // "Glass panel" surface tiers: a background + border opacity pairing that
@@ -44,6 +57,10 @@ export const SURFACE = {
   dangerEmphasis: "border border-red-400/40 bg-red-500/15",
   neutralSubtle: "border border-white/10 bg-white/[0.03]",
   neutralEmphasis: "border border-white/15 bg-white/[0.06]",
+  indigoSubtle: "border border-indigo-400/20 bg-indigo-500/10",
+  indigoEmphasis: "border border-indigo-400/35 bg-indigo-500/20",
+  skySubtle: "border border-sky-400/20 bg-sky-500/10",
+  skyEmphasis: "border border-sky-400/35 bg-sky-500/20",
 } as const;
 
 // Transition presets — named per the standardized duration/easing tokens
