@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ token, expiresAt });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to create share link.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Failed to create share link:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Failed to create share link. Please try again." }, { status: 500 });
   }
 }

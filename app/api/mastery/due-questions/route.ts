@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ items, dueCount: items.length });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to load due questions.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Failed to load due questions:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Failed to load due questions." }, { status: 500 });
   }
 }

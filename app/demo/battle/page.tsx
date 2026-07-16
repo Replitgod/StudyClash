@@ -418,6 +418,7 @@ export default function DemoBattlePage() {
 		pickDemoQuestions(QUESTIONS_PER_DEMO)
 	);
 	const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+	const [usedFallbackQuestions, setUsedFallbackQuestions] = useState(false);
 	const [wrongAnswerResource, setWrongAnswerResource] = useState<StudyResource | null>(null);
 	const [resultLinkCopied, setResultLinkCopied] = useState(false);
 	const [isLoadingResource, setIsLoadingResource] = useState(false);
@@ -475,8 +476,13 @@ export default function DemoBattlePage() {
 				...question,
 				id: `ai-demo-q${index}`,
 			}));
+			setUsedFallbackQuestions(false);
 		} catch {
+			// Never block the demo on a generation failure -- fall back to the
+			// curated question set silently in the UI's happy path, but say so
+			// rather than pretending the AI batch succeeded.
 			nextQuestions = pickDemoQuestions(QUESTIONS_PER_DEMO);
+			setUsedFallbackQuestions(true);
 		}
 
 		setIsGeneratingQuestions(false);
@@ -731,6 +737,11 @@ export default function DemoBattlePage() {
 								<p className="mt-2 text-sm text-white/55">
 									{DEMO_DECK.course_name} · Question {currentIndex + 1} of {totalQuestions}
 								</p>
+								{usedFallbackQuestions && (
+									<p className="mt-2 text-xs text-amber-300/80">
+										Using our curated practice set for this run -- fresh AI questions weren&apos;t available a moment ago.
+									</p>
+								)}
 							</div>
 
 							<div className="grid grid-cols-3 gap-2 sm:min-w-[260px]">
@@ -771,6 +782,7 @@ export default function DemoBattlePage() {
 											type="button"
 											onClick={() => handleSelectAnswer(choice)}
 											disabled={Boolean(selectedChoice)}
+											aria-pressed={isSelected}
 											className={`flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-colors duration-150 disabled:cursor-not-allowed ${
 												showSelectedState
 													? isCorrect
@@ -784,9 +796,25 @@ export default function DemoBattlePage() {
 											<span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-sm font-bold text-white/80">
 												{CHOICE_LETTERS[index]}
 											</span>
-											<span className="pt-1 text-sm font-semibold text-white/90 sm:text-base">
+											<span className="flex-1 pt-1 text-sm font-semibold text-white/90 sm:text-base">
 												{choice}
 											</span>
+											{showSelectedState && isCorrect && (
+												<span className="flex flex-shrink-0 items-center pt-1 text-green-300">
+													<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+														<path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+													</svg>
+													<span className="sr-only">Correct answer</span>
+												</span>
+											)}
+											{showSelectedState && !isCorrect && isSelected && (
+												<span className="flex flex-shrink-0 items-center pt-1 text-red-300">
+													<svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+														<path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+													</svg>
+													<span className="sr-only">Your answer, incorrect</span>
+												</span>
+											)}
 										</button>
 									);
 								})}

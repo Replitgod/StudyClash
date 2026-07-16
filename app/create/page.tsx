@@ -64,11 +64,14 @@ const GRADE_LEVEL_OPTIONS = [
   "Other",
 ];
 
+// Labels only -- the underlying values ("mixed"/"easy"/"medium"/"hard")
+// are load-bearing strings threaded through the AI prompt/generation logic
+// in app/api/generate-questions/route.ts, so those stay exactly as-is.
 const DIFFICULTY_OPTIONS = [
-  { value: "mixed", label: "Mixed (Recommended)" },
-  { value: "easy", label: "Easy" },
-  { value: "medium", label: "Medium" },
-  { value: "hard", label: "Hard" },
+  { value: "mixed", label: "Exam-level (Recommended)" },
+  { value: "easy", label: "Foundation" },
+  { value: "medium", label: "Standard" },
+  { value: "hard", label: "Challenging" },
 ];
 
 const QUESTION_COUNT_OPTIONS = [5, 10, 15, 20, 25];
@@ -410,6 +413,13 @@ export default function CreateDeck() {
   const [reasoningFormat, setReasoningFormat] = useState("argumentation");
   const [examTrack, setExamTrack] = useState(initialExamSelection.track);
   const [examMode, setExamMode] = useState(initialExamSelection.mode);
+
+  // Which of the 5 form sections is currently shown -- the wizard's step
+  // number, always starting at 1 regardless of exam-drill-flow (whichever
+  // section is first just happens to be numbered 1 either way, see
+  // stepSubject/stepName below). Not to be confused with `currentStep`
+  // just below, which is an unrelated generation-loading-overlay animation.
+  const [formStep, setFormStep] = useState(1);
 
   // Tracks which step of the loading sequence to visually highlight.
   // This is a cosmetic progress indicator — the actual work still
@@ -1225,6 +1235,52 @@ export default function CreateDeck() {
   const stepCustomize = isExamDrillFlow ? 2 : 3;
   const stepNotes = isExamDrillFlow ? 3 : 4;
   const stepGenerate = isExamDrillFlow ? 4 : 5;
+  const totalFormSteps = stepGenerate;
+
+  // Validates only the fields that live on the CURRENT step before letting
+  // the student move forward -- the same checks handleSubmit already runs
+  // at the very end, just scoped to what's actually on screen right now so
+  // a mistake gets caught immediately instead of after filling out every
+  // later step.
+  const handleNextStep = () => {
+    setErrorMessage(null);
+
+    if (formStep === stepSubject && !isExamDrillFlow) {
+      if (!courseOption) {
+        setErrorMessage("Please choose a subject.");
+        return;
+      }
+      if (courseOption === "Other" && !customCourse.trim()) {
+        setErrorMessage("Please enter your subject name.");
+        return;
+      }
+    }
+
+    if (formStep === stepName) {
+      if (!resolvedStudentName) {
+        setErrorMessage("Please enter your name.");
+        return;
+      }
+      if (!isExamDrillFlow && !deckTitle.trim()) {
+        setErrorMessage("Please give your deck a title.");
+        return;
+      }
+    }
+
+    if (formStep === stepNotes && notes.trim().length < MIN_NOTES_CHARACTERS) {
+      setErrorMessage(
+        `Please add at least ${MIN_NOTES_CHARACTERS} characters of notes so we can generate quality questions.`
+      );
+      return;
+    }
+
+    setFormStep((step) => Math.min(totalFormSteps, step + 1));
+  };
+
+  const handlePrevStep = () => {
+    setErrorMessage(null);
+    setFormStep((step) => Math.max(1, step - 1));
+  };
 
   // ---------- Auth loading OR redirecting state ----------
   if (isAuthLoading || !isLoggedIn) {
@@ -1374,7 +1430,43 @@ export default function CreateDeck() {
         onSubmit={handleSubmit}
         className="mt-8 w-full max-w-2xl rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:mt-10 sm:p-6 md:p-8"
       >
-        {!isExamDrillFlow && (
+        {/* Step progress indicator */}
+        <div className="mb-6 flex items-center gap-1.5">
+          {Array.from({ length: totalFormSteps }, (_, i) => i + 1).map((step) => (
+            <div
+              key={step}
+              className={`h-1.5 flex-1 rounded-full transition-colors duration-200 ${
+                step <= formStep ? "bg-indigo-500" : "bg-white/10"
+              }`}
+            />
+          ))}
+        </div>
+        <p className="-mt-4 mb-6 text-xs font-semibold uppercase tracking-wider text-white/40">
+          Step {formStep} of {totalFormSteps}
+        </p>
+
+        {/* Validation errors from handleNextStep surface here regardless of
+            which step is active -- the final-submit error banner further
+            down only renders on the last step, so an early-step validation
+            failure would otherwise have nowhere visible to appear. */}
+        {errorMessage && formStep !== stepGenerate && (
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="mb-6 flex items-start gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
+          >
+            <svg className="mt-0.5 h-5 w-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+              />
+            </svg>
+            <span className="min-w-0 break-words">{errorMessage}</span>
+          </div>
+        )}
+
+        {!isExamDrillFlow && formStep === stepSubject && (
           <>
             {/* ---------- Section 1: Choose Subject ---------- */}
             <SectionHeader step={stepSubject} title="Choose Subject" />
@@ -1423,11 +1515,20 @@ export default function CreateDeck() {
                 />
               </div>
             )}
+
+            <button
+              type="button"
+              onClick={handleNextStep}
+              className="mt-6 flex w-full items-center justify-center rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-bold text-white transition-colors duration-150 hover:bg-indigo-500 sm:mt-8"
+            >
+              Continue
+            </button>
           </>
         )}
 
-        {/* ---------- Section 2: Name Your Deck ---------- */}
+        {formStep === stepName && (
         <div className="mt-6 border-t border-white/10 pt-6 sm:mt-8 sm:pt-8">
+          {/* ---------- Section 2: Name Your Deck ---------- */}
           <SectionHeader step={stepName} title={isExamDrillFlow ? "Identity" : "Name Your Deck"} />
 
           <div className="grid grid-cols-1 gap-4 sm:gap-5">
@@ -1547,10 +1648,29 @@ export default function CreateDeck() {
               </div>
             )}
           </div>
-        </div>
 
-        {/* ---------- Section 3: Customize ---------- */}
+          <div className="mt-6 flex gap-3 sm:mt-8">
+            <button
+              type="button"
+              onClick={handlePrevStep}
+              className="flex-shrink-0 rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={handleNextStep}
+              className="flex flex-1 items-center justify-center rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-bold text-white transition-colors duration-150 hover:bg-indigo-500"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+        )}
+
+        {formStep === stepCustomize && (
         <div className="mt-6 border-t border-white/10 pt-6 sm:mt-8 sm:pt-8">
+          {/* ---------- Section 3: Customize ---------- */}
           <SectionHeader step={stepCustomize} title={section3Title} />
           <p className="-mt-1 mb-4 text-xs text-white/40">
             Optional — pick what fits, or leave the defaults as-is.
@@ -1775,9 +1895,28 @@ export default function CreateDeck() {
               </div>
             )}
           </div>
+
+          <div className="mt-6 flex gap-3 sm:mt-8">
+            <button
+              type="button"
+              onClick={handlePrevStep}
+              className="flex-shrink-0 rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={handleNextStep}
+              className="flex flex-1 items-center justify-center rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-bold text-white transition-colors duration-150 hover:bg-indigo-500"
+            >
+              Continue
+            </button>
+          </div>
         </div>
+        )}
 
         {/* ---------- Section 4: Add Notes or Upload Files ---------- */}
+        {formStep === stepNotes && (
         <div className="mt-6 border-t border-white/10 pt-6 sm:mt-8 sm:pt-8">
           <SectionHeader step={stepNotes} title="Add Notes or Upload Files" />
 
@@ -1996,18 +2135,76 @@ export default function CreateDeck() {
               </p>
             )}
           </div>
+
+          <div className="mt-6 flex gap-3 sm:mt-8">
+            <button
+              type="button"
+              onClick={handlePrevStep}
+              className="flex-shrink-0 rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
+            >
+              Back
+            </button>
+            <button
+              type="button"
+              onClick={handleNextStep}
+              className="flex flex-1 items-center justify-center rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-bold text-white transition-colors duration-150 hover:bg-indigo-500"
+            >
+              Preview &amp; Continue
+            </button>
+          </div>
         </div>
+        )}
 
         {/* ---------- Section 5: Generate ---------- */}
+        {formStep === stepGenerate && (
         <div className="mt-6 border-t border-white/10 pt-6 sm:mt-8 sm:pt-8">
           <SectionHeader step={stepGenerate} title={section5Title} />
+
+          {/* Read-only recap of what's about to be generated -- the
+              "preview generation settings" step, folded into Generate
+              rather than a separate screen since there's nothing left to
+              edit here besides the beta code below. */}
+          <div className="mb-5 grid grid-cols-2 gap-2.5 rounded-xl border border-white/10 bg-black/20 p-4 sm:grid-cols-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Subject</p>
+              <p className="mt-0.5 truncate text-sm font-semibold text-white/90">
+                {isExamDrillFlow ? selectedExamTrackLabel : courseOption === "Other" ? customCourse || "—" : courseOption || "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Title</p>
+              <p className="mt-0.5 truncate text-sm font-semibold text-white/90">
+                {isExamDrillFlow ? `${selectedExamTrackLabel} ${selectedExamModeLabel} Drill` : deckTitle || "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Difficulty</p>
+              <p className="mt-0.5 truncate text-sm font-semibold text-white/90">
+                {DIFFICULTY_OPTIONS.find((o) => o.value === difficultyMode)?.label || difficultyMode}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Questions</p>
+              <p className="mt-0.5 truncate text-sm font-semibold text-white/90">{questionCount}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Type</p>
+              <p className="mt-0.5 truncate text-sm font-semibold text-white/90">
+                {QUESTION_TYPE_OPTIONS.find((o) => o.value === questionType)?.label || questionType}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Material</p>
+              <p className="mt-0.5 truncate text-sm font-semibold text-white/90">{notesCharCount} characters</p>
+            </div>
+          </div>
 
           <div className="mb-4 flex flex-col gap-2">
             <label
               htmlFor="betaAccessCode"
               className="text-xs font-bold uppercase tracking-wider text-white/60"
             >
-              Beta Access Code {requiresBetaAccessCode ? "(Free Beta only)" : "(optional)"}
+              Beta Access Code {requiresBetaAccessCode ? "(Free plan only)" : "(optional)"}
             </label>
             <input
               id="betaAccessCode"
@@ -2017,7 +2214,7 @@ export default function CreateDeck() {
               placeholder={
                 requiresBetaAccessCode
                   ? "Enter your beta access code"
-                  : "Only needed if your account is on Free Beta"
+                  : "Only needed if your account is on the Free plan"
               }
               required={requiresBetaAccessCode}
               autoComplete="off"
@@ -2026,14 +2223,23 @@ export default function CreateDeck() {
             <p className="text-[9px] text-white/30">
               {requiresBetaAccessCode
                 ? "Your beta access code was sent to you by the owner if you wanted to try this app."
-                : "Your account can generate without a code. Free Beta users still need one."}
+                : "Your account can generate without a code. Free plan users still need one."}
             </p>
           </div>
 
+          <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={handlePrevStep}
+            disabled={isGenerating}
+            className="flex-shrink-0 rounded-xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Back
+          </button>
           <button
             type="submit"
             disabled={isGenerating || isProcessingUpload}
-            className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100 sm:px-8 sm:hover:scale-[1.02] sm:text-lg"
+            className="group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100 sm:px-8 sm:hover:scale-[1.02] sm:text-lg"
           >
             {isGenerating ? (
               <>
@@ -2080,6 +2286,7 @@ export default function CreateDeck() {
               <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover:translate-x-full" />
             )}
           </button>
+          </div>
 
           {errorMessage && (
             <div
@@ -2104,6 +2311,7 @@ export default function CreateDeck() {
             </div>
           )}
         </div>
+        )}
       </form>
 
       {/* Generation loading overlay */}

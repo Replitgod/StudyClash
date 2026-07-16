@@ -7,7 +7,7 @@ const EXAM_TRACKS = [
   {
     slug: "mcat",
     name: "MCAT",
-    monthly: "Included in Exam Tunnel ($5/mo)",
+    monthly: "Included in Exam Pro ($5/mo)",
     promise: "AAMC-style multi-step reasoning with passage-heavy science prompts.",
     officialLabel: "AAMC free practice exam",
     officialUrl:
@@ -16,7 +16,7 @@ const EXAM_TRACKS = [
   {
     slug: "lsat",
     name: "LSAT",
-    monthly: "Included in Exam Tunnel ($5/mo)",
+    monthly: "Included in Exam Pro ($5/mo)",
     promise: "Argument structure, logical flaws, and timed pressure drills.",
     officialLabel: "LSAC free PrepTests (LawHub)",
     officialUrl: "https://www.lsac.org/lsat/prepare/official-lsat-practice-tests",
@@ -24,7 +24,7 @@ const EXAM_TRACKS = [
   {
     slug: "nclex",
     name: "NCLEX",
-    monthly: "Included in Exam Tunnel ($5/mo)",
+    monthly: "Included in Exam Pro ($5/mo)",
     promise: "Clinical judgment drills with safety-first prioritization patterns.",
     officialLabel: "Official NCLEX prep resources",
     officialUrl: "https://www.nclex.com/prepare.page",
@@ -32,7 +32,7 @@ const EXAM_TRACKS = [
   {
     slug: "ap",
     name: "AP Exams",
-    monthly: "Included in Exam Tunnel ($5/mo)",
+    monthly: "Included in Exam Pro ($5/mo)",
     promise: "AP-style stems and depth tuned for class exams and AP scoring bands.",
     officialLabel: "Free-response Qs from past AP exams",
     officialUrl: "https://apcentral.collegeboard.org/courses/past-exam-questions",

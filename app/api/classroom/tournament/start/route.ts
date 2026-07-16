@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ started: true, round1MatchCount: rows.length });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to start tournament.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Failed to start tournament:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Failed to start tournament." }, { status: 500 });
   }
 }

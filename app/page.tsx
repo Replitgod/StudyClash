@@ -58,31 +58,36 @@ export const metadata: Metadata = {
 const STEPS = [
   {
     title: "Upload your material",
-    body: "Paste notes or upload a PDF.",
+    body: "Add notes, a PDF, or a study topic.",
   },
   {
-    title: "Battle through questions",
+    title: "Battle to practice",
     body: "Compete against AI or challenge a friend.",
   },
   {
-    title: "Fix your weak topics",
-    body: "Review mistakes and rematch targeted concepts.",
+    title: "Rematch your weaknesses",
+    body: "Study the topics you missed until you master them.",
   },
 ];
 
 const BENEFITS = [
-  {
-    title: "Active recall",
-    body: "Practice retrieving answers instead of rereading notes.",
-  },
-  {
-    title: "Competitive motivation",
-    body: "Use scores, timing, opponents, and rematches to stay engaged.",
-  },
-  {
-    title: "Targeted improvement",
-    body: "See exactly which concepts need more practice.",
-  },
+  "AI-generated questions from your material",
+  "Instant AI and friend battles",
+  "Weak-topic detection",
+  "Targeted rematches",
+  "Clear explanations",
+  "Progress tracking",
+];
+
+// Factual, verifiable differentiators only -- no subjective "we're better"
+// claims and no comparison table naming competitors by strength/weakness.
+const DIFFERENTIATORS = [
+  "Live AI battles",
+  "Timed scoring",
+  "Weak-topic detection",
+  "Targeted rematches",
+  "Friend challenge links",
+  "Questions generated from your own material",
 ];
 
 const FAQ_ITEMS = [
@@ -96,11 +101,11 @@ const FAQ_ITEMS = [
   },
   {
     q: "Can I battle instantly without creating a room?",
-    a: "Yes. Tap Start a Battle and start instantly in Easy, Medium, Hard, or Adaptive mode. No lobby required.",
+    a: "Yes. Tap Try Instant Battle and start instantly in Easy, Medium, Hard, or Adaptive mode. No lobby required.",
   },
   {
     q: "Is there a free plan?",
-    a: "Yes. Battle loops are free forever. Pro Individual unlocks unlimited play and the full VYRA coach.",
+    a: `Yes. Battle loops are free forever. ${PLAN_METADATA.pro_individual.label} unlocks unlimited play and the full VYRA coach.`,
   },
 ];
 
@@ -163,7 +168,7 @@ export default function Home() {
       url: `${siteUrl}/pricing`,
       price: "0",
       priceCurrency: "USD",
-      category: "Free Beta",
+      category: PLAN_METADATA.free_beta.label,
       availability: "https://schema.org/InStock",
     },
   };
@@ -238,7 +243,7 @@ export default function Home() {
 
             <HeroRevealItem className="mt-4">
               <p className="max-w-[560px] text-base leading-relaxed text-[#64748B] sm:text-lg">
-                Upload your class material, compete through AI-generated questions, find your weak topics, and improve with every rematch.
+                Upload your material, compete against AI or friends, and rematch the topics you miss.
               </p>
             </HeroRevealItem>
 
@@ -247,18 +252,20 @@ export default function Home() {
                 href="#battle-ai"
                 className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#4F46E5] px-6 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#4338CA]"
               >
-                Start a Battle
+                Try Instant Battle
               </Link>
               <Link
-                href="/demo/battle"
+                href="/create"
                 className="inline-flex h-12 items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white px-6 text-sm font-semibold text-[#0F172A] transition-colors duration-150 hover:bg-[#F8FAFC]"
               >
-                Try the Demo
+                Upload Notes
               </Link>
             </HeroRevealItem>
 
             <HeroRevealItem className="mt-3">
-              <p className="text-xs font-medium text-[#64748B]">No signup required for the demo.</p>
+              <p className="text-xs font-medium text-[#64748B]">
+                Try the demo without signing up. Create an account when you want to upload and save your own material.
+              </p>
             </HeroRevealItem>
           </HeroReveal>
 
@@ -297,39 +304,29 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ---------- 4. Three key benefits ---------- */}
-        <section aria-label="Why StudyClash works" className="border-t border-[#E2E8F0] py-14 sm:py-16">
-          <div className="grid gap-4 sm:grid-cols-3">
-            {BENEFITS.map((item) => (
-              <div key={item.title} className="rounded-[14px] border border-[#E2E8F0] bg-white p-6">
-                <h3 className="text-base font-semibold text-[#0F172A]">{item.title}</h3>
-                <p className="mt-1.5 text-sm text-[#64748B]">{item.body}</p>
+        {/* ---------- 4. Core benefits ---------- */}
+        <section aria-label="Core benefits" className="border-t border-[#E2E8F0] py-14 sm:py-16">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {BENEFITS.map((benefit) => (
+              <div key={benefit} className="flex items-center gap-3 rounded-[14px] border border-[#E2E8F0] bg-white p-4">
+                <svg className="h-5 w-5 flex-shrink-0 text-[#4F46E5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                <span className="text-sm font-medium text-[#0F172A]">{benefit}</span>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ---------- 5. Demo call to action ---------- */}
-        <section aria-label="Try the demo" className="border-t border-[#E2E8F0] py-14 sm:py-16">
-          <div className="rounded-[14px] border border-[#E2E8F0] bg-[#EEF2FF] p-8 text-center sm:p-10">
-            <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">See it in 90 seconds</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm text-[#64748B]">
-              A guided walkthrough of a full battle, no account needed.
-            </p>
-            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link
-                href="/demo/battle"
-                className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#4F46E5] px-6 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#4338CA]"
-              >
-                Try the Demo
-              </Link>
-              <Link
-                href="/create"
-                className="inline-flex h-12 items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white px-6 text-sm font-semibold text-[#0F172A] transition-colors duration-150 hover:bg-[#F8FAFC]"
-              >
-                Upload Your Notes
-              </Link>
-            </div>
+        {/* ---------- What makes StudyClash different ---------- */}
+        <section aria-label="What makes StudyClash different" className="border-t border-[#E2E8F0] py-14 sm:py-16">
+          <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">What makes StudyClash different</h2>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {DIFFERENTIATORS.map((item) => (
+              <div key={item} className="rounded-[14px] border border-[#E2E8F0] bg-[#F8FAFC] p-4">
+                <span className="text-sm font-medium text-[#0F172A]">{item}</span>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -378,7 +375,7 @@ export default function Home() {
                 href="/pricing"
                 className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white text-sm font-semibold text-[#0F172A] transition-colors duration-150 hover:bg-[#F8FAFC]"
               >
-                View Exam Tunnel
+                View {PLAN_METADATA.exam_tunnel.label}
               </Link>
             </div>
           </div>
@@ -405,6 +402,27 @@ export default function Home() {
                 <p className="mt-2 text-sm text-[#64748B]">{item.a}</p>
               </details>
             ))}
+          </div>
+        </section>
+
+        {/* ---------- Final call to action ---------- */}
+        <section aria-label="Get started" className="border-t border-[#E2E8F0] py-14 sm:py-16">
+          <div className="rounded-[14px] border border-[#E2E8F0] bg-[#EEF2FF] p-8 text-center sm:p-10">
+            <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">Ready to make studying competitive?</h2>
+            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link
+                href="#battle-ai"
+                className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#4F46E5] px-6 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#4338CA]"
+              >
+                Try Instant Battle
+              </Link>
+              <Link
+                href="/create"
+                className="inline-flex h-12 items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white px-6 text-sm font-semibold text-[#0F172A] transition-colors duration-150 hover:bg-[#F8FAFC]"
+              >
+                Create Your First Deck
+              </Link>
+            </div>
           </div>
         </section>
 

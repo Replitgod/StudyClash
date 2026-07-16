@@ -1394,7 +1394,11 @@ async function handleOpenResponseGeneration(args: {
     .single();
 
   if (deckError) {
-    return NextResponse.json({ error: deckError.message }, { status: 500 });
+    console.error("Failed to save open-response deck:", deckError.message);
+    return NextResponse.json(
+      { error: "We generated your questions but couldn't save the deck. Please try again." },
+      { status: 500 }
+    );
   }
 
   const deckId = deckData.id;
@@ -1416,8 +1420,12 @@ async function handleOpenResponseGeneration(args: {
   const { error: questionsError } = await supabase.from("questions").insert(questionsToInsert);
 
   if (questionsError) {
+    console.error("Failed to save open-response questions:", questionsError.message);
     await supabase.from("decks").delete().eq("id", deckId);
-    return NextResponse.json({ error: questionsError.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "We generated your questions but couldn't save the deck. Please try again." },
+      { status: 500 }
+    );
   }
 
   let { error: logError } = await supabase.from("generation_logs").insert({
@@ -1673,7 +1681,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json(
             {
               error:
-                "Free Beta limit reached: 3 battles today. Upgrade to Pro Individual for unlimited battles.",
+                "Free plan limit reached: 3 battles today. Upgrade to Student Pro for unlimited battles.",
             },
             { status: 429 }
           );
@@ -1699,7 +1707,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json(
             {
               error:
-                "Free Beta limit reached: 2 PDF uploads today. Upgrade to Pro Individual for unlimited uploads.",
+                "Free plan limit reached: 2 PDF uploads today. Upgrade to Student Pro for unlimited uploads.",
             },
             { status: 429 }
           );
@@ -1724,7 +1732,7 @@ export async function POST(req: NextRequest) {
 
       if ((count || 0) >= dailyLimit) {
         const message = isFreePlan
-          ? "Daily generation limit reached for Free Beta. Upgrade on Pricing for higher limits."
+          ? "Daily generation limit reached for the Free plan. Upgrade on Pricing for higher limits."
           : "Daily generation limit reached.";
         return NextResponse.json(
           { error: message },
@@ -2000,7 +2008,11 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (deckError) {
-      return NextResponse.json({ error: deckError.message }, { status: 500 });
+      console.error("Failed to save deck:", deckError.message);
+      return NextResponse.json(
+        { error: "We generated your questions but couldn't save the deck. Please try again." },
+        { status: 500 }
+      );
     }
 
     const deckId = deckData.id;
@@ -2023,13 +2035,14 @@ export async function POST(req: NextRequest) {
       .insert(questionsToInsert);
 
     if (questionsError) {
+      console.error("Failed to save questions:", questionsError.message);
       // The deck was already created but its questions failed to save.
       // Clean up the orphaned deck so it doesn't show up as a broken,
       // empty deck in /decks.
       await supabase.from("decks").delete().eq("id", deckId);
 
       return NextResponse.json(
-        { error: questionsError.message },
+        { error: "We generated your questions but couldn't save the deck. Please try again." },
         { status: 500 }
       );
     }
@@ -2086,9 +2099,15 @@ export async function POST(req: NextRequest) {
     // 11. Send the new deck's id back to the frontend
     return NextResponse.json({ deckId });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Something went wrong.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    // Catch-all for anything unexpected (AI provider errors, PDF parsing
+    // failures, etc.) that wasn't already handled with a specific friendly
+    // message above -- log the real error server-side, never forward raw
+    // provider/library error text to the client.
+    console.error("Unhandled error in /api/generate-questions:", err instanceof Error ? err.message : err);
+    return NextResponse.json(
+      { error: "Something went wrong generating your deck. Please try again." },
+      { status: 500 }
+    );
   }
 }
 

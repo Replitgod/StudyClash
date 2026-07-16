@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
       disclaimer: outcome.disclaimer,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Something went wrong finding resources.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Failed to find resources:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "Something went wrong finding resources." }, { status: 500 });
   }
 }

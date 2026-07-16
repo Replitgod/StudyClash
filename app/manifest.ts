@@ -39,7 +39,7 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         name: "Pricing",
         short_name: "Pricing",
-        description: "Compare Free Beta and paid plans",
+        description: "Compare Free and paid plans",
         url: "/pricing",
       },
     ],

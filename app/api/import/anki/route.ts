@@ -208,8 +208,8 @@ export async function POST(req: NextRequest) {
     try {
       sqliteBytes = await readSqliteBytesFromApkg(fileBuffer);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not read this .apkg file.";
-      return NextResponse.json({ error: message }, { status: 422 });
+      console.error("Could not read .apkg file:", error instanceof Error ? error.message : error);
+      return NextResponse.json({ error: "Could not read this .apkg file. Please check the export and try again." }, { status: 422 });
     }
 
     const SQL = await getSqlJs();
@@ -274,7 +274,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ deckId, termCount: terms.length, deckTitle });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Something went wrong.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Anki import failed:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Something went wrong importing this deck." }, { status: 500 });
   }
 }

@@ -139,14 +139,16 @@ function getOpenAIClient(): OpenAI | null {
   return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 }
 
-function getVyraOfflineFallback(message: string): string {
-  const reason = clampText(message, 120);
+// Never interpolate the raw caught error into this -- it's shown to the
+// student verbatim as VYRA's reply, so it must never carry provider/internal
+// error text through.
+function getVyraOfflineFallback(): string {
   return [
     "Quick answer",
     "VYRA could not analyze this right now. Try again, or ask about a specific question.",
     "",
     "Simple explanation",
-    `Temporary analysis failure: ${reason}.`,
+    "Temporary analysis failure -- this usually clears up on retry.",
     "",
     "Example",
     "Ask: 'Why was my selected answer wrong for this question?'",
@@ -874,7 +876,7 @@ export async function POST(req: NextRequest) {
 
     const openai = getOpenAIClient();
     if (!openai) {
-      const fallbackReply = getVyraOfflineFallback(message);
+      const fallbackReply = getVyraOfflineFallback();
       return NextResponse.json({ reply: fallbackReply });
     }
 
@@ -934,7 +936,7 @@ export async function POST(req: NextRequest) {
           let finalReply: string;
 
           if (!trimmedReply) {
-            finalReply = getVyraOfflineFallback(message);
+            finalReply = getVyraOfflineFallback();
             controller.enqueue(encoder.encode(finalReply));
           } else {
             const cleanedReply = stripMarkdownArtifacts(trimmedReply);
@@ -984,10 +986,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "VYRA failed to respond.";
-
-    const fallbackReply = getVyraOfflineFallback(message);
-    return NextResponse.json({ reply: fallbackReply, error: message }, { status: 200 });
+    console.error("VYRA chat failed:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ reply: getVyraOfflineFallback() }, { status: 200 });
   }
 }

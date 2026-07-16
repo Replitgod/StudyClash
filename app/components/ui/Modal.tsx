@@ -12,10 +12,13 @@ export type ModalProps = {
   className?: string;
 };
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 // Generalizes the modal shell previously hand-built inside FeedbackButton:
 // mobile bottom-sheet / desktop centered dialog, click-outside-to-close,
-// Escape-to-close, and a labeled close button. Unlike the original, Escape
-// is bound at the document level while open (not just on the panel), so it
+// Escape-to-close, a labeled close button, and a Tab focus trap. Escape is
+// bound at the document level while open (not just on the panel), so it
 // works regardless of where focus currently is — the original only closed
 // on Escape if focus happened to already be inside the dialog.
 export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
@@ -25,18 +28,41 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
     if (!isOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") {
+        onClose();
+        return;
+      }
+
+      // Focus trap: Tab/Shift+Tab cycle within the dialog's focusable
+      // elements instead of escaping into the page behind the overlay.
+      if (event.key === "Tab") {
+        const panel = panelRef.current;
+        if (!panel) return;
+        const focusable = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR));
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+
+        if (event.shiftKey && active === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && active === last) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
     };
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", handleKeyDown);
 
-    // Not a full focus trap (Tab can still leave the dialog), but without
-    // this, opening the dialog leaves keyboard/screen-reader focus wherever
-    // it was on the trigger button, so Tab from there walks through the
-    // page behind the overlay instead of into the dialog that's actually
-    // visible and interactive.
+    // Without this, opening the dialog leaves keyboard/screen-reader focus
+    // wherever it was on the trigger button, so Tab from there walks
+    // through the page behind the overlay instead of into the dialog
+    // that's actually visible and interactive.
     panelRef.current?.focus();
 
     return () => {

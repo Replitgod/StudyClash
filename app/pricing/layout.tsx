@@ -3,7 +3,7 @@
 export const metadata: Metadata = {
   title: "StudyClash Pricing | AI Study App and Quizlet Alternative",
   description:
-    "Compare StudyClash pricing for students and classrooms, including Free Beta and paid tiers for AI study battles, flashcard battle loops, and exam prep.",
+    "Compare StudyClash pricing for high-school students, including a free plan and paid tiers for AI study battles and exam prep.",
   alternates: {
     canonical: "/pricing",
   },
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "StudyClash Pricing | Free And Pro Plans",
     description:
-      "Compare Free Beta, Pro, Team, and Exam Tunnel pricing options.",
+      "Compare Free, Student Pro, and Exam Pro pricing options.",
     url: "/pricing",
     images: ["/opengraph-image"],
   },
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "StudyClash Pricing | AI Study App Plans",
     description:
-      "See Free Beta and paid plans for AI study battles, adaptive practice, and exam prep.",
+      "See Free and paid plans for AI study battles, adaptive practice, and exam prep.",
     images: ["/twitter-image"],
   },
 };

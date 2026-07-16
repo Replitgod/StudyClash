@@ -32,7 +32,7 @@ export async function GET(
 
     return NextResponse.json({ matchId: match.id });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to resolve challenge link.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Failed to resolve challenge link:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Failed to resolve challenge link." }, { status: 500 });
   }
 }

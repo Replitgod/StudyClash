@@ -135,7 +135,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ decks: blindspotDecks });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Could not compute blindspots right now.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Failed to compute blindspots:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "Could not compute blindspots right now." }, { status: 500 });
   }
 }

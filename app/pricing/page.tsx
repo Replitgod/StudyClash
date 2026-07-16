@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/lib/useAuth";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
-import { PUBLIC_PLANS, getPlanMetadata } from "@/lib/plans";
+import { PLAN_METADATA, PUBLIC_PLANS, getPlanMetadata } from "@/lib/plans";
 import { Button } from "@/app/components/ui/Button";
 import { HoverLiftArticle } from "@/app/components/ui/HoverLift";
 
@@ -21,6 +21,10 @@ export default function PricingPage() {
   const requestAccessHref =
     "mailto:studyjoustbeta@gmail.com?subject=StudyClash%20Plan%20Access%20Request";
 
+  // No payment processor is wired up yet -- these plans aren't purchasable
+  // with a working checkout, so the button says exactly that instead of
+  // implying a live "Buy Now" flow. Clicking sends a plan-access request by
+  // email rather than landing on a broken checkout page.
   const getButtonLabel = (planId: string): string => {
     if (isLoggedIn && profile?.plan === planId) {
       return "Current Plan";
@@ -28,7 +32,7 @@ export default function PricingPage() {
     if (planId === "free_beta") {
       return "Current Beta";
     }
-    return "Request Access";
+    return "Join Waitlist";
   };
 
   const isCurrentPlan = (planId: string): boolean => {
@@ -204,11 +208,11 @@ export default function PricingPage() {
             Free battle loops, forever
           </p>
           <p className="text-xs text-white/40">
-            Core AI battles stay free. Pro Individual unlocks unlimited play and the full VYRA coach.
+            Core AI battles stay free. {PLAN_METADATA.pro_individual.label} unlocks unlimited play and the full VYRA coach.
           </p>
           {!isLoggedIn && (
             <Button href="/signup" variant="primary" className="mt-3">
-              Sign Up for Free Beta
+              Sign Up for Free
             </Button>
           )}
         </div>

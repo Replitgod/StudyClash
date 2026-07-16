@@ -241,8 +241,8 @@ export async function POST(req: NextRequest) {
     try {
       html = await fetchQuizletHtml(rawUrl);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not reach Quizlet.";
-      return NextResponse.json({ error: message }, { status: 502 });
+      console.error("Could not reach Quizlet:", error instanceof Error ? error.message : error);
+      return NextResponse.json({ error: "Could not reach Quizlet. Please check the link and try again." }, { status: 502 });
     }
 
     const terms = extractTermsFromHtml(html).slice(0, MAX_TERMS);
@@ -295,7 +295,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ deckId, termCount: terms.length, deckTitle });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Something went wrong.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Quizlet import failed:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Something went wrong importing this set." }, { status: 500 });
   }
 }

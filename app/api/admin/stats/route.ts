@@ -396,8 +396,7 @@ export async function GET(req: NextRequest) {
       })(),
     });
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Something went wrong.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Failed to load admin stats:", err instanceof Error ? err.message : err);
+    return NextResponse.json({ error: "Something went wrong loading stats." }, { status: 500 });
   }
 }

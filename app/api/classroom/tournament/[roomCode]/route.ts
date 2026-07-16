@@ -324,7 +324,7 @@ export async function GET(
       champion,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to load tournament.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Failed to load tournament:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Failed to load tournament." }, { status: 500 });
   }
 }

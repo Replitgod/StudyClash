@@ -129,8 +129,8 @@ export async function POST(req: NextRequest) {
     try {
       rawText = await fetchGoogleExport(exportUrl);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Could not reach Google Docs.";
-      return NextResponse.json({ error: message }, { status: 502 });
+      console.error("Could not reach Google Docs:", error instanceof Error ? error.message : error);
+      return NextResponse.json({ error: "Could not reach Google Docs. Please check the link and try again." }, { status: 502 });
     }
 
     const notes = (docMatch ? rawText : csvToNotesText(rawText)).trim().slice(0, MAX_NOTES_CHARACTERS);
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ notes });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Something went wrong.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Google Docs import failed:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Something went wrong importing this document." }, { status: 500 });
   }
 }

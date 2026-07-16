@@ -591,10 +591,9 @@ export async function GET(req: NextRequest) {
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {
+    console.error("Failed to load ClashRank:", error instanceof Error ? error.message : error);
     return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Failed to load ClashRank.",
-      },
+      { error: "Failed to load ClashRank." },
       { status: 500 }
     );
   }

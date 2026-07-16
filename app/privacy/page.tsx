@@ -44,7 +44,22 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-base font-bold text-white">AI processing</h2>
-            <p className="mt-1">When you use AI features, relevant study context may be sent to our AI provider from secure server routes. API keys are never exposed in the browser.</p>
+            <p className="mt-1">When you use AI features, relevant study context (your notes, uploaded material, and battle history) is sent to our AI provider from secure server routes to generate questions, explanations, and coaching responses. API keys are never exposed in the browser. We do not use your uploaded material to train StudyClash&apos;s own models.</p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-white">Uploaded notes and study material</h2>
+            <p className="mt-1">Notes and PDFs you upload are stored so your decks stay available across sessions and devices, and so the app can regenerate or reference material you&apos;ve already added. They are not shared publicly or with other users.</p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-white">Challenge links</h2>
+            <p className="mt-1">Anyone with a challenge link can see the display name, score, accuracy, and time of the match being challenged, along with the deck&apos;s title and course name. Don&apos;t share a challenge link if you don&apos;t want that result visible to whoever opens it.</p>
+          </section>
+
+          <section>
+            <h2 className="text-base font-bold text-white">Deleting your data</h2>
+            <p className="mt-1">To delete your account and associated data, <Link href="/contact" className="text-indigo-200 hover:text-indigo-100">contact us</Link> from the email on your account. We don&apos;t yet have a self-service delete option in the app itself.</p>
           </section>
 
           <section>

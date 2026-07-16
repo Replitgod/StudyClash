@@ -149,9 +149,10 @@ The photo may contain handwriting, typed text, a diagram, a chart, or a mix. Rul
 
     return NextResponse.json({ text: extractedText });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to extract text from this image.";
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Image text extraction failed:", error instanceof Error ? error.message : error);
+    return NextResponse.json(
+      { error: "Could not read text from this image. Please try a clearer photo or paste the text directly." },
+      { status: 500 }
+    );
   }
 }

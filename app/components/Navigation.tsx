@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -229,6 +230,9 @@ export default function Navigation() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [continuePath, setContinuePath] = useState<string | null>(null);
   const [isRailOpen, setIsRailOpen] = useState(false);
+  const [morePosition, setMorePosition] = useState<{ left: number; bottom: number } | null>(null);
+  const moreTriggerRef = useRef<HTMLDivElement>(null);
+  const morePopoverRef = useRef<HTMLDivElement>(null);
 
   const isActive = (href: string) => {
     if (href.includes("#")) {
@@ -267,6 +271,32 @@ export default function Navigation() {
     setIsMobileMenuOpen(false);
     setIsMoreOpen(false);
   }, [pathname]);
+
+  // The popover portals to document.body (see render below) to escape the
+  // rail's overflow-hidden, so a click anywhere outside both the trigger and
+  // the portaled popover is what closes it now, not the rail's mouseleave.
+  useEffect(() => {
+    if (!isMoreOpen) return;
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (moreTriggerRef.current?.contains(target)) return;
+      if (morePopoverRef.current?.contains(target)) return;
+      setIsMoreOpen(false);
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [isMoreOpen]);
+
+  const toggleMoreMenu = () => {
+    setIsMoreOpen((prev) => {
+      const next = !prev;
+      if (next && moreTriggerRef.current) {
+        const rect = moreTriggerRef.current.getBoundingClientRect();
+        setMorePosition({ left: rect.right + 10, bottom: window.innerHeight - rect.bottom });
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!isMobileMenuOpen) return;
@@ -311,10 +341,7 @@ export default function Navigation() {
         className="fixed left-0 top-0 hidden h-screen flex-col overflow-hidden border-r border-white/10 bg-[#0a0a0c] py-5 shadow-2xl md:flex"
         aria-label="Primary"
         onMouseEnter={() => setIsRailOpen(true)}
-        onMouseLeave={() => {
-          setIsRailOpen(false);
-          setIsMoreOpen(false);
-        }}
+        onMouseLeave={() => setIsRailOpen(false)}
       >
         <Link href={homeHref} className="mx-auto mb-5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-sm font-black text-white">
           S
@@ -327,47 +354,52 @@ export default function Navigation() {
         <RailButton icon={RAIL_ICONS.diagnostics} tip="Diagnostics" href="/diagnostics" active={isActive("/diagnostics")} expanded={isRailOpen} />
 
         <div className="mt-auto flex flex-col gap-1">
-          <div className="relative">
+          <div className="relative" ref={moreTriggerRef}>
             <RailButton
               icon={RAIL_ICONS.more}
               tip="More"
               active={isMoreOpen}
-              onClick={() => setIsMoreOpen((v) => !v)}
+              onClick={toggleMoreMenu}
               expanded={isRailOpen}
             />
-            <AnimatePresence>
-              {isMoreOpen && (
-                <motion.div
-                  initial={{ opacity: 0, x: -6, scale: 0.97 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: -6, scale: 0.97 }}
-                  transition={springSnappy}
-                  className="absolute bottom-0 left-full ml-2.5 w-52 rounded-xl border border-white/10 bg-[#131316] p-1.5 shadow-2xl"
-                  style={{ zIndex: UI_Z_INDEX.stickyHeader }}
-                >
-                  {continuePath && (
-                    <Link
-                      href={continuePath}
-                      onClick={() => setIsMoreOpen(false)}
-                      className="block rounded-lg px-3 py-2 text-sm font-semibold text-indigo-300 hover:bg-white/5"
-                    >
-                      Continue where you left off
-                    </Link>
-                  )}
-                  {MORE_LINKS.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setIsMoreOpen(false)}
-                      className="block rounded-lg px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/5 hover:text-white"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
+          {typeof document !== "undefined" &&
+            createPortal(
+              <AnimatePresence>
+                {isMoreOpen && morePosition && (
+                  <motion.div
+                    ref={morePopoverRef}
+                    initial={{ opacity: 0, x: -6, scale: 0.97 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    exit={{ opacity: 0, x: -6, scale: 0.97 }}
+                    transition={springSnappy}
+                    className="fixed w-52 rounded-xl border border-white/10 bg-[#131316] p-1.5 shadow-2xl"
+                    style={{ left: morePosition.left, bottom: morePosition.bottom, zIndex: UI_Z_INDEX.stickyHeader }}
+                  >
+                    {continuePath && (
+                      <Link
+                        href={continuePath}
+                        onClick={() => setIsMoreOpen(false)}
+                        className="block rounded-lg px-3 py-2 text-sm font-semibold text-indigo-300 hover:bg-white/5"
+                      >
+                        Continue where you left off
+                      </Link>
+                    )}
+                    {MORE_LINKS.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setIsMoreOpen(false)}
+                        className="block rounded-lg px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/5 hover:text-white"
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>,
+              document.body,
+            )}
 
           {isLoading ? (
             <div className="mx-auto h-8 w-8 animate-pulse rounded-lg bg-white/5" />

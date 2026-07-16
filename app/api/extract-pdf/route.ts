@@ -77,7 +77,10 @@ export async function POST(req: NextRequest) {
 
     if (!rawExtractedText) {
       return NextResponse.json(
-        { error: "Could not extract text from this PDF." },
+        {
+          error:
+            "Could not find any text in this PDF. If it's a scanned or image-only document, try pasting the text directly instead.",
+        },
         { status: 400 }
       );
     }
@@ -86,9 +89,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ text: extractedText });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to extract PDF text.";
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("PDF extraction failed:", error instanceof Error ? error.message : error);
+    return NextResponse.json(
+      { error: "Could not read this PDF. Please try a different file or paste the text directly." },
+      { status: 500 }
+    );
   }
 }

@@ -506,10 +506,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ matchId: matchData.id, crownTaken });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to finish battle.";
-
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Failed to finish battle:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Failed to finish battle. Please try again." }, { status: 500 });
   }
 }
 

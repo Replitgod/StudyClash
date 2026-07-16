@@ -554,12 +554,19 @@ export default function InstantAIBattle() {
     void trackEvent("challenge_link_copy_failed", { source: "instant_battle" });
   };
 
-  const getRoundPillClass = (choice: string) => {
-    if (!currentQuestion) return "border-white/15 bg-white/5";
+  // Reveals the correct answer once the round is locked in, not just
+  // whichever choice happens to have been picked -- a student who answers
+  // wrong should see what the right answer was, the same as the real
+  // battle page and the standalone demo already do.
+  const getRoundPillClass = (choice: string, isLocked: boolean, isSelected: boolean) => {
+    if (!currentQuestion || !isLocked) return "border-white/15 bg-white/5 hover:bg-white/10";
     if (choice === currentQuestion.correct) {
       return "border-green-400/40 bg-green-500/15";
     }
-    return "border-white/15 bg-white/5";
+    if (isSelected) {
+      return "border-red-400/40 bg-red-500/15";
+    }
+    return "border-white/10 bg-white/5 opacity-50";
   };
 
   const winnerText =
@@ -716,17 +723,37 @@ export default function InstantAIBattle() {
             {currentQuestion.choices.map((choice) => {
               const isLocked = Boolean(round.playerChoice);
               const isSelected = round.playerChoice === choice;
+              const isCorrectChoice = currentQuestion.correct === choice;
 
               return (
                 <button
                   key={choice}
                   onClick={() => handlePickChoice(choice)}
                   disabled={isLocked}
-                  className={`rounded-xl border px-3 py-2 text-left text-sm font-semibold transition-colors ${
-                    isSelected ? getRoundPillClass(choice) : "border-white/15 bg-white/5 hover:bg-white/10"
-                  } ${isLocked ? "cursor-default" : "active:scale-[0.99]"}`}
+                  aria-pressed={isSelected}
+                  className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-left text-sm font-semibold transition-colors ${getRoundPillClass(
+                    choice,
+                    isLocked,
+                    isSelected
+                  )} ${isLocked ? "cursor-default" : "active:scale-[0.99]"}`}
                 >
-                  {choice}
+                  <span>{choice}</span>
+                  {isLocked && isCorrectChoice && (
+                    <span className="flex flex-shrink-0 items-center text-green-300">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                      </svg>
+                      <span className="sr-only">Correct answer</span>
+                    </span>
+                  )}
+                  {isLocked && !isCorrectChoice && isSelected && (
+                    <span className="flex flex-shrink-0 items-center text-red-300">
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      <span className="sr-only">Your answer, incorrect</span>
+                    </span>
+                  )}
                 </button>
               );
             })}

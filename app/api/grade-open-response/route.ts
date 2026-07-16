@@ -170,7 +170,7 @@ Return ONLY valid JSON, no markdown:
       feedback: parsed.feedback,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to grade this answer.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Failed to grade open response:", error instanceof Error ? error.message : error);
+    return NextResponse.json({ error: "Failed to grade this answer. Please try again." }, { status: 500 });
   }
 }
