@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -141,9 +141,9 @@ function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -918,7 +918,7 @@ export default function DashboardPage() {
     return (
       <Background>
         <div className="flex min-h-[60vh] flex-col items-center justify-center">
-          <svg className="h-10 w-10 animate-spin text-fuchsia-400" fill="none" viewBox="0 0 24 24">
+          <svg className="h-10 w-10 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
           </svg>
@@ -933,8 +933,8 @@ export default function DashboardPage() {
       <Background>
         <div className="flex min-h-[70vh] items-center justify-center">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm sm:p-8">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-fuchsia-500/10">
-              <svg className="h-6 w-6 text-fuchsia-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500/10">
+              <svg className="h-6 w-6 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
               </svg>
             </div>
@@ -962,13 +962,13 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-6">
         <div className="flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-fuchsia-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-400" />
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-indigo-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
               STUDENT DASHBOARD
             </div>
             <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-              <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                Your StudyJoust Hub
+              <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
+                Your StudyClash Hub
               </span>
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-white/55 sm:text-base">
@@ -977,16 +977,16 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Link href="/demo/battle" className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-sm font-bold text-cyan-200 text-center">
+            <Link href="/demo/battle" className="rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-4 py-3 text-sm font-bold text-indigo-200 text-center">
               Try Demo Battle
             </Link>
-            <Link href="/create" className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] text-center">
+            <Link href="/create" className="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(79,70,229,0.6)] text-center">
               Create Deck
             </Link>
             <Link href="/decks" className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white/90 text-center">
               View My Decks
             </Link>
-            <Link href="/mastery-map" className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-3 text-sm font-bold text-cyan-100 text-center">
+            <Link href="/mastery-map" className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-4 py-3 text-sm font-bold text-indigo-100 text-center">
               Mastery Map
             </Link>
             <Link href="/clashrank" className="rounded-xl border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm font-bold text-amber-100 text-center">
@@ -995,7 +995,7 @@ export default function DashboardPage() {
             {coachDeckId && (
               <Link
                 href={`/battle/${coachDeckId}?mode=rival`}
-                className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-3 text-sm font-bold text-cyan-100 text-center"
+                className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-4 py-3 text-sm font-bold text-indigo-100 text-center"
               >
                 Study Rival
               </Link>
@@ -1003,12 +1003,12 @@ export default function DashboardPage() {
             {coachDeckId && (
               <Link
                 href={`/battle/${coachDeckId}?mode=boss`}
-                className="rounded-xl border border-fuchsia-400/25 bg-fuchsia-500/10 px-4 py-3 text-sm font-bold text-fuchsia-100 text-center"
+                className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-4 py-3 text-sm font-bold text-indigo-100 text-center"
               >
                 Boss Battle
               </Link>
             )}
-            <Link href="/pricing" className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-sm font-bold text-cyan-200 text-center">
+            <Link href="/pricing" className="rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-4 py-3 text-sm font-bold text-indigo-200 text-center">
               Pricing
             </Link>
           </div>
@@ -1023,13 +1023,13 @@ export default function DashboardPage() {
         {(nextAction || trendDeltaPercent !== null) && (
           <div className="grid gap-4 md:grid-cols-2">
             {nextAction && (
-              <div className="rounded-2xl border border-cyan-400/25 bg-cyan-500/[0.06] p-5 backdrop-blur-sm">
-                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300">Do this next</p>
+              <div className="rounded-2xl border border-indigo-400/25 bg-indigo-500/[0.06] p-5 backdrop-blur-sm">
+                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">Do this next</p>
                 <h2 className="mt-2 text-lg font-bold text-white">{nextAction.title}</h2>
                 <p className="mt-2 text-sm text-white/70">{nextAction.message}</p>
                 <Link
                   href={nextAction.href}
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-fuchsia-500 px-4 py-2.5 text-sm font-bold text-white"
+                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-500 px-4 py-2.5 text-sm font-bold text-white"
                 >
                   {nextAction.cta}
                 </Link>
@@ -1043,7 +1043,7 @@ export default function DashboardPage() {
                 <p
                   className={`mt-3 text-3xl font-black ${
                     trendDeltaPercent > 0
-                      ? "text-emerald-300"
+                      ? "text-green-300"
                       : trendDeltaPercent < 0
                         ? "text-amber-300"
                         : "text-white"
@@ -1064,10 +1064,10 @@ export default function DashboardPage() {
           </div>
         )}
 
-        <div className="rounded-2xl border border-emerald-400/25 bg-gradient-to-br from-emerald-500/[0.08] to-cyan-500/[0.08] p-5 backdrop-blur-sm">
+        <div className="rounded-2xl border border-green-400/25 bg-gradient-to-br from-green-500/[0.08] to-indigo-500/[0.08] p-5 backdrop-blur-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-300">
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-green-300">
                 Player Progression
               </p>
               <h2 className="mt-1 text-lg font-bold text-white">Level {levelInfo.level} · {rankInfo.label}</h2>
@@ -1077,33 +1077,33 @@ export default function DashboardPage() {
             </div>
             <div className="w-full max-w-[180px] rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-right">
               <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">XP in level</p>
-              <p className="mt-1 text-base font-black text-emerald-200">{levelInfo.xpInLevel}/500</p>
+              <p className="mt-1 text-base font-black text-green-200">{levelInfo.xpInLevel}/500</p>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300 transition-all duration-700 ease-out"
+                  className="h-full rounded-full bg-gradient-to-r from-green-400 to-indigo-300 transition-all duration-700 ease-out"
                   style={{ width: `${Math.min(100, (levelInfo.xpInLevel / 500) * 100)}%` }}
                 />
               </div>
             </div>
           </div>
 
-          <div className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-500/[0.08] px-3.5 py-3">
+          <div className="mt-3 rounded-xl border border-indigo-400/20 bg-indigo-500/[0.08] px-3.5 py-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-cyan-100">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-indigo-100">
                 {seasonInfo.seasonNumber === 1 ? "Current Season" : `Season ${seasonInfo.seasonNumber}`}
               </p>
-              <p className="text-xs font-bold text-cyan-100">{Math.round(seasonInfo.progressPercent)}%</p>
+              <p className="text-xs font-bold text-indigo-100">{Math.round(seasonInfo.progressPercent)}%</p>
             </div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/30">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300 transition-all duration-700"
+                className="h-full rounded-full bg-gradient-to-r from-indigo-300 to-green-300 transition-all duration-700"
                 style={{ width: `${Math.max(4, seasonInfo.progressPercent)}%` }}
               />
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-cyan-100/80">
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-indigo-100/80">
               <span
                 className={`inline-flex items-center gap-1 font-bold ${
-                  (localProgress?.currentStreakDays || 0) > 0 ? "text-amber-300" : "text-cyan-100/80"
+                  (localProgress?.currentStreakDays || 0) > 0 ? "text-amber-300" : "text-indigo-100/80"
                 }`}
               >
                 <svg className="h-3.5 w-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -1127,7 +1127,7 @@ export default function DashboardPage() {
               <p className="text-[10px] uppercase tracking-wider text-white/45">Daily Goal</p>
               <p className="mt-1 text-sm font-bold text-white">{goalProgress.dailyBattles}/{dailyGoalTarget} battles</p>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-cyan-300 transition-all duration-500" style={{ width: `${dailyGoalPercent}%` }} />
+                <div className="h-full rounded-full bg-gradient-to-r from-green-400 to-indigo-300 transition-all duration-500" style={{ width: `${dailyGoalPercent}%` }} />
               </div>
             </div>
 
@@ -1135,7 +1135,7 @@ export default function DashboardPage() {
               <p className="text-[10px] uppercase tracking-wider text-white/45">Weekly Battles</p>
               <p className="mt-1 text-sm font-bold text-white">{goalProgress.weeklyBattles}/{weeklyGoalTarget}</p>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-300 transition-all duration-500" style={{ width: `${weeklyBattlePercent}%` }} />
+                <div className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-300 transition-all duration-500" style={{ width: `${weeklyBattlePercent}%` }} />
               </div>
             </div>
 
@@ -1143,7 +1143,7 @@ export default function DashboardPage() {
               <p className="text-[10px] uppercase tracking-wider text-white/45">Weekly Accuracy</p>
               <p className="mt-1 text-sm font-bold text-white">{goalProgress.weeklyAccuracy}% / {weeklyAccuracyTarget}%</p>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-gradient-to-r from-fuchsia-400 to-amber-300 transition-all duration-500" style={{ width: `${weeklyAccuracyPercent}%` }} />
+                <div className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-amber-300 transition-all duration-500" style={{ width: `${weeklyAccuracyPercent}%` }} />
               </div>
             </div>
           </div>
@@ -1153,7 +1153,7 @@ export default function DashboardPage() {
               combinedBadges.map((badge) => (
                 <span
                   key={badge}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-100"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-green-300/30 bg-green-500/10 px-2.5 py-1 text-[11px] font-bold text-green-100"
                   style={{ animation: "pulse-enter 320ms ease-brand-bounce" }}
                 >
                   <svg className="h-3 w-3 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
@@ -1178,7 +1178,7 @@ export default function DashboardPage() {
                 {localProgress.historyAccuracies.map((accuracy, index) => (
                   <div key={`${accuracy}-${index}`} className="flex flex-1 flex-col items-center gap-1">
                     <div
-                      className="w-full rounded-sm bg-gradient-to-t from-fuchsia-500 to-cyan-300"
+                      className="w-full rounded-sm bg-gradient-to-t from-indigo-500 to-indigo-300"
                       style={{ height: `${Math.max(8, Math.round(accuracy * 0.45))}px` }}
                     />
                   </div>
@@ -1188,10 +1188,10 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-fuchsia-400/25 bg-gradient-to-br from-fuchsia-500/[0.08] to-cyan-500/[0.06] p-5 backdrop-blur-sm">
+        <div className="rounded-2xl border border-indigo-400/25 bg-gradient-to-br from-indigo-500/[0.08] to-indigo-500/[0.06] p-5 backdrop-blur-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300">
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">
                 ClashPath Command Center
               </p>
               <h2 className="mt-2 text-lg font-bold text-white">{clashPathPulse.title}</h2>
@@ -1201,13 +1201,13 @@ export default function DashboardPage() {
               <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">
                 Arena Tier
               </p>
-              <p className="mt-1 text-base font-black text-cyan-200">{arenaTier}</p>
+              <p className="mt-1 text-base font-black text-indigo-200">{arenaTier}</p>
             </div>
           </div>
 
           <Link
             href={clashPathPulse.href}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-400 px-4 py-2.5 text-sm font-bold text-white"
+            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-400 px-4 py-2.5 text-sm font-bold text-white"
           >
             {clashPathPulse.cta}
             <svg
@@ -1226,10 +1226,10 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="rounded-2xl border border-violet-400/25 bg-violet-500/[0.06] p-5 backdrop-blur-sm sm:p-6">
+        <div className="rounded-2xl border border-indigo-400/25 bg-indigo-500/[0.06] p-5 backdrop-blur-sm sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-violet-300">
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">
                 Study Plans
               </p>
               <h2 className="mt-1 text-lg font-bold text-white">
@@ -1238,7 +1238,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/diagnostics"
-              className="rounded-xl border border-violet-400/25 bg-violet-500/10 px-3.5 py-2 text-xs font-bold text-violet-100"
+              className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-3.5 py-2 text-xs font-bold text-indigo-100"
             >
               Take a Diagnostic
             </Link>
@@ -1276,7 +1276,7 @@ export default function DashboardPage() {
                       </div>
                       <Link
                         href={`/study-plans/${plan.id}`}
-                        className="rounded-lg bg-gradient-to-r from-violet-500 to-cyan-400 px-3 py-1.5 text-xs font-bold text-white"
+                        className="rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-400 px-3 py-1.5 text-xs font-bold text-white"
                       >
                         Open Plan
                       </Link>
@@ -1298,10 +1298,10 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-cyan-400/25 bg-cyan-500/[0.06] p-5 backdrop-blur-sm sm:p-6">
+        <div className="rounded-2xl border border-indigo-400/25 bg-indigo-500/[0.06] p-5 backdrop-blur-sm sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300">
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">
                 Rival Alerts
               </p>
               <h2 className="mt-1 text-lg font-bold text-white">
@@ -1346,7 +1346,7 @@ export default function DashboardPage() {
                   className={`rounded-xl border px-4 py-3 ${
                     item.is_read
                       ? "border-white/10 bg-black/20"
-                      : "border-cyan-300/35 bg-cyan-500/10"
+                      : "border-indigo-300/35 bg-indigo-500/10"
                   }`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-2">
@@ -1356,7 +1356,7 @@ export default function DashboardPage() {
                       <p className="mt-1 text-[11px] text-white/45">{formatDate(item.created_at)}</p>
                     </div>
                     {!item.is_read && (
-                      <span className="rounded-full border border-cyan-300/40 bg-cyan-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-200">
+                      <span className="rounded-full border border-indigo-300/40 bg-indigo-400/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-200">
                         Unread
                       </span>
                     )}
@@ -1366,7 +1366,7 @@ export default function DashboardPage() {
                     {item.action_href && (
                       <Link
                         href={item.action_href}
-                        className="rounded-lg bg-gradient-to-r from-cyan-500 to-fuchsia-500 px-3 py-1.5 text-xs font-bold text-white"
+                        className="rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-500 px-3 py-1.5 text-xs font-bold text-white"
                       >
                         Open Challenge
                       </Link>
@@ -1462,7 +1462,7 @@ export default function DashboardPage() {
               type="button"
               onClick={handleCreateRoom}
               disabled={isCreatingRoom}
-              className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+              className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-500 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
             >
               {isCreatingRoom ? "Creating..." : "Create Room"}
             </button>
@@ -1475,7 +1475,7 @@ export default function DashboardPage() {
           </div>
 
           {roomInviteStatus && (
-            <p className="mt-3 rounded-xl border border-cyan-300/25 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100">
+            <p className="mt-3 rounded-xl border border-indigo-300/25 bg-indigo-500/10 px-3 py-2 text-xs text-indigo-100">
               {roomInviteStatus}
             </p>
           )}
@@ -1497,7 +1497,7 @@ export default function DashboardPage() {
               {roomLimitNotice.upgradeRequired && (
                 <Link
                   href={roomLimitNotice.upgradeHref || "/pricing"}
-                  className="mt-2 inline-flex rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 px-3 py-1.5 text-xs font-bold text-white"
+                  className="mt-2 inline-flex rounded-lg bg-gradient-to-r from-amber-500 to-amber-500 px-3 py-1.5 text-xs font-bold text-white"
                 >
                   Upgrade for More Rooms
                 </Link>
@@ -1534,7 +1534,7 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={() => copyRoomInvite(room)}
-                          className="rounded-lg border border-cyan-300/30 bg-cyan-500/15 px-3 py-1.5 text-xs font-bold text-cyan-100"
+                          className="rounded-lg border border-indigo-300/30 bg-indigo-500/15 px-3 py-1.5 text-xs font-bold text-indigo-100"
                         >
                           Copy Invite
                         </button>
@@ -1550,7 +1550,7 @@ export default function DashboardPage() {
                         <button
                           type="button"
                           onClick={() => copyRoomInvite(room)}
-                          className="rounded-lg border border-cyan-300/30 bg-cyan-500/15 px-3 py-1.5 text-xs font-bold text-cyan-100"
+                          className="rounded-lg border border-indigo-300/30 bg-indigo-500/15 px-3 py-1.5 text-xs font-bold text-indigo-100"
                         >
                           Copy Invite
                         </button>
@@ -1565,7 +1565,7 @@ export default function DashboardPage() {
                       <button
                         type="button"
                         onClick={() => copyRoomInvite(room)}
-                        className="rounded-lg border border-cyan-300/30 bg-cyan-500/15 px-3 py-1.5 text-xs font-bold text-cyan-100"
+                        className="rounded-lg border border-indigo-300/30 bg-indigo-500/15 px-3 py-1.5 text-xs font-bold text-indigo-100"
                       >
                         Copy Invite
                       </button>
@@ -1591,7 +1591,7 @@ export default function DashboardPage() {
           <StatCard
             label="Plan"
             value={profile?.plan || "free_beta"}
-            valueClassName="text-xl text-fuchsia-300"
+            valueClassName="text-xl text-indigo-300"
             hint={planInfo?.description || "Daily generation limits apply based on your plan."}
           />
         </div>
@@ -1603,7 +1603,7 @@ export default function DashboardPage() {
                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">Recent decks</p>
                 <h2 className="text-lg font-bold text-white">Your latest creations</h2>
               </div>
-              <Link href="/decks" className="text-sm font-semibold text-fuchsia-300">View all</Link>
+              <Link href="/decks" className="text-sm font-semibold text-indigo-300">View all</Link>
             </div>
 
             {isLoadingStats ? (
@@ -1629,7 +1629,7 @@ export default function DashboardPage() {
             ) : (
               <div className="space-y-3">
                 {recentDecks.map((deck) => (
-                  <Link key={deck.id} href={`/decks/${deck.id}`} className="flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 transition-colors hover:border-fuchsia-400/30">
+                  <Link key={deck.id} href={`/decks/${deck.id}`} className="flex items-start justify-between gap-3 rounded-xl border border-white/10 bg-black/20 px-4 py-3 transition-colors hover:border-indigo-400/30">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-white">{deck.title}</p>
                       <p className="mt-1 truncate text-xs text-white/45">{deck.course_name}</p>
@@ -1679,7 +1679,7 @@ export default function DashboardPage() {
                         <p className="mt-1 truncate text-xs text-white/45">{match.deck_title || "Study deck"}</p>
                       </div>
                       <div className="flex-shrink-0 text-right">
-                        <p className="text-sm font-bold text-fuchsia-300">{match.score} pts</p>
+                        <p className="text-sm font-bold text-indigo-300">{match.score} pts</p>
                         <p className="text-xs text-white/40">{formatTime(match.time_taken_seconds)}</p>
                       </div>
                     </div>
@@ -1704,10 +1704,10 @@ export default function DashboardPage() {
             <>
               {/* Recommended Next Battle */}
               {deckInsights.recommendedNextBattle && (
-                <div className="rounded-2xl border-2 border-gradient-to-r from-fuchsia-500/30 to-cyan-500/30 bg-gradient-to-br from-fuchsia-500/[0.05] to-cyan-500/[0.05] p-5 backdrop-blur-sm sm:p-6">
+                <div className="rounded-2xl border-2 border-gradient-to-r from-indigo-500/30 to-indigo-500/30 bg-gradient-to-br from-indigo-500/[0.05] to-indigo-500/[0.05] p-5 backdrop-blur-sm sm:p-6">
                   <div className="mb-4 flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-fuchsia-300">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">
                         Recommended Next Battle
                       </p>
                       <h2 className="text-lg font-bold text-white">
@@ -1726,7 +1726,7 @@ export default function DashboardPage() {
                     </div>
                     <Link
                       href={`/battle/${deckInsights.recommendedNextBattle.id}`}
-                      className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-400 px-5 py-2.5 text-sm font-bold text-white transition-transform hover:scale-105"
+                      className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-400 px-5 py-2.5 text-sm font-bold text-white transition-transform hover:scale-105"
                     >
                       Start Battle
                       <svg
@@ -1773,12 +1773,12 @@ export default function DashboardPage() {
                             <p className="text-xs text-white/40">{deck.courseN}</p>
                           </div>
                           <div className="ml-2 flex flex-shrink-0 items-center gap-2">
-                            <span className="rounded-full bg-fuchsia-500/20 px-2 py-1 text-xs font-bold text-fuchsia-300">
+                            <span className="rounded-full bg-indigo-500/20 px-2 py-1 text-xs font-bold text-indigo-300">
                               {deck.matchesPlayed} plays
                             </span>
                             <Link
                               href={`/battle/${deck.id}`}
-                              className="text-fuchsia-300 hover:text-fuchsia-200"
+                              className="text-indigo-300 hover:text-indigo-200"
                             >
                               <svg
                                 className="h-4 w-4"
@@ -1823,13 +1823,13 @@ export default function DashboardPage() {
                               {deck.title}
                             </p>
                             <p className="text-xs text-white/40">{deck.courseN}</p>
-                            <p className="mt-0.5 text-xs text-emerald-300">
+                            <p className="mt-0.5 text-xs text-green-300">
                               {deck.averageAccuracy}% avg • Best: {deck.bestScore}%
                             </p>
                           </div>
                           <Link
                             href={`/battle/${deck.id}`}
-                            className="ml-2 flex-shrink-0 text-emerald-300 hover:text-emerald-200"
+                            className="ml-2 flex-shrink-0 text-green-300 hover:text-green-200"
                           >
                             <svg
                               className="h-4 w-4"
@@ -1924,14 +1924,14 @@ export default function DashboardPage() {
                             </p>
                             <p className="text-xs text-white/40">{deck.courseN}</p>
                             {deck.lastPlayedDate && (
-                              <p className="mt-0.5 text-xs text-cyan-300">
+                              <p className="mt-0.5 text-xs text-indigo-300">
                                 {formatDate(deck.lastPlayedDate)}
                               </p>
                             )}
                           </div>
                           <Link
                             href={`/battle/${deck.id}`}
-                            className="ml-2 flex-shrink-0 text-cyan-300 hover:text-cyan-200"
+                            className="ml-2 flex-shrink-0 text-indigo-300 hover:text-indigo-200"
                           >
                             <svg
                               className="h-4 w-4"
@@ -1961,7 +1961,7 @@ export default function DashboardPage() {
       <VyraCoach
         deckId={coachDeckId}
         deckTitle={coachDeckId ? "Recommended deck context" : "Dashboard study context"}
-        courseName="StudyJoust Dashboard"
+        courseName="StudyClash Dashboard"
         playerName={profile?.display_name || user?.email || "Student"}
         weakTopics={coachWeakTopics}
         missedQuestions={[]}

@@ -128,7 +128,7 @@ export default function NewStudyPlanPage() {
     <main className="min-h-dvh bg-[#05050a] px-4 py-10 text-white sm:px-6">
       <div className="mx-auto max-w-lg">
         <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
-          <span className="bg-gradient-to-r from-cyan-300 via-white to-fuchsia-300 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
             {isRetake ? "Update your study plan" : "Build your study plan"}
           </span>
         </h1>
@@ -218,7 +218,7 @@ export default function NewStudyPlanPage() {
                   onClick={() => setIntensity(option)}
                   className={`flex-1 rounded-xl border px-3 py-2 text-xs font-bold capitalize ${
                     intensity === option
-                      ? "border-cyan-300/60 bg-cyan-500/15 text-cyan-100"
+                      ? "border-indigo-300/60 bg-indigo-500/15 text-indigo-100"
                       : "border-white/15 bg-white/5 text-white/60"
                   }`}
                 >

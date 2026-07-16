@@ -42,7 +42,7 @@ export function StudyModeReview({ deckTitle, questions, onExit }: StudyModeRevie
           can't accidentally back out of Study Mode. */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-cyan-300">Study Mode</span>
+          <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">Study Mode</span>
           <h1 className="mt-1 text-lg font-bold text-white sm:text-xl">{deckTitle}</h1>
         </div>
         <Button variant="ghost" size="sm" onClick={onExit}>
@@ -67,7 +67,7 @@ export function StudyModeReview({ deckTitle, questions, onExit }: StudyModeRevie
         }
         front={
           <div className="flex min-h-40 flex-col">
-            <span className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
+            <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">
               {question.topic}
             </span>
             <p className="mt-3 text-base font-bold leading-snug text-white sm:text-lg">
@@ -78,7 +78,7 @@ export function StudyModeReview({ deckTitle, questions, onExit }: StudyModeRevie
         }
         back={
           <div className="flex min-h-40 flex-col">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">Answer</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-green-300">Answer</span>
             <p className="mt-2 text-base font-bold text-white">{question.correct_answer}</p>
             <p className="mt-3 text-sm leading-relaxed text-white/70">{question.explanation}</p>
           </div>
@@ -95,7 +95,7 @@ export function StudyModeReview({ deckTitle, questions, onExit }: StudyModeRevie
         </Button>
         <div className="h-1.5 w-32 overflow-hidden rounded-full bg-white/10">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-400 transition-[width] duration-300"
+            className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-400 transition-[width] duration-300"
             style={{ width: `${((index + 1) / questions.length) * 100}%` }}
           />
         </div>

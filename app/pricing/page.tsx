@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useAuth } from "@/lib/useAuth";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
@@ -19,7 +19,7 @@ export default function PricingPage() {
     isLoggedIn && currentPlanMeta !== null && !currentPlanMeta.publiclyListed;
 
   const requestAccessHref =
-    "mailto:studyjoustbeta@gmail.com?subject=StudyJoust%20Plan%20Access%20Request";
+    "mailto:studyjoustbeta@gmail.com?subject=StudyClash%20Plan%20Access%20Request";
 
   const getButtonLabel = (planId: string): string => {
     if (isLoggedIn && profile?.plan === planId) {
@@ -55,9 +55,9 @@ export default function PricingPage() {
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       {/* Ambient glow background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
 
       {/* Grid texture overlay */}
@@ -72,14 +72,14 @@ export default function PricingPage() {
 
       <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-6xl flex-col items-center px-4 py-14 sm:px-6 sm:py-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {/* Badge */}
-        <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
+        <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-indigo-300 backdrop-blur-sm sm:mb-6">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
           SIMPLE PRICING
         </div>
 
         {/* Title */}
         <h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
-          <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
             Membership Plans
           </span>
         </h1>
@@ -88,11 +88,11 @@ export default function PricingPage() {
         </p>
 
         {isOnUnlistedPlan && currentPlanMeta && (
-          <div className="mt-6 flex w-full max-w-lg items-center gap-3 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 px-4 py-3 text-left sm:px-5">
-            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500/20 text-sm font-black text-emerald-300">
+          <div className="mt-6 flex w-full max-w-lg items-center gap-3 rounded-2xl border border-green-400/25 bg-green-500/10 px-4 py-3 text-left sm:px-5">
+            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-500/20 text-sm font-black text-green-300">
               ✓
             </span>
-            <p className="text-sm text-emerald-100/90">
+            <p className="text-sm text-green-100/90">
               You&apos;re on the <span className="font-bold">{currentPlanMeta.label}</span> plan
               ({currentPlanMeta.tagline.toLowerCase()}) — not publicly listed below, but fully active on your account.
             </p>
@@ -109,18 +109,18 @@ export default function PricingPage() {
                 key={plan.id}
                 className={`relative flex flex-col rounded-2xl border p-5 backdrop-blur-sm sm:p-6 ${
                   plan.highlight
-                    ? "border-fuchsia-400/40 bg-gradient-to-b from-fuchsia-500/10 to-white/[0.03] shadow-[0_0_50px_-15px_rgba(217,70,239,0.5)]"
+                    ? "border-indigo-400/40 bg-gradient-to-b from-indigo-500/10 to-white/[0.03] shadow-[0_0_50px_-15px_rgba(79,70,229,0.5)]"
                     : "border-white/10 bg-white/[0.03]"
                 }`}
               >
                 {plan.highlight && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-600 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-[0_0_20px_-5px_rgba(217,70,239,0.7)]">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-[0_0_20px_-5px_rgba(79,70,229,0.7)]">
                     Most Popular
                   </span>
                 )}
 
                 {current && (
-                  <span className="absolute -top-3 right-4 rounded-full bg-emerald-500/20 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                  <span className="absolute -top-3 right-4 rounded-full bg-green-500/20 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-green-300">
                     Your Plan
                   </span>
                 )}
@@ -142,7 +142,7 @@ export default function PricingPage() {
 
                 {/* Daily limit */}
                 <div className="mt-5 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-center">
-                  <p className="text-sm font-bold text-cyan-300">
+                  <p className="text-sm font-bold text-indigo-300">
                     {plan.dailyLimit}
                   </p>
                 </div>
@@ -155,7 +155,7 @@ export default function PricingPage() {
                       className="flex items-start gap-2 text-sm text-white/70"
                     >
                       <svg
-                        className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-400"
+                        className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -174,7 +174,7 @@ export default function PricingPage() {
 
                 {/* CTA button */}
                 {current ? (
-                  <div className="mt-6 flex w-full items-center justify-center rounded-xl border border-emerald-400/30 bg-emerald-500/10 px-6 py-3.5 text-sm font-bold text-emerald-300">
+                  <div className="mt-6 flex w-full items-center justify-center rounded-xl border border-green-400/30 bg-green-500/10 px-6 py-3.5 text-sm font-bold text-green-300">
                     {getButtonLabel(plan.id)}
                   </div>
                 ) : plan.id === "free_beta" || !isLoggedIn ? (
@@ -204,7 +204,7 @@ export default function PricingPage() {
             Free battle loops, forever
           </p>
           <p className="text-xs text-white/40">
-            Core AI battles stay free. Pro Premium unlocks unlimited play and the full VYRA coach.
+            Core AI battles stay free. Pro Individual unlocks unlimited play and the full VYRA coach.
           </p>
           {!isLoggedIn && (
             <Button href="/signup" variant="primary" className="mt-3">

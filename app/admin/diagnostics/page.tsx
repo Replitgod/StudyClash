@@ -212,12 +212,12 @@ export default function AdminDiagnosticsPage() {
 
   return (
     <Background>
-      <Link href="/admin" className="w-fit text-sm font-semibold text-cyan-300">
+      <Link href="/admin" className="w-fit text-sm font-semibold text-indigo-300">
         &larr; Back to admin dashboard
       </Link>
 
       <h1 className="mt-4 text-2xl font-black tracking-tight sm:text-3xl">
-        <span className="bg-gradient-to-r from-cyan-300 via-white to-fuchsia-300 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
           Diagnostic Question Bank
         </span>
       </h1>
@@ -254,7 +254,7 @@ export default function AdminDiagnosticsPage() {
               onClick={() => setStatusTab(tab)}
               className={`rounded-lg px-3 py-1.5 text-xs font-bold uppercase tracking-wide ${
                 statusTab === tab
-                  ? "bg-cyan-500/20 text-cyan-100 border border-cyan-400/40"
+                  ? "bg-indigo-500/20 text-indigo-100 border border-indigo-400/40"
                   : "bg-white/5 text-white/50 border border-white/10"
               }`}
             >
@@ -265,7 +265,7 @@ export default function AdminDiagnosticsPage() {
       </Card>
 
       <Card className="mt-4" padding="md">
-        <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">New draft</p>
+        <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">New draft</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <select
             value={form.section}
@@ -354,7 +354,7 @@ export default function AdminDiagnosticsPage() {
                   {q.answer_choices.map((choice) => (
                     <li
                       key={choice.id}
-                      className={choice.id === q.correct_answer ? "font-bold text-emerald-300" : ""}
+                      className={choice.id === q.correct_answer ? "font-bold text-green-300" : ""}
                     >
                       {choice.id}. {choice.text}
                     </li>
@@ -362,7 +362,7 @@ export default function AdminDiagnosticsPage() {
                 </ul>
               )}
               {!q.answer_choices && (
-                <p className="mt-2 text-xs font-bold text-emerald-300">Correct answer: {q.correct_answer}</p>
+                <p className="mt-2 text-xs font-bold text-green-300">Correct answer: {q.correct_answer}</p>
               )}
 
               <p className="mt-2 text-xs text-white/50">Explanation: {q.explanation}</p>

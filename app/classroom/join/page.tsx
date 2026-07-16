@@ -28,9 +28,9 @@ function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -108,7 +108,7 @@ export default function ClassroomJoinPage() {
   return (
     <Background>
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-sm sm:p-8">
-        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300">Classroom Join</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">Classroom Join</p>
         <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">Enter Room Code</h1>
         <p className="mt-2 text-sm text-white/65">Use the code shared by your teacher to join the live deck battle.</p>
 
@@ -120,7 +120,7 @@ export default function ClassroomJoinPage() {
           value={roomCode}
           onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
           placeholder="AB12CD"
-          className="mt-2 w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-base font-bold tracking-[0.2em] text-white placeholder-white/30 outline-none focus:border-cyan-300/50"
+          className="mt-2 w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-base font-bold tracking-[0.2em] text-white placeholder-white/30 outline-none focus:border-indigo-300/50"
           maxLength={8}
         />
 
@@ -129,7 +129,7 @@ export default function ClassroomJoinPage() {
         )}
 
         {preview?.room && preview?.deck && (
-          <div className="mt-3 rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100">
+          <div className="mt-3 rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-3 py-2 text-xs text-indigo-100">
             Joining {preview.room.title} - {preview.deck.title}
           </div>
         )}
@@ -138,7 +138,7 @@ export default function ClassroomJoinPage() {
           type="button"
           onClick={handleJoin}
           disabled={isJoining}
-          className="mt-5 w-full rounded-xl bg-gradient-to-r from-cyan-500 to-fuchsia-500 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
+          className="mt-5 w-full rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-500 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
         >
           {isJoining ? "Joining..." : "Join Room"}
         </button>

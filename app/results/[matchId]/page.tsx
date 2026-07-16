@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
@@ -251,34 +251,34 @@ function getRank(accuracyPercent: number): {
     return {
       label: "Flawless Victory",
       message: "Perfect score! You completely dominated this deck.",
-      color: "from-fuchsia-400 to-cyan-400",
+      color: "from-indigo-400 to-indigo-400",
     };
   }
   if (accuracyPercent >= 80) {
     return {
       label: "Champion",
       message: "Excellent work — you clearly know this material.",
-      color: "from-emerald-400 to-cyan-400",
+      color: "from-green-400 to-indigo-400",
     };
   }
   if (accuracyPercent >= 60) {
     return {
       label: "Contender",
       message: "Solid effort! A bit more review and you'll be unstoppable.",
-      color: "from-cyan-400 to-violet-400",
+      color: "from-indigo-400 to-indigo-400",
     };
   }
   if (accuracyPercent >= 40) {
     return {
       label: "Rookie",
       message: "Good start — revisit your notes and challenge this deck again.",
-      color: "from-violet-400 to-fuchsia-400",
+      color: "from-indigo-400 to-indigo-400",
     };
   }
   return {
     label: "Needs Training",
     message: "Tough round. Review the material and come back stronger.",
-    color: "from-red-400 to-fuchsia-400",
+    color: "from-red-400 to-indigo-400",
   };
 }
 
@@ -596,7 +596,7 @@ function buildStudyPlan(weakTopics: WeakTopic[]): StudyDay[] {
         day: 3,
         title: "Stay Sharp",
         tasks: [
-          "Replay this StudyJoust deck to confirm you're still at 85%+ accuracy.",
+          "Replay this StudyClash deck to confirm you're still at 85%+ accuracy.",
           "If you have newer notes, generate a fresh deck to keep testing yourself.",
         ],
       },
@@ -627,7 +627,7 @@ function buildStudyPlan(weakTopics: WeakTopic[]): StudyDay[] {
       day: 3,
       title: "Retest & Confirm",
       tasks: [
-        "Replay this StudyJoust deck.",
+        "Replay this StudyClash deck.",
         "Aim for 85%+ accuracy this time.",
         "Review anything you still miss, one more time, before moving on.",
       ],
@@ -639,9 +639,9 @@ function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -693,40 +693,40 @@ function getConfidenceStyle(confidence: MistakeBreakdown["confidenceRating"]): {
 
   if (confidence === "slow_response" || confidence === "speed_trap") {
     return {
-      border: "border-cyan-400/30",
-      bg: "bg-cyan-500/10",
-      text: "text-cyan-200",
+      border: "border-indigo-400/30",
+      bg: "bg-indigo-500/10",
+      text: "text-indigo-200",
     };
   }
 
   if (confidence === "misread_question") {
     return {
-      border: "border-orange-400/30",
-      bg: "bg-orange-500/10",
-      text: "text-orange-200",
+      border: "border-amber-400/30",
+      bg: "bg-amber-500/10",
+      text: "text-amber-200",
     };
   }
 
   if (confidence === "repeated_weakness") {
     return {
-      border: "border-rose-400/30",
-      bg: "bg-rose-500/10",
-      text: "text-rose-200",
+      border: "border-red-400/30",
+      bg: "bg-red-500/10",
+      text: "text-red-200",
     };
   }
 
   if (confidence === "almost_mastered") {
     return {
-      border: "border-emerald-400/30",
-      bg: "bg-emerald-500/10",
-      text: "text-emerald-200",
+      border: "border-green-400/30",
+      bg: "bg-green-500/10",
+      text: "text-green-200",
     };
   }
 
   return {
-    border: "border-fuchsia-400/30",
-    bg: "bg-fuchsia-500/10",
-    text: "text-fuchsia-200",
+    border: "border-indigo-400/30",
+    bg: "bg-indigo-500/10",
+    text: "text-indigo-200",
   };
 }
 
@@ -1612,7 +1612,7 @@ export default function ResultsPage() {
     return (
       <Background>
         <svg
-          className="h-10 w-10 animate-spin text-fuchsia-400"
+          className="h-10 w-10 animate-spin text-indigo-400"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -1655,7 +1655,7 @@ export default function ResultsPage() {
             </Link>
             <Link
               href="/create"
-              className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-2.5 text-sm font-bold text-white"
+              className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white"
             >
               Create New Deck
             </Link>
@@ -1832,14 +1832,14 @@ export default function ResultsPage() {
       <div className="relative w-full max-w-5xl">
         <ConfettiBurst show={showVictoryBurst} />
         {/* Badge */}
-        <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
+        <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-indigo-300 backdrop-blur-sm sm:mb-6">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
           BATTLE COMPLETE
         </div>
 
         {/* Title */}
         <h1 className="break-words text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
-          <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
             Nice Work, {match.player_name}!
           </span>
         </h1>
@@ -1847,10 +1847,10 @@ export default function ResultsPage() {
           {deck.title} · {deck.course_name}
         </p>
 
-        <div className="mt-5 rounded-2xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/[0.12] via-black/35 to-fuchsia-500/[0.1] p-4 sm:p-5">
+        <div className="mt-5 rounded-2xl border border-indigo-400/25 bg-gradient-to-r from-indigo-500/[0.12] via-black/35 to-indigo-500/[0.1] p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-cyan-200">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-indigo-200">
                 Victory Screen
               </p>
               <p className="mt-1 text-base font-black text-white">
@@ -1860,7 +1860,7 @@ export default function ResultsPage() {
                 Longest streak {longestStreak} · Avg response {avgResponseMs > 0 ? `${(avgResponseMs / 1000).toFixed(1)}s` : "n/a"}
               </p>
             </div>
-            <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold text-emerald-200">
+            <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold text-green-200">
               {rank.label}
             </span>
           </div>
@@ -1870,7 +1870,7 @@ export default function ResultsPage() {
               {unlockedHighlights.map((item) => (
                 <span
                   key={item}
-                  className="rounded-full border border-emerald-300/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-100"
+                  className="rounded-full border border-green-300/30 bg-green-500/10 px-2.5 py-1 text-[11px] font-bold text-green-100"
                 >
                   {item}
                 </span>
@@ -1880,10 +1880,10 @@ export default function ResultsPage() {
         </div>
 
         {isBossBattle && (
-          <div className="mt-5 rounded-2xl border border-fuchsia-400/25 bg-gradient-to-r from-fuchsia-500/[0.1] via-black/30 to-cyan-500/[0.08] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
+          <div className="mt-5 rounded-2xl border border-indigo-400/25 bg-gradient-to-r from-indigo-500/[0.1] via-black/30 to-indigo-500/[0.08] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-fuchsia-200">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-200">
                   Boss Battle Result
                 </p>
                 <h2 className="mt-1 text-lg font-black text-white sm:text-xl">
@@ -1893,7 +1893,7 @@ export default function ResultsPage() {
               <span
                 className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider ${
                   didDefeatBoss
-                    ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
+                    ? "border-green-400/30 bg-green-500/15 text-green-200"
                     : "border-red-400/30 bg-red-500/15 text-red-200"
                 }`}
               >
@@ -1916,7 +1916,7 @@ export default function ResultsPage() {
               </div>
               <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
                 <p className="text-[10px] uppercase tracking-wider text-white/45">Mastery Gained</p>
-                <p className="mt-1 text-sm font-bold text-cyan-200">+{bossMasteryGained}%</p>
+                <p className="mt-1 text-sm font-bold text-indigo-200">+{bossMasteryGained}%</p>
               </div>
             </div>
 
@@ -1927,8 +1927,8 @@ export default function ResultsPage() {
                   {resolvedBossWeakTopics.length > 0 ? resolvedBossWeakTopics.join(" · ") : "No weak topics recorded."}
                 </p>
               </div>
-              <div className="rounded-lg border border-emerald-400/20 bg-emerald-500/[0.08] px-3 py-2.5">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-200">Strong Topics</p>
+              <div className="rounded-lg border border-green-400/20 bg-green-500/[0.08] px-3 py-2.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-green-200">Strong Topics</p>
                 <p className="mt-1 text-xs text-white/80">
                   {resolvedBossStrongTopics.length > 0 ? resolvedBossStrongTopics.join(" · ") : "No strong topics recorded."}
                 </p>
@@ -1956,8 +1956,8 @@ export default function ResultsPage() {
             )}
 
             {didDefeatBoss && (
-              <div className="mt-3 rounded-lg border border-emerald-400/20 bg-emerald-500/[0.08] px-3 py-2.5">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-200">
+              <div className="mt-3 rounded-lg border border-green-400/20 bg-green-500/[0.08] px-3 py-2.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-green-200">
                   Victory Rewards
                 </p>
                 <p className="mt-1 text-xs text-white/85">
@@ -1966,17 +1966,17 @@ export default function ResultsPage() {
               </div>
             )}
 
-            <p className="mt-3 text-xs text-cyan-100/90">
+            <p className="mt-3 text-xs text-indigo-100/90">
               Next recommended boss: {nextRecommendedBoss}
             </p>
           </div>
         )}
 
         {isRivalBattle && (
-          <div className="mt-5 rounded-2xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/[0.1] via-black/30 to-fuchsia-500/[0.08] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
+          <div className="mt-5 rounded-2xl border border-indigo-400/25 bg-gradient-to-r from-indigo-500/[0.1] via-black/30 to-indigo-500/[0.08] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-200">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-200">
                   Study Rival Result
                 </p>
                 <h2 className="mt-1 text-lg font-black text-white sm:text-xl">
@@ -1986,7 +1986,7 @@ export default function ResultsPage() {
               <span
                 className={`rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider ${
                   didBeatRival
-                    ? "border-emerald-400/30 bg-emerald-500/15 text-emerald-200"
+                    ? "border-green-400/30 bg-green-500/15 text-green-200"
                     : "border-red-400/30 bg-red-500/15 text-red-200"
                 }`}
               >
@@ -2013,13 +2013,13 @@ export default function ResultsPage() {
               </div>
             </div>
 
-            <p className="mt-3 text-xs text-cyan-100/90">
+            <p className="mt-3 text-xs text-indigo-100/90">
               Rival target accuracy: {rivalTargetAccuracy > 0 ? `${rivalTargetAccuracy}%` : "Adaptive"}
             </p>
 
             <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <div className="rounded-lg border border-fuchsia-400/20 bg-fuchsia-500/[0.08] px-3 py-2.5">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-fuchsia-200">Rival Better At</p>
+              <div className="rounded-lg border border-indigo-400/20 bg-indigo-500/[0.08] px-3 py-2.5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-200">Rival Better At</p>
                 <p className="mt-1 text-xs text-white/85">
                   {rivalBetterAt.length > 0 ? rivalBetterAt.join(" · ") : "No dominant rival lane detected."}
                 </p>
@@ -2031,7 +2031,7 @@ export default function ResultsPage() {
             </div>
 
             {rivalStrengths.length > 0 && (
-              <p className="mt-3 text-xs text-emerald-100/90">
+              <p className="mt-3 text-xs text-green-100/90">
                 Rival strengths: {rivalStrengths.join(" · ")}
               </p>
             )}
@@ -2052,8 +2052,8 @@ export default function ResultsPage() {
         )}
 
         {hasChallengeComparison && challengeBaseScore !== null && (
-          <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.06] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
-            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+          <div className="mt-5 rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.06] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
+            <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">
               Challenge Result
             </p>
             <p className="mt-2 text-sm font-medium leading-relaxed text-white/80 sm:text-base">
@@ -2070,8 +2070,8 @@ export default function ResultsPage() {
         )}
 
         {hasChallengeFallback && (
-          <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.06] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
-            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+          <div className="mt-5 rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.06] p-4 text-left backdrop-blur-sm sm:mt-6 sm:p-5">
+            <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">
               Challenge Result
             </p>
             <p className="mt-2 text-sm font-medium leading-relaxed text-white/80 sm:text-base">
@@ -2081,10 +2081,10 @@ export default function ResultsPage() {
         )}
 
         {battleProgress && (
-          <div className="mt-5 rounded-2xl border border-fuchsia-400/20 bg-black/20 p-4 backdrop-blur-sm sm:mt-6 sm:p-5">
+          <div className="mt-5 rounded-2xl border border-indigo-400/20 bg-black/20 p-4 backdrop-blur-sm sm:mt-6 sm:p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="max-w-2xl">
-                <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
+                <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">
                   Progress Message
                 </p>
                 <p className="mt-2 text-sm font-medium leading-relaxed text-white/80 sm:text-base">
@@ -2097,16 +2097,16 @@ export default function ResultsPage() {
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-cyan-200">
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-indigo-200">
                   +{battleProgress.xpEarned} XP
                 </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-emerald-200">
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-green-200">
                   Level {battleProgress.level}
                 </span>
                 <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-amber-200">
                   Rank {battleProgress.rankLabel}
                 </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-fuchsia-200">
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-indigo-200">
                   {battleProgress.xpToNextLevel} XP to next level
                 </span>
               </div>
@@ -2114,31 +2114,31 @@ export default function ResultsPage() {
 
             <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/10">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-cyan-400 transition-all duration-700 ease-out"
+                className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-400 transition-all duration-700 ease-out"
                 style={{ width: areProgressBarsAnimated ? `${battleProgress.xpInLevel / 5}%` : "0%" }}
               />
             </div>
 
-            <div className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-500/[0.08] px-3 py-2.5">
-              <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-cyan-100">
+            <div className="mt-3 rounded-xl border border-indigo-400/20 bg-indigo-500/[0.08] px-3 py-2.5">
+              <div className="flex items-center justify-between gap-2 text-[11px] font-semibold text-indigo-100">
                 <span>{battleProgress.seasonLabel} progression</span>
                 <span>{Math.round(battleProgress.seasonProgressPercent)}%</span>
               </div>
               <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/30">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300 transition-all duration-700 ease-out"
+                  className="h-full rounded-full bg-gradient-to-r from-indigo-300 to-green-300 transition-all duration-700 ease-out"
                   style={{ width: areProgressBarsAnimated ? `${Math.max(4, battleProgress.seasonProgressPercent)}%` : "0%" }}
                 />
               </div>
 
-              <p className="mt-2 text-[11px] text-cyan-100/80">
+              <p className="mt-2 text-[11px] text-indigo-100/80">
                 {battleProgress.nextMilestoneXp === null
                   ? "Top milestone reached. Keep the streak alive."
                   : `${battleProgress.nextMilestoneXp - battleProgress.totalXp} XP to next milestone (${battleProgress.nextMilestoneXp}).`}
               </p>
 
               {battleProgress.unlockedMilestoneXp !== null && (
-                <p className="mt-1 text-[11px] font-bold text-emerald-200">
+                <p className="mt-1 text-[11px] font-bold text-green-200">
                   Milestone unlocked: {battleProgress.unlockedMilestoneXp} XP
                 </p>
               )}
@@ -2146,10 +2146,10 @@ export default function ResultsPage() {
           </div>
         )}
 
-        <div className="mt-6 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/5 to-fuchsia-500/5 p-4 backdrop-blur-sm sm:mt-8 sm:p-6">
+        <div className="mt-6 rounded-2xl border border-indigo-400/20 bg-gradient-to-br from-indigo-500/5 to-indigo-500/5 p-4 backdrop-blur-sm sm:mt-8 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+              <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">
                 ClashPath
               </p>
               <h2 className="mt-1 text-lg font-bold text-white sm:text-xl">
@@ -2157,7 +2157,7 @@ export default function ResultsPage() {
               </h2>
             </div>
             {clashPathReport && (
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-cyan-200">
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold text-indigo-200">
                 Clash Rating {clashPathReport.clashRating}
               </span>
             )}
@@ -2181,8 +2181,8 @@ export default function ResultsPage() {
               </p>
 
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/[0.06] p-3.5">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-300">
+                <div className="rounded-xl border border-green-400/25 bg-green-500/[0.06] p-3.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-green-300">
                     1. Mastered
                   </p>
                   <p className="mt-2 text-sm font-semibold text-white/90">
@@ -2237,7 +2237,7 @@ export default function ResultsPage() {
                         key={reason.id}
                         className="rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2"
                       >
-                        <p className="text-xs font-bold text-cyan-200">{reason.title}</p>
+                        <p className="text-xs font-bold text-indigo-200">{reason.title}</p>
                         <p className="mt-0.5 text-xs text-white/60">{reason.detail}</p>
                       </div>
                     ))}
@@ -2246,8 +2246,8 @@ export default function ResultsPage() {
               </div>
 
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-cyan-400/25 bg-cyan-500/[0.06] p-3.5">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-cyan-300">
+                <div className="rounded-xl border border-indigo-400/25 bg-indigo-500/[0.06] p-3.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-300">
                     5. Next Best Battle
                   </p>
                   <p className="mt-2 text-sm text-white/80">
@@ -2255,7 +2255,7 @@ export default function ResultsPage() {
                   </p>
                   <Link
                     href={clashPathReport.nextBestBattle.href}
-                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-cyan-500 to-fuchsia-500 px-3.5 py-2 text-xs font-bold text-white"
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-500 px-3.5 py-2 text-xs font-bold text-white"
                   >
                     {clashPathReport.nextBestBattle.label}
                     <svg
@@ -2274,8 +2274,8 @@ export default function ResultsPage() {
                   </Link>
                 </div>
 
-                <div className="rounded-xl border border-fuchsia-400/25 bg-fuchsia-500/[0.06] p-3.5">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-fuchsia-300">
+                <div className="rounded-xl border border-indigo-400/25 bg-indigo-500/[0.06] p-3.5">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-300">
                     7. Next Best Move
                   </p>
                   <p className="mt-2 text-sm text-white/80">
@@ -2300,7 +2300,7 @@ export default function ResultsPage() {
                           <p className="truncate text-sm font-semibold text-white/90">
                             {topic.topic}
                           </p>
-                          <span className="text-xs font-bold text-cyan-200">
+                          <span className="text-xs font-bold text-indigo-200">
                             {topic.masteryPercent}%
                           </span>
                         </div>
@@ -2308,7 +2308,7 @@ export default function ResultsPage() {
                           <div
                             className={`h-full rounded-full ${
                               topic.status === "mastered"
-                                ? "bg-emerald-400"
+                                ? "bg-green-400"
                                 : topic.status === "close"
                                   ? "bg-amber-400"
                                   : "bg-red-400"
@@ -2330,7 +2330,7 @@ export default function ResultsPage() {
           <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:mt-8 sm:p-6">
             <div className="flex items-center gap-2">
               <svg
-                className="h-4 w-4 flex-shrink-0 text-fuchsia-300"
+                className="h-4 w-4 flex-shrink-0 text-indigo-300"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -2348,7 +2348,7 @@ export default function ResultsPage() {
             </div>
 
             {weakTopics && weakTopics.length === 0 ? (
-              <p className="mt-4 text-sm font-semibold text-emerald-300">
+              <p className="mt-4 text-sm font-semibold text-green-300">
                 No weak topics. Perfect run.
               </p>
             ) : (
@@ -2378,10 +2378,10 @@ export default function ResultsPage() {
 
         {/* Study Plan & Resources */}
         {hasAnswerData && (
-          <div className="mt-6 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/5 to-violet-500/5 p-4 backdrop-blur-sm sm:mt-8 sm:p-6">
+          <div className="mt-6 rounded-2xl border border-indigo-400/20 bg-gradient-to-br from-indigo-500/5 to-indigo-500/5 p-4 backdrop-blur-sm sm:mt-8 sm:p-6">
             <div className="flex items-center gap-2">
               <svg
-                className="h-4 w-4 flex-shrink-0 text-cyan-300"
+                className="h-4 w-4 flex-shrink-0 text-indigo-300"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -2393,13 +2393,13 @@ export default function ResultsPage() {
                   d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
                 />
               </svg>
-              <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+              <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">
                 Study Plan &amp; Resources
               </p>
             </div>
 
             {topStudyTopics.length === 0 ? (
-              <p className="mt-3 text-sm font-semibold text-emerald-300">
+              <p className="mt-3 text-sm font-semibold text-green-300">
                 No weak topics found. Keep reviewing to stay sharp.
               </p>
             ) : (
@@ -2453,7 +2453,7 @@ export default function ResultsPage() {
                                 resourceUrl: resource.url,
                               })
                             }
-                            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-cyan-300 transition-colors duration-150 hover:border-cyan-400/40 hover:bg-white/10"
+                            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-indigo-300 transition-colors duration-150 hover:border-indigo-400/40 hover:bg-white/10"
                           >
                             {resource.label}
                             <svg
@@ -2476,7 +2476,7 @@ export default function ResultsPage() {
                       {/* Mini task */}
                       <div className="mt-3 flex items-start gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2.5">
                         <svg
-                          className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-fuchsia-300"
+                          className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-indigo-300"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -2513,7 +2513,7 @@ export default function ResultsPage() {
                     className="rounded-xl border border-white/10 bg-black/20 p-3.5"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-violet-600 text-[11px] font-bold text-white">
+                      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-[11px] font-bold text-white">
                         {day.day}
                       </span>
                       <p className="text-xs font-bold text-white/80 sm:text-sm">
@@ -2526,7 +2526,7 @@ export default function ResultsPage() {
                           key={i}
                           className="flex items-start gap-1.5 text-[11px] leading-relaxed text-white/50 sm:text-xs"
                         >
-                          <span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-cyan-300" />
+                          <span className="mt-1 h-1 w-1 flex-shrink-0 rounded-full bg-indigo-300" />
                           <span className="break-words">{task}</span>
                         </li>
                       ))}
@@ -2542,10 +2542,10 @@ export default function ResultsPage() {
         {hasAnswerData && topicStats.length > 0 && (
           <div className="mt-6 grid w-full grid-cols-1 gap-4 sm:mt-8 sm:grid-cols-2">
             {/* Best topics */}
-            <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.03] p-4 backdrop-blur-sm sm:p-6">
+            <div className="rounded-2xl border border-green-400/20 bg-green-500/[0.03] p-4 backdrop-blur-sm sm:p-6">
               <div className="flex items-center gap-2">
                 <svg
-                  className="h-4 w-4 flex-shrink-0 text-emerald-300"
+                  className="h-4 w-4 flex-shrink-0 text-green-300"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -2557,7 +2557,7 @@ export default function ResultsPage() {
                     d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"
                   />
                 </svg>
-                <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+                <p className="text-xs font-bold uppercase tracking-wider text-green-300">
                   Best Topics
                 </p>
               </div>
@@ -2568,13 +2568,13 @@ export default function ResultsPage() {
                       <p className="truncate text-sm font-semibold text-white/90">
                         {t.topic}
                       </p>
-                      <span className="flex-shrink-0 text-xs font-bold text-emerald-300">
+                      <span className="flex-shrink-0 text-xs font-bold text-green-300">
                         {t.accuracy}%
                       </span>
                     </div>
                     <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
                       <div
-                        className="h-full rounded-full bg-emerald-400"
+                        className="h-full rounded-full bg-green-400"
                         style={{ width: `${t.accuracy}%` }}
                       />
                     </div>
@@ -2631,7 +2631,7 @@ export default function ResultsPage() {
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:mt-8 sm:p-6 lg:p-7 xl:p-8">
           {/* Big score */}
           <div className="text-center">
-            <span className="text-5xl font-black bg-gradient-to-r from-fuchsia-400 to-cyan-400 bg-clip-text text-transparent sm:text-6xl md:text-7xl">
+            <span className="text-5xl font-black bg-gradient-to-r from-indigo-400 to-indigo-400 bg-clip-text text-transparent sm:text-6xl md:text-7xl">
               <AnimatedNumber value={match.score} />
             </span>
             <p className="mt-1 text-xs font-bold uppercase tracking-wider text-white/40">
@@ -2654,7 +2654,7 @@ export default function ResultsPage() {
           {/* Stat grid */}
           <div className="mt-6 grid grid-cols-2 gap-2.5 sm:mt-8 sm:gap-3 sm:grid-cols-4">
             <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-center sm:p-4">
-              <p className="text-base font-bold text-emerald-300 sm:text-lg md:text-xl">
+              <p className="text-base font-bold text-green-300 sm:text-lg md:text-xl">
                 {match.correct_answers}
               </p>
               <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40 sm:text-xs">
@@ -2670,7 +2670,7 @@ export default function ResultsPage() {
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-center sm:p-4">
-              <p className="text-base font-bold text-cyan-300 sm:text-lg md:text-xl">
+              <p className="text-base font-bold text-indigo-300 sm:text-lg md:text-xl">
                 {accuracyPercent}%
               </p>
               <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40 sm:text-xs">
@@ -2678,7 +2678,7 @@ export default function ResultsPage() {
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-black/30 p-3 text-center sm:p-4">
-              <p className="text-base font-bold text-violet-300 sm:text-lg md:text-xl">
+              <p className="text-base font-bold text-indigo-300 sm:text-lg md:text-xl">
                 {formatTime(match.time_taken_seconds)}
               </p>
               <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40 sm:text-xs">
@@ -2693,12 +2693,12 @@ export default function ResultsPage() {
           </p>
           <button
             onClick={handleCopyLink}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-400/40 hover:bg-white/10"
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-400/40 hover:bg-white/10"
           >
             {linkCopied ? (
               <>
                 <svg
-                  className="h-4 w-4 flex-shrink-0 text-emerald-400"
+                  className="h-4 w-4 flex-shrink-0 text-green-400"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -2715,7 +2715,7 @@ export default function ResultsPage() {
             ) : (
               <>
                 <svg
-                  className="h-4 w-4 flex-shrink-0 text-cyan-300"
+                  className="h-4 w-4 flex-shrink-0 text-indigo-300"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -2749,7 +2749,7 @@ export default function ResultsPage() {
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:mt-8 sm:p-6 md:p-8">
           <div className="flex items-center gap-2">
             <svg
-              className="h-4 w-4 flex-shrink-0 text-cyan-300"
+              className="h-4 w-4 flex-shrink-0 text-indigo-300"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -2761,7 +2761,7 @@ export default function ResultsPage() {
                 d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"
               />
             </svg>
-            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+            <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">
               Deck Leaderboard
             </p>
           </div>
@@ -2785,7 +2785,7 @@ export default function ResultsPage() {
                     key={entry.id}
                     className={`rounded-xl border px-3 py-3 transition-colors duration-150 ${
                       isCurrentMatch
-                        ? "border-fuchsia-400/30 bg-fuchsia-500/10"
+                        ? "border-indigo-400/30 bg-indigo-500/10"
                         : "border-white/10 bg-black/30"
                     }`}
                   >
@@ -2794,8 +2794,8 @@ export default function ResultsPage() {
                         <span
                           className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
                             index === 0
-                              ? "bg-gradient-to-br from-yellow-300 to-amber-500 text-black"
-                              : "bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20 text-fuchsia-300"
+                              ? "bg-gradient-to-br from-amber-300 to-amber-500 text-black"
+                              : "bg-gradient-to-br from-indigo-500/20 to-indigo-500/20 text-indigo-300"
                           }`}
                         >
                           {index + 1}
@@ -2804,12 +2804,12 @@ export default function ResultsPage() {
                           {entry.player_name}
                         </p>
                         {isCurrentMatch && (
-                          <span className="rounded-full bg-fuchsia-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fuchsia-200">
+                          <span className="rounded-full bg-indigo-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-200">
                             This run
                           </span>
                         )}
                       </div>
-                      <span className="flex-shrink-0 text-sm font-bold text-cyan-300">
+                      <span className="flex-shrink-0 text-sm font-bold text-indigo-300">
                         {entry.score} pts
                       </span>
                     </div>
@@ -2828,7 +2828,7 @@ export default function ResultsPage() {
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:mt-8 sm:p-6 md:p-8">
           <div className="flex items-center gap-2">
             <svg
-              className="h-4 w-4 flex-shrink-0 text-cyan-300"
+              className="h-4 w-4 flex-shrink-0 text-indigo-300"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -2866,7 +2866,7 @@ export default function ResultsPage() {
                     key={item.question.id}
                     className={`rounded-xl border p-4 sm:p-5 ${
                       item.isCorrect
-                        ? "border-emerald-400/30 bg-emerald-500/5"
+                        ? "border-green-400/30 bg-green-500/5"
                         : "border-red-400/30 bg-red-500/5"
                     }`}
                   >
@@ -2876,7 +2876,7 @@ export default function ResultsPage() {
                         <span className="text-xs font-bold text-white/40">
                           Q{index + 1}
                         </span>
-                        <span className="rounded-full bg-fuchsia-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fuchsia-300">
+                        <span className="rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-300">
                           {item.question.topic}
                         </span>
                         <span className="rounded-full bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/50">
@@ -2886,7 +2886,7 @@ export default function ResultsPage() {
                       <span
                         className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                           item.isCorrect
-                            ? "bg-emerald-500/10 text-emerald-300"
+                            ? "bg-green-500/10 text-green-300"
                             : "bg-red-500/10 text-red-300"
                         }`}
                       >
@@ -2905,7 +2905,7 @@ export default function ResultsPage() {
                         Your answer:{" "}
                         <span
                           className={`font-semibold ${
-                            item.isCorrect ? "text-emerald-300" : "text-red-300"
+                            item.isCorrect ? "text-green-300" : "text-red-300"
                           }`}
                         >
                           {item.selectedAnswer}
@@ -2914,7 +2914,7 @@ export default function ResultsPage() {
                       {!item.isCorrect && (
                         <p className="break-words text-white/70">
                           Correct answer:{" "}
-                          <span className="font-semibold text-emerald-300">
+                          <span className="font-semibold text-green-300">
                             {item.question.correct_answer}
                           </span>
                         </p>
@@ -2934,7 +2934,7 @@ export default function ResultsPage() {
                         href={`/decks/${item.question.deck_id}?highlight=${encodeURIComponent(
                           item.question.source_excerpt
                         )}`}
-                        className="mt-2 flex items-start gap-2 rounded-lg border border-cyan-400/20 bg-cyan-500/[0.06] px-3.5 py-2.5 text-xs text-cyan-100 transition hover:bg-cyan-500/[0.12] sm:text-sm"
+                        className="mt-2 flex items-start gap-2 rounded-lg border border-indigo-400/20 bg-indigo-500/[0.06] px-3.5 py-2.5 text-xs text-indigo-100 transition hover:bg-indigo-500/[0.12] sm:text-sm"
                       >
                         <span aria-hidden className="mt-0.5">
                           📄
@@ -2953,7 +2953,7 @@ export default function ResultsPage() {
                         // student a way back to the source material instead of a dead end.
                         <Link
                           href={`/decks/${item.question.deck_id}`}
-                          className="mt-2 flex items-start gap-2 rounded-lg border border-cyan-400/20 bg-cyan-500/[0.06] px-3.5 py-2.5 text-xs text-cyan-100 transition hover:bg-cyan-500/[0.12] sm:text-sm"
+                          className="mt-2 flex items-start gap-2 rounded-lg border border-indigo-400/20 bg-indigo-500/[0.06] px-3.5 py-2.5 text-xs text-indigo-100 transition hover:bg-indigo-500/[0.12] sm:text-sm"
                         >
                           <span aria-hidden className="mt-0.5">
                             📄
@@ -2970,8 +2970,8 @@ export default function ResultsPage() {
                     )}
 
                     {!item.isCorrect && mistakeBreakdown && confidenceStyle && (
-                      <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] p-3.5">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-cyan-300">
+                      <div className="mt-4 rounded-xl border border-indigo-400/20 bg-indigo-500/[0.06] p-3.5">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-300">
                           Mistake Breakdown
                         </p>
 
@@ -2985,7 +2985,7 @@ export default function ResultsPage() {
                           <p className="mt-2 text-[11px] font-bold text-white/55">
                             2. Correct answer
                           </p>
-                          <p className="mt-1 text-xs text-emerald-200">
+                          <p className="mt-1 text-xs text-green-200">
                             {mistakeBreakdown.correctAnswer}
                           </p>
                         </div>
@@ -3050,7 +3050,7 @@ export default function ResultsPage() {
 
                           <Link
                             href={mistakeBreakdown.fixWeaknessHref}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/30 bg-cyan-500/15 px-3 py-1.5 text-[11px] font-bold text-cyan-200 transition-colors hover:bg-cyan-500/25"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-400/30 bg-indigo-500/15 px-3 py-1.5 text-[11px] font-bold text-indigo-200 transition-colors hover:bg-indigo-500/25"
                           >
                             Fix This Weakness
                             <svg
@@ -3074,7 +3074,7 @@ export default function ResultsPage() {
                     {/* Report Wrong Question */}
                     <div className="mt-4 border-t border-white/10 pt-3">
                       {reportState.isSubmitted ? (
-                        <p className="flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
+                        <p className="flex items-center gap-1.5 text-xs font-semibold text-green-300">
                           ✅ Report submitted
                         </p>
                       ) : reportState.isFormOpen ? (
@@ -3087,7 +3087,7 @@ export default function ResultsPage() {
                               })
                             }
                             disabled={reportState.isSubmitting}
-                            className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-fuchsia-400/50 sm:text-xs"
+                            className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-indigo-400/50 sm:text-xs"
                           >
                             {REPORT_REASONS.map((reason) => (
                               <option key={reason} value={reason}>
@@ -3103,7 +3103,7 @@ export default function ResultsPage() {
                                 handleSubmitReport(item.question.id)
                               }
                               disabled={reportState.isSubmitting}
-                              className="flex-1 rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-600 px-3 py-2.5 text-xs font-bold text-white transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none sm:hover:scale-[1.02]"
+                              className="flex-1 rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 px-3 py-2.5 text-xs font-bold text-white transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none sm:hover:scale-[1.02]"
                             >
                               {reportState.isSubmitting
                                 ? "Submitting..."
@@ -3196,12 +3196,57 @@ export default function ResultsPage() {
           contextLabel="Results"
         />
 
-        <div className="mt-6 rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] px-4 py-3 text-center text-xs text-cyan-100/90 sm:mt-8">
+        <div className="mt-6 rounded-xl border border-indigo-400/20 bg-indigo-500/[0.06] px-4 py-3 text-center text-xs text-indigo-100/90 sm:mt-8">
           Next move: run a rematch, review weak topics, then repeat until accuracy climbs.
         </div>
 
-        {/* Action buttons */}
+        {/* Action buttons -- weak-topics rematch and "Challenge a Friend"
+            are the two lead actions (see RESULTS SCREEN spec); the rest of
+            the battle modes stay available, just visually secondary rather
+            than removed -- boss/rival/practice are real mastery loops, not
+            clutter to delete. */}
         <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
+          {weakTopics && weakTopics.length > 0 && (
+            <Link
+              href={`/battle/${deck.id}?mode=weak_topic&topics=${weakTopicQueryValue}`}
+              onClick={() =>
+                safeTrackEvent("results_weak_topics_practice_clicked", {
+                  matchId: match.id,
+                  deckId: deck.id,
+                  topics: weakTopics.map((topic) => topic.topic),
+                })
+              }
+              className="group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 sm:px-8 sm:hover:scale-[1.02]"
+            >
+              <span className="relative z-10">Rematch Weak Topics</span>
+              <svg
+                className="relative z-10 h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2.5}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+              <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover:translate-x-full" />
+            </Link>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              handleCopyLink();
+              safeTrackEvent("results_challenge_friend_clicked", { matchId: match.id, deckId: deck.id });
+            }}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-6 py-4 text-base font-bold backdrop-blur-sm transition-colors duration-150 sm:px-8 ${
+              weakTopics && weakTopics.length > 0
+                ? "border border-indigo-400/30 bg-indigo-500/10 text-indigo-100 hover:border-indigo-300/45 hover:bg-indigo-500/20"
+                : "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.6)] sm:hover:scale-[1.02]"
+            }`}
+          >
+            {linkCopied ? "Link Copied!" : "Challenge a Friend"}
+          </button>
+
           <Link
             href={
               isRivalBattle
@@ -3216,23 +3261,9 @@ export default function ResultsPage() {
                 rivalRank: isRivalBattle ? rivalRank : undefined,
               })
             }
-            className="group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:px-8 sm:hover:scale-[1.02]"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/30 px-6 py-4 text-base font-bold text-white/80 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-white/10 sm:px-8"
           >
-            <span className="relative z-10">{isRivalBattle ? "Rematch Rival" : "Rematch This Deck"}</span>
-            <svg
-              className="relative z-10 h-5 w-5 flex-shrink-0 transition-transform duration-200 group-hover:translate-x-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13 7l5 5m0 0l-5 5m5-5H6"
-              />
-            </svg>
-            <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover:translate-x-full" />
+            {isRivalBattle ? "Rematch Rival" : "Rematch This Deck"}
           </Link>
 
           <Link
@@ -3243,7 +3274,7 @@ export default function ResultsPage() {
                 deckId: deck.id,
               })
             }
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/30 px-6 py-4 text-base font-bold text-white/80 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-white/10 sm:px-8"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/30 px-6 py-4 text-base font-bold text-white/80 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-white/10 sm:px-8"
           >
             Quick Check (5)
           </Link>
@@ -3256,7 +3287,7 @@ export default function ResultsPage() {
                 deckId: deck.id,
               })
             }
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/30 px-6 py-4 text-base font-bold text-white/80 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-white/10 sm:px-8"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/30 px-6 py-4 text-base font-bold text-white/80 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-white/10 sm:px-8"
           >
             Practice Mode
           </Link>
@@ -3270,7 +3301,7 @@ export default function ResultsPage() {
                 rivalRank,
               })
             }
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-cyan-400/25 bg-cyan-500/12 px-6 py-4 text-base font-bold text-cyan-100 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-cyan-500/20 sm:px-8"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-400/25 bg-indigo-500/12 px-6 py-4 text-base font-bold text-indigo-100 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-indigo-500/20 sm:px-8"
           >
             Study Rival
           </Link>
@@ -3283,26 +3314,10 @@ export default function ResultsPage() {
                 deckId: deck.id,
               })
             }
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-fuchsia-400/25 bg-fuchsia-500/12 px-6 py-4 text-base font-bold text-fuchsia-100 backdrop-blur-sm transition-colors duration-150 hover:border-fuchsia-300/40 hover:bg-fuchsia-500/20 sm:px-8"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-400/25 bg-indigo-500/12 px-6 py-4 text-base font-bold text-indigo-100 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-indigo-500/20 sm:px-8"
           >
             Boss Battle
           </Link>
-
-          {weakTopics && weakTopics.length > 0 && (
-            <Link
-              href={`/battle/${deck.id}?mode=weak_topic&topics=${weakTopicQueryValue}`}
-              onClick={() =>
-                safeTrackEvent("results_weak_topics_practice_clicked", {
-                  matchId: match.id,
-                  deckId: deck.id,
-                  topics: weakTopics.map((topic) => topic.topic),
-                })
-              }
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-6 py-4 text-base font-bold text-cyan-200 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-cyan-500/15 sm:px-8"
-            >
-              Practice Weak Topics
-            </Link>
-          )}
 
           {reviewItems.some((item) => !item.isCorrect) && (
             <Link
@@ -3327,11 +3342,19 @@ export default function ResultsPage() {
                 deckId: deck.id,
               })
             }
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-4 text-base font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10 sm:px-8"
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-4 text-base font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-400/30 hover:bg-white/10 sm:px-8"
           >
             Create New Deck
           </Link>
         </div>
+
+        <Link
+          href="/dashboard"
+          onClick={() => safeTrackEvent("results_return_to_dashboard_clicked", { matchId: match.id, deckId: deck.id })}
+          className="mt-4 block text-center text-sm font-semibold text-white/50 transition-colors duration-150 hover:text-indigo-300"
+        >
+          Return to Dashboard
+        </Link>
 
         {isLoggedIn && (
           <UpcomingAssessmentPrompt matchId={match.id} deckTitle={deck.title} />
@@ -3346,7 +3369,7 @@ export default function ResultsPage() {
               deckId: deck.id,
             })
           }
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-transparent px-6 py-3.5 text-sm font-bold text-white/60 transition-colors duration-150 hover:border-cyan-400/30 hover:text-cyan-300 sm:px-8"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-transparent px-6 py-3.5 text-sm font-bold text-white/60 transition-colors duration-150 hover:border-indigo-400/30 hover:text-indigo-300 sm:px-8"
         >
           <svg
             className="h-4 w-4 flex-shrink-0"

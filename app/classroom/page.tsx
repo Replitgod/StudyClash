@@ -10,9 +10,9 @@ function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -102,7 +102,7 @@ export default function ClassroomPage() {
   return (
     <Background>
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-sm sm:p-8">
-        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300">Classroom Mode</p>
+        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">Classroom Mode</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">
           Live Study Rooms
         </h1>

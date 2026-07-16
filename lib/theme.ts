@@ -18,11 +18,11 @@ export const GRADIENTS = {
   /** Primary action gradient — signup, submit, main CTAs. */
   brandPrimary: "bg-gradient-to-r from-indigo-600 to-indigo-500",
   /** Wordmark/heading gradient — logo text, feature headings. */
-  brandHeading: "bg-gradient-to-r from-indigo-400 via-indigo-500 to-sky-400",
+  brandHeading: "bg-gradient-to-r from-indigo-400 via-indigo-500 to-indigo-400",
   /** High-urgency "Battle AI" entry points. */
-  battle: "bg-gradient-to-r from-cyan-300 to-emerald-300",
+  battle: "bg-gradient-to-r from-indigo-300 to-green-300",
   /** Secondary/decorative accent. */
-  accent: "bg-gradient-to-r from-cyan-500 to-fuchsia-500",
+  accent: "bg-gradient-to-r from-indigo-500 to-indigo-500",
 } as const;
 
 // Solid brand colors — the new indigo/blue system. Prefer these over
@@ -43,14 +43,14 @@ export const BRAND = {
 // class names — a dynamically-interpolated `border-${color}-400/20` would
 // silently produce no CSS at build time. Keep every entry a literal string.
 export const SURFACE = {
-  cyanSubtle: "border border-cyan-400/20 bg-cyan-500/10",
-  cyanEmphasis: "border border-cyan-400/35 bg-cyan-500/20",
-  fuchsiaSubtle: "border border-fuchsia-400/20 bg-fuchsia-500/10",
-  fuchsiaEmphasis: "border border-fuchsia-400/35 bg-fuchsia-500/20",
-  emeraldSubtle: "border border-emerald-400/20 bg-emerald-500/10",
-  emeraldEmphasis: "border border-emerald-400/35 bg-emerald-500/20",
-  violetSubtle: "border border-violet-400/20 bg-violet-500/10",
-  violetEmphasis: "border border-violet-400/35 bg-violet-500/20",
+  cyanSubtle: "border border-indigo-400/20 bg-indigo-500/10",
+  cyanEmphasis: "border border-indigo-400/35 bg-indigo-500/20",
+  fuchsiaSubtle: "border border-indigo-400/20 bg-indigo-500/10",
+  fuchsiaEmphasis: "border border-indigo-400/35 bg-indigo-500/20",
+  emeraldSubtle: "border border-green-400/20 bg-green-500/10",
+  emeraldEmphasis: "border border-green-400/35 bg-green-500/20",
+  violetSubtle: "border border-indigo-400/20 bg-indigo-500/10",
+  violetEmphasis: "border border-indigo-400/35 bg-indigo-500/20",
   amberSubtle: "border border-amber-400/20 bg-amber-500/10",
   amberEmphasis: "border border-amber-400/35 bg-amber-500/20",
   dangerSubtle: "border border-red-400/25 bg-red-500/10",
@@ -59,8 +59,8 @@ export const SURFACE = {
   neutralEmphasis: "border border-white/15 bg-white/[0.06]",
   indigoSubtle: "border border-indigo-400/20 bg-indigo-500/10",
   indigoEmphasis: "border border-indigo-400/35 bg-indigo-500/20",
-  skySubtle: "border border-sky-400/20 bg-sky-500/10",
-  skyEmphasis: "border border-sky-400/35 bg-sky-500/20",
+  skySubtle: "border border-indigo-400/20 bg-indigo-500/10",
+  skyEmphasis: "border border-indigo-400/35 bg-indigo-500/20",
 } as const;
 
 // Transition presets — named per the standardized duration/easing tokens

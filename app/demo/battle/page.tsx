@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -246,9 +246,9 @@ function Background({ children }: { children: React.ReactNode }) {
 	return (
 		<main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
 			<div className="pointer-events-none absolute inset-0 overflow-hidden">
-				<div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-				<div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-				<div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+				<div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+				<div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+				<div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
 			</div>
 			<div
 				className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -604,7 +604,7 @@ export default function DemoBattlePage() {
 	// back to the demo itself, rather than a personalized /challenge/[token]
 	// comparison link like the real battle results page uses.
 	const handleCopyDemoResult = async () => {
-		const shareMessage = `I scored ${accuracyPercent}% on the StudyJoust SAT Math demo. Try to beat me: ${window.location.origin}/demo/battle`;
+		const shareMessage = `I scored ${accuracyPercent}% on the StudyClash SAT Math demo. Try to beat me: ${window.location.origin}/demo/battle`;
 		const copied = await copyTextToClipboard(shareMessage);
 
 		if (copied) {
@@ -669,21 +669,21 @@ export default function DemoBattlePage() {
 			<div className="w-full max-w-5xl">
 				{phase === "intro" && (
 					<section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm sm:p-8">
-						<div className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-200">
-							<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
+						<div className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-indigo-200">
+							<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-300" />
 							Demo Mode
 						</div>
 
 						<h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
-							<span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
-								Try the StudyJoust flow in 60 seconds.
+							<span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
+								Try the StudyClash flow in 60 seconds.
 							</span>
 						</h1>
 						<p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-white/60 sm:text-base">
 							This SAT Math / Algebra practice deck shows the exact tutoring-center experience: answer questions, see your score, review weak topics, and jump straight into topic-specific study links.
 						</p>
 
-						<p className="mx-auto mt-3 max-w-xl rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-center text-xs font-semibold text-cyan-100 sm:text-sm">
+						<p className="mx-auto mt-3 max-w-xl rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-4 py-2 text-center text-xs font-semibold text-indigo-100 sm:text-sm">
 							No account needed. Tap Start Demo Battle and answer {QUESTIONS_PER_DEMO} questions to see the full loop.
 						</p>
 
@@ -722,7 +722,7 @@ export default function DemoBattlePage() {
 					<section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm sm:p-8">
 						<div className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-end sm:justify-between">
 							<div>
-								<div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-cyan-200">
+								<div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-indigo-200">
 									SAT Math Demo
 								</div>
 								<h2 className="text-2xl font-black tracking-tight sm:text-3xl">
@@ -735,15 +735,15 @@ export default function DemoBattlePage() {
 
 							<div className="grid grid-cols-3 gap-2 sm:min-w-[260px]">
 								<div className="rounded-xl border border-white/10 bg-black/20 p-3 text-center">
-									<p className="text-lg font-black text-fuchsia-300">{totalScore}</p>
+									<p className="text-lg font-black text-indigo-300">{totalScore}</p>
 									<p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Score</p>
 								</div>
 								<div className="rounded-xl border border-white/10 bg-black/20 p-3 text-center">
-									<p className="text-lg font-black text-cyan-300">{formatTime(elapsedSeconds)}</p>
+									<p className="text-lg font-black text-indigo-300">{formatTime(elapsedSeconds)}</p>
 									<p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Timer</p>
 								</div>
 								<div className="rounded-xl border border-white/10 bg-black/20 p-3 text-center">
-									<p className="text-lg font-black text-emerald-300">{bestStreak}</p>
+									<p className="text-lg font-black text-green-300">{bestStreak}</p>
 									<p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Best Streak</p>
 								</div>
 							</div>
@@ -774,11 +774,11 @@ export default function DemoBattlePage() {
 											className={`flex items-start gap-3 rounded-2xl border px-4 py-4 text-left transition-colors duration-150 disabled:cursor-not-allowed ${
 												showSelectedState
 													? isCorrect
-														? "border-emerald-400/40 bg-emerald-500/10"
+														? "border-green-400/40 bg-green-500/10"
 														: isSelected
 															? "border-red-400/40 bg-red-500/10"
 															: "border-white/10 bg-black/20"
-													: "border-white/10 bg-black/20 hover:border-cyan-400/30 hover:bg-white/[0.04]"
+													: "border-white/10 bg-black/20 hover:border-indigo-400/30 hover:bg-white/[0.04]"
 											}`}
 										>
 											<span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-sm font-bold text-white/80">
@@ -825,9 +825,9 @@ export default function DemoBattlePage() {
 														<span
 															className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
 																wrongAnswerResource.trustTier === "official"
-																	? "border-emerald-300/40 bg-emerald-500/15 text-emerald-200"
+																	? "border-green-300/40 bg-green-500/15 text-green-200"
 																	: wrongAnswerResource.trustTier === "reputable"
-																		? "border-cyan-300/40 bg-cyan-500/15 text-cyan-200"
+																		? "border-indigo-300/40 bg-indigo-500/15 text-indigo-200"
 																		: "border-white/20 bg-white/5 text-white/60"
 															}`}
 														>
@@ -860,7 +860,7 @@ export default function DemoBattlePage() {
 									type="button"
 									onClick={handleNext}
 									disabled={!selectedChoice}
-									className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:hover:scale-[1.02]"
+									className="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:hover:scale-[1.02]"
 								>
 									{currentIndex === totalQuestions - 1 ? "See Results" : "Next Question"}
 								</button>
@@ -871,37 +871,37 @@ export default function DemoBattlePage() {
 
 				{phase === "results" && (
 					<section ref={resultsRef} className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-sm sm:p-8">
-						<div className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border border-fuchsia-400/20 bg-fuchsia-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-fuchsia-200">
-							<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-300" />
+						<div className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-indigo-200">
+							<span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-300" />
 							Demo Results
 						</div>
 
 						<h2 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
-							<span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+							<span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
 								Demo battle complete.
 							</span>
 						</h2>
 						<p className="mx-auto mt-3 max-w-2xl text-center text-sm text-white/55 sm:text-base">
-							Here is the same StudyJoust feedback loop tutoring centers can show instantly, without making a full deck first.
+							Here is the same StudyClash feedback loop tutoring centers can show instantly, without making a full deck first.
 						</p>
 
 						<div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 							<div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
-								<p className="text-4xl font-black bg-gradient-to-r from-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">
+								<p className="text-4xl font-black bg-gradient-to-r from-indigo-400 to-indigo-400 bg-clip-text text-transparent">
 									{totalScore}
 								</p>
 								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-white/40">Score</p>
 							</div>
 							<div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
-								<p className="text-4xl font-black text-emerald-300">{accuracyPercent}%</p>
+								<p className="text-4xl font-black text-green-300">{accuracyPercent}%</p>
 								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-white/40">Accuracy</p>
 							</div>
 							<div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
-								<p className="text-4xl font-black text-cyan-300">{correctAnswers}/{totalQuestions}</p>
+								<p className="text-4xl font-black text-indigo-300">{correctAnswers}/{totalQuestions}</p>
 								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-white/40">Correct</p>
 							</div>
 							<div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
-								<p className="text-4xl font-black text-violet-300">{formatTime(elapsedSeconds)}</p>
+								<p className="text-4xl font-black text-indigo-300">{formatTime(elapsedSeconds)}</p>
 								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-white/40">Time</p>
 							</div>
 						</div>
@@ -912,7 +912,7 @@ export default function DemoBattlePage() {
 						<button
 							type="button"
 							onClick={handleCopyDemoResult}
-							className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-fuchsia-400/40 hover:bg-white/10"
+							className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-sm font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-400/40 hover:bg-white/10"
 						>
 							{resultLinkCopied ? "Copied! Send it to a friend." : "Copy Result to Challenge a Friend"}
 						</button>
@@ -922,7 +922,7 @@ export default function DemoBattlePage() {
 							<div className="mt-4 grid gap-3 sm:grid-cols-3">
 								<div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
 									<p className="text-sm font-semibold text-white/90">Best streak</p>
-									<p className="mt-1 text-2xl font-black text-fuchsia-300">{bestStreak}</p>
+									<p className="mt-1 text-2xl font-black text-indigo-300">{bestStreak}</p>
 								</div>
 								<div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
 									<p className="text-sm font-semibold text-white/90">Wrong answers</p>
@@ -930,17 +930,17 @@ export default function DemoBattlePage() {
 								</div>
 								<div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
 									<p className="text-sm font-semibold text-white/90">Avg. response</p>
-									<p className="mt-1 text-2xl font-black text-cyan-300">{averageResponseTimeMs > 0 ? `${Math.round(averageResponseTimeMs / 1000)}s` : "—"}</p>
+									<p className="mt-1 text-2xl font-black text-indigo-300">{averageResponseTimeMs > 0 ? `${Math.round(averageResponseTimeMs / 1000)}s` : "—"}</p>
 								</div>
 							</div>
 						</div>
 
-						<div className="mt-8 rounded-2xl border border-fuchsia-400/20 bg-fuchsia-500/[0.03] p-4 sm:p-6">
+						<div className="mt-8 rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.03] p-4 sm:p-6">
 							<div className="flex items-center gap-2">
-								<svg className="h-4 w-4 flex-shrink-0 text-fuchsia-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+								<svg className="h-4 w-4 flex-shrink-0 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
 									<path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
 								</svg>
-								<p className="text-xs font-bold uppercase tracking-wider text-fuchsia-200">Weak Topic Report</p>
+								<p className="text-xs font-bold uppercase tracking-wider text-indigo-200">Weak Topic Report</p>
 							</div>
 
 							{weakTopics.length === 0 ? (
@@ -964,12 +964,12 @@ export default function DemoBattlePage() {
 							)}
 						</div>
 
-						<div className="mt-8 rounded-2xl border border-cyan-400/20 bg-gradient-to-br from-cyan-500/5 to-violet-500/5 p-4 sm:p-6">
+						<div className="mt-8 rounded-2xl border border-indigo-400/20 bg-gradient-to-br from-indigo-500/5 to-indigo-500/5 p-4 sm:p-6">
 							<div className="flex items-center gap-2">
-								<svg className="h-4 w-4 flex-shrink-0 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+								<svg className="h-4 w-4 flex-shrink-0 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
 									<path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
 								</svg>
-								<p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Study Links</p>
+								<p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Study Links</p>
 							</div>
 
 							<div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -995,7 +995,7 @@ export default function DemoBattlePage() {
 														href={resource.url}
 														target="_blank"
 														rel="noopener noreferrer"
-														className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-cyan-300 transition-colors duration-150 hover:border-cyan-400/40 hover:bg-white/10"
+														className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-indigo-300 transition-colors duration-150 hover:border-indigo-400/40 hover:bg-white/10"
 													>
 														{resource.label}
 														<svg className="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -1016,7 +1016,7 @@ export default function DemoBattlePage() {
 								{studyPlan.map((day) => (
 									<div key={day.day} className="rounded-xl border border-white/10 bg-black/20 p-4">
 										<div className="flex items-center gap-2">
-											<span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-violet-600 text-xs font-bold text-white">
+											<span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-xs font-bold text-white">
 												{day.day}
 											</span>
 											<p className="text-sm font-bold text-white/90">{day.title}</p>
@@ -1024,7 +1024,7 @@ export default function DemoBattlePage() {
 										<ul className="mt-3 flex flex-col gap-2">
 											{day.tasks.map((task) => (
 												<li key={task} className="flex items-start gap-2 text-xs leading-relaxed text-white/55">
-													<span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-cyan-300" />
+													<span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-300" />
 													<span>{task}</span>
 												</li>
 											))}
@@ -1044,13 +1044,13 @@ export default function DemoBattlePage() {
 							</button>
 							<Link
 								href="/create"
-								className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-5 py-3 text-sm font-bold text-white text-center shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
+								className="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-5 py-3 text-sm font-bold text-white text-center shadow-[0_0_30px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
 							>
 								Create a Real Deck
 							</Link>
 							<Link
 								href="/dashboard"
-								className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-5 py-3 text-sm font-bold text-cyan-200 text-center transition-colors duration-150 hover:border-cyan-300/40 hover:bg-cyan-500/15"
+								className="rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-5 py-3 text-sm font-bold text-indigo-200 text-center transition-colors duration-150 hover:border-indigo-300/40 hover:bg-indigo-500/15"
 							>
 								Go to Dashboard
 							</Link>

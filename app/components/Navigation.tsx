@@ -48,7 +48,7 @@ const MARKETING_LINKS = [
 
 function VyraMiniIcon() {
   return (
-    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-cyan-300/35 bg-gradient-to-br from-cyan-400/25 to-emerald-500/20 shadow-[0_0_14px_-8px_rgba(34,211,238,0.8)]">
+    <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-indigo-300/35 bg-gradient-to-br from-indigo-400/25 to-green-500/20 shadow-[0_0_14px_-8px_rgba(79,70,229,0.8)]">
       <svg
         className="h-4 w-4"
         viewBox="0 0 24 24"
@@ -115,13 +115,21 @@ const RAIL_ICONS: Record<string, React.ReactNode> = {
       <path d="M16 17l5-5-5-5M21 12H9" />
     </svg>
   ),
+  login: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-[17px] w-[17px]">
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+      <path d="M10 17l5-5-5-5M15 12H3" />
+    </svg>
+  ),
+  signup: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-[19px] w-[19px]">
+      <circle cx="9" cy="8" r="3.5" />
+      <path d="M2 20c1.4-3.2 4.4-5 7-5" />
+      <path d="M18 8v6M15 11h6" strokeLinecap="round" />
+    </svg>
+  ),
 };
 
-// A single rail button: icon + tiny caption below (matches the app-shell
-// icon rail), plus a floating label that fades in after a short hover delay
-// and fades straight back out on leave -- no delay either direction would
-// flicker distractingly across five adjacent icons, and no fade at all
-// reads dead, so the delay is on entry only.
 // A single rail entry. Collapsed (the rail's resting state) it's a
 // centered icon with a floating tooltip on individual hover; once the whole
 // rail is expanded (see Navigation's isRailOpen), every item switches to an
@@ -203,6 +211,14 @@ function RailButton({
   );
 }
 
+// An active battle is the one screen that wants zero competing chrome --
+// see the "BATTLE SCREEN" spec ("Remove the standard website navigation
+// during an active battle"). MainContentShell checks this too, so the
+// rail's reserved gutter disappears along with the rail itself.
+export function isActiveBattleRoute(pathname: string | null): boolean {
+  return !!pathname && /^\/battle\/[^/]+/.test(pathname);
+}
+
 export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
@@ -278,121 +294,115 @@ export default function Navigation() {
     router.push("/");
   };
 
-  // ---- Logged-in desktop app shell: fixed left icon rail ----
-  if (isLoggedIn && !isLoading) {
-    return (
-      <>
-        {/* Thin always-on edge strip: hovering it (or the rail itself once
-            open) reveals the full rail. Keeps the rail off-screen at rest
-            so it doesn't eat a permanent 72px gutter from every page. */}
-        <motion.nav
-          initial={false}
-          animate={{ width: isRailOpen ? 232 : 72 }}
-          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-          style={{ zIndex: UI_Z_INDEX.stickyHeader }}
-          className="fixed left-0 top-0 hidden h-screen flex-col overflow-hidden border-r border-white/10 bg-[#0a0a0c] py-5 shadow-2xl md:flex"
-          aria-label="Primary"
-          onMouseEnter={() => setIsRailOpen(true)}
-          onMouseLeave={() => {
-            setIsRailOpen(false);
-            setIsMoreOpen(false);
-          }}
-        >
-          <Link href="/dashboard" className="mx-auto mb-5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-sm font-black text-white">
-            S
-          </Link>
+  if (isActiveBattleRoute(pathname)) return null;
 
-          <RailButton icon={RAIL_ICONS.home} tip="Home" href="/dashboard" active={isActive("/dashboard")} expanded={isRailOpen} />
-          <RailButton icon={RAIL_ICONS.battle} tip="Battle" as="battle" active={isActive("/#battle-ai")} expanded={isRailOpen} />
-          <RailButton icon={RAIL_ICONS.plan} tip="Study Plan" href="/study-plans/new" active={isActive("/study-plans")} expanded={isRailOpen} />
-          <RailButton icon={RAIL_ICONS.decks} tip="Decks" href="/decks" active={isActive("/decks")} expanded={isRailOpen} />
-          <RailButton icon={RAIL_ICONS.diagnostics} tip="Diagnostics" href="/diagnostics" active={isActive("/diagnostics")} expanded={isRailOpen} />
+  const homeHref = isLoggedIn ? "/dashboard" : "/";
 
-          <div className="mt-auto flex flex-col gap-1">
-            <div className="relative">
-              <RailButton
-                icon={RAIL_ICONS.more}
-                tip="More"
-                active={isMoreOpen}
-                onClick={() => setIsMoreOpen((v) => !v)}
-                expanded={isRailOpen}
-              />
-              <AnimatePresence>
-                {isMoreOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, x: -6, scale: 0.97 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: -6, scale: 0.97 }}
-                    transition={springSnappy}
-                    className="absolute bottom-0 left-full ml-2.5 w-52 rounded-xl border border-white/10 bg-[#131316] p-1.5 shadow-2xl"
-                    style={{ zIndex: UI_Z_INDEX.stickyHeader }}
-                  >
-                    {continuePath && (
-                      <Link
-                        href={continuePath}
-                        onClick={() => setIsMoreOpen(false)}
-                        className="block rounded-lg px-3 py-2 text-sm font-semibold text-indigo-300 hover:bg-white/5"
-                      >
-                        Continue where you left off
-                      </Link>
-                    )}
-                    {MORE_LINKS.map((link) => (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        onClick={() => setIsMoreOpen(false)}
-                        className="block rounded-lg px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/5 hover:text-white"
-                      >
-                        {link.label}
-                      </Link>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            <RailButton icon={RAIL_ICONS.account} tip="Account" href="/account" active={isActive("/account")} expanded={isRailOpen} />
+  // ---- Desktop app shell: fixed left icon rail, always -- logged in or
+  // not. Mobile keeps its own top bar (see MobileTopBar) since a hover-
+  // expand side rail isn't a touch-friendly pattern on a narrow viewport. ----
+  return (
+    <>
+      <motion.nav
+        initial={false}
+        animate={{ width: isRailOpen ? 232 : 72 }}
+        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        style={{ zIndex: UI_Z_INDEX.stickyHeader }}
+        className="fixed left-0 top-0 hidden h-screen flex-col overflow-hidden border-r border-white/10 bg-[#0a0a0c] py-5 shadow-2xl md:flex"
+        aria-label="Primary"
+        onMouseEnter={() => setIsRailOpen(true)}
+        onMouseLeave={() => {
+          setIsRailOpen(false);
+          setIsMoreOpen(false);
+        }}
+      >
+        <Link href={homeHref} className="mx-auto mb-5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-sm font-black text-white">
+          S
+        </Link>
+
+        <RailButton icon={RAIL_ICONS.home} tip="Home" href={homeHref} active={isActive(homeHref)} expanded={isRailOpen} />
+        <RailButton icon={RAIL_ICONS.battle} tip="Battle" as="battle" active={isActive("/#battle-ai")} expanded={isRailOpen} />
+        <RailButton icon={RAIL_ICONS.plan} tip="Study Plan" href="/study-plans/new" active={isActive("/study-plans")} expanded={isRailOpen} />
+        <RailButton icon={RAIL_ICONS.decks} tip="Decks" href="/decks" active={isActive("/decks")} expanded={isRailOpen} />
+        <RailButton icon={RAIL_ICONS.diagnostics} tip="Diagnostics" href="/diagnostics" active={isActive("/diagnostics")} expanded={isRailOpen} />
+
+        <div className="mt-auto flex flex-col gap-1">
+          <div className="relative">
             <RailButton
-              icon={RAIL_ICONS.logout}
-              tip={isLoggingOut ? "Logging out…" : "Logout"}
-              onClick={handleLogout}
-              active={false}
+              icon={RAIL_ICONS.more}
+              tip="More"
+              active={isMoreOpen}
+              onClick={() => setIsMoreOpen((v) => !v)}
               expanded={isRailOpen}
             />
+            <AnimatePresence>
+              {isMoreOpen && (
+                <motion.div
+                  initial={{ opacity: 0, x: -6, scale: 0.97 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -6, scale: 0.97 }}
+                  transition={springSnappy}
+                  className="absolute bottom-0 left-full ml-2.5 w-52 rounded-xl border border-white/10 bg-[#131316] p-1.5 shadow-2xl"
+                  style={{ zIndex: UI_Z_INDEX.stickyHeader }}
+                >
+                  {continuePath && (
+                    <Link
+                      href={continuePath}
+                      onClick={() => setIsMoreOpen(false)}
+                      className="block rounded-lg px-3 py-2 text-sm font-semibold text-indigo-300 hover:bg-white/5"
+                    >
+                      Continue where you left off
+                    </Link>
+                  )}
+                  {MORE_LINKS.map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setIsMoreOpen(false)}
+                      className="block rounded-lg px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/5 hover:text-white"
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-        </motion.nav>
 
-        {/* Mobile stays a top bar even when logged in -- the rail is a
-            desktop app-shell pattern, not something worth cramming into a
-            narrow viewport. */}
-        <MobileTopBar
-          isLoggedIn
-          isLoading={isLoading}
-          isLoggingOut={isLoggingOut}
-          isMobileMenuOpen={isMobileMenuOpen}
-          toggleMobileMenu={toggleMobileMenu}
-          closeMobileMenu={closeMobileMenu}
-          handleLogout={handleLogout}
-          continuePath={continuePath}
-          isActive={isActive}
-        />
-      </>
-    );
-  }
+          {isLoading ? (
+            <div className="mx-auto h-8 w-8 animate-pulse rounded-lg bg-white/5" />
+          ) : isLoggedIn ? (
+            <>
+              <RailButton icon={RAIL_ICONS.account} tip="Account" href="/account" active={isActive("/account")} expanded={isRailOpen} />
+              <RailButton
+                icon={RAIL_ICONS.logout}
+                tip={isLoggingOut ? "Logging out…" : "Logout"}
+                onClick={handleLogout}
+                active={false}
+                expanded={isRailOpen}
+              />
+            </>
+          ) : (
+            <>
+              <RailButton icon={RAIL_ICONS.login} tip="Login" href="/login" active={isActive("/login")} expanded={isRailOpen} />
+              <RailButton icon={RAIL_ICONS.signup} tip="Sign Up" href="/signup" active={isActive("/signup")} expanded={isRailOpen} />
+            </>
+          )}
+        </div>
+      </motion.nav>
 
-  // ---- Marketing / logged-out: original top bar ----
-  return (
-    <MobileTopBar
-      isLoggedIn={false}
-      isLoading={isLoading}
-      isLoggingOut={isLoggingOut}
-      isMobileMenuOpen={isMobileMenuOpen}
-      toggleMobileMenu={toggleMobileMenu}
-      closeMobileMenu={closeMobileMenu}
-      handleLogout={handleLogout}
-      continuePath={continuePath}
-      isActive={isActive}
-      showDesktopBar
-    />
+      <MobileTopBar
+        isLoggedIn={isLoggedIn}
+        isLoading={isLoading}
+        isLoggingOut={isLoggingOut}
+        isMobileMenuOpen={isMobileMenuOpen}
+        toggleMobileMenu={toggleMobileMenu}
+        closeMobileMenu={closeMobileMenu}
+        handleLogout={handleLogout}
+        continuePath={continuePath}
+        isActive={isActive}
+      />
+    </>
   );
 }
 
@@ -406,7 +416,6 @@ function MobileTopBar({
   handleLogout,
   continuePath,
   isActive,
-  showDesktopBar = false,
 }: {
   isLoggedIn: boolean;
   isLoading: boolean;
@@ -417,106 +426,21 @@ function MobileTopBar({
   handleLogout: () => void;
   continuePath: string | null;
   isActive: (href: string) => boolean;
-  /** True only for logged-out visitors: the full link row also shows at md+. */
-  showDesktopBar?: boolean;
 }) {
   const navLinks = MARKETING_LINKS;
 
   return (
     <nav
-      className={`${showDesktopBar ? "sticky top-0" : "sticky top-0 md:hidden"} w-full border-b border-white/10 bg-[#05050a]/80 backdrop-blur-md`}
+      className="sticky top-0 w-full border-b border-white/10 bg-[#05050a]/80 backdrop-blur-md md:hidden"
       style={{ zIndex: UI_Z_INDEX.stickyHeader }}
     >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6">
         <Link href="/" onClick={closeMobileMenu} className="flex flex-shrink-0 items-center gap-2 text-lg font-black tracking-tight">
           <VyraMiniIcon />
-          <span className="bg-gradient-to-r from-indigo-400 via-indigo-500 to-sky-400 bg-clip-text text-transparent">
-            StudyJoust
+          <span className="bg-gradient-to-r from-indigo-400 via-indigo-500 to-indigo-400 bg-clip-text text-transparent">
+            StudyClash
           </span>
         </Link>
-
-        {showDesktopBar && (
-          <div className="hidden items-center gap-1 md:flex">
-            {navLinks.map((link) =>
-              link.isBattle ? (
-                <BattleAILink
-                  key={link.href}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-150 ${
-                    isActive(link.href) ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/90"
-                  }`}
-                >
-                  {link.label}
-                </BattleAILink>
-              ) : (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  aria-current={isActive(link.href) ? "page" : undefined}
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-150 ${
-                    isActive(link.href) ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/90"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              )
-            )}
-          </div>
-        )}
-
-        {showDesktopBar && (
-          <div className="hidden items-center gap-2 md:flex">
-            <BattleAILink className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-black text-white transition-colors duration-150 hover:bg-indigo-500">
-              Battle AI Now
-            </BattleAILink>
-            <Link
-              href={isLoggedIn ? "/create" : "/signup?redirect=/create"}
-              className="rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-3 py-2 text-sm font-bold text-indigo-100 transition-colors duration-150 hover:border-indigo-300/45 hover:bg-indigo-500/20"
-            >
-              Create Deck
-            </Link>
-            {isLoading ? (
-              <div className="h-9 w-24 animate-pulse rounded-lg bg-white/5" />
-            ) : isLoggedIn ? (
-              <>
-                {continuePath && (
-                  <Link
-                    href={continuePath}
-                    className="rounded-lg border border-indigo-400/25 bg-indigo-500/10 px-3 py-2 text-sm font-semibold text-indigo-100 transition-colors duration-150 hover:border-indigo-300/40 hover:bg-indigo-500/20"
-                  >
-                    Continue
-                  </Link>
-                )}
-                <Link
-                  href="/account"
-                  className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-150 ${
-                    isActive("/account") ? "bg-white/10 text-white" : "text-white/60 hover:bg-white/5 hover:text-white/90"
-                  }`}
-                >
-                  Account
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-sm font-bold text-white/80 transition-colors duration-150 hover:border-red-400/30 hover:bg-red-500/10 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isLoggingOut ? "Logging Out..." : "Logout"}
-                </button>
-              </>
-            ) : (
-              <>
-                <Link href="/login" className="rounded-lg px-3.5 py-2 text-sm font-semibold text-white/70 transition-colors duration-150 hover:text-white">
-                  Login
-                </Link>
-                <Link
-                  href="/signup"
-                  className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition-colors duration-150 hover:bg-indigo-500"
-                >
-                  Sign Up
-                </Link>
-              </>
-            )}
-          </div>
-        )}
 
         <button
           onClick={toggleMobileMenu}

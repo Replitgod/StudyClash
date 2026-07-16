@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Exam Prep Study App | SAT, AP, MCAT, LSAT, NCLEX",
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     "AP study app",
   ],
   openGraph: {
-    title: "Exam Prep Study Tunnels | StudyJoust",
+    title: "Exam Prep Study Tunnels | StudyClash",
     description:
       "High-stakes exam prep through battle-style practice and weak-topic loops.",
     url: "/exams",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "StudyJoust Exams | SAT/AP/MCAT/LSAT/NCLEX Battle Prep",
+    title: "StudyClash Exams | SAT/AP/MCAT/LSAT/NCLEX Battle Prep",
     description:
       "Train with exam-style AI battles and targeted remediation loops.",
     images: ["/twitter-image"],

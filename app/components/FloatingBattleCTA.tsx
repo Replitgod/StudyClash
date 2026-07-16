@@ -26,7 +26,7 @@ export default function FloatingBattleCTA() {
       style={{ zIndex: UI_Z_INDEX.floatingAction }}
     >
       <BattleAILink
-        className="flex items-center justify-center rounded-2xl bg-gradient-to-r from-cyan-300 to-emerald-300 px-5 py-3 text-sm font-black text-[#052538] shadow-[0_22px_45px_-22px_rgba(34,211,238,0.95)]"
+        className="flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-300 to-green-300 px-5 py-3 text-sm font-black text-[#052538] shadow-[0_22px_45px_-22px_rgba(79,70,229,0.95)]"
         ariaLabel="Start Battle AI instantly"
       >
         Start Battle AI Instantly

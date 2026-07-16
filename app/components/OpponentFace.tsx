@@ -2,11 +2,11 @@ export type OpponentMood = "idle" | "thinking" | "gloating" | "rattled" | "victo
 
 const MOOD_CONFIG: Record<OpponentMood, { emoji: string; ring: string; label: string }> = {
   idle: { emoji: "🤖", ring: "border-white/15 bg-white/5", label: "Waiting" },
-  thinking: { emoji: "🧠", ring: "border-orange-300/40 bg-orange-500/10", label: "Thinking..." },
-  gloating: { emoji: "😏", ring: "border-rose-300/50 bg-rose-500/15", label: "Feeling good" },
-  rattled: { emoji: "😵", ring: "border-cyan-300/40 bg-cyan-500/10", label: "Shaken" },
-  victorious: { emoji: "😈", ring: "border-rose-400/60 bg-rose-500/20", label: "Opponent winning" },
-  defeated: { emoji: "😭", ring: "border-emerald-300/50 bg-emerald-500/15", label: "Opponent defeated" },
+  thinking: { emoji: "🧠", ring: "border-amber-300/40 bg-amber-500/10", label: "Thinking..." },
+  gloating: { emoji: "😏", ring: "border-red-300/50 bg-red-500/15", label: "Feeling good" },
+  rattled: { emoji: "😵", ring: "border-indigo-300/40 bg-indigo-500/10", label: "Shaken" },
+  victorious: { emoji: "😈", ring: "border-red-400/60 bg-red-500/20", label: "Opponent winning" },
+  defeated: { emoji: "😭", ring: "border-green-300/50 bg-green-500/15", label: "Opponent defeated" },
 };
 
 export function OpponentFace({ mood, className = "h-12 w-12 text-2xl" }: { mood: OpponentMood; className?: string }) {

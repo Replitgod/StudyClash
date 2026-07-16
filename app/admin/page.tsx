@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -185,9 +185,9 @@ function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -496,7 +496,7 @@ export default function AdminPage() {
     return (
       <Background>
         <svg
-          className="h-10 w-10 animate-spin text-fuchsia-400"
+          className="h-10 w-10 animate-spin text-indigo-400"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -524,9 +524,9 @@ export default function AdminPage() {
     return (
       <Background>
         <div className="mt-16 w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm sm:p-8">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-fuchsia-500/10">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500/10">
             <svg
-              className="h-6 w-6 text-fuchsia-300"
+              className="h-6 w-6 text-indigo-300"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -547,7 +547,7 @@ export default function AdminPage() {
           </p>
           <Link
             href="/login"
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
           >
             Log In
           </Link>
@@ -561,7 +561,7 @@ export default function AdminPage() {
     return (
       <Background>
         <svg
-          className="h-10 w-10 animate-spin text-fuchsia-400"
+          className="h-10 w-10 animate-spin text-indigo-400"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -627,32 +627,32 @@ export default function AdminPage() {
   const { stats, analytics, recent, retention, diagnostics } = data;
 
   const statCards = [
-    { label: "Total Users", value: stats.totalUsers, color: "text-fuchsia-300" },
-    { label: "Total Decks", value: stats.totalDecks, color: "text-cyan-300" },
-    { label: "Total Battles", value: stats.totalBattles, color: "text-violet-300" },
-    { label: "Feedback Reports", value: stats.totalFeedbackReports, color: "text-emerald-300" },
+    { label: "Total Users", value: stats.totalUsers, color: "text-indigo-300" },
+    { label: "Total Decks", value: stats.totalDecks, color: "text-indigo-300" },
+    { label: "Total Battles", value: stats.totalBattles, color: "text-indigo-300" },
+    { label: "Feedback Reports", value: stats.totalFeedbackReports, color: "text-green-300" },
     { label: "Question Reports", value: stats.totalQuestionReports, color: "text-red-300" },
-    { label: "Decks Today", value: stats.decksToday, color: "text-cyan-300" },
-    { label: "Battles Today", value: stats.battlesToday, color: "text-violet-300" },
-    { label: "Generations Today", value: stats.generationsToday, color: "text-fuchsia-300" },
+    { label: "Decks Today", value: stats.decksToday, color: "text-indigo-300" },
+    { label: "Battles Today", value: stats.battlesToday, color: "text-indigo-300" },
+    { label: "Generations Today", value: stats.generationsToday, color: "text-indigo-300" },
   ];
 
   const analyticsCards = [
     { label: "Events Today", value: analytics.eventsToday, color: "text-white" },
-    { label: "Page Views Today", value: analytics.pageViewsToday, color: "text-cyan-300" },
-    { label: "Deck Gen Started", value: analytics.deckGenerationStartedToday, color: "text-fuchsia-300" },
-    { label: "Deck Gen Success", value: analytics.deckGenerationSuccessToday, color: "text-emerald-300" },
+    { label: "Page Views Today", value: analytics.pageViewsToday, color: "text-indigo-300" },
+    { label: "Deck Gen Started", value: analytics.deckGenerationStartedToday, color: "text-indigo-300" },
+    { label: "Deck Gen Success", value: analytics.deckGenerationSuccessToday, color: "text-green-300" },
     { label: "Deck Gen Failed", value: analytics.deckGenerationFailedToday, color: "text-red-300" },
-    { label: "Battles Started", value: analytics.battleStartedToday, color: "text-violet-300" },
-    { label: "Battles Finished", value: analytics.battleFinishedToday, color: "text-violet-300" },
-    { label: "Feedback Submitted", value: analytics.feedbackSubmittedToday, color: "text-emerald-300" },
+    { label: "Battles Started", value: analytics.battleStartedToday, color: "text-indigo-300" },
+    { label: "Battles Finished", value: analytics.battleFinishedToday, color: "text-indigo-300" },
+    { label: "Feedback Submitted", value: analytics.feedbackSubmittedToday, color: "text-green-300" },
     { label: "Question Reports Submitted", value: analytics.questionReportSubmittedToday, color: "text-red-300" },
     { label: "Classroom Rooms Created", value: analytics.classroomRoomCreatedToday, color: "text-amber-300" },
-    { label: "Classroom Invites Copied", value: analytics.classroomInviteCopiedToday, color: "text-cyan-300" },
-    { label: "Classroom Joins", value: analytics.classroomJoinSuccessToday, color: "text-emerald-300" },
-    { label: "Enterprise Leads", value: analytics.enterpriseLeadSubmittedToday, color: "text-fuchsia-300" },
-    { label: "Challenge Links Copied", value: analytics.challengeLinkCopiedToday, color: "text-fuchsia-300" },
-    { label: "Challenge Links Opened", value: analytics.challengeLinkOpenedToday, color: "text-cyan-300" },
+    { label: "Classroom Invites Copied", value: analytics.classroomInviteCopiedToday, color: "text-indigo-300" },
+    { label: "Classroom Joins", value: analytics.classroomJoinSuccessToday, color: "text-green-300" },
+    { label: "Enterprise Leads", value: analytics.enterpriseLeadSubmittedToday, color: "text-indigo-300" },
+    { label: "Challenge Links Copied", value: analytics.challengeLinkCopiedToday, color: "text-indigo-300" },
+    { label: "Challenge Links Opened", value: analytics.challengeLinkOpenedToday, color: "text-indigo-300" },
   ];
 
   const hasAnalyticsToday = analytics.eventsToday > 0;
@@ -660,24 +660,24 @@ export default function AdminPage() {
   return (
     <Background>
       {/* Badge */}
-      <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
+      <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-indigo-300 backdrop-blur-sm sm:mb-6">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
         ADMIN ONLY
       </div>
 
       {/* Title */}
       <h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
-        <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
           Admin Dashboard
         </span>
       </h1>
       <p className="mt-3 max-w-md text-center text-sm text-white/50 sm:text-base">
-        Live overview of StudyJoust usage and reports.
+        Live overview of StudyClash usage and reports.
       </p>
 
       <Link
         href="/admin/diagnostics"
-        className="mt-4 rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-2 text-xs font-bold text-cyan-100"
+        className="mt-4 rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-4 py-2 text-xs font-bold text-indigo-100"
       >
         Review Diagnostic Question Bank →
       </Link>
@@ -703,7 +703,7 @@ export default function AdminPage() {
       <div className="mt-10 w-full sm:mt-12">
         <div className="flex items-center gap-2">
           <svg
-            className="h-4 w-4 flex-shrink-0 text-cyan-300"
+            className="h-4 w-4 flex-shrink-0 text-indigo-300"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -769,14 +769,14 @@ export default function AdminPage() {
           raw daily counts -- those two ratios are what actually says
           whether the share loop works, not the individual event totals
           above. */}
-      <div className="mt-10 w-full rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.04] p-5 backdrop-blur-sm sm:p-6">
-        <h2 className="text-lg font-black text-cyan-100">Growth Loop Health</h2>
+      <div className="mt-10 w-full rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.04] p-5 backdrop-blur-sm sm:p-6">
+        <h2 className="text-lg font-black text-indigo-100">Growth Loop Health</h2>
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-white/10 bg-black/20 p-4">
             <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
               Challenge open rate (today)
             </p>
-            <p className="mt-2 text-2xl font-black text-cyan-300">
+            <p className="mt-2 text-2xl font-black text-indigo-300">
               {analytics.challengeLinkCopiedToday === 0
                 ? "-"
                 : `${Math.round((analytics.challengeLinkOpenedToday / analytics.challengeLinkCopiedToday) * 100)}%`}
@@ -790,7 +790,7 @@ export default function AdminPage() {
             <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
               Day-7 retention (rolling cohort)
             </p>
-            <p className="mt-2 text-2xl font-black text-emerald-300">
+            <p className="mt-2 text-2xl font-black text-green-300">
               {retention?.day7RetentionRatePercent == null ? "-" : `${retention.day7RetentionRatePercent}%`}
             </p>
             <p className="mt-1 text-[11px] text-white/35">
@@ -808,19 +808,19 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="mt-10 w-full rounded-2xl border border-violet-400/20 bg-violet-500/[0.04] p-5 backdrop-blur-sm sm:p-6">
-        <h2 className="text-lg font-black text-violet-100">Diagnostics &amp; Study Plans</h2>
+      <div className="mt-10 w-full rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.04] p-5 backdrop-blur-sm sm:p-6">
+        <h2 className="text-lg font-black text-indigo-100">Diagnostics &amp; Study Plans</h2>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
             <p className="text-2xl font-black text-white">{analytics.diagnosticStartedToday}</p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Diagnostics Started Today</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
-            <p className="text-2xl font-black text-emerald-300">{analytics.diagnosticCompletedToday}</p>
+            <p className="text-2xl font-black text-green-300">{analytics.diagnosticCompletedToday}</p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Diagnostics Completed Today</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
-            <p className="text-2xl font-black text-cyan-300">
+            <p className="text-2xl font-black text-indigo-300">
               {diagnostics.completionRatePercent == null ? "-" : `${diagnostics.completionRatePercent}%`}
             </p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
@@ -828,7 +828,7 @@ export default function AdminPage() {
             </p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
-            <p className="text-2xl font-black text-fuchsia-300">
+            <p className="text-2xl font-black text-indigo-300">
               {diagnostics.averageEstimatedLow == null
                 ? "-"
                 : `${diagnostics.averageEstimatedLow}–${diagnostics.averageEstimatedHigh}`}
@@ -842,13 +842,13 @@ export default function AdminPage() {
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Study Plans Created</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
-            <p className="text-2xl font-black text-emerald-300">
+            <p className="text-2xl font-black text-green-300">
               {diagnostics.taskCompletionRatePercent == null ? "-" : `${diagnostics.taskCompletionRatePercent}%`}
             </p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Task Completion Rate</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
-            <p className="text-2xl font-black text-cyan-300">
+            <p className="text-2xl font-black text-indigo-300">
               {diagnostics.resourceClickRatePercent == null ? "-" : `${diagnostics.resourceClickRatePercent}%`}
             </p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Resource Click Rate (today)</p>
@@ -882,7 +882,7 @@ export default function AdminPage() {
       <div className="mt-10 grid w-full grid-cols-1 gap-5 sm:mt-12 lg:grid-cols-3">
         {/* Recent decks */}
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">
             Latest Decks
           </p>
           {recent.decks.length === 0 ? (
@@ -928,7 +928,7 @@ export default function AdminPage() {
 
         {/* Recent feedback */}
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+          <p className="text-xs font-bold uppercase tracking-wider text-green-300">
             Latest Feedback
           </p>
           {recent.feedback.length === 0 ? (
@@ -1100,7 +1100,7 @@ export default function AdminPage() {
                       disabled={isUpdatingLeadId === lead.id || lead.status === status}
                       className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors duration-150 ${
                         lead.status === status
-                          ? "border border-cyan-300/30 bg-cyan-500/15 text-cyan-200"
+                          ? "border border-indigo-300/30 bg-indigo-500/15 text-indigo-200"
                           : "border border-white/10 bg-white/5 text-white/60 hover:bg-white/10"
                       } disabled:cursor-not-allowed disabled:opacity-60`}
                     >
@@ -1118,7 +1118,7 @@ export default function AdminPage() {
       <div className="mt-10 w-full sm:mt-12">
         <div className="flex items-center gap-2">
           <svg
-            className="h-4 w-4 flex-shrink-0 text-fuchsia-300"
+            className="h-4 w-4 flex-shrink-0 text-indigo-300"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -1130,7 +1130,7 @@ export default function AdminPage() {
               d="M17 20h5v-2a4 4 0 00-5-3.874M9 20H4v-2a4 4 0 015-3.874m0 0a4 4 0 110-7.752m0 7.752A4 4 0 0012 12m0 0a4 4 0 100-7.752m0 7.752A4 4 0 0012 12m0 0a4 4 0 117.658 1.5"
             />
           </svg>
-          <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">
             Tutor Center Progress Dashboard
           </p>
         </div>
@@ -1140,7 +1140,7 @@ export default function AdminPage() {
         </p>
 
         {copyStatus && (
-          <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-200">
+          <div className="mt-4 rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-4 py-2 text-sm font-semibold text-indigo-200">
             {copyStatus}
           </div>
         )}
@@ -1160,13 +1160,13 @@ export default function AdminPage() {
         ) : (
           <div className="mt-4 space-y-5">
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/[0.05] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Improving Students</p>
-                <p className="mt-2 text-2xl font-black text-emerald-200">{tutorDashboard.proofOfImprovement.improvingStudents}</p>
+              <div className="rounded-2xl border border-green-400/20 bg-green-500/[0.05] p-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-green-300">Improving Students</p>
+                <p className="mt-2 text-2xl font-black text-green-200">{tutorDashboard.proofOfImprovement.improvingStudents}</p>
               </div>
-              <div className="rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.05] p-4">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-300">Holding Steady</p>
-                <p className="mt-2 text-2xl font-black text-cyan-200">{tutorDashboard.proofOfImprovement.holdingStudents}</p>
+              <div className="rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.05] p-4">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Holding Steady</p>
+                <p className="mt-2 text-2xl font-black text-indigo-200">{tutorDashboard.proofOfImprovement.holdingStudents}</p>
               </div>
               <div className="rounded-2xl border border-amber-400/20 bg-amber-500/[0.05] p-4">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300">Needs Intervention</p>
@@ -1176,7 +1176,7 @@ export default function AdminPage() {
 
             <div className="grid gap-4 xl:grid-cols-2">
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
-                <p className="text-xs font-bold uppercase tracking-wider text-violet-300">Class Weakness Clusters</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Class Weakness Clusters</p>
                 {tutorDashboard.classWeaknessClusters.length === 0 ? (
                   <p className="mt-3 text-sm text-white/45">No class weakness patterns yet.</p>
                 ) : (
@@ -1196,7 +1196,7 @@ export default function AdminPage() {
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
-                <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">Reteach Recommendations</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Reteach Recommendations</p>
                 {tutorDashboard.reteachRecommendations.length === 0 ? (
                   <p className="mt-3 text-sm text-white/45">No reteach recommendations available yet.</p>
                 ) : (
@@ -1206,7 +1206,7 @@ export default function AdminPage() {
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-sm font-bold text-white/90">{recommendation.topic}</p>
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${recommendation.urgency === "high" ? "bg-red-500/15 text-red-300" : recommendation.urgency === "medium" ? "bg-amber-500/15 text-amber-300" : "bg-cyan-500/15 text-cyan-300"}`}
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${recommendation.urgency === "high" ? "bg-red-500/15 text-red-300" : recommendation.urgency === "medium" ? "bg-amber-500/15 text-amber-300" : "bg-indigo-500/15 text-indigo-300"}`}
                           >
                             {recommendation.urgency}
                           </span>
@@ -1221,14 +1221,14 @@ export default function AdminPage() {
 
             <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
             <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
-              <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Students</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Students</p>
               <div className="mt-4 flex flex-col gap-3">
                 {tutorDashboard.students.map((student) => (
                   <button
                     key={student.id}
                     type="button"
                     onClick={() => setSelectedStudentId(student.id)}
-                    className={`rounded-xl border px-4 py-3 text-left transition-colors duration-150 ${student.id === selectedTutorStudent?.id ? "border-fuchsia-400/30 bg-fuchsia-500/10" : "border-white/10 bg-black/20 hover:border-cyan-400/30 hover:bg-white/[0.04]"}`}
+                    className={`rounded-xl border px-4 py-3 text-left transition-colors duration-150 ${student.id === selectedTutorStudent?.id ? "border-indigo-400/30 bg-indigo-500/10" : "border-white/10 bg-black/20 hover:border-indigo-400/30 hover:bg-white/[0.04]"}`}
                   >
                     <p className="text-sm font-bold text-white/90">{student.name}</p>
                     <p className="mt-1 text-[11px] text-white/40">
@@ -1246,24 +1246,24 @@ export default function AdminPage() {
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">Parent-Friendly Report</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Parent-Friendly Report</p>
                     <h2 className="mt-1 text-2xl font-black tracking-tight text-white">{selectedTutorStudent.name}</h2>
                     <p className="mt-1 text-sm text-white/45">Screenshot-ready summary for parents and tutors.</p>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleCopyParentReport(selectedTutorStudent)}
-                    className="rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2.5 text-sm font-bold text-cyan-200"
+                    className="rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-4 py-2.5 text-sm font-bold text-indigo-200"
                   >
                     Copy Report
                   </button>
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Latest Score</p><p className="mt-2 text-2xl font-black text-fuchsia-300">{selectedTutorStudent.latestScore} pts</p></div>
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Accuracy</p><p className="mt-2 text-2xl font-black text-emerald-300">{selectedTutorStudent.latestAccuracy}%</p></div>
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Best Score</p><p className="mt-2 text-2xl font-black text-violet-300">{selectedTutorStudent.bestScore} pts</p></div>
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Trend</p><p className="mt-2 text-lg font-bold text-cyan-300">{selectedTutorStudent.trendLabel}</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Latest Score</p><p className="mt-2 text-2xl font-black text-indigo-300">{selectedTutorStudent.latestScore} pts</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Accuracy</p><p className="mt-2 text-2xl font-black text-green-300">{selectedTutorStudent.latestAccuracy}%</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Best Score</p><p className="mt-2 text-2xl font-black text-indigo-300">{selectedTutorStudent.bestScore} pts</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Trend</p><p className="mt-2 text-lg font-bold text-indigo-300">{selectedTutorStudent.trendLabel}</p></div>
                 </div>
 
                 <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
@@ -1284,7 +1284,7 @@ export default function AdminPage() {
                               <p className="mt-1 truncate text-[11px] text-white/40">{battle.courseName}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-sm font-bold text-cyan-300">{battle.score} pts</p>
+                              <p className="text-sm font-bold text-indigo-300">{battle.score} pts</p>
                               <p className="text-[11px] text-white/40">{battle.accuracy}% accuracy</p>
                             </div>
                           </div>
@@ -1308,7 +1308,7 @@ export default function AdminPage() {
                           </div>
                           <div className="mt-2 flex flex-wrap gap-2">
                             {topic.studyLinks.map((link) => (
-                              <a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-semibold text-cyan-300">
+                              <a key={link.label} href={link.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-semibold text-indigo-300">
                                 {link.label}
                               </a>
                             ))}
@@ -1320,15 +1320,15 @@ export default function AdminPage() {
                       <p className="text-xs font-bold uppercase tracking-wider text-white/45">Recommended Next Steps</p>
                       <ul className="mt-2 flex flex-col gap-1.5 text-sm text-white/70">
                         {selectedTutorStudent.recommendedNextSteps.map((step) => (
-                          <li key={step} className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-cyan-300" /><span>{step}</span></li>
+                          <li key={step} className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-300" /><span>{step}</span></li>
                         ))}
                       </ul>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-5 rounded-2xl border border-fuchsia-400/20 bg-fuchsia-500/[0.03] p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">Improvement over time</p>
+                <div className="mt-5 rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.03] p-4">
+                  <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Improvement over time</p>
                   <p className="mt-2 text-sm text-white/70">{selectedTutorStudent.trendLabel} based on the latest battles. Use rematches to reinforce weak topics and measure the next score change.</p>
                 </div>
               </div>
@@ -1381,7 +1381,7 @@ export default function AdminPage() {
                     className="grid grid-cols-12 items-start gap-3 rounded-xl border border-white/10 bg-black/30 p-3"
                   >
                     <div className="col-span-3">
-                      <span className="rounded-full bg-fuchsia-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fuchsia-300">
+                      <span className="rounded-full bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-300">
                         {formatEventName(event.event_name)}
                       </span>
                     </div>

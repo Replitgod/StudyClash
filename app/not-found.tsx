@@ -5,13 +5,13 @@ export default function NotFound() {
   return (
     <main className={`relative min-h-screen w-full overflow-x-hidden bg-[#05050a] px-4 py-14 text-white sm:px-6 sm:py-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
 
       <div className="relative z-10 mx-auto flex max-w-xl flex-col items-center text-center">
-        <div className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-200">
+        <div className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.22em] text-indigo-200">
           404
         </div>
         <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">Page not found</h1>
@@ -22,7 +22,7 @@ export default function NotFound() {
         <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/"
-            className="rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3 text-sm font-bold text-white"
+            className="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3 text-sm font-bold text-white"
           >
             Go Home
           </Link>
@@ -34,7 +34,7 @@ export default function NotFound() {
           </Link>
           <Link
             href="/demo/battle"
-            className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-6 py-3 text-sm font-bold text-cyan-200"
+            className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-6 py-3 text-sm font-bold text-indigo-200"
           >
             Try Demo
           </Link>

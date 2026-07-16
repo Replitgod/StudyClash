@@ -1,4 +1,4 @@
-import { FLOATING_ACTION } from "@/lib/uiLayout";
+﻿import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { Button } from "@/app/components/ui/Button";
 import { HoverLiftArticle } from "@/app/components/ui/HoverLift";
 import { Reveal } from "@/app/components/ui/Reveal";
@@ -7,7 +7,7 @@ const EXAM_TRACKS = [
   {
     slug: "mcat",
     name: "MCAT",
-    monthly: "Included in Exam Tunnel ($9/mo)",
+    monthly: "Included in Exam Tunnel ($5/mo)",
     promise: "AAMC-style multi-step reasoning with passage-heavy science prompts.",
     officialLabel: "AAMC free practice exam",
     officialUrl:
@@ -16,7 +16,7 @@ const EXAM_TRACKS = [
   {
     slug: "lsat",
     name: "LSAT",
-    monthly: "Included in Exam Tunnel ($9/mo)",
+    monthly: "Included in Exam Tunnel ($5/mo)",
     promise: "Argument structure, logical flaws, and timed pressure drills.",
     officialLabel: "LSAC free PrepTests (LawHub)",
     officialUrl: "https://www.lsac.org/lsat/prepare/official-lsat-practice-tests",
@@ -24,7 +24,7 @@ const EXAM_TRACKS = [
   {
     slug: "nclex",
     name: "NCLEX",
-    monthly: "Included in Exam Tunnel ($9/mo)",
+    monthly: "Included in Exam Tunnel ($5/mo)",
     promise: "Clinical judgment drills with safety-first prioritization patterns.",
     officialLabel: "Official NCLEX prep resources",
     officialUrl: "https://www.nclex.com/prepare.page",
@@ -32,7 +32,7 @@ const EXAM_TRACKS = [
   {
     slug: "ap",
     name: "AP Exams",
-    monthly: "Included in Exam Tunnel ($9/mo)",
+    monthly: "Included in Exam Tunnel ($5/mo)",
     promise: "AP-style stems and depth tuned for class exams and AP scoring bands.",
     officialLabel: "Free-response Qs from past AP exams",
     officialUrl: "https://apcentral.collegeboard.org/courses/past-exam-questions",
@@ -42,7 +42,7 @@ const EXAM_TRACKS = [
 // SAT has no generated drill track (College Board's own released practice
 // tests are already the best-in-class prep material for it) -- this card
 // only ever points to College Board's official free practice, never to a
-// StudyJoust-generated substitute.
+// StudyClash-generated substitute.
 const SAT_OFFICIAL_PRACTICE = {
   label: "Full-length official SAT practice tests",
   url: "https://satsuite.collegeboard.org/practice",
@@ -52,18 +52,18 @@ export default function ExamsLandingPage() {
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[540px] w-[540px] -translate-x-1/2 rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[420px] w-[420px] rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[460px] w-[460px] rounded-full bg-emerald-500/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[540px] w-[540px] -translate-x-1/2 rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[420px] w-[420px] rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[460px] w-[460px] rounded-full bg-green-500/20 blur-[130px]" />
       </div>
 
       <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-6xl flex-col px-4 pt-14 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
-        <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-1.5 text-xs font-semibold tracking-[0.22em] text-cyan-200">
+        <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-4 py-1.5 text-xs font-semibold tracking-[0.22em] text-indigo-200">
           HIGH-STAKES EXAM TUNNEL
         </div>
 
         <h1 className="mx-auto max-w-4xl text-center text-3xl font-black tracking-tight sm:text-5xl md:text-6xl">
-          <span className="bg-gradient-to-r from-cyan-300 via-white to-fuchsia-300 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
             Board-style battle practice for students who cannot afford to miss.
           </span>
         </h1>
@@ -81,12 +81,12 @@ export default function ExamsLandingPage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-300">
                     {track.name}
                   </p>
                   <h2 className="mt-1 text-2xl font-black text-white">{track.monthly}</h2>
                 </div>
-                <span className="rounded-full border border-fuchsia-400/20 bg-fuchsia-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-fuchsia-200">
+                <span className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-200">
                   Pro Tunnel
                 </span>
               </div>
@@ -103,7 +103,7 @@ export default function ExamsLandingPage() {
               </div>
 
               {/* Real retired/official exams are copyrighted by their issuing
-                  org (AAMC, LSAC, NCSBN, College Board) -- StudyJoust never
+                  org (AAMC, LSAC, NCSBN, College Board) -- StudyClash never
                   hosts or reproduces them. This links straight to each org's
                   own free official practice instead. */}
               <a
@@ -121,7 +121,7 @@ export default function ExamsLandingPage() {
         <Reveal className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-cyan-300">SAT</p>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-300">SAT</p>
               <p className="mt-1 text-sm text-white/70">
                 We don&rsquo;t generate SAT drills -- College Board&rsquo;s own free, official
                 practice tests are the most accurate prep available, so we send you straight there.
@@ -140,7 +140,7 @@ export default function ExamsLandingPage() {
 
         <Reveal className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center sm:p-6" delay={0.08}>
           <p className="text-sm text-white/70">
-            Main StudyJoust flow still applies: create or try a deck, battle, review weak topics,
+            Main StudyClash flow still applies: create or try a deck, battle, review weak topics,
             rematch, improve. Exam tunnels add stricter format and higher coaching depth.
           </p>
         </Reveal>

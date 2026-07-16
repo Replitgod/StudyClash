@@ -1,11 +1,11 @@
-import type { MetadataRoute } from "next";
+﻿import type { MetadataRoute } from "next";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "StudyJoust - AI Study App",
-    short_name: "StudyJoust",
+    name: "StudyClash - AI Study App",
+    short_name: "StudyClash",
     description:
       "AI study app for competitive learning, flashcard battles, and exam-focused practice.",
     start_url: "/",

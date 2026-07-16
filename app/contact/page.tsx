@@ -1,31 +1,31 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { Reveal } from "@/app/components/ui/Reveal";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com";
 
 export const metadata: Metadata = {
-  title: "Contact StudyJoust Support",
+  title: "Contact StudyClash Support",
   description:
-    "Contact StudyJoust support for account help, AI deck generation issues, battle troubleshooting, and beta feedback.",
+    "Contact StudyClash support for account help, AI deck generation issues, battle troubleshooting, and beta feedback.",
   alternates: {
     canonical: "/contact",
   },
   keywords: [
-    "StudyJoust support",
+    "StudyClash support",
     "study app support",
     "AI study app help",
   ],
   openGraph: {
-    title: "Contact Support | StudyJoust",
+    title: "Contact Support | StudyClash",
     description:
-      "Reach StudyJoust support for account, battle, and study workflow help.",
+      "Reach StudyClash support for account, battle, and study workflow help.",
     url: "/contact",
     images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Contact Support | StudyJoust",
+    title: "Contact Support | StudyClash",
     description:
       "Get help with account access, AI generation, and study battle issues.",
     images: ["/twitter-image"],
@@ -36,10 +36,10 @@ export default function ContactPage() {
   const contactPageSchema = {
     "@context": "https://schema.org",
     "@type": "ContactPage",
-    name: "StudyJoust Support Contact",
+    name: "StudyClash Support Contact",
     url: `${siteUrl}/contact`,
     description:
-      "Support contact page for StudyJoust users.",
+      "Support contact page for StudyClash users.",
     mainEntity: {
       "@type": "Organization",
       "@id": `${siteUrl}/#organization`,
@@ -55,7 +55,7 @@ export default function ContactPage() {
         }}
       />
       <Reveal className="mx-auto w-full max-w-3xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-8">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">StudyJoust Support</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">StudyClash Support</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight">Contact</h1>
         <p className="mt-3 text-sm text-white/65">
           Need help with login, deck generation, battle errors, or beta feedback? Send feedback anytime from the in-app Feedback button.

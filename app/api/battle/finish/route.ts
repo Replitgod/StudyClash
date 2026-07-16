@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import {
   checkInMemoryRateLimit,
@@ -471,7 +471,7 @@ export async function POST(req: NextRequest) {
         await supabase.from("email_notification_queue").insert({
           recipient_player_name: normalizedPreviousTop.player_name,
           event_type: "crown_taken",
-          subject: "Your StudyJoust crown was taken",
+          subject: "Your StudyClash crown was taken",
           body: message,
           action_href: actionHref,
           metadata: {

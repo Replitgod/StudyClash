@@ -219,9 +219,9 @@ function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -243,7 +243,7 @@ function Background({ children }: { children: React.ReactNode }) {
 function SectionHeader({ step, title }: { step: number; title: string }) {
   return (
     <div className="mb-3 flex items-center gap-2.5 sm:mb-4">
-      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-violet-600 text-xs font-bold text-white">
+      <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-xs font-bold text-white">
         {step}
       </span>
       <h2 className="text-sm font-bold uppercase tracking-wider text-white/70 sm:text-base">
@@ -350,6 +350,19 @@ export default function CreateDeck() {
   const router = useRouter();
   const { user, profile, isLoggedIn, isLoading: isAuthLoading } = useAuth();
   const initialExamSelection = getInitialExamSelection();
+
+  // If auth confirmation hangs (dead network, stalled Supabase session
+  // check) rather than resolving one way or the other, don't leave the user
+  // staring at a spinner forever -- offer a way out after a few seconds.
+  const [authTimedOut, setAuthTimedOut] = useState(false);
+  useEffect(() => {
+    if (!isAuthLoading) {
+      setAuthTimedOut(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setAuthTimedOut(true), 8000);
+    return () => window.clearTimeout(timer);
+  }, [isAuthLoading]);
 
   const [studentName, setStudentName] = useState("");
   const [isEditingStudentName, setIsEditingStudentName] = useState(false);
@@ -1215,10 +1228,41 @@ export default function CreateDeck() {
 
   // ---------- Auth loading OR redirecting state ----------
   if (isAuthLoading || !isLoggedIn) {
+    if (authTimedOut) {
+      return (
+        <Background>
+          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-lg font-black text-white">
+            S
+          </div>
+          <p className="text-base font-bold text-white">We could not load your workspace.</p>
+          <p className="mt-1.5 max-w-xs text-center text-sm text-white/50">
+            Your connection may be slow or interrupted. You can try again or head back home.
+          </p>
+          <div className="mt-5 flex items-center gap-2.5">
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white transition-transform duration-200 active:scale-95 sm:hover:scale-[1.03]"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={() => router.push("/")}
+              className="rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
+            >
+              Return Home
+            </button>
+          </div>
+        </Background>
+      );
+    }
+
     return (
       <Background>
+        <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-lg font-black text-white">
+          S
+        </div>
         <svg
-          className="h-10 w-10 animate-spin text-fuchsia-400"
+          className="h-6 w-6 animate-spin text-indigo-400"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -1236,7 +1280,7 @@ export default function CreateDeck() {
             d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
           />
         </svg>
-        <p className="mt-4 text-sm text-white/50">Checking login...</p>
+        <p className="mt-3 text-sm text-white/50">Preparing your workspace…</p>
       </Background>
     );
   }
@@ -1245,14 +1289,14 @@ export default function CreateDeck() {
   return (
     <Background>
       {/* Badge */}
-      <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
-        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
+      <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-indigo-300 backdrop-blur-sm sm:mb-6">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
         {topBadgeLabel}
       </div>
 
       {/* Title */}
       <h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
-        <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
           {pageTitle}
         </span>
       </h1>
@@ -1260,7 +1304,7 @@ export default function CreateDeck() {
         {pageSubtitle}
       </p>
 
-      <div className="mt-5 w-full max-w-2xl rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.05] px-4 py-3 text-sm text-cyan-100/90 backdrop-blur-sm sm:px-5">
+      <div className="mt-5 w-full max-w-2xl rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.05] px-4 py-3 text-sm text-indigo-100/90 backdrop-blur-sm sm:px-5">
         {fastPathLabel}
       </div>
 
@@ -1276,13 +1320,13 @@ export default function CreateDeck() {
             value={quizletUrl}
             onChange={(e) => setQuizletUrl(e.target.value)}
             placeholder="https://quizlet.com/123456789/set-name"
-            className="w-full min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-500/20"
+            className="w-full min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20"
           />
           <button
             type="button"
             onClick={handleQuizletImport}
             disabled={isImportingQuizlet}
-            className="flex-shrink-0 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-sm font-bold text-cyan-100 transition-colors duration-150 hover:border-cyan-300/45 hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-shrink-0 rounded-xl border border-indigo-400/30 bg-indigo-500/10 px-5 py-3 text-sm font-bold text-indigo-100 transition-colors duration-150 hover:border-indigo-300/45 hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isImportingQuizlet ? "Importing..." : "Import Set"}
           </button>
@@ -1307,7 +1351,7 @@ export default function CreateDeck() {
           />
           <label
             htmlFor="ankiFileInput"
-            className="flex w-full min-w-0 flex-1 cursor-pointer items-center rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/70 transition-colors duration-150 hover:border-cyan-400/40"
+            className="flex w-full min-w-0 flex-1 cursor-pointer items-center rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white/70 transition-colors duration-150 hover:border-indigo-400/40"
           >
             {ankiFileName || "Choose a .apkg file..."}
           </label>
@@ -1315,7 +1359,7 @@ export default function CreateDeck() {
             type="button"
             onClick={handleAnkiImport}
             disabled={isImportingAnki}
-            className="flex-shrink-0 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-5 py-3 text-sm font-bold text-cyan-100 transition-colors duration-150 hover:border-cyan-300/45 hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-shrink-0 rounded-xl border border-indigo-400/30 bg-indigo-500/10 px-5 py-3 text-sm font-bold text-indigo-100 transition-colors duration-150 hover:border-indigo-300/45 hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isImportingAnki ? "Importing..." : "Import Deck"}
           </button>
@@ -1347,7 +1391,7 @@ export default function CreateDeck() {
                 value={courseOption}
                 onChange={(e) => handleCourseChange(e.target.value)}
                 required
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:py-3 sm:text-sm"
               >
                 <option value="" disabled>
                   Select a subject...
@@ -1375,7 +1419,7 @@ export default function CreateDeck() {
                   onChange={(e) => setCustomCourse(e.target.value)}
                   placeholder="e.g. Organic Chemistry II"
                   required
-                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:py-3 sm:text-sm"
                 />
               </div>
             )}
@@ -1396,7 +1440,7 @@ export default function CreateDeck() {
               </label>
 
               {accountDisplayName && !isEditingStudentName ? (
-                <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] px-4 py-3.5">
+                <div className="rounded-xl border border-indigo-400/20 bg-indigo-500/[0.06] px-4 py-3.5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <p className="text-sm font-semibold text-white/90">
@@ -1412,7 +1456,7 @@ export default function CreateDeck() {
                         setStudentName(accountDisplayName);
                         setIsEditingStudentName(true);
                       }}
-                      className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white/85 transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10"
+                      className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white/85 transition-colors duration-150 hover:border-indigo-400/30 hover:bg-white/10"
                     >
                       Edit Name
                     </button>
@@ -1428,7 +1472,7 @@ export default function CreateDeck() {
                     placeholder={accountDisplayName || "e.g. Jordan Lee"}
                     required={!accountDisplayName}
                     autoFocus={isEditingStudentName}
-                    className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                    className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:py-3 sm:text-sm"
                   />
                   <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/35">
                     <span>
@@ -1443,7 +1487,7 @@ export default function CreateDeck() {
                           setStudentName("");
                           setIsEditingStudentName(false);
                         }}
-                        className="font-bold text-cyan-300 transition-colors duration-150 hover:text-cyan-200"
+                        className="font-bold text-indigo-300 transition-colors duration-150 hover:text-indigo-200"
                       >
                         Use account name instead
                       </button>
@@ -1454,7 +1498,7 @@ export default function CreateDeck() {
             </div>
 
             {isExamDrillFlow ? (
-              <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] px-4 py-3.5">
+              <div className="rounded-xl border border-indigo-400/20 bg-indigo-500/[0.06] px-4 py-3.5">
                 <p className="text-sm font-semibold text-white/90">
                   Drill title auto-generated: {selectedExamTrackLabel} {selectedExamModeLabel} Drill
                 </p>
@@ -1480,7 +1524,7 @@ export default function CreateDeck() {
                   }}
                   placeholder={`e.g. ${DECK_TITLE_EXAMPLES[0]}`}
                   required
-                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:py-3 sm:text-sm"
                 />
                 <div className="flex flex-wrap items-center gap-2">
                   {DECK_TITLE_EXAMPLES.map((example) => (
@@ -1491,7 +1535,7 @@ export default function CreateDeck() {
                         setHasUserEditedDeckTitle(true);
                         setDeckTitle(example);
                       }}
-                      className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/70 transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10"
+                      className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/70 transition-colors duration-150 hover:border-indigo-400/30 hover:bg-white/10"
                     >
                       {example}
                     </button>
@@ -1512,8 +1556,8 @@ export default function CreateDeck() {
             Optional — pick what fits, or leave the defaults as-is.
           </p>
 
-          <div className="mb-4 rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] p-3 sm:p-4">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-cyan-100/85">
+          <div className="mb-4 rounded-xl border border-indigo-400/20 bg-indigo-500/[0.06] p-3 sm:p-4">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-100/85">
               One-Click Presets
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -1522,7 +1566,7 @@ export default function CreateDeck() {
                   key={preset.label}
                   type="button"
                   onClick={() => applyPreset(preset)}
-                  className="rounded-full border border-cyan-300/25 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-semibold text-cyan-100 transition-colors duration-150 hover:border-cyan-200/45 hover:bg-cyan-500/20"
+                  className="rounded-full border border-indigo-300/25 bg-indigo-500/10 px-3 py-1.5 text-[11px] font-semibold text-indigo-100 transition-colors duration-150 hover:border-indigo-200/45 hover:bg-indigo-500/20"
                 >
                   {preset.label}
                 </button>
@@ -1543,7 +1587,7 @@ export default function CreateDeck() {
               value={topicFocus}
               onChange={(e) => setTopicFocus(e.target.value)}
               placeholder="e.g. Cell structure and function — leave blank to cover everything in your notes"
-              className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+              className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:py-3 sm:text-sm"
             />
             <div className="flex flex-wrap items-center gap-2">
               {[
@@ -1556,7 +1600,7 @@ export default function CreateDeck() {
                   key={suggestion}
                   type="button"
                   onClick={() => setTopicFocus(suggestion)}
-                  className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/70 transition-colors duration-150 hover:border-cyan-400/30 hover:bg-white/10"
+                  className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/70 transition-colors duration-150 hover:border-indigo-400/30 hover:bg-white/10"
                 >
                   {suggestion}
                 </button>
@@ -1579,7 +1623,7 @@ export default function CreateDeck() {
                 id="examTrack"
                 value={examTrack}
                 onChange={(e) => handleExamTrackChange(e.target.value)}
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:py-3 sm:text-sm"
               >
                 {EXAM_TRACK_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -1601,7 +1645,7 @@ export default function CreateDeck() {
                 value={examMode}
                 onChange={(e) => setExamMode(e.target.value)}
                 disabled={examTrack === "none"}
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 disabled:cursor-not-allowed disabled:opacity-60 sm:py-3 sm:text-sm"
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60 sm:py-3 sm:text-sm"
               >
                 {examTrack === "none" ? (
                   <option value="">Select an exam track first</option>
@@ -1627,7 +1671,7 @@ export default function CreateDeck() {
                   id="gradeLevel"
                   value={gradeLevel}
                   onChange={(e) => setGradeLevel(e.target.value)}
-                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:py-3 sm:text-sm"
                 >
                   <option value="">No preference</option>
                   {GRADE_LEVEL_OPTIONS.map((option) => (
@@ -1650,7 +1694,7 @@ export default function CreateDeck() {
                 id="difficultyMode"
                 value={difficultyMode}
                 onChange={(e) => setDifficultyMode(e.target.value)}
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:py-3 sm:text-sm"
               >
                 {DIFFICULTY_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -1673,7 +1717,7 @@ export default function CreateDeck() {
                 id="questionCount"
                 value={questionCount}
                 onChange={(e) => setQuestionCount(e.target.value)}
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:py-3 sm:text-sm"
               >
                 {QUESTION_COUNT_OPTIONS.map((count) => (
                   <option key={count} value={count}>
@@ -1694,7 +1738,7 @@ export default function CreateDeck() {
                 id="questionType"
                 value={questionType}
                 onChange={(e) => setQuestionType(e.target.value)}
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:py-3 sm:text-sm"
               >
                 {QUESTION_TYPE_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -1716,7 +1760,7 @@ export default function CreateDeck() {
                   id="reasoningFormat"
                   value={reasoningFormat}
                   onChange={(e) => setReasoningFormat(e.target.value)}
-                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:py-3 sm:text-sm"
                 >
                   {REASONING_FORMAT_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -1744,7 +1788,7 @@ export default function CreateDeck() {
             onDragLeave={handleDragLeave}
             className={`flex flex-col items-center gap-2 rounded-xl border-2 border-dashed px-4 py-6 text-center transition-colors duration-150 sm:py-8 ${
               isDragActive
-                ? "border-fuchsia-400/60 bg-fuchsia-500/10"
+                ? "border-indigo-400/60 bg-indigo-500/10"
                 : "border-white/15 bg-black/20"
             } ${isProcessingUpload ? "pointer-events-none opacity-60" : ""}`}
           >
@@ -1769,7 +1813,7 @@ export default function CreateDeck() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isProcessingUpload}
-              className="rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white/90 transition-colors duration-150 hover:border-fuchsia-400/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white/90 transition-colors duration-150 hover:border-indigo-400/40 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
               Browse Files
             </button>
@@ -1789,7 +1833,7 @@ export default function CreateDeck() {
                   type="button"
                   onClick={() => folderInputRef.current?.click()}
                   disabled={isProcessingUpload}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-white/40 transition-colors duration-150 hover:text-fuchsia-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex items-center gap-1.5 text-xs font-semibold text-white/40 transition-colors duration-150 hover:text-indigo-300 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <svg
                     className="h-3.5 w-3.5 flex-shrink-0"
@@ -1834,7 +1878,7 @@ export default function CreateDeck() {
 
           {/* Upload status / errors */}
           {isProcessingUpload && (
-            <div className="mt-3 flex items-center gap-2 text-xs text-cyan-300">
+            <div className="mt-3 flex items-center gap-2 text-xs text-indigo-300">
               <svg
                 className="h-4 w-4 flex-shrink-0 animate-spin"
                 fill="none"
@@ -1859,8 +1903,8 @@ export default function CreateDeck() {
           )}
 
           {!isProcessingUpload && uploadedFileName && !uploadError && (
-            <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-emerald-400/20 bg-emerald-500/5 px-3.5 py-2.5">
-              <span className="truncate text-xs font-semibold text-emerald-300">
+            <div className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-green-400/20 bg-green-500/5 px-3.5 py-2.5">
+              <span className="truncate text-xs font-semibold text-green-300">
                 ✅ Loaded: {uploadedFileName}
               </span>
               <button
@@ -1892,13 +1936,13 @@ export default function CreateDeck() {
                 value={googleDocUrl}
                 onChange={(e) => setGoogleDocUrl(e.target.value)}
                 placeholder="https://docs.google.com/document/d/..."
-                className="w-full min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-cyan-400/50 focus:ring-2 focus:ring-cyan-500/20"
+                className="w-full min-w-0 flex-1 rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 text-sm text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20"
               />
               <button
                 type="button"
                 onClick={handleGoogleDocImport}
                 disabled={isImportingGoogleDoc}
-                className="flex-shrink-0 rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2.5 text-xs font-bold text-cyan-100 transition-colors duration-150 hover:border-cyan-300/45 hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-shrink-0 rounded-xl border border-indigo-400/30 bg-indigo-500/10 px-4 py-2.5 text-xs font-bold text-indigo-100 transition-colors duration-150 hover:border-indigo-300/45 hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isImportingGoogleDoc ? "Fetching..." : "Fetch Text"}
               </button>
@@ -1937,7 +1981,7 @@ export default function CreateDeck() {
               placeholder="Paste your class notes, study guide, textbook section, or review sheet here..."
               required
               rows={10}
-              className="w-full min-w-0 resize-y rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base leading-relaxed text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:rows-12 sm:text-sm"
+              className="w-full min-w-0 resize-y rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base leading-relaxed text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:rows-12 sm:text-sm"
             />
 
             {isNotesShort && (
@@ -1977,7 +2021,7 @@ export default function CreateDeck() {
               }
               required={requiresBetaAccessCode}
               autoComplete="off"
-              className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:py-3 sm:text-sm"
+              className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:py-3 sm:text-sm"
             />
             <p className="text-[9px] text-white/30">
               {requiresBetaAccessCode
@@ -1989,7 +2033,7 @@ export default function CreateDeck() {
           <button
             type="submit"
             disabled={isGenerating || isProcessingUpload}
-            className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100 sm:px-8 sm:hover:scale-[1.02] sm:text-lg"
+            className="group relative flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100 sm:px-8 sm:hover:scale-[1.02] sm:text-lg"
           >
             {isGenerating ? (
               <>
@@ -2068,11 +2112,11 @@ export default function CreateDeck() {
           className="fixed inset-0 flex items-center justify-center bg-[#05050a]/90 px-4 backdrop-blur-md"
           style={{ zIndex: UI_Z_INDEX.modal }}
         >
-          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_60px_-15px_rgba(217,70,239,0.4)] sm:p-8">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_60px_-15px_rgba(79,70,229,0.4)] sm:p-8">
             {/* Spinning badge */}
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/20 to-indigo-500/20">
               <svg
-                className="h-7 w-7 animate-spin text-fuchsia-300"
+                className="h-7 w-7 animate-spin text-indigo-300"
                 fill="none"
                 viewBox="0 0 24 24"
               >
@@ -2093,7 +2137,7 @@ export default function CreateDeck() {
             </div>
 
             <h2 className="mt-5 text-center text-lg font-black tracking-tight sm:text-xl">
-              <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
                 {overlayTitle}
               </span>
             </h2>
@@ -2103,7 +2147,7 @@ export default function CreateDeck() {
 
             <p
               key={currentStep}
-              className="mt-3 text-center text-xs font-semibold text-fuchsia-200/80"
+              className="mt-3 text-center text-xs font-semibold text-indigo-200/80"
               style={{ animation: "slide-up-fade 300ms ease-out" }}
             >
               {GENERATION_TIPS[currentStep % GENERATION_TIPS.length]}
@@ -2120,19 +2164,19 @@ export default function CreateDeck() {
                     key={step}
                     className={`flex items-center gap-3 rounded-xl border px-3.5 py-3 transition-all duration-300 sm:px-4 ${
                       isActive
-                        ? "border-fuchsia-400/40 bg-fuchsia-500/10"
+                        ? "border-indigo-400/40 bg-indigo-500/10"
                         : isComplete
-                        ? "border-emerald-400/20 bg-emerald-500/5"
+                        ? "border-green-400/20 bg-green-500/5"
                         : "border-white/5 bg-black/20 opacity-40"
                     }`}
                   >
                     <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center">
                       {isComplete ? (
-                        <span className="text-sm text-emerald-400">✅</span>
+                        <span className="text-sm text-green-400">✅</span>
                       ) : isActive ? (
                         <span className="relative flex h-3 w-3">
-                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-fuchsia-400 opacity-75" />
-                          <span className="relative inline-flex h-3 w-3 rounded-full bg-fuchsia-400" />
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
+                          <span className="relative inline-flex h-3 w-3 rounded-full bg-indigo-400" />
                         </span>
                       ) : (
                         <span className="h-2 w-2 rounded-full bg-white/20" />
@@ -2145,7 +2189,7 @@ export default function CreateDeck() {
                           isActive
                             ? "text-white"
                             : isComplete
-                            ? "text-emerald-300"
+                            ? "text-green-300"
                             : "text-white/40"
                         }`}
                       >

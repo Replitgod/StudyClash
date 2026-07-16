@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { authFetch } from "@/lib/authFetch";
-import { FLOATING_ACTION, UI_Z_INDEX } from "@/lib/uiLayout";
+import { FLOATING_ACTION, OPEN_FEEDBACK_EVENT, UI_Z_INDEX } from "@/lib/uiLayout";
 import { VYRA_STREAM_HEADER, VYRA_STREAM_META_DELIMITER, type VyraStreamMeta } from "@/lib/vyraStream";
 import { popIn, pressableSubtle } from "@/lib/motion";
 
@@ -145,7 +145,7 @@ function initialMessage(hasBattleData: boolean): string {
 function VYRAAvatar({ size = 36 }: { size?: number }) {
   return (
     <div
-      className="relative flex items-center justify-center rounded-full border border-cyan-300/35 bg-gradient-to-br from-cyan-400/20 via-[#0d1b2a] to-emerald-500/20 shadow-[0_0_26px_-10px_rgba(34,211,238,0.8)]"
+      className="relative flex items-center justify-center rounded-full border border-indigo-300/35 bg-gradient-to-br from-indigo-400/20 via-[#0d1b2a] to-green-500/20 shadow-[0_0_26px_-10px_rgba(79,70,229,0.8)]"
       style={{ width: size, height: size }}
     >
       <svg
@@ -592,17 +592,17 @@ export default function VyraCoach(props: VyraCoachProps) {
   // z-index is set via inline style={{ zIndex: UI_Z_INDEX.vyraPanel }} below,
   // not a hardcoded Tailwind z-* class, so the shared uiLayout.ts tier stays
   // the single source of truth for stacking order.
-  const desktopPanelClass = `fixed right-0 top-0 hidden h-full w-full max-w-[460px] border-l border-cyan-300/15 bg-[#040a12]/95 shadow-[-26px_0_72px_-36px_rgba(16,185,129,0.55)] backdrop-blur-xl transition-transform duration-300 ease-out md:block ${
+  const desktopPanelClass = `fixed right-0 top-0 hidden h-full w-full max-w-[460px] border-l border-indigo-300/15 bg-[#040a12]/95 shadow-[-26px_0_72px_-36px_rgba(16,185,129,0.55)] backdrop-blur-xl transition-transform duration-300 ease-out md:block ${
     isOpen ? "translate-x-0" : "pointer-events-none translate-x-full"
   }`;
 
-  const mobilePanelClass = `fixed inset-x-0 bottom-0 h-[88dvh] rounded-t-3xl border border-cyan-300/20 bg-[#040a12]/95 p-3 shadow-[0_-24px_70px_-30px_rgba(16,185,129,0.6)] backdrop-blur-xl transition-transform duration-300 ease-out ${
+  const mobilePanelClass = `fixed inset-x-0 bottom-0 h-[88dvh] rounded-t-3xl border border-indigo-300/20 bg-[#040a12]/95 p-3 shadow-[0_-24px_70px_-30px_rgba(16,185,129,0.6)] backdrop-blur-xl transition-transform duration-300 ease-out ${
     isDocked ? "xl:hidden" : "md:hidden"
   } ${isOpen ? "translate-y-0" : "pointer-events-none translate-y-full"}`;
 
   const launcherClass = isDocked
-    ? `${FLOATING_ACTION.base} ${FLOATING_ACTION.right} flex items-center gap-2 rounded-full border border-cyan-300/40 bg-[#06121f]/90 px-3.5 py-2.5 text-sm font-semibold text-cyan-100 shadow-[0_0_34px_-16px_rgba(34,211,238,0.85)] backdrop-blur transition duration-200 hover:scale-[1.02] xl:hidden`
-    : `${FLOATING_ACTION.base} ${FLOATING_ACTION.right} flex items-center gap-2 rounded-full border border-cyan-300/40 bg-[#06121f]/90 px-3.5 py-2.5 text-sm font-semibold text-cyan-100 shadow-[0_0_34px_-16px_rgba(34,211,238,0.85)] backdrop-blur transition duration-200 hover:scale-[1.02] ${FLOATING_ACTION.desktopRightRail}`;
+    ? `${FLOATING_ACTION.base} ${FLOATING_ACTION.right} flex items-center gap-2 rounded-full border border-indigo-300/40 bg-[#06121f]/90 px-3.5 py-2.5 text-sm font-semibold text-indigo-100 shadow-[0_0_34px_-16px_rgba(79,70,229,0.85)] backdrop-blur transition duration-200 hover:scale-[1.02] xl:hidden`
+    : `${FLOATING_ACTION.base} ${FLOATING_ACTION.right} flex items-center gap-2 rounded-full border border-indigo-300/40 bg-[#06121f]/90 px-3.5 py-2.5 text-sm font-semibold text-indigo-100 shadow-[0_0_34px_-16px_rgba(79,70,229,0.85)] backdrop-blur transition duration-200 hover:scale-[1.02] ${FLOATING_ACTION.desktopRightRail}`;
 
   return (
     <>
@@ -632,7 +632,7 @@ export default function VyraCoach(props: VyraCoachProps) {
       {isDocked ? (
         <aside className="hidden w-full max-w-[440px] xl:block">
           <div
-            className="sticky top-20 h-[calc(100dvh-6rem)] rounded-2xl border border-cyan-300/15 bg-[#040a12]/95 p-3 shadow-[-26px_0_72px_-36px_rgba(16,185,129,0.45)] backdrop-blur-xl"
+            className="sticky top-20 h-[calc(100dvh-6rem)] rounded-2xl border border-indigo-300/15 bg-[#040a12]/95 p-3 shadow-[-26px_0_72px_-36px_rgba(16,185,129,0.45)] backdrop-blur-xl"
             style={{ zIndex: UI_Z_INDEX.vyraPanel }}
           >
             <ChatPanel
@@ -765,23 +765,40 @@ function ChatPanel(props: {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-2 flex items-start justify-between gap-3 rounded-2xl border border-cyan-300/25 bg-gradient-to-r from-cyan-500/15 via-[#0d1b2a] to-emerald-500/15 px-3.5 py-3">
+      <div className="mb-2 flex items-start justify-between gap-3 rounded-2xl border border-indigo-300/25 bg-gradient-to-r from-indigo-500/15 via-[#0d1b2a] to-green-500/15 px-3.5 py-3">
         <div className="flex items-center gap-2.5">
           <VYRAAvatar />
           <div>
             <p className="text-sm font-bold text-white">VYRA AI Coach</p>
-            <p className="text-[11px] uppercase tracking-wider text-cyan-200/80">Personal study assistant</p>
+            <p className="text-[11px] uppercase tracking-wider text-indigo-200/80">Personal study assistant</p>
           </div>
         </div>
-        {showCloseButton && (
+        <div className="flex flex-shrink-0 items-center gap-1.5">
           <button
             type="button"
-            onClick={closePanel}
+            onClick={() => window.dispatchEvent(new Event(OPEN_FEEDBACK_EVENT))}
+            aria-label="Send feedback or report a problem"
+            title="Feedback"
             className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 text-[11px] font-semibold text-white/75"
           >
-            Close
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
+              />
+            </svg>
           </button>
-        )}
+          {showCloseButton && (
+            <button
+              type="button"
+              onClick={closePanel}
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-white/10 bg-white/5 px-3 text-[11px] font-semibold text-white/75"
+            >
+              Close
+            </button>
+          )}
+        </div>
       </div>
 
       <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-white/45">
@@ -799,7 +816,7 @@ function ChatPanel(props: {
             {...pressableSubtle}
             className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors ${
               selectedMode === entry.mode
-                ? "border-cyan-300/45 bg-cyan-400/15 text-cyan-100"
+                ? "border-indigo-300/45 bg-indigo-400/15 text-indigo-100"
                 : "border-white/10 bg-white/5 text-white/65 hover:bg-white/10"
             }`}
           >
@@ -818,7 +835,7 @@ function ChatPanel(props: {
             {...(!isSending ? pressableSubtle : {})}
             className={`rounded-xl border px-2.5 py-2 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
               entry.primary
-                ? "border-cyan-400/35 bg-cyan-500/15 text-cyan-100 hover:bg-cyan-500/25"
+                ? "border-indigo-400/35 bg-indigo-500/15 text-indigo-100 hover:bg-indigo-500/25"
                 : "border-white/10 bg-white/5 text-white/85 hover:bg-white/10"
             }`}
           >
@@ -831,7 +848,7 @@ function ChatPanel(props: {
         {rematchHref && (
           <Link
             href={rematchHref}
-            className="inline-flex items-center justify-center rounded-xl border border-emerald-400/35 bg-emerald-500/15 px-3 py-2 text-xs font-bold text-emerald-100"
+            className="inline-flex items-center justify-center rounded-xl border border-green-400/35 bg-green-500/15 px-3 py-2 text-xs font-bold text-green-100"
           >
             Start Weak-Topic Rematch
           </Link>
@@ -851,7 +868,7 @@ function ChatPanel(props: {
           type="button"
           onClick={() => void onBlindspotQuiz()}
           disabled={isSending}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-rose-400/35 bg-rose-500/15 px-3 py-2 text-xs font-bold text-rose-100 transition-colors hover:bg-rose-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-red-400/35 bg-red-500/15 px-3 py-2 text-xs font-bold text-red-100 transition-colors hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 9.75l-3 3m0 0l3 3m-3-3h10.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -881,8 +898,8 @@ function ChatPanel(props: {
                 <div
                   className={`max-w-[96%] whitespace-pre-wrap break-words rounded-xl px-3 py-2.5 text-sm leading-relaxed ${
                     message.role === "assistant"
-                      ? "self-start border border-cyan-400/20 bg-cyan-500/[0.08] text-white/90"
-                      : "self-end border border-emerald-400/20 bg-emerald-500/[0.08] text-white/90"
+                      ? "self-start border border-indigo-400/20 bg-indigo-500/[0.08] text-white/90"
+                      : "self-end border border-green-400/20 bg-green-500/[0.08] text-white/90"
                   }`}
                 >
                   {message.content}
@@ -903,9 +920,9 @@ function ChatPanel(props: {
                           <span
                             className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
                               resource.trustTier === "official"
-                                ? "border-emerald-300/40 bg-emerald-500/15 text-emerald-200"
+                                ? "border-green-300/40 bg-green-500/15 text-green-200"
                                 : resource.trustTier === "reputable"
-                                  ? "border-cyan-300/40 bg-cyan-500/15 text-cyan-200"
+                                  ? "border-indigo-300/40 bg-indigo-500/15 text-indigo-200"
                                   : "border-white/20 bg-white/5 text-white/60"
                             }`}
                           >
@@ -934,16 +951,16 @@ function ChatPanel(props: {
                       <Link
                         key={deck.deckId}
                         href={buildWeakTopicHref(deck.deckId, deck.topics)}
-                        className="rounded-xl border border-rose-300/25 bg-rose-500/[0.06] p-3 transition-colors hover:border-rose-300/45 hover:bg-rose-500/[0.1]"
+                        className="rounded-xl border border-red-300/25 bg-red-500/[0.06] p-3 transition-colors hover:border-red-300/45 hover:bg-red-500/[0.1]"
                       >
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-sm font-bold text-white/90">{deck.deckTitle}</p>
-                          <span className="flex-shrink-0 rounded-full border border-rose-300/40 bg-rose-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-rose-200">
+                          <span className="flex-shrink-0 rounded-full border border-red-300/40 bg-red-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-red-200">
                             {deck.accuracy}% acc
                           </span>
                         </div>
                         <p className="mt-1.5 text-xs text-white/75">{deck.topics.join(", ")}</p>
-                        <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-rose-100/80">
+                        <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-red-100/80">
                           Start rematch
                         </p>
                       </Link>
@@ -954,14 +971,14 @@ function ChatPanel(props: {
             ))}
 
             {isSending && (
-              <div className="self-start rounded-xl border border-cyan-400/25 bg-cyan-500/[0.08] px-3 py-2 text-sm text-white/80">
+              <div className="self-start rounded-xl border border-indigo-400/25 bg-indigo-500/[0.08] px-3 py-2 text-sm text-white/80">
                 <div className="flex items-center gap-2">
                   <VYRAAvatar size={20} />
                   <span>VYRA is analyzing...</span>
                   <span className="inline-flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300 [animation-delay:120ms]" />
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300 [animation-delay:240ms]" />
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-300" />
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-300 [animation-delay:120ms]" />
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-300 [animation-delay:240ms]" />
                   </span>
                 </div>
               </div>
@@ -973,7 +990,7 @@ function ChatPanel(props: {
       </div>
 
       {!hasBattleData && (
-        <p className="mt-2 text-xs text-cyan-100/70">
+        <p className="mt-2 text-xs text-indigo-100/70">
           Tip: complete one battle for fully personalized coaching context.
         </p>
       )}
@@ -989,13 +1006,13 @@ function ChatPanel(props: {
               ? "Ask VYRA anything, or try \"I have an AP Bio exam Friday on cellular respiration\"..."
               : "Choose a deck, topic, or missed question to begin..."
           }
-          className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-cyan-400/40"
+          className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-indigo-400/40"
         />
         <motion.button
           type="submit"
           disabled={isSending || !input.trim()}
           {...(!isSending && input.trim() ? pressableSubtle : {})}
-          className="rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-3.5 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-xl bg-gradient-to-r from-green-500 to-indigo-500 px-3.5 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
         >
           Send
         </motion.button>

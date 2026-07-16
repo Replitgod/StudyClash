@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -541,7 +541,7 @@ export default function InstantAIBattle() {
   // creates). Matches the same "don't gate sharing behind signup"
   // principle the real battle results page and demo already use.
   const handleCopyResult = async () => {
-    const shareMessage = `I scored ${playerScore}-${aiScore} against the AI on StudyJoust${playerAccuracy != null ? ` (${playerAccuracy}% accuracy)` : ""}. Beat me: ${window.location.origin}/#battle-ai`;
+    const shareMessage = `I scored ${playerScore}-${aiScore} against the AI on StudyClash${playerAccuracy != null ? ` (${playerAccuracy}% accuracy)` : ""}. Beat me: ${window.location.origin}/#battle-ai`;
     const copied = await copyTextToClipboard(shareMessage);
 
     if (copied) {
@@ -557,7 +557,7 @@ export default function InstantAIBattle() {
   const getRoundPillClass = (choice: string) => {
     if (!currentQuestion) return "border-white/15 bg-white/5";
     if (choice === currentQuestion.correct) {
-      return "border-emerald-400/40 bg-emerald-500/15";
+      return "border-green-400/40 bg-green-500/15";
     }
     return "border-white/15 bg-white/5";
   };
@@ -574,23 +574,23 @@ export default function InstantAIBattle() {
   return (
     <section
       id="battle-ai"
-      className={`w-full rounded-3xl border border-cyan-300/25 bg-[#061325]/95 p-4 shadow-[0_40px_90px_-55px_rgba(6,182,212,0.85)] sm:p-6 ${
+      className={`w-full rounded-3xl border border-indigo-300/25 bg-[#061325]/95 p-4 shadow-[0_40px_90px_-55px_rgba(6,182,212,0.85)] sm:p-6 ${
         shake ? "animate-[battle-shake_420ms_ease-in-out]" : ""
       }`}
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">Instant Mode</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">Instant Mode</p>
           <h2 className="mt-1 text-2xl font-black text-white sm:text-3xl">Battle an AI in One Click</h2>
-          <p className="mt-1 text-sm text-cyan-100/80">No lobby. Tap start and answer 5 quick questions.</p>
+          <p className="mt-1 text-sm text-indigo-100/80">No lobby. Tap start and answer 5 quick questions.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-cyan-100/90">
-          <span className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1">No Signup Needed</span>
-          <span className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1">~60 Seconds</span>
+        <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.12em] text-indigo-100/90">
+          <span className="rounded-full border border-indigo-300/30 bg-indigo-500/10 px-3 py-1">No Signup Needed</span>
+          <span className="rounded-full border border-indigo-300/30 bg-indigo-500/10 px-3 py-1">~60 Seconds</span>
           <button
             type="button"
             onClick={() => setSoundOn((prev) => !prev)}
-            className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 normal-case tracking-normal"
+            className="rounded-full border border-indigo-300/30 bg-indigo-500/10 px-3 py-1 normal-case tracking-normal"
             aria-pressed={soundOn}
             title={soundOn ? "Sound on" : "Sound off"}
           >
@@ -600,19 +600,19 @@ export default function InstantAIBattle() {
       </div>
 
       {!battleStarted && (
-        <div className="mt-4 rounded-2xl border border-cyan-300/25 bg-cyan-500/10 p-4">
+        <div className="mt-4 rounded-2xl border border-indigo-300/25 bg-indigo-500/10 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <OpponentFace mood="idle" />
               <div>
-                <p className="text-sm font-bold text-cyan-100">Ready when you are</p>
-                <p className="text-xs text-cyan-100/80">Quick Play auto-balances to your pace.</p>
+                <p className="text-sm font-bold text-indigo-100">Ready when you are</p>
+                <p className="text-xs text-indigo-100/80">Quick Play auto-balances to your pace.</p>
               </div>
             </div>
             <button
               onClick={() => startBattle("adaptive")}
               disabled={isLoadingQuestions}
-              className="rounded-xl bg-cyan-300 px-5 py-2.5 text-sm font-black text-[#032236] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl bg-indigo-300 px-5 py-2.5 text-sm font-black text-[#032236] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoadingQuestions ? "Preparing questions..." : "Battle Now"}
             </button>
@@ -622,7 +622,7 @@ export default function InstantAIBattle() {
             <button
               type="button"
               onClick={() => setShowDifficultyPicker((prev) => !prev)}
-              className="text-xs font-semibold text-cyan-200/80 underline-offset-2 hover:text-cyan-100 hover:underline"
+              className="text-xs font-semibold text-indigo-200/80 underline-offset-2 hover:text-indigo-100 hover:underline"
             >
               {showDifficultyPicker ? "Hide difficulty options" : "Choose difficulty instead"}
             </button>
@@ -635,7 +635,7 @@ export default function InstantAIBattle() {
                   key={level}
                   onClick={() => startBattle(level)}
                   disabled={isLoadingQuestions}
-                  className="rounded-xl border border-cyan-300/30 bg-cyan-500/10 px-4 py-2 text-sm font-bold text-cyan-100 transition-transform duration-200 hover:bg-cyan-500/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-xl border border-indigo-300/30 bg-indigo-500/10 px-4 py-2 text-sm font-bold text-indigo-100 transition-transform duration-200 hover:bg-indigo-500/20 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                   title={DIFFICULTY_CONFIG[level].summary}
                 >
                   {DIFFICULTY_CONFIG[level].label}
@@ -653,13 +653,13 @@ export default function InstantAIBattle() {
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
           <p className="text-xs text-white/60">You</p>
-          <p className="mt-1 text-base font-extrabold text-emerald-300">{playerScore}</p>
+          <p className="mt-1 text-base font-extrabold text-green-300">{playerScore}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
           <div className="flex items-center justify-between gap-2">
             <div>
               <p className="text-xs text-white/60">AI</p>
-              <p className="mt-1 text-base font-extrabold text-orange-300">{aiScore}</p>
+              <p className="mt-1 text-base font-extrabold text-amber-300">{aiScore}</p>
             </div>
             {battleStarted && <OpponentFace mood={aiMood} />}
           </div>
@@ -670,32 +670,32 @@ export default function InstantAIBattle() {
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
           <p className="text-xs text-white/60">Your Accuracy</p>
-          <p className="mt-1 text-base font-extrabold text-emerald-200">{playerAccuracy == null ? "-" : `${playerAccuracy}%`}</p>
+          <p className="mt-1 text-base font-extrabold text-green-200">{playerAccuracy == null ? "-" : `${playerAccuracy}%`}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
           <p className="text-xs text-white/60">AI Accuracy</p>
-          <p className="mt-1 text-base font-extrabold text-orange-200">{aiAccuracy == null ? "-" : `${aiAccuracy}%`}</p>
+          <p className="mt-1 text-base font-extrabold text-amber-200">{aiAccuracy == null ? "-" : `${aiAccuracy}%`}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
           <p className="text-xs text-white/60">Your Avg Time</p>
-          <p className="mt-1 text-base font-extrabold text-cyan-100">{avgPlayerMs == null ? "-" : `${(avgPlayerMs / 1000).toFixed(1)}s`}</p>
+          <p className="mt-1 text-base font-extrabold text-indigo-100">{avgPlayerMs == null ? "-" : `${(avgPlayerMs / 1000).toFixed(1)}s`}</p>
         </div>
         <div className="rounded-xl border border-white/10 bg-white/5 p-3">
           <p className="text-xs text-white/60">AI Avg Time</p>
-          <p className="mt-1 text-base font-extrabold text-cyan-100">{avgAiMs == null ? "-" : `${(avgAiMs / 1000).toFixed(1)}s`}</p>
+          <p className="mt-1 text-base font-extrabold text-indigo-100">{avgAiMs == null ? "-" : `${(avgAiMs / 1000).toFixed(1)}s`}</p>
         </div>
       </div>
 
       {difficulty === "adaptive" && battleStarted && (
-        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-fuchsia-300/25 bg-fuchsia-500/10 px-4 py-2 text-xs text-fuchsia-100">
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-indigo-300/25 bg-indigo-500/10 px-4 py-2 text-xs text-indigo-100">
           <span>
             Adaptive pressure: <strong>{adaptivePressure}</strong>
           </span>
-          <span className="text-fuchsia-100/70">
+          <span className="text-indigo-100/70">
             Ability (&theta;): <strong>{playerTheta.toFixed(2)}</strong>
           </span>
           {!battleFinished && nextItemPredictedProbability !== null && (
-            <span className="text-fuchsia-100/70">
+            <span className="text-indigo-100/70">
               P(next correct): <strong>{Math.round(nextItemPredictedProbability * 100)}%</strong>
             </span>
           )}
@@ -703,14 +703,14 @@ export default function InstantAIBattle() {
       )}
 
       {!battleStarted && (
-        <div className="mt-5 rounded-2xl border border-cyan-300/20 bg-cyan-500/10 p-5 text-center text-cyan-100">
+        <div className="mt-5 rounded-2xl border border-indigo-300/20 bg-indigo-500/10 p-5 text-center text-indigo-100">
           Tap Battle Now to launch an instant duel.
         </div>
       )}
 
       {battleStarted && !battleFinished && currentQuestion && (
         <div className="mt-5 rounded-2xl border border-white/10 bg-[#06101f] p-4 sm:p-5">
-          <p className="text-sm font-bold text-cyan-200">{currentQuestion.prompt}</p>
+          <p className="text-sm font-bold text-indigo-200">{currentQuestion.prompt}</p>
 
           <div className="mt-4 grid gap-2">
             {currentQuestion.choices.map((choice) => {
@@ -735,7 +735,7 @@ export default function InstantAIBattle() {
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm text-white/80">
               {waitingForAi ? (
-                <span className="inline-flex items-center gap-2 text-orange-200">
+                <span className="inline-flex items-center gap-2 text-amber-200">
                   <OpponentFace mood="thinking" />
                   AI is thinking...
                 </span>
@@ -787,9 +787,9 @@ export default function InstantAIBattle() {
                     <span
                       className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
                         wrongAnswerResource.trustTier === "official"
-                          ? "border-emerald-300/40 bg-emerald-500/15 text-emerald-200"
+                          ? "border-green-300/40 bg-green-500/15 text-green-200"
                           : wrongAnswerResource.trustTier === "reputable"
-                            ? "border-cyan-300/40 bg-cyan-500/15 text-cyan-200"
+                            ? "border-indigo-300/40 bg-indigo-500/15 text-indigo-200"
                             : "border-white/20 bg-white/5 text-white/60"
                       }`}
                     >
@@ -810,14 +810,14 @@ export default function InstantAIBattle() {
       )}
 
       {battleFinished && (
-        <div className="relative mt-5 overflow-hidden rounded-2xl border border-emerald-300/30 bg-emerald-500/10 p-5 text-center">
+        <div className="relative mt-5 overflow-hidden rounded-2xl border border-green-300/30 bg-green-500/10 p-5 text-center">
           <ConfettiBurst show={playerWon} />
           <div className="flex items-center justify-center gap-3">
             <OpponentFace mood={aiMood} />
-            <p className="text-lg font-black text-emerald-200">{winnerText}</p>
+            <p className="text-lg font-black text-green-200">{winnerText}</p>
           </div>
-          <p className="mt-1 text-sm text-emerald-100/90">Final score {playerScore} - {aiScore}</p>
-          <p className="mt-1 text-xs text-emerald-100/75">
+          <p className="mt-1 text-sm text-green-100/90">Final score {playerScore} - {aiScore}</p>
+          <p className="mt-1 text-xs text-green-100/75">
             AI realism stats: {aiAccuracy == null ? "-" : `${aiAccuracy}% accuracy`} · {avgAiMs == null ? "-" : `${(avgAiMs / 1000).toFixed(1)}s avg response`}
           </p>
 
@@ -825,7 +825,7 @@ export default function InstantAIBattle() {
             <button
               onClick={() => startBattle(difficulty || "adaptive")}
               disabled={isLoadingQuestions}
-              className="rounded-xl bg-emerald-400 px-5 py-2.5 text-sm font-black text-[#052914] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl bg-green-400 px-5 py-2.5 text-sm font-black text-[#052914] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoadingQuestions ? "Preparing questions..." : "Rematch"}
             </button>
@@ -836,28 +836,28 @@ export default function InstantAIBattle() {
                   key={`rematch-${level}`}
                   onClick={() => startBattle(level)}
                   disabled={isLoadingQuestions}
-                  className="rounded-xl border border-emerald-300/40 bg-emerald-500/15 px-4 py-2 text-sm font-bold text-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-xl border border-green-300/40 bg-green-500/15 px-4 py-2 text-sm font-bold text-green-100 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Try {DIFFICULTY_CONFIG[level].label}
                 </button>
               ))}
           </div>
 
-          <div className="mt-5 rounded-xl border border-fuchsia-300/30 bg-fuchsia-500/10 p-4">
-            <p className="text-sm font-bold text-fuchsia-100">Beat the AI? Prove it.</p>
-            <p className="mt-1 text-xs text-fuchsia-100/80">
+          <div className="mt-5 rounded-xl border border-indigo-300/30 bg-indigo-500/10 p-4">
+            <p className="text-sm font-bold text-indigo-100">Beat the AI? Prove it.</p>
+            <p className="mt-1 text-xs text-indigo-100/80">
               No account needed to share -- copy your result and send it to a friend.
             </p>
             <button
               type="button"
               onClick={handleCopyResult}
-              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-400 to-violet-400 px-5 py-2.5 text-sm font-black text-[#1a0524] transition-transform duration-200 active:scale-95"
+              className="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-indigo-400 to-indigo-400 px-5 py-2.5 text-sm font-black text-[#1a0524] transition-transform duration-200 active:scale-95"
             >
               {resultCopied ? "Copied! Send it to a friend." : "Copy Result to Challenge a Friend"}
             </button>
             <Link
               href={`/signup?redirect=${encodeURIComponent("/create")}`}
-              className="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-fuchsia-300/30 bg-transparent px-5 py-2 text-xs font-bold text-fuchsia-100/80 transition-colors duration-150 hover:bg-fuchsia-500/10"
+              className="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-indigo-300/30 bg-transparent px-5 py-2 text-xs font-bold text-indigo-100/80 transition-colors duration-150 hover:bg-indigo-500/10"
             >
               Or create an account to save this result
             </Link>

@@ -328,7 +328,7 @@ export default function DiagnosticAttemptPage() {
   if (state.status === "module_break") {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#05050a] px-4 text-center text-white">
-        <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-300">Break</p>
+        <p className="text-xs font-bold uppercase tracking-[0.25em] text-indigo-300">Break</p>
         <h1 className="text-2xl font-black">Take a {state.breakMinutes || 10}-minute break</h1>
         <p className="max-w-md text-sm text-white/60">
           You&apos;ve finished {state.section ? SECTION_LABELS[state.section] || state.section : "this section"}.
@@ -354,7 +354,7 @@ export default function DiagnosticAttemptPage() {
       <div className="sticky top-0 z-20 border-b border-white/10 bg-[#05050a]/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-300">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">
               {state.section ? SECTION_LABELS[state.section] || state.section : ""} &middot; Module {state.module}
             </p>
             <p className="text-sm font-semibold text-white/80">
@@ -420,7 +420,7 @@ export default function DiagnosticAttemptPage() {
                 aria-pressed={currentItem.selectedAnswer === choice.id}
                 className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
                   currentItem.selectedAnswer === choice.id
-                    ? "border-cyan-400/50 bg-cyan-500/15 text-white"
+                    ? "border-indigo-400/50 bg-indigo-500/15 text-white"
                     : "border-white/10 bg-white/[0.03] text-white/80 hover:border-white/20"
                 }`}
               >
@@ -440,7 +440,7 @@ export default function DiagnosticAttemptPage() {
               value={currentItem.selectedAnswer || ""}
               onChange={(e) => handleSelectAnswer(e.target.value)}
               placeholder="Type your answer"
-              className="mt-2 w-full rounded-xl border border-white/15 bg-black/25 px-4 py-3 text-sm text-white placeholder-white/35 outline-none focus:border-cyan-300/50"
+              className="mt-2 w-full rounded-xl border border-white/15 bg-black/25 px-4 py-3 text-sm text-white placeholder-white/35 outline-none focus:border-indigo-300/50"
             />
           </div>
         )}
@@ -494,9 +494,9 @@ export default function DiagnosticAttemptPage() {
               onClick={() => goToIndex(idx)}
               className={`relative flex h-10 w-10 items-center justify-center rounded-lg border text-xs font-bold ${
                 idx === currentIndex
-                  ? "border-cyan-300 bg-cyan-500/20 text-white"
+                  ? "border-indigo-300 bg-indigo-500/20 text-white"
                   : item.selectedAnswer
-                    ? "border-emerald-400/40 bg-emerald-500/10 text-emerald-200"
+                    ? "border-green-400/40 bg-green-500/10 text-green-200"
                     : "border-white/15 bg-white/5 text-white/50"
               }`}
             >

@@ -1,5 +1,5 @@
-// Canonical plan metadata — the single source of truth for every plan id
-// StudyJoust recognizes, whether or not it's publicly sold on /pricing.
+﻿// Canonical plan metadata — the single source of truth for every plan id
+// StudyClash recognizes, whether or not it's publicly sold on /pricing.
 //
 // This exists because /api/generate-questions previously hardcoded its own
 // plan-id allowlist (FREE_PLAN_IDS/PRIORITY_PLAN_IDS) independently from the
@@ -55,16 +55,16 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
   },
   pro_individual: {
     id: "pro_individual",
-    label: "Pro Premium",
+    label: "Pro Individual",
     tagline: "Unlimited battles, full AI coaching",
-    price: "$5/mo",
+    price: "$3/mo",
     dailyLimit: "Unlimited uploads and battles",
     features: [
       "Everything in Free Beta",
       "Priority generation queue",
       "Full VYRA deep-dive coaching",
       "Unlimited PDF/text uploads",
-      "$49/year — 2 months free",
+      "$30/year — 2 months free",
     ],
     tier: "priority",
     publiclyListed: true,
@@ -73,7 +73,7 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
   team_pass: {
     id: "team_pass",
     label: "Team/Guild Pass",
-    tagline: "Free for small groups",
+    tagline: "Free during the pilot",
     price: "$0",
     dailyLimit: "Shared unlimited group usage",
     features: [
@@ -89,7 +89,7 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
     id: "exam_tunnel",
     label: "High-Stakes Exam Tunnel",
     tagline: "Board-style prep for serious exam runs",
-    price: "$9/mo",
+    price: "$5/mo",
     dailyLimit: "Premium board-style generation",
     features: [
       "AP, LSAT, MCAT & NCLEX-tuned question generation",
@@ -107,7 +107,7 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
     price: "Invite-only",
     dailyLimit: "Unlimited uploads and battles",
     features: [
-      "Everything in Pro Premium",
+      "Everything in Pro Individual",
       "Early access to unreleased features",
     ],
     tier: "priority",

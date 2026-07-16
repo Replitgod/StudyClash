@@ -1,6 +1,6 @@
-import { ImageResponse } from "next/og";
+﻿import { ImageResponse } from "next/og";
 
-export const alt = "StudyJoust AI study battles";
+export const alt = "StudyClash AI study battles";
 export const size = {
   width: 1200,
   height: 630,
@@ -41,7 +41,7 @@ export default function Image() {
               background: "#67e8f9",
             }}
           />
-          StudyJoust
+          StudyClash
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>

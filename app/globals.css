@@ -3,25 +3,19 @@
 /*
  * Design tokens — additive Tailwind v4 @theme extensions.
  *
- * This does NOT replace the existing cyan/fuchsia/emerald/violet "battle"
- * color language (that stays exactly as-is, using Tailwind's native palette
- * classes like `from-fuchsia-500`). What's missing today is everything that
- * ISN'T a simple color: every glow shadow and hover/tap transition is
- * hand-tuned per component with slightly different numbers each time
- * (e.g. `shadow-[0_0_22px_-8px_rgba(34,211,238,0.8)]` vs
- * `shadow-[0_22px_45px_-22px_rgba(34,211,238,0.95)]` for what's clearly the
- * same "cyan glow" intent). These tokens name and standardize that so new
- * and refactored components pull from one recipe instead of reinventing it.
+ * The app's accent language was unified to a single indigo brand hue plus
+ * three semantic state colors (green/amber/red) -- the old cyan/fuchsia/
+ * violet/emerald "battle" palette no longer exists anywhere in app/ or
+ * lib/. These glow-shadow tokens name that so components pull from one
+ * recipe instead of hand-tuning rgba() shadow values per component.
  */
 @theme {
   /* Glow shadows — one recipe per brand color, two intensities. Use via
-     `shadow-glow-cyan-md` etc. */
-  --shadow-glow-cyan-sm: 0 0 20px -10px rgba(34, 211, 238, 0.75);
-  --shadow-glow-cyan-md: 0 20px 45px -20px rgba(34, 211, 238, 0.9);
-  --shadow-glow-fuchsia-sm: 0 0 20px -10px rgba(217, 70, 239, 0.7);
-  --shadow-glow-fuchsia-md: 0 20px 45px -20px rgba(217, 70, 239, 0.85);
-  --shadow-glow-emerald-sm: 0 0 20px -10px rgba(52, 211, 153, 0.7);
-  --shadow-glow-emerald-md: 0 20px 45px -20px rgba(52, 211, 153, 0.85);
+     `shadow-glow-indigo-md` etc. */
+  --shadow-glow-indigo-sm: 0 0 20px -10px rgba(79, 70, 229, 0.75);
+  --shadow-glow-indigo-md: 0 20px 45px -20px rgba(79, 70, 229, 0.9);
+  --shadow-glow-green-sm: 0 0 20px -10px rgba(22, 163, 74, 0.7);
+  --shadow-glow-green-md: 0 20px 45px -20px rgba(22, 163, 74, 0.85);
 
   /* Motion — the two durations already dominant in the codebase
      (`duration-150` for color/border transitions, `duration-200` for
@@ -47,20 +41,18 @@ body {
   scroll-behavior: smooth;
 }
 
+/* Light system -- see the "COLORS"/"DESIGN STYLE" spec. Pages still on the
+   older dark battle-game look (most of the app outside the homepage/create
+   flow, for now) set their own literal dark background per page and are
+   unaffected by these root tokens; this is the baseline for pages that have
+   been converted. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -76,13 +68,13 @@ body {
 }
 
 *:focus-visible {
-  outline: 2px solid rgb(103 232 249 / 0.85);
+  outline: 2px solid rgb(79 70 229 / 0.85);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: rgb(217 70 239 / 0.3);
-  color: #fff;
+  background: rgb(79 70 229 / 0.25);
+  color: #0f172a;
 }
 
 ::-webkit-scrollbar {
@@ -91,11 +83,11 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgb(10 10 10 / 0.6);
+  background: rgb(226 232 240 / 0.6);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgb(217 70 239 / 0.45), rgb(34 211 238 / 0.45));
+  background: rgb(79 70 229 / 0.35);
   border-radius: 999px;
 }
 
@@ -105,8 +97,8 @@ input:-webkit-autofill:focus,
 textarea:-webkit-autofill,
 textarea:-webkit-autofill:hover,
 textarea:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 1000px #111827 inset;
-  -webkit-text-fill-color: #f5f5f5;
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+  -webkit-text-fill-color: #0f172a;
   transition: background-color 9999s ease-in-out 0s;
 }
 

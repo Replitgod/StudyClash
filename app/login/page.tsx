@@ -153,9 +153,9 @@ export default function LoginPage() {
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       {/* Ambient glow background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
 
       {/* Grid texture overlay */}
@@ -170,14 +170,14 @@ export default function LoginPage() {
 
       <div className={`relative z-10 flex min-h-dvh flex-col items-center justify-center px-4 pt-14 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {/* Badge */}
-        <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
+        <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-indigo-300 backdrop-blur-sm sm:mb-6">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
           WELCOME BACK
         </div>
 
         {/* Title */}
         <h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
-          <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
             Log In
           </span>
         </h1>
@@ -239,7 +239,7 @@ export default function LoginPage() {
                 autoFocus
                 required
                 disabled={isAnyLoading}
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 disabled:opacity-50 sm:py-3 sm:text-sm"
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 sm:py-3 sm:text-sm"
               />
             </div>
 
@@ -260,7 +260,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   required
                   disabled={isAnyLoading}
-                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 pr-12 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 disabled:opacity-50 sm:py-3 sm:text-sm"
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 pr-12 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 sm:py-3 sm:text-sm"
                 />
                 <button
                   type="button"
@@ -276,7 +276,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isAnyLoading}
-              className="group relative mt-2 flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100 sm:py-3.5 sm:hover:scale-[1.02] sm:text-sm"
+              className="group relative mt-2 flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100 sm:py-3.5 sm:hover:scale-[1.02] sm:text-sm"
             >
               {isSubmitting ? (
                 <>
@@ -320,27 +320,27 @@ export default function LoginPage() {
           Don&apos;t have an account?{" "}
           <Link
             href="/signup"
-            className="font-semibold text-fuchsia-300 hover:text-fuchsia-200"
+            className="font-semibold text-indigo-300 hover:text-indigo-200"
           >
             Sign up
           </Link>
         </p>
 
         <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs">
-          <Link href="/demo/battle" className="text-cyan-200/90 hover:text-cyan-100">
+          <Link href="/demo/battle" className="text-indigo-200/90 hover:text-indigo-100">
             Try Demo First
           </Link>
           <span className="text-white/20">•</span>
-          <Link href="/pricing" className="text-cyan-200/90 hover:text-cyan-100">
+          <Link href="/pricing" className="text-indigo-200/90 hover:text-indigo-100">
             View Plans
           </Link>
         </div>
 
         <p className="mt-3 text-center text-xs text-white/35">
           By continuing, you agree to our{" "}
-          <Link href="/terms" className="text-cyan-200 hover:text-cyan-100">Terms</Link>
+          <Link href="/terms" className="text-indigo-200 hover:text-indigo-100">Terms</Link>
           {" "}and{" "}
-          <Link href="/privacy" className="text-cyan-200 hover:text-cyan-100">Privacy Policy</Link>.
+          <Link href="/privacy" className="text-indigo-200 hover:text-indigo-100">Privacy Policy</Link>.
         </p>
       </div>
     </main>

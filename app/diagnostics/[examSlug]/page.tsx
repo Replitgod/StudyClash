@@ -116,7 +116,7 @@ export default function ExamDiagnosticPage() {
     return (
       <Background>
         <p className="text-sm text-red-300">{error}</p>
-        <Link href="/diagnostics" className="mt-4 w-fit text-sm font-semibold text-cyan-300">
+        <Link href="/diagnostics" className="mt-4 w-fit text-sm font-semibold text-indigo-300">
           &larr; Back to diagnostics
         </Link>
       </Background>
@@ -132,7 +132,7 @@ export default function ExamDiagnosticPage() {
         <p className="mt-3 text-sm text-white/60">
           This diagnostic isn&apos;t published yet. Check back soon, or try the Digital SAT diagnostic in the meantime.
         </p>
-        <Link href="/diagnostics" className="mt-6 w-fit text-sm font-semibold text-cyan-300">
+        <Link href="/diagnostics" className="mt-6 w-fit text-sm font-semibold text-indigo-300">
           &larr; Back to diagnostics
         </Link>
       </Background>
@@ -143,12 +143,12 @@ export default function ExamDiagnosticPage() {
 
   return (
     <Background>
-      <Link href="/diagnostics" className="w-fit text-sm font-semibold text-cyan-300">
+      <Link href="/diagnostics" className="w-fit text-sm font-semibold text-indigo-300">
         &larr; Back to diagnostics
       </Link>
 
       <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
-        <span className="bg-gradient-to-r from-cyan-300 via-white to-fuchsia-300 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
           {exam.name} Diagnostic
         </span>
       </h1>
@@ -157,7 +157,7 @@ export default function ExamDiagnosticPage() {
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         {sections.map((section) => (
           <Card key={section.key} padding="sm">
-            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">{section.label}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">{section.label}</p>
             <p className="mt-1 text-sm text-white/70">
               {section.totalQuestions} questions &middot; {section.totalMinutes} minutes
             </p>
@@ -173,7 +173,7 @@ export default function ExamDiagnosticPage() {
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2">
         <Card tone="cyan" padding="md">
-          <p className="text-xs font-bold uppercase tracking-wider text-cyan-200">Quick Diagnostic</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-200">Quick Diagnostic</p>
           <p className="mt-2 text-sm text-white/70">
             A shorter, balanced sample across both sections. ~35-45 minutes. A faster, less precise estimate.
           </p>
@@ -189,7 +189,7 @@ export default function ExamDiagnosticPage() {
         </Card>
 
         <Card tone="fuchsia" padding="md">
-          <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-200">Full Diagnostic</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-200">Full Diagnostic</p>
           <p className="mt-2 text-sm text-white/70">
             The complete four-module structure with adaptive Module 2 routing and a scheduled break. ~2 hours
             14 minutes of test time.

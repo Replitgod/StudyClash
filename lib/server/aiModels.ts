@@ -1,4 +1,4 @@
-// Server-only. Every OpenAI model name used anywhere in StudyJoust is
+﻿// Server-only. Every OpenAI model name used anywhere in StudyClash is
 // declared here and nowhere else -- route handlers import TERRA_TASK /
 // LUNA_TASK / SOL_TASK instead of hardcoding a model string. This file must
 // never be imported from a "use client" component; nothing here is exposed
@@ -50,7 +50,7 @@ export const LUNA_TASK: AiTask = {
 
 // Sol: reserved for a task that genuinely needs the highest reasoning
 // quality available -- not currently wired to any route. None of
-// StudyJoust's existing features clear that bar; Terra already covers the
+// StudyClash's existing features clear that bar; Terra already covers the
 // hardest current tasks. Kept here so a future feature can opt in without
 // inventing a new model-selection pattern.
 export const SOL_TASK: AiTask = {

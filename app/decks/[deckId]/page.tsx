@@ -28,9 +28,9 @@ function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -116,9 +116,9 @@ function splitNotesAroundHighlight(
 
 // Rank badge labels/styles for the top 3 leaderboard spots
 const RANK_BADGES: Record<number, { label: string; color: string }> = {
-  0: { label: "Champion", color: "from-yellow-300 to-amber-500" },
+  0: { label: "Champion", color: "from-amber-300 to-amber-500" },
   1: { label: "Runner Up", color: "from-slate-300 to-slate-400" },
-  2: { label: "Top 3", color: "from-orange-400 to-amber-700" },
+  2: { label: "Top 3", color: "from-amber-400 to-amber-700" },
 };
 
 export default function DeckDetailPage() {
@@ -259,7 +259,7 @@ export default function DeckDetailPage() {
     return (
       <Background>
         <svg
-          className="h-10 w-10 animate-spin text-fuchsia-400"
+          className="h-10 w-10 animate-spin text-indigo-400"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -294,7 +294,7 @@ export default function DeckDetailPage() {
           </p>
           <Link
             href="/decks"
-            className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10"
+            className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-5 py-2.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:border-indigo-400/30 hover:bg-white/10"
           >
             Back to All Decks
           </Link>
@@ -307,14 +307,14 @@ export default function DeckDetailPage() {
     <Background>
       <div className="w-full max-w-2xl">
         {/* Badge */}
-        <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
+        <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-indigo-300 backdrop-blur-sm sm:mb-6">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
           DECK DETAILS
         </div>
 
         {/* Title */}
         <h1 className="break-words text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
-          <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
             {deck.title}
           </span>
         </h1>
@@ -437,7 +437,7 @@ export default function DeckDetailPage() {
                 <button
                   type="button"
                   onClick={() => setManualShowFullNotes((prev) => !prev)}
-                  className="text-[10px] font-semibold text-cyan-300 hover:text-cyan-200"
+                  className="text-[10px] font-semibold text-indigo-300 hover:text-indigo-200"
                 >
                   {showFullNotes ? "Show less" : "View full notes"}
                 </button>
@@ -455,7 +455,7 @@ export default function DeckDetailPage() {
                         {split.before}
                         <mark
                           ref={highlightRef}
-                          className="rounded bg-cyan-400/30 px-0.5 text-cyan-100"
+                          className="rounded bg-indigo-400/30 px-0.5 text-indigo-100"
                         >
                           {split.match}
                         </mark>
@@ -476,7 +476,7 @@ export default function DeckDetailPage() {
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Link
               href={`/battle/${deck.id}`}
-              className="group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:px-8 sm:hover:scale-[1.02]"
+              className="group relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 sm:px-8 sm:hover:scale-[1.02]"
             >
               <span className="relative z-10">Play Battle</span>
               <svg
@@ -497,12 +497,12 @@ export default function DeckDetailPage() {
 
             <button
               onClick={handleCopyLink}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-4 text-base font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-400/40 hover:bg-white/10"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-4 text-base font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-400/40 hover:bg-white/10"
             >
               {linkCopied ? (
                 <>
                   <svg
-                    className="h-5 w-5 flex-shrink-0 text-emerald-400"
+                    className="h-5 w-5 flex-shrink-0 text-green-400"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -519,7 +519,7 @@ export default function DeckDetailPage() {
               ) : (
                 <>
                   <svg
-                    className="h-5 w-5 flex-shrink-0 text-cyan-300"
+                    className="h-5 w-5 flex-shrink-0 text-indigo-300"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -542,7 +542,7 @@ export default function DeckDetailPage() {
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:mt-8 sm:p-6 md:p-8">
           <div className="flex items-center gap-2">
             <svg
-              className="h-4 w-4 flex-shrink-0 text-cyan-300"
+              className="h-4 w-4 flex-shrink-0 text-indigo-300"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -577,7 +577,7 @@ export default function DeckDetailPage() {
                     key={entry.id}
                     className={`rounded-xl border px-3 py-3 transition-colors duration-150 sm:px-4 ${
                       isTopScore
-                        ? "border-yellow-400/40 bg-gradient-to-r from-yellow-500/10 to-amber-500/5 shadow-[0_0_20px_-5px_rgba(250,204,21,0.3)]"
+                        ? "border-amber-400/40 bg-gradient-to-r from-amber-500/10 to-amber-500/5 shadow-[0_0_20px_-5px_rgba(250,204,21,0.3)]"
                         : "border-white/10 bg-black/30"
                     }`}
                   >
@@ -586,8 +586,8 @@ export default function DeckDetailPage() {
                         <span
                           className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
                             isTopScore
-                              ? "bg-gradient-to-br from-yellow-300 to-amber-500 text-black"
-                              : "bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20 text-fuchsia-300"
+                              ? "bg-gradient-to-br from-amber-300 to-amber-500 text-black"
+                              : "bg-gradient-to-br from-indigo-500/20 to-indigo-500/20 text-indigo-300"
                           }`}
                         >
                           {index + 1}
@@ -598,7 +598,7 @@ export default function DeckDetailPage() {
                       </div>
                       <span
                         className={`flex-shrink-0 text-sm font-bold ${
-                          isTopScore ? "text-yellow-300" : "text-cyan-300"
+                          isTopScore ? "text-amber-300" : "text-indigo-300"
                         }`}
                       >
                         {entry.score} pts

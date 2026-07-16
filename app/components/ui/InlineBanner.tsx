@@ -4,8 +4,8 @@ export type InlineBannerVariant = "error" | "success" | "info";
 
 const VARIANT_CLASSES: Record<InlineBannerVariant, string> = {
   error: `${SURFACE.dangerSubtle} text-red-300`,
-  success: `${SURFACE.emeraldSubtle} text-emerald-300`,
-  info: `${SURFACE.cyanSubtle} text-cyan-100`,
+  success: `${SURFACE.emeraldSubtle} text-green-300`,
+  info: `${SURFACE.cyanSubtle} text-indigo-100`,
 };
 
 const VARIANT_ICON: Record<InlineBannerVariant, React.ReactNode> = {

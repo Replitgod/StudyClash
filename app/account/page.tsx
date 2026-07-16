@@ -24,9 +24,9 @@ function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -196,7 +196,7 @@ export default function AccountPage() {
     return (
       <Background>
         <svg
-          className="h-10 w-10 animate-spin text-fuchsia-400"
+          className="h-10 w-10 animate-spin text-indigo-400"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -224,9 +224,9 @@ export default function AccountPage() {
     return (
       <Background>
         <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm sm:p-8">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-fuchsia-500/10">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500/10">
             <svg
-              className="h-6 w-6 text-fuchsia-300"
+              className="h-6 w-6 text-indigo-300"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -247,7 +247,7 @@ export default function AccountPage() {
           </p>
           <Link
             href="/login"
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
           >
             Go to Login
           </Link>
@@ -271,14 +271,14 @@ export default function AccountPage() {
     <Background>
       <div className="w-full max-w-md">
         {/* Badge */}
-        <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
+        <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-indigo-300 backdrop-blur-sm sm:mb-6">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
           YOUR ACCOUNT
         </div>
 
         {/* Title */}
         <h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl">
-          <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
             Account
           </span>
         </h1>
@@ -287,7 +287,7 @@ export default function AccountPage() {
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
           {/* Email */}
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20 text-fuchsia-300">
+            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500/20 to-indigo-500/20 text-indigo-300">
               <svg
                 className="h-5 w-5"
                 fill="none"
@@ -319,7 +319,7 @@ export default function AccountPage() {
                 Display Name
               </p>
               {nameJustSaved && (
-                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-300">
+                <span className="flex items-center gap-1 text-[10px] font-bold text-green-300">
                   ✅ Saved
                 </span>
               )}
@@ -337,13 +337,13 @@ export default function AccountPage() {
                   placeholder="Enter your name"
                   autoFocus
                   disabled={isSavingName}
-                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 disabled:opacity-50 sm:text-sm"
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 sm:text-sm"
                 />
                 <div className="flex gap-2">
                   <button
                     type="submit"
                     disabled={isSavingName}
-                    className="flex-1 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-3 text-sm font-bold text-white transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none sm:hover:scale-[1.02]"
+                    className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-3 text-sm font-bold text-white transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none sm:hover:scale-[1.02]"
                   >
                     {isSavingName ? "Saving..." : "Save"}
                   </button>
@@ -365,7 +365,7 @@ export default function AccountPage() {
                 <button
                   type="button"
                   onClick={handleStartEditName}
-                  className="flex-shrink-0 text-xs font-bold text-fuchsia-300 transition-colors duration-150 hover:text-fuchsia-200"
+                  className="flex-shrink-0 text-xs font-bold text-indigo-300 transition-colors duration-150 hover:text-indigo-200"
                 >
                   Edit Name
                 </button>
@@ -412,7 +412,7 @@ export default function AccountPage() {
                   <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
                     Membership Plan
                   </p>
-                  <span className="rounded-full bg-gradient-to-r from-fuchsia-500/20 to-cyan-500/20 px-3 py-1 text-xs font-bold text-fuchsia-300">
+                  <span className="rounded-full bg-gradient-to-r from-indigo-500/20 to-indigo-500/20 px-3 py-1 text-xs font-bold text-indigo-300">
                     {planInfo?.label || profile?.plan}
                   </span>
                 </div>
@@ -428,7 +428,7 @@ export default function AccountPage() {
                     <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
                       Decks Generated Today
                     </p>
-                    <span className="text-sm font-bold text-cyan-300">
+                    <span className="text-sm font-bold text-indigo-300">
                       {decksToday} / {dailyLimitLabel}
                     </span>
                   </div>
@@ -439,7 +439,7 @@ export default function AccountPage() {
                         className={`h-full rounded-full transition-all duration-300 ${
                           usagePercent >= 100
                             ? "bg-red-400"
-                            : "bg-gradient-to-r from-fuchsia-500 to-cyan-400"
+                            : "bg-gradient-to-r from-indigo-500 to-indigo-400"
                         }`}
                         style={{ width: `${Math.max(usagePercent, 3)}%` }}
                       />
@@ -450,7 +450,7 @@ export default function AccountPage() {
                   {!hasGeneratedToday && (
                     <div className="mt-3 flex items-start gap-2 rounded-xl border border-white/10 bg-black/20 px-3.5 py-3">
                       <svg
-                        className="mt-0.5 h-4 w-4 flex-shrink-0 text-fuchsia-300"
+                        className="mt-0.5 h-4 w-4 flex-shrink-0 text-indigo-300"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -483,13 +483,13 @@ export default function AccountPage() {
             )}
             <Link
               href="/create"
-              className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
+              className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
             >
               {hasGeneratedToday ? "Create Another Deck" : "Create Your First Deck"}
             </Link>
             <Link
               href="/pricing"
-              className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10"
+              className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:border-indigo-400/30 hover:bg-white/10"
             >
               View Plans
             </Link>

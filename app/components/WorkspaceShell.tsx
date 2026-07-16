@@ -112,7 +112,7 @@ export function WorkspaceShell({
           whileHover={{ scale: 1.03, y: -1 }}
           whileTap={{ scale: 0.95 }}
           transition={pressSpring}
-          className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] left-4 flex items-center gap-2 rounded-full border border-cyan-300/25 bg-[#08080f]/90 px-4 py-3 text-sm font-bold text-cyan-100 shadow-[0_10px_40px_-14px_rgba(34,211,238,0.55)] backdrop-blur-md"
+          className="fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] left-4 flex items-center gap-2 rounded-full border border-indigo-300/25 bg-[#08080f]/90 px-4 py-3 text-sm font-bold text-indigo-100 shadow-[0_10px_40px_-14px_rgba(79,70,229,0.55)] backdrop-blur-md"
           style={{ zIndex: UI_Z_INDEX.floatingAction }}
         >
           <VyraGlyph />
@@ -148,7 +148,7 @@ function PaneHeader({ titleId, title, onClose }: { titleId: string; title: strin
 
 function VyraGlyph() {
   return (
-    <span className="flex h-5 w-5 items-center justify-center rounded-full border border-cyan-300/40 bg-gradient-to-br from-cyan-400/25 to-emerald-500/20">
+    <span className="flex h-5 w-5 items-center justify-center rounded-full border border-indigo-300/40 bg-gradient-to-br from-indigo-400/25 to-green-500/20">
       <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none">
         <circle cx="12" cy="12" r="9" stroke="#67E8F9" strokeWidth="1.6" />
         <circle cx="9" cy="11" r="1.3" fill="#22D3EE" />
@@ -207,7 +207,7 @@ export function ChoiceButton({
       transition={pressSpring}
       className={`w-full rounded-xl border px-4 py-3.5 text-left text-sm font-semibold transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50 ${
         selected
-          ? "border-cyan-300/50 bg-cyan-500/15 text-white"
+          ? "border-indigo-300/50 bg-indigo-500/15 text-white"
           : "border-white/10 bg-white/[0.03] text-white/80"
       } ${className || ""}`}
     >

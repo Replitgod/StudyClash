@@ -2,8 +2,8 @@
 
 import { forwardRef, useId } from "react";
 
-// Generalizes the `border-white/10 bg-black/30 ... focus:border-fuchsia-400/50
-// focus:ring-2 focus:ring-fuchsia-500/20` field pattern that was previously
+// Generalizes the `border-white/10 bg-black/30 ... focus:border-indigo-400/50
+// focus:ring-2 focus:ring-indigo-500/20` field pattern that was previously
 // hand-rolled per field (create page has ~10 of these). This is a thin
 // wrapper around a native <input> — every prop (value, defaultValue,
 // onChange, ref, etc.) passes straight through, so fields that are
@@ -39,7 +39,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         className={`w-full min-w-0 rounded-xl border bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-fast focus:ring-2 sm:py-3 sm:text-sm ${
           error
             ? "border-red-400/50 focus:border-red-400/60 focus:ring-red-500/20"
-            : "border-white/10 focus:border-fuchsia-400/50 focus:ring-fuchsia-500/20"
+            : "border-white/10 focus:border-indigo-400/50 focus:ring-indigo-500/20"
         } ${className || ""}`}
         {...rest}
       />

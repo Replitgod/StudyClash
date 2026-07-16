@@ -1,12 +1,12 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com";
 
 export function GET() {
   const body = [
-    "# StudyJoust",
+    "# StudyClash",
     "",
-    "StudyJoust is an AI study app that turns notes into competitive quiz battles with weak-topic analysis and rematch loops.",
+    "StudyClash is an AI study app that turns notes into competitive quiz battles with weak-topic analysis and rematch loops.",
     "",
     "## Canonical discovery pages",
     `- Home: ${siteUrl}/`,
@@ -19,7 +19,7 @@ export function GET() {
     `- Terms: ${siteUrl}/terms`,
     "",
     "## Product entity",
-    "- Entity: StudyJoust",
+    "- Entity: StudyClash",
     "- Type: Educational software / AI learning platform / study game",
     "- Primary category: SoftwareApplication (web)",
     "- Core use cases: AI study app, study battle, flashcard battle, competitive learning, SAT study app, AP study app",

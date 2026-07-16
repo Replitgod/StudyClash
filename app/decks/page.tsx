@@ -122,9 +122,9 @@ export default function DecksPage() {
     return (
       <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-          <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-          <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+          <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+          <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+          <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
         </div>
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -136,7 +136,7 @@ export default function DecksPage() {
         />
         <div className="relative z-10 flex min-h-dvh items-center justify-center px-4">
           <div className="flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-8 text-center backdrop-blur-sm">
-            <svg className="h-10 w-10 animate-spin text-fuchsia-400" fill="none" viewBox="0 0 24 24">
+            <svg className="h-10 w-10 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
             </svg>
@@ -151,9 +151,9 @@ export default function DecksPage() {
     return (
       <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-          <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-          <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+          <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+          <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+          <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
         </div>
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -165,8 +165,8 @@ export default function DecksPage() {
         />
         <div className="relative z-10 flex min-h-dvh items-center justify-center px-4 py-12">
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm sm:p-8">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-fuchsia-500/10">
-              <svg className="h-6 w-6 text-fuchsia-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500/10">
+              <svg className="h-6 w-6 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
               </svg>
             </div>
@@ -193,9 +193,9 @@ export default function DecksPage() {
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       {/* Ambient glow background */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
 
       {/* Grid texture overlay */}
@@ -210,14 +210,14 @@ export default function DecksPage() {
 
       <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-5xl flex-col items-center px-4 pt-12 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {/* Badge */}
-        <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
+        <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-indigo-300 backdrop-blur-sm sm:mb-6">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
           ALL DECKS
         </div>
 
         {/* Title */}
         <h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
-          <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
             Battle Decks
           </span>
         </h1>
@@ -229,7 +229,7 @@ export default function DecksPage() {
         {!isLoading && !loadError && decks.length > 0 && (
           <Link
             href="/create"
-            className="group relative mt-6 inline-flex w-full max-w-xs items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:mt-8 sm:w-auto sm:hover:scale-105"
+            className="group relative mt-6 inline-flex w-full max-w-xs items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 sm:mt-8 sm:w-auto sm:hover:scale-105"
           >
             <span className="relative z-10">+ Create New Deck</span>
             <span className="absolute inset-0 -translate-x-full bg-gradient-to-r from-white/0 via-white/25 to-white/0 transition-transform duration-700 group-hover:translate-x-full" />
@@ -278,7 +278,7 @@ export default function DecksPage() {
               </button>
               <Link
                 href="/demo/battle"
-                className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-2.5 text-sm font-bold text-white"
+                className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white"
               >
                 Try Demo Battle
               </Link>
@@ -289,9 +289,9 @@ export default function DecksPage() {
         {/* Empty state — motivates creating the first deck */}
         {!isLoading && !loadError && decks.length === 0 && (
           <div className="mt-12 flex w-full max-w-md flex-col items-center rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-10 text-center backdrop-blur-sm sm:mt-16 sm:px-8 sm:py-12">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500/20 to-indigo-500/20">
               <svg
-                className="h-7 w-7 text-fuchsia-300"
+                className="h-7 w-7 text-indigo-300"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -315,14 +315,14 @@ export default function DecksPage() {
 
             <Link
               href="/demo/battle"
-              className="mt-4 w-full rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-6 py-3.5 text-sm font-bold text-cyan-200 backdrop-blur-sm transition-colors duration-150 hover:border-cyan-300/40 hover:bg-cyan-500/15 sm:w-auto"
+              className="mt-4 w-full rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-6 py-3.5 text-sm font-bold text-indigo-200 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-indigo-500/15 sm:w-auto"
             >
               Try Demo Deck First
             </Link>
 
             <Link
               href="/create"
-              className="group relative mt-6 flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:w-auto sm:px-8 sm:hover:scale-105"
+              className="group relative mt-6 flex w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 sm:w-auto sm:px-8 sm:hover:scale-105"
             >
               <span className="relative z-10">Create Your First Deck</span>
               <svg
@@ -350,16 +350,16 @@ export default function DecksPage() {
         {/* Deck grid */}
         {!isLoading && !loadError && decks.length > 0 && (
           <div className="mt-10 grid w-full grid-cols-1 gap-4 sm:mt-12 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-            <div className="group flex flex-col justify-between rounded-2xl border border-cyan-400/25 bg-cyan-500/[0.06] p-5 backdrop-blur-sm transition-colors duration-200 hover:border-cyan-300/40 hover:bg-cyan-500/[0.1] sm:p-6">
+            <div className="group flex flex-col justify-between rounded-2xl border border-indigo-400/25 bg-indigo-500/[0.06] p-5 backdrop-blur-sm transition-colors duration-200 hover:border-indigo-300/40 hover:bg-indigo-500/[0.1] sm:p-6">
               <div className="min-w-0">
-                <span className="text-xs font-bold uppercase tracking-wider text-cyan-300">
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">
                   {DEMO_DECK.course_name}
                 </span>
                 <h3 className="mt-2 break-words text-lg font-bold leading-snug text-white">
                   {DEMO_DECK.title}
                 </h3>
 
-                <div className="mt-4 flex items-center gap-2 text-xs text-cyan-100/80">
+                <div className="mt-4 flex items-center gap-2 text-xs text-indigo-100/80">
                   <svg
                     className="h-4 w-4 flex-shrink-0"
                     fill="none"
@@ -380,7 +380,7 @@ export default function DecksPage() {
               <div className="mt-6 flex flex-col gap-2.5">
                 <Link
                   href="/demo/battle"
-                  className="group/btn relative flex items-center justify-center gap-2 overflow-hidden rounded-xl border border-cyan-300/40 bg-cyan-500/20 px-6 py-3.5 text-sm font-bold text-cyan-100 transition-transform duration-200 active:scale-95 sm:py-3 sm:hover:scale-[1.02]"
+                  className="group/btn relative flex items-center justify-center gap-2 overflow-hidden rounded-xl border border-indigo-300/40 bg-indigo-500/20 px-6 py-3.5 text-sm font-bold text-indigo-100 transition-transform duration-200 active:scale-95 sm:py-3 sm:hover:scale-[1.02]"
                 >
                   <span className="relative z-10">Play Demo Battle</span>
                   <svg
@@ -403,10 +403,10 @@ export default function DecksPage() {
             {decks.map((deck) => (
               <HoverLiftArticle
                 key={deck.id}
-                className="group flex flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm transition-colors duration-200 hover:border-fuchsia-400/30 hover:bg-white/[0.06] sm:p-6"
+                className="group flex flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm transition-colors duration-200 hover:border-indigo-400/30 hover:bg-white/[0.06] sm:p-6"
               >
                 <div className="min-w-0">
-                  <span className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
+                  <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">
                     {deck.course_name}
                   </span>
                   <h3 className="mt-2 break-words text-lg font-bold leading-snug text-white">
@@ -451,7 +451,7 @@ export default function DecksPage() {
                 <div className="mt-6 flex flex-col gap-2.5">
                   <Link
                     href={`/battle/${deck.id}`}
-                    className="group/btn relative flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.5)] transition-transform duration-200 active:scale-95 sm:py-3 sm:hover:scale-[1.02]"
+                    className="group/btn relative flex items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(79,70,229,0.5)] transition-transform duration-200 active:scale-95 sm:py-3 sm:hover:scale-[1.02]"
                   >
                     <span className="relative z-10">Play Battle</span>
                     <svg
@@ -485,7 +485,7 @@ export default function DecksPage() {
               type="button"
               onClick={() => void loadMoreDecks()}
               disabled={isLoadingMore}
-              className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white/85 backdrop-blur-sm transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white/85 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-400/30 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isLoadingMore ? "Loading more decks..." : "Load more decks"}
             </button>

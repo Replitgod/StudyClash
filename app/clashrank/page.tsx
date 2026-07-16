@@ -50,11 +50,11 @@ type ClashRankPayload = {
 const RANK_COLORS: Record<string, string> = {
   Bronze: "text-amber-300 border-amber-500/30 bg-amber-500/10",
   Silver: "text-slate-200 border-slate-400/30 bg-slate-400/10",
-  Gold: "text-yellow-300 border-yellow-400/30 bg-yellow-500/10",
-  Platinum: "text-cyan-200 border-cyan-400/30 bg-cyan-500/10",
-  Diamond: "text-sky-200 border-sky-400/30 bg-sky-500/10",
-  Champion: "text-fuchsia-200 border-fuchsia-400/30 bg-fuchsia-500/10",
-  Legend: "text-emerald-200 border-emerald-400/30 bg-emerald-500/10",
+  Gold: "text-amber-300 border-amber-400/30 bg-amber-500/10",
+  Platinum: "text-indigo-200 border-indigo-400/30 bg-indigo-500/10",
+  Diamond: "text-indigo-200 border-indigo-400/30 bg-indigo-500/10",
+  Champion: "text-indigo-200 border-indigo-400/30 bg-indigo-500/10",
+  Legend: "text-green-200 border-green-400/30 bg-green-500/10",
 };
 
 function rankStyle(rank: string): string {
@@ -65,9 +65,9 @@ function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[420px] w-[420px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[460px] w-[460px] rounded-full bg-emerald-500/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[420px] w-[420px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[460px] w-[460px] rounded-full bg-green-500/20 blur-[130px]" />
       </div>
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.06]"
@@ -134,7 +134,7 @@ function LeaderboardTable({
             <tbody>
               {entries.slice(0, 12).map((entry) => (
                 <tr key={`${title}-${entry.rank}-${entry.playerName}`} className="border-t border-white/10">
-                  <td className="py-2 pr-4 font-bold text-cyan-200">{entry.rank}</td>
+                  <td className="py-2 pr-4 font-bold text-indigo-200">{entry.rank}</td>
                   <td className="py-2 pr-4 text-white/90">{entry.playerName}</td>
                   <td className="py-2 pr-4">
                     <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${rankStyle(entry.clashRank)}`}>
@@ -220,7 +220,7 @@ export default function ClashRankPage() {
     return (
       <Background>
         <div className="flex min-h-[60vh] flex-col items-center justify-center">
-          <svg className="h-10 w-10 animate-spin text-fuchsia-400" fill="none" viewBox="0 0 24 24">
+          <svg className="h-10 w-10 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
           </svg>
@@ -259,12 +259,12 @@ export default function ClashRankPage() {
         <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-fuchsia-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-fuchsia-400" />
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-indigo-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
                 CLASHRANK
               </div>
               <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-                <span className="bg-gradient-to-r from-amber-300 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-amber-300 via-indigo-300 to-indigo-300 bg-clip-text text-transparent">
                   Rank By Improvement
                 </span>
               </h1>
@@ -277,7 +277,7 @@ export default function ClashRankPage() {
               <Link href="/dashboard" className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white/85">
                 Dashboard
               </Link>
-              <Link href="/mastery-map" className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-2.5 text-sm font-bold text-cyan-100">
+              <Link href="/mastery-map" className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-4 py-2.5 text-sm font-bold text-indigo-100">
                 Mastery Map
               </Link>
             </div>
@@ -341,7 +341,7 @@ export default function ClashRankPage() {
         </section>
 
         {scoreFactors && (
-          <section className="rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.06] p-4 backdrop-blur-sm sm:p-5">
+          <section className="rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.06] p-4 backdrop-blur-sm sm:p-5">
             <h2 className="text-lg font-black text-white">Why your rank is what it is</h2>
             <p className="mt-1 text-sm text-white/65">
               Grinding alone does not dominate ClashRank. Your gains in understanding and consistency matter more.
@@ -372,7 +372,7 @@ export default function ClashRankPage() {
                   {data.subjectRanks.map((item) => (
                     <tr key={item.subject} className="border-t border-white/10">
                       <td className="py-2 pr-4 text-white/90">{item.subject}</td>
-                      <td className="py-2 pr-4 font-bold text-cyan-200">#{item.rank}</td>
+                      <td className="py-2 pr-4 font-bold text-indigo-200">#{item.rank}</td>
                       <td className="py-2 pr-4">
                         <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${rankStyle(item.clashRank)}`}>
                           {item.clashRank}

@@ -16,7 +16,7 @@ const SCENES: Scene[] = [
     id: "upload",
     title: "Upload Notes",
     subtitle: "Drop PDF or paste class notes",
-    accent: "from-sky-400/40 to-cyan-400/10",
+    accent: "from-indigo-400/40 to-indigo-400/10",
     metric: "2 files in 12s",
     callout: "Drag and drop works on mobile and desktop",
   },
@@ -24,7 +24,7 @@ const SCENES: Scene[] = [
     id: "generate",
     title: "AI Creates Questions",
     subtitle: "Topic-aware, exam-style prompts",
-    accent: "from-violet-400/40 to-fuchsia-400/10",
+    accent: "from-indigo-400/40 to-indigo-400/10",
     metric: "15 questions ready",
     callout: "Auto-tuned for level and difficulty",
   },
@@ -32,7 +32,7 @@ const SCENES: Scene[] = [
     id: "battle-ai",
     title: "Battle an AI",
     subtitle: "Easy, Medium, Hard, Adaptive",
-    accent: "from-amber-400/40 to-orange-400/10",
+    accent: "from-amber-400/40 to-amber-400/10",
     metric: "No lobby",
     callout: "Tap start and answer instantly",
   },
@@ -40,7 +40,7 @@ const SCENES: Scene[] = [
     id: "live",
     title: "Battle Interface",
     subtitle: "Live score + realistic AI timings",
-    accent: "from-rose-400/40 to-orange-400/10",
+    accent: "from-red-400/40 to-amber-400/10",
     metric: "Round 3 / 5",
     callout: "See your pace vs AI pace",
   },
@@ -48,7 +48,7 @@ const SCENES: Scene[] = [
     id: "winning",
     title: "Victory",
     subtitle: "Instant result with streak feedback",
-    accent: "from-emerald-400/40 to-lime-400/10",
+    accent: "from-green-400/40 to-green-400/10",
     metric: "You 4 • AI 3",
     callout: "Clear winner with next-step actions",
   },
@@ -56,7 +56,7 @@ const SCENES: Scene[] = [
     id: "weak-topics",
     title: "Weak Topic Report",
     subtitle: "Find what to fix next",
-    accent: "from-cyan-400/40 to-blue-400/10",
+    accent: "from-indigo-400/40 to-indigo-400/10",
     metric: "3 key gaps",
     callout: "Target the exact concepts you missed",
   },
@@ -64,7 +64,7 @@ const SCENES: Scene[] = [
     id: "rematch",
     title: "One-click Rematch",
     subtitle: "Retry focused topics immediately",
-    accent: "from-fuchsia-400/40 to-purple-400/10",
+    accent: "from-indigo-400/40 to-indigo-400/10",
     metric: "Rematch in 1 tap",
     callout: "Momentum stays high after each round",
   },
@@ -82,10 +82,10 @@ function SceneVisual({ sceneId }: { sceneId: string }) {
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-bold text-white/90">chem-notes-unit4.pdf</p>
           <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/20">
-            <div className="h-full w-4/5 rounded-full bg-cyan-300 animate-[demoFill_2400ms_ease-out_forwards]" />
+            <div className="h-full w-4/5 rounded-full bg-indigo-300 animate-[demoFill_2400ms_ease-out_forwards]" />
           </div>
         </div>
-        <span className="flex-shrink-0 text-[11px] font-bold text-emerald-200">Ready</span>
+        <span className="flex-shrink-0 text-[11px] font-bold text-green-200">Ready</span>
       </div>
     );
   }
@@ -101,7 +101,7 @@ function SceneVisual({ sceneId }: { sceneId: string }) {
           >
             <div className="h-1.5 w-full rounded bg-white/30" />
             <div className="mt-1.5 h-1.5 w-2/3 rounded bg-white/20" />
-            <span className="mt-1.5 block text-[9px] font-bold uppercase tracking-wider text-emerald-200">✓ Ready</span>
+            <span className="mt-1.5 block text-[9px] font-bold uppercase tracking-wider text-green-200">✓ Ready</span>
           </div>
         ))}
       </div>
@@ -116,7 +116,7 @@ function SceneVisual({ sceneId }: { sceneId: string }) {
             key={letter}
             className={`rounded-lg border px-2.5 py-2 text-[11px] font-semibold ${
               i === 1
-                ? "border-emerald-300/60 bg-emerald-400/25 text-white"
+                ? "border-green-300/60 bg-green-400/25 text-white"
                 : "border-white/15 bg-white/5 text-white/70"
             }`}
           >
@@ -135,8 +135,8 @@ function SceneVisual({ sceneId }: { sceneId: string }) {
           <span>AI Opponent</span>
         </div>
         <div className="mt-1.5 flex h-2 overflow-hidden rounded-full bg-black/20">
-          <div className="h-full w-3/5 bg-cyan-300" />
-          <div className="h-full w-2/5 bg-fuchsia-400/80" />
+          <div className="h-full w-3/5 bg-indigo-300" />
+          <div className="h-full w-2/5 bg-indigo-400/80" />
         </div>
       </div>
     );
@@ -155,7 +155,7 @@ function SceneVisual({ sceneId }: { sceneId: string }) {
     return (
       <div className="col-span-12 flex flex-wrap gap-1.5">
         {["Cell Division 42%", "Enzymes 58%", "Genetics 65%"].map((label) => (
-          <span key={label} className="rounded-full border border-rose-300/40 bg-rose-500/15 px-2.5 py-1 text-[11px] font-bold text-rose-100">
+          <span key={label} className="rounded-full border border-red-300/40 bg-red-500/15 px-2.5 py-1 text-[11px] font-bold text-red-100">
             {label}
           </span>
         ))}
@@ -196,9 +196,9 @@ export default function AutoplayDemoRail() {
     >
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-rose-400" />
+          <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
           <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+          <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
         </div>
         <p className="text-xs font-semibold text-white/60">Premium autoplay demo · 18s loop</p>
       </div>
@@ -207,7 +207,7 @@ export default function AutoplayDemoRail() {
         className={`relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br ${SCENES[index].accent} p-5 sm:p-6`}
       >
         <div className="pointer-events-none absolute -top-16 right-0 h-40 w-40 rounded-full bg-white/10 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-0 h-32 w-32 rounded-full bg-cyan-300/20 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-0 left-0 h-32 w-32 rounded-full bg-indigo-300/20 blur-3xl" />
 
         <div
           key={SCENES[index].id}
@@ -227,13 +227,13 @@ export default function AutoplayDemoRail() {
 
           <div className="mt-5 flex items-center justify-between rounded-xl border border-white/20 bg-white/10 px-3 py-2">
             <span className="text-xs font-bold uppercase tracking-wider text-white/80">{SCENES[index].metric}</span>
-            <span className="h-2 w-2 animate-pulse rounded-full bg-cyan-200" />
+            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo-200" />
           </div>
 
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/20" aria-hidden="true">
             <div
               key={`progress-${SCENES[index].id}`}
-              className="h-full bg-cyan-300/90 animate-[demoFill_2600ms_linear_forwards]"
+              className="h-full bg-indigo-300/90 animate-[demoFill_2600ms_linear_forwards]"
             />
           </div>
         </div>
@@ -243,7 +243,7 @@ export default function AutoplayDemoRail() {
         {SCENES.map((scene, sceneIndex) => (
           <div
             key={scene.id}
-            className={`h-1.5 rounded-full transition-all duration-300 ${sceneIndex === index ? "bg-cyan-300" : "bg-white/20"}`}
+            className={`h-1.5 rounded-full transition-all duration-300 ${sceneIndex === index ? "bg-indigo-300" : "bg-white/20"}`}
             aria-hidden="true"
           />
         ))}

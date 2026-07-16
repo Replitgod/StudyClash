@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -83,9 +83,9 @@ function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -199,7 +199,7 @@ export default function ChallengeLandingPage() {
     return (
       <Background>
         <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm sm:p-8">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-cyan-300/40 border-t-cyan-300" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-indigo-300/40 border-t-cyan-300" />
           <p className="mt-4 text-sm text-white/45">Loading challenge...</p>
         </div>
       </Background>
@@ -247,13 +247,13 @@ export default function ChallengeLandingPage() {
   return (
     <Background>
       <div className="w-full max-w-2xl">
-        <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-200 backdrop-blur-sm sm:mb-6">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
+        <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-indigo-200 backdrop-blur-sm sm:mb-6">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-300" />
           Challenge Mode
         </div>
 
         <h1 className="break-words text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
-          <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
             {deck.title}
           </span>
         </h1>
@@ -262,53 +262,53 @@ export default function ChallengeLandingPage() {
         </p>
 
         {copyStatus && (
-          <div className="mt-4 rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-2 text-center text-sm font-semibold text-cyan-200">
+          <div className="mt-4 rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-4 py-2 text-center text-sm font-semibold text-indigo-200">
             {copyStatus}
           </div>
         )}
 
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">
             Challenger Score
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-white/10 bg-black/20 p-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Accuracy</p>
-              <p className="mt-2 text-2xl font-black text-cyan-300">{challengerAccuracy}%</p>
+              <p className="mt-2 text-2xl font-black text-indigo-300">{challengerAccuracy}%</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-black/20 p-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Battle Score</p>
-              <p className="mt-2 text-2xl font-black text-fuchsia-300">{match.score} pts</p>
+              <p className="mt-2 text-2xl font-black text-indigo-300">{match.score} pts</p>
             </div>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-cyan-400/20 bg-cyan-500/[0.06] p-4 text-sm leading-relaxed text-white/75">
-            StudyJoust turns practice into friendly competition. Open the same deck, try to beat the original score, and compare your result when you finish.
+          <div className="mt-5 rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.06] p-4 text-sm leading-relaxed text-white/75">
+            StudyClash turns practice into friendly competition. Open the same deck, try to beat the original score, and compare your result when you finish.
           </div>
 
           <div className="mt-5 flex flex-col gap-3 sm:flex-row">
             <Link
               href={battleLink}
-              className="inline-flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-5 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
+              className="inline-flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-5 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
             >
               Start the Same Battle
             </Link>
             <Link
               href={ghostBattleLink}
-              className="inline-flex flex-1 items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/15 px-5 py-3.5 text-sm font-bold text-cyan-100 transition-colors duration-150 hover:border-cyan-300/60 hover:bg-cyan-500/20"
+              className="inline-flex flex-1 items-center justify-center rounded-xl border border-indigo-400/30 bg-indigo-500/15 px-5 py-3.5 text-sm font-bold text-indigo-100 transition-colors duration-150 hover:border-indigo-300/60 hover:bg-indigo-500/20"
             >
               Battle Their Ghost
             </Link>
             <button
               type="button"
               onClick={handleCopyChallenge}
-              className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm font-bold text-white/85 transition-colors duration-150 hover:border-cyan-400/40 hover:bg-white/10"
+              className="inline-flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-5 py-3.5 text-sm font-bold text-white/85 transition-colors duration-150 hover:border-indigo-400/40 hover:bg-white/10"
             >
               Copy Challenge Message
             </button>
           </div>
 
-          <p className="mt-3 text-center text-xs text-cyan-100/80">
+          <p className="mt-3 text-center text-xs text-indigo-100/80">
             Ghost mode replays the challenger&apos;s recorded answers and pacing from their original run.
           </p>
 
@@ -320,7 +320,7 @@ export default function ChallengeLandingPage() {
         <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-5 text-sm text-white/65 backdrop-blur-sm">
           <p className="font-bold text-white/85">How it works</p>
           <p className="mt-2 leading-relaxed">
-            Pick up the same questions, finish the deck, and StudyJoust will show whether you beat the challenge score. No extra setup, no social accounts, just a quick contest.
+            Pick up the same questions, finish the deck, and StudyClash will show whether you beat the challenge score. No extra setup, no social accounts, just a quick contest.
           </p>
         </div>
       </div>

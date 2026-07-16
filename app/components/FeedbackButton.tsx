@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
-import { FLOATING_ACTION, UI_Z_INDEX } from "@/lib/uiLayout";
+import { OPEN_FEEDBACK_EVENT } from "@/lib/uiLayout";
 import { Modal } from "@/app/components/ui/Modal";
 
 const FEEDBACK_DRAFT_KEY = "studyjoust_feedback_draft";
@@ -16,6 +16,13 @@ const FEEDBACK_TEMPLATES = [
   "Feature request",
 ];
 
+// No floating launcher of its own -- opened from the "Feedback" icon inside
+// VYRA's panel (see VyraCoach.tsx's ChatPanel header) so there's exactly one
+// persistent floating control on screen instead of two competing for the
+// same corner. VYRA itself stays mounted during an active battle (it's a
+// coaching tool, not competing chrome), so this listens everywhere rather
+// than hiding on /battle/ -- hiding here would make VYRA's Feedback icon a
+// dead button mid-battle.
 export default function FeedbackButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
@@ -37,6 +44,12 @@ export default function FeedbackButton() {
     setIsSubmitted(false);
     setErrorMessage(null);
   };
+
+  useEffect(() => {
+    window.addEventListener(OPEN_FEEDBACK_EVENT, handleOpen);
+    return () => window.removeEventListener(OPEN_FEEDBACK_EVENT, handleOpen);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleClose = () => {
     setIsOpen(false);
@@ -104,38 +117,13 @@ export default function FeedbackButton() {
   };
 
   return (
-    <>
-      {/* Floating button */}
-      <button
-        onClick={handleOpen}
-        className={`${FLOATING_ACTION.base} ${FLOATING_ACTION.left} flex items-center gap-2 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-3 text-sm font-bold text-white shadow-[0_0_30px_-8px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-105`}
-        style={{ zIndex: UI_Z_INDEX.floatingAction }}
-        aria-label="Send feedback or report a wrong question"
-      >
-        <svg
-          className="h-4 w-4 flex-shrink-0"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"
-          />
-        </svg>
-        Feedback
-      </button>
-
-      {/* Modal */}
-      <Modal isOpen={isOpen} onClose={handleClose} title="Send Feedback">
+    <Modal isOpen={isOpen} onClose={handleClose} title="Send Feedback">
         {isSubmitted ? (
               /* Success state */
               <div className="mt-6 flex flex-col items-center py-6 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/10">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10">
                   <svg
-                    className="h-6 w-6 text-emerald-400"
+                    className="h-6 w-6 text-green-400"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -148,7 +136,7 @@ export default function FeedbackButton() {
                     />
                   </svg>
                 </div>
-                <p className="mt-3 text-sm font-semibold text-emerald-300">
+                <p className="mt-3 text-sm font-semibold text-green-300">
                   Thanks for the feedback!
                 </p>
                 <button
@@ -167,7 +155,7 @@ export default function FeedbackButton() {
                       key={template}
                       type="button"
                       onClick={() => handleTemplateClick(template)}
-                      className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/70 transition-colors duration-150 hover:border-fuchsia-400/35 hover:bg-white/10"
+                      className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/70 transition-colors duration-150 hover:border-indigo-400/35 hover:bg-white/10"
                     >
                       {template}
                     </button>
@@ -195,7 +183,7 @@ export default function FeedbackButton() {
                   placeholder="Bug reports, feature ideas, or anything else..."
                   required
                   rows={4}
-                  className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:text-sm"
+                  className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                 />
                 <div className="mt-1 flex items-center justify-between text-[11px] text-white/35">
                   <span>Tip: include what you expected and what happened.</span>
@@ -212,7 +200,7 @@ export default function FeedbackButton() {
                   <button
                     type="submit"
                     disabled={isSubmitting || !message.trim()}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:hover:scale-[1.02]"
+                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:hover:scale-[1.02]"
                   >
                     {isSubmitting ? (
                       <>
@@ -252,7 +240,6 @@ export default function FeedbackButton() {
                 </div>
               </form>
             )}
-      </Modal>
-    </>
+    </Modal>
   );
 }

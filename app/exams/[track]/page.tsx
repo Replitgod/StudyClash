@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 
 const TRACK_DETAILS: Record<
@@ -12,25 +12,25 @@ const TRACK_DETAILS: Record<
 > = {
   mcat: {
     title: "MCAT Tunnel",
-    monthly: "Included in Exam Tunnel ($9/mo)",
+    monthly: "Included in Exam Tunnel ($5/mo)",
     cue: "Passage-first scientific reasoning under timed pressure.",
     depth: "VYRA focuses on weak biochemical and conceptual chains over time.",
   },
   lsat: {
     title: "LSAT Tunnel",
-    monthly: "Included in Exam Tunnel ($9/mo)",
+    monthly: "Included in Exam Tunnel ($5/mo)",
     cue: "Logical flaw detection and argument structure speed loops.",
     depth: "VYRA targets recurring reasoning traps and pacing mistakes.",
   },
   nclex: {
     title: "NCLEX Tunnel",
-    monthly: "Included in Exam Tunnel ($9/mo)",
+    monthly: "Included in Exam Tunnel ($5/mo)",
     cue: "Clinical priority and safety judgment battle sequences.",
     depth: "VYRA highlights decision pathways and risk-based rematches.",
   },
   ap: {
     title: "AP Exams Tunnel",
-    monthly: "Included in Exam Tunnel ($9/mo)",
+    monthly: "Included in Exam Tunnel ($5/mo)",
     cue: "AP-style stem structures with classroom pacing and depth control.",
     depth: "VYRA converts weak standards into targeted rematch sets.",
   },
@@ -44,7 +44,7 @@ export default async function ExamTrackPage({
   const { track } = await params;
   const detail = TRACK_DETAILS[track] || {
     title: "Exam Tunnel",
-    monthly: "Included in Exam Tunnel ($9/mo)",
+    monthly: "Included in Exam Tunnel ($5/mo)",
     cue: "High-stakes format tuning and deep remediation.",
     depth: "VYRA keeps your weak-topic recovery loop active over time.",
   };
@@ -52,17 +52,17 @@ export default async function ExamTrackPage({
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[420px] w-[420px] rounded-full bg-cyan-500/20 blur-[120px]" />
+        <div className="absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[420px] w-[420px] rounded-full bg-indigo-500/20 blur-[120px]" />
       </div>
 
       <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-4xl flex-col px-4 pt-14 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
-        <Link href="/exams" className="w-fit text-sm font-semibold text-cyan-300">
+        <Link href="/exams" className="w-fit text-sm font-semibold text-indigo-300">
           &larr; Back to exam tunnels
         </Link>
 
         <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
-          <span className="bg-gradient-to-r from-fuchsia-300 via-white to-cyan-300 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
             {detail.title}
           </span>
         </h1>
@@ -75,7 +75,7 @@ export default async function ExamTrackPage({
         </p>
 
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-fuchsia-300">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-300">
             Recommended Tier
           </p>
           <p className="mt-2 text-3xl font-black text-white">{detail.monthly}</p>
@@ -86,7 +86,7 @@ export default async function ExamTrackPage({
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
             <Link
               href={`/create?track=${encodeURIComponent(track)}`}
-              className="flex-1 rounded-xl bg-gradient-to-r from-fuchsia-500 to-cyan-500 px-4 py-3 text-center text-sm font-bold text-white"
+              className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-500 px-4 py-3 text-center text-sm font-bold text-white"
             >
               Start {track.toUpperCase()} Drill
             </Link>

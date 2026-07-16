@@ -13,11 +13,11 @@ export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary: BRAND.indigo,
-  battle: `${GRADIENTS.battle} text-[#052538] shadow-glow-cyan-sm hover:shadow-glow-cyan-md`,
+  battle: `${GRADIENTS.battle} text-[#052538] shadow-glow-indigo-sm hover:shadow-glow-indigo-md`,
   secondary:
-    "border border-cyan-400/30 bg-cyan-500/10 text-cyan-100 hover:border-cyan-300/45 hover:bg-cyan-500/20",
+    "border border-indigo-400/30 bg-indigo-500/10 text-indigo-100 hover:border-indigo-300/45 hover:bg-indigo-500/20",
   success:
-    "border border-emerald-400/30 bg-emerald-500/10 text-emerald-100 hover:border-emerald-300/45 hover:bg-emerald-500/20",
+    "border border-green-400/30 bg-green-500/10 text-green-100 hover:border-green-300/45 hover:bg-green-500/20",
   ghost: "border border-white/10 bg-white/5 text-white/80 hover:border-white/20 hover:bg-white/10",
   danger: "border border-red-400/30 bg-red-500/10 text-red-300 hover:border-red-400/45 hover:bg-red-500/15",
   /** Solid white CTA for use on top of a colored/gradient section background. */

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import { createHash } from "node:crypto";
@@ -282,7 +282,7 @@ function buildPrompt(params: {
       : `- "explanation": 2-3 concise sentences. Include why the correct answer is right AND why the single most tempting wrong choice is wrong.`;
 
   return `
-You are a ${examTrack ? "high-stakes exam" : "quiz"} generator for a study app called StudyJoust.
+You are a ${examTrack ? "high-stakes exam" : "quiz"} generator for a study app called StudyClash.
 
 Read the notes below and create exactly ${totalQuestions} ${
     isTrueFalse ? "true/false" : "multiple-choice"
@@ -1090,7 +1090,7 @@ function buildOpenResponsePrompt(params: {
   return `
 You are a study-app quiz generator creating ${
     reasoningFormat === "step_by_step" ? "step-by-step reasoning problems" : "argumentation prompts"
-  } for a battle mode called StudyJoust that deliberately rewards slow, careful reasoning instead of fast recall.
+  } for a battle mode called StudyClash that deliberately rewards slow, careful reasoning instead of fast recall.
 
 Read the notes below and create exactly ${totalQuestions} prompts. Every prompt must be answerable using ONLY the information in the notes below -- do not introduce outside facts.
 ${gradeLevelLine}${topicFocusLine}
@@ -1673,7 +1673,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json(
             {
               error:
-                "Free Beta limit reached: 3 battles today. Upgrade to Pro Premium for unlimited battles.",
+                "Free Beta limit reached: 3 battles today. Upgrade to Pro Individual for unlimited battles.",
             },
             { status: 429 }
           );
@@ -1699,7 +1699,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json(
             {
               error:
-                "Free Beta limit reached: 2 PDF uploads today. Upgrade to Pro Premium for unlimited uploads.",
+                "Free Beta limit reached: 2 PDF uploads today. Upgrade to Pro Individual for unlimited uploads.",
             },
             { status: 429 }
           );

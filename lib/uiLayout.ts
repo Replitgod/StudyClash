@@ -12,17 +12,21 @@ export const UI_Z_INDEX = {
   skipLink: 90,
 } as const;
 
+// Feedback is opened from a menu item inside the VYRA panel rather than its
+// own floating launcher (see FeedbackButton.tsx/VyraCoach.tsx) -- one
+// persistent floating control (VYRA) instead of two competing for the same
+// corner. FeedbackButton listens for this on `window`.
+export const OPEN_FEEDBACK_EVENT = "studyclash:open-feedback";
+
 // Shared placement rules for all floating actions.
 // Keep these centralized so VYRA/Feedback cannot drift into overlap.
 export const FLOATING_ACTION = {
   base: "fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] min-h-11",
   // A second, higher row reserved for elements that would otherwise share
-  // the same row as FeedbackButton (bottom-left) and the VYRA launcher
-  // (bottom-right) below md. FloatingBattleCTA is near-full-width on mobile
-  // (`w-[calc(100%-1.5rem)]`), so it cannot safely share `base`'s row with
-  // either of them -- it gets its own row, stacked above.
+  // the VYRA launcher's row (bottom-right) below md. FloatingBattleCTA is
+  // near-full-width on mobile (`w-[calc(100%-1.5rem)]`), so it cannot safely
+  // share `base`'s row -- it gets its own row, stacked above.
   raisedRow: "fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] min-h-11",
-  left: "left-4 sm:left-6",
   right: "right-4",
   desktopRightRail:
     "md:bottom-auto md:right-4 md:top-1/2 md:-translate-y-1/2 md:flex-col md:gap-1.5 md:rounded-2xl md:px-2.5 md:py-3",

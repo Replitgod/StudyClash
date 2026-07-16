@@ -44,7 +44,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(function 
         className={`w-full min-w-0 resize-y rounded-xl border bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-fast focus:ring-2 sm:py-3 sm:text-sm ${
           error
             ? "border-red-400/50 focus:border-red-400/60 focus:ring-red-500/20"
-            : "border-white/10 focus:border-fuchsia-400/50 focus:ring-fuchsia-500/20"
+            : "border-white/10 focus:border-indigo-400/50 focus:ring-indigo-500/20"
         } ${className || ""}`}
         {...rest}
       />

@@ -2,14 +2,14 @@ export type BadgeTone = "neutral" | "cyan" | "fuchsia" | "emerald" | "violet" | 
 
 const TONE_CLASSES: Record<BadgeTone, string> = {
   neutral: "border-white/20 bg-white/5 text-white/60",
-  cyan: "border-cyan-300/40 bg-cyan-500/15 text-cyan-200",
-  fuchsia: "border-fuchsia-300/40 bg-fuchsia-500/15 text-fuchsia-200",
-  emerald: "border-emerald-300/40 bg-emerald-500/15 text-emerald-200",
-  violet: "border-violet-300/40 bg-violet-500/15 text-violet-200",
+  cyan: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
+  fuchsia: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
+  emerald: "border-green-300/40 bg-green-500/15 text-green-200",
+  violet: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
   amber: "border-amber-300/40 bg-amber-500/15 text-amber-200",
   danger: "border-red-300/40 bg-red-500/15 text-red-200",
   indigo: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
-  sky: "border-sky-300/40 bg-sky-500/15 text-sky-200",
+  sky: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
 };
 
 const SIZE_CLASSES = {

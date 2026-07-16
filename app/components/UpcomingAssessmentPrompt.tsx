@@ -99,8 +99,8 @@ export default function UpcomingAssessmentPrompt({ matchId, deckTitle }: Props) 
   if (step === "dismissed") return null;
 
   return (
-    <div className="mt-6 rounded-2xl border border-violet-400/25 bg-violet-500/[0.06] p-5 backdrop-blur-sm sm:p-6">
-      <p className="text-xs font-bold uppercase tracking-[0.25em] text-violet-300">Coming up</p>
+    <div className="mt-6 rounded-2xl border border-indigo-400/25 bg-indigo-500/[0.06] p-5 backdrop-blur-sm sm:p-6">
+      <p className="text-xs font-bold uppercase tracking-[0.25em] text-indigo-300">Coming up</p>
 
       {step === "select" && (
         <>
@@ -111,7 +111,7 @@ export default function UpcomingAssessmentPrompt({ matchId, deckTitle }: Props) 
                 key={option.value}
                 type="button"
                 onClick={() => handleSelect(option.value)}
-                className="rounded-xl border border-white/15 bg-white/5 px-3.5 py-2 text-sm font-bold text-white/85 hover:border-violet-300/40 hover:bg-violet-500/10"
+                className="rounded-xl border border-white/15 bg-white/5 px-3.5 py-2 text-sm font-bold text-white/85 hover:border-indigo-300/40 hover:bg-indigo-500/10"
               >
                 {option.label}
               </button>
@@ -179,8 +179,8 @@ export default function UpcomingAssessmentPrompt({ matchId, deckTitle }: Props) 
         <>
           <h3 className="mt-2 text-lg font-bold text-white">Your plan is ready</h3>
           {nextBestAction && (
-            <div className="mt-3 rounded-xl border border-cyan-400/25 bg-cyan-500/10 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-300">Your Next Best Action</p>
+            <div className="mt-3 rounded-xl border border-indigo-400/25 bg-indigo-500/10 p-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Your Next Best Action</p>
               <p className="mt-1 text-sm font-semibold text-white">{nextBestAction.title}</p>
               <p className="mt-1 text-xs text-white/60">{nextBestAction.description}</p>
             </div>
@@ -188,7 +188,7 @@ export default function UpcomingAssessmentPrompt({ matchId, deckTitle }: Props) 
           {planId && (
             <Link
               href={`/study-plans/${planId}`}
-              className="mt-4 inline-flex rounded-xl bg-gradient-to-r from-violet-500 to-cyan-400 px-4 py-2.5 text-sm font-bold text-white"
+              className="mt-4 inline-flex rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-400 px-4 py-2.5 text-sm font-bold text-white"
             >
               Open Study Plan
             </Link>

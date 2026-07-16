@@ -27,7 +27,7 @@ export function EmptyState({
       className={`flex flex-col items-center gap-3 rounded-2xl ${SURFACE.neutralSubtle} px-6 py-10 text-center backdrop-blur-sm ${className || ""}`}
     >
       {icon && (
-        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-cyan-300/25 bg-cyan-500/10 text-cyan-200">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-indigo-300/25 bg-indigo-500/10 text-indigo-200">
           {icon}
         </div>
       )}
@@ -36,7 +36,7 @@ export function EmptyState({
       {actionLabel && actionHref && (
         <Link
           href={actionHref}
-          className="mt-2 inline-flex items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-5 py-2.5 text-sm font-bold text-cyan-100 transition-colors duration-fast hover:border-cyan-300/45 hover:bg-cyan-500/20"
+          className="mt-2 inline-flex items-center justify-center rounded-xl border border-indigo-400/30 bg-indigo-500/10 px-5 py-2.5 text-sm font-bold text-indigo-100 transition-colors duration-fast hover:border-indigo-300/45 hover:bg-indigo-500/20"
         >
           {actionLabel}
         </Link>
@@ -45,7 +45,7 @@ export function EmptyState({
         <button
           type="button"
           onClick={onAction}
-          className="mt-2 inline-flex items-center justify-center rounded-xl border border-cyan-400/30 bg-cyan-500/10 px-5 py-2.5 text-sm font-bold text-cyan-100 transition-colors duration-fast hover:border-cyan-300/45 hover:bg-cyan-500/20"
+          className="mt-2 inline-flex items-center justify-center rounded-xl border border-indigo-400/30 bg-indigo-500/10 px-5 py-2.5 text-sm font-bold text-indigo-100 transition-colors duration-fast hover:border-indigo-300/45 hover:bg-indigo-500/20"
         >
           {actionLabel}
         </button>

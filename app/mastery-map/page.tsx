@@ -106,9 +106,9 @@ function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-emerald-500/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-green-500/20 blur-[130px]" />
       </div>
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.06]"
@@ -183,7 +183,7 @@ function getReviewBadgeStyle(urgency: ReviewUrgency): string {
   if (urgency === "overdue") return "border-red-400/40 bg-red-500/15 text-red-200";
   if (urgency === "due_soon") return "border-amber-400/40 bg-amber-500/15 text-amber-200";
   if (urgency === "unscheduled") return "border-white/15 bg-white/5 text-white/50";
-  return "border-cyan-400/30 bg-cyan-500/10 text-cyan-200";
+  return "border-indigo-400/30 bg-indigo-500/10 text-indigo-200";
 }
 
 function getMistakeLabel(raw: string | undefined): string {
@@ -199,11 +199,11 @@ function getMistakeLabel(raw: string | undefined): string {
 
 function getStatusStyle(status: TopicStatus): string {
   if (status === "mastered") {
-    return "border-emerald-400/30 bg-emerald-500/[0.08] text-emerald-100";
+    return "border-green-400/30 bg-green-500/[0.08] text-green-100";
   }
 
   if (status === "improving") {
-    return "border-cyan-400/30 bg-cyan-500/[0.08] text-cyan-100";
+    return "border-indigo-400/30 bg-indigo-500/[0.08] text-indigo-100";
   }
 
   return "border-amber-400/30 bg-amber-500/[0.08] text-amber-100";
@@ -677,12 +677,12 @@ function MasteryMapPageContent() {
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-cyan-200">
-                <span className="h-1.5 w-1.5 rounded-full bg-cyan-300" />
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-indigo-200">
+                <span className="h-1.5 w-1.5 rounded-full bg-indigo-300" />
                 MASTERY MAP
               </div>
               <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-                <span className="bg-gradient-to-r from-cyan-300 via-fuchsia-300 to-emerald-300 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-indigo-300 via-indigo-300 to-green-300 bg-clip-text text-transparent">
                   Skill Tree Command Center
                 </span>
               </h1>
@@ -694,7 +694,7 @@ function MasteryMapPageContent() {
               <Link href="/dashboard" className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white/85">
                 Dashboard
               </Link>
-              <Link href="/decks" className="rounded-xl border border-cyan-400/25 bg-cyan-500/10 px-4 py-2.5 text-sm font-bold text-cyan-100">
+              <Link href="/decks" className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-4 py-2.5 text-sm font-bold text-indigo-100">
                 Choose Deck
               </Link>
             </div>
@@ -738,17 +738,17 @@ function MasteryMapPageContent() {
               >
                 <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <p className="text-[10px] uppercase tracking-[0.23em] text-cyan-200/90">{subject.subjectName}</p>
+                    <p className="text-[10px] uppercase tracking-[0.23em] text-indigo-200/90">{subject.subjectName}</p>
                     <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">{subject.title}</h2>
                     <p className="mt-2 text-sm text-white/60">
                       Mastery {subject.masteryPercent}% · Mastered {subject.masteredTopics.length} · Improving {subject.improvingTopics.length} · Weak {subject.weakTopics.length}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-200">
+                    <span className="rounded-full border border-green-400/30 bg-green-500/10 px-3 py-1 text-xs font-bold text-green-200">
                       Mastered {subject.masteredTopics.length}
                     </span>
-                    <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-3 py-1 text-xs font-bold text-cyan-200">
+                    <span className="rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-xs font-bold text-indigo-200">
                       Improving {subject.improvingTopics.length}
                     </span>
                     <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-200">
@@ -758,7 +758,7 @@ function MasteryMapPageContent() {
                       className={`rounded-full border px-3 py-1 text-xs font-bold ${
                         subject.bossLocked
                           ? "border-red-400/30 bg-red-500/10 text-red-200"
-                          : "border-fuchsia-400/30 bg-fuchsia-500/10 text-fuchsia-200"
+                          : "border-indigo-400/30 bg-indigo-500/10 text-indigo-200"
                       }`}
                     >
                       {subject.bossLocked ? "Boss Locked" : "Boss Ready"}
@@ -768,7 +768,7 @@ function MasteryMapPageContent() {
 
                 <div className="mt-4 grid gap-4 xl:grid-cols-[2fr,1fr]">
                   <div className="relative overflow-hidden rounded-xl border border-white/10 bg-black/25 p-4">
-                    <div className="pointer-events-none absolute left-6 right-6 top-16 hidden h-[2px] bg-gradient-to-r from-cyan-400/50 via-fuchsia-400/40 to-emerald-400/50 lg:block" />
+                    <div className="pointer-events-none absolute left-6 right-6 top-16 hidden h-[2px] bg-gradient-to-r from-indigo-400/50 via-indigo-400/40 to-green-400/50 lg:block" />
                     <div className="mb-3 flex items-center justify-between">
                       <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/50">Topic Skill Tree</p>
                       <p className="text-xs text-white/45">Node color = mastery lane</p>
@@ -820,7 +820,7 @@ function MasteryMapPageContent() {
                           <div className="mt-3 grid grid-cols-2 gap-2">
                             <Link
                               href={topic.practiceHref}
-                              className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-2 text-center text-[11px] font-bold text-cyan-100"
+                              className="rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-2.5 py-2 text-center text-[11px] font-bold text-indigo-100"
                             >
                               Practice this topic
                             </Link>
@@ -833,13 +833,13 @@ function MasteryMapPageContent() {
                             <button
                               type="button"
                               onClick={() => handleAskVyra(subject, topic)}
-                              className="rounded-lg border border-fuchsia-400/30 bg-fuchsia-500/10 px-2.5 py-2 text-[11px] font-bold text-fuchsia-100"
+                              className="rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-2.5 py-2 text-[11px] font-bold text-indigo-100"
                             >
                               Ask VYRA
                             </button>
                             <Link
                               href={topic.bossHref}
-                              className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-2 text-center text-[11px] font-bold text-emerald-100"
+                              className="rounded-lg border border-green-400/30 bg-green-500/10 px-2.5 py-2 text-center text-[11px] font-bold text-green-100"
                             >
                               Start Boss Battle
                             </Link>
@@ -868,12 +868,12 @@ function MasteryMapPageContent() {
                     )}
 
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-fuchsia-200">Locked boss battles</p>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-200">Locked boss battles</p>
                       <p className="mt-1 text-xs text-white/75">{subject.lockedBossReason}</p>
                     </div>
 
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-cyan-200">Recommended next battles</p>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-200">Recommended next battles</p>
                       <div className="mt-2 flex flex-col gap-2">
                         {subject.recommendedNextBattles.map((battle) => (
                           <Link
@@ -889,7 +889,7 @@ function MasteryMapPageContent() {
                     </div>
 
                     <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-200">Mastery percentage</p>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-green-200">Mastery percentage</p>
                       <p className="mt-1 text-2xl font-black text-white">{subject.masteryPercent}%</p>
                       <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
                         <motion.div
@@ -897,7 +897,7 @@ function MasteryMapPageContent() {
                           whileInView={{ width: `${subject.masteryPercent}%` }}
                           viewport={{ once: true }}
                           transition={{ duration: 0.9, ease: "easeOut", delay: 0.15 }}
-                          className="h-full rounded-full bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-emerald-400"
+                          className="h-full rounded-full bg-gradient-to-r from-indigo-400 via-indigo-400 to-green-400"
                         />
                       </div>
                     </div>
@@ -945,7 +945,7 @@ function MasteryMapFallback() {
   return (
     <Background>
       <div className="flex min-h-[60vh] flex-col items-center justify-center">
-        <svg className="h-10 w-10 animate-spin text-cyan-400" fill="none" viewBox="0 0 24 24">
+        <svg className="h-10 w-10 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24">
           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
         </svg>

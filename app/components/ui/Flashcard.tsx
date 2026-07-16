@@ -55,7 +55,7 @@ export function Flashcard({ front, back, className, flipped, onFlip }: Flashcard
           {front}
         </div>
         <div
-          className="absolute inset-0 h-full w-full rounded-2xl border border-fuchsia-400/20 bg-fuchsia-500/[0.06] p-5 backdrop-blur-sm sm:p-6"
+          className="absolute inset-0 h-full w-full rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.06] p-5 backdrop-blur-sm sm:p-6"
           style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}
         >
           {back}

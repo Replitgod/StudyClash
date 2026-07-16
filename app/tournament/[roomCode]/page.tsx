@@ -44,9 +44,9 @@ function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -80,7 +80,7 @@ function MatchCard({
     <div
       className={`rounded-xl border p-3.5 text-sm ${
         match.status === "complete"
-          ? "border-emerald-400/25 bg-emerald-500/[0.04]"
+          ? "border-green-400/25 bg-green-500/[0.04]"
           : "border-white/10 bg-white/[0.03]"
       }`}
     >
@@ -91,12 +91,12 @@ function MatchCard({
           <div
             key={i}
             className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 ${
-              isWinner ? "bg-emerald-500/10" : ""
+              isWinner ? "bg-green-500/10" : ""
             }`}
           >
             <span
               className={`truncate font-semibold ${
-                isWinner ? "text-emerald-200" : "text-white/80"
+                isWinner ? "text-green-200" : "text-white/80"
               }`}
             >
               {player?.name || (match.status === "bye" ? "—" : "TBD")}
@@ -118,7 +118,7 @@ function MatchCard({
       {isInvolved && match.status === "pending" && deckId && (
         <Link
           href={`/battle/${deckId}`}
-          className="mt-2 block rounded-lg bg-gradient-to-r from-fuchsia-500 to-violet-600 px-3 py-2 text-center text-xs font-bold text-white"
+          className="mt-2 block rounded-lg bg-gradient-to-r from-indigo-500 to-indigo-600 px-3 py-2 text-center text-xs font-bold text-white"
         >
           Play Your Match
         </Link>
@@ -262,7 +262,7 @@ export default function TournamentPage() {
   return (
     <Background>
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-sm sm:p-8">
-        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-cyan-300">
+        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">
           Tournament Bracket
         </p>
         <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">
@@ -312,7 +312,7 @@ export default function TournamentPage() {
                   type="button"
                   onClick={handleStart}
                   disabled={isStarting || state.members.length < 2}
-                  className="mt-4 w-full rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  className="mt-4 w-full rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-5 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isStarting
                     ? "Starting..."

@@ -27,6 +27,8 @@ export type AnalyticsEventName =
   | "results_rival_battle_clicked"
   | "results_review_missed_clicked"
   | "results_boss_battle_clicked"
+  | "results_challenge_friend_clicked"
+  | "results_return_to_dashboard_clicked"
   | "classroom_room_created"
   | "classroom_invite_copied"
   | "classroom_join_attempted"

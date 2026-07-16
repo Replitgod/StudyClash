@@ -529,9 +529,9 @@ function getPreferredDisplayName(profile: Profile | null, user: User | null): st
 
 // Rank badge labels/styles for the top 3 leaderboard spots
 const RANK_BADGES: Record<number, { label: string; color: string }> = {
-  0: { label: "Champion", color: "from-yellow-300 to-amber-500" },
+  0: { label: "Champion", color: "from-amber-300 to-amber-500" },
   1: { label: "Runner Up", color: "from-slate-300 to-slate-400" },
-  2: { label: "Top 3", color: "from-orange-400 to-amber-700" },
+  2: { label: "Top 3", color: "from-amber-400 to-amber-700" },
 };
 
 // Defined OUTSIDE the page component so it keeps a stable identity across
@@ -540,9 +540,9 @@ function Background({ children }: { children: React.ReactNode }) {
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-fuchsia-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-cyan-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-violet-600/20 blur-[130px]" />
+        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
+        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
       </div>
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.07]"
@@ -1827,7 +1827,7 @@ export default function BattlePage() {
     return (
       <Background>
         <svg
-          className="h-10 w-10 animate-spin text-fuchsia-400"
+          className="h-10 w-10 animate-spin text-indigo-400"
           fill="none"
           viewBox="0 0 24 24"
         >
@@ -1870,7 +1870,7 @@ export default function BattlePage() {
             </Link>
             <Link
               href="/create"
-              className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-4 py-2.5 text-sm font-bold text-white"
+              className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white"
             >
               Create New Deck
             </Link>
@@ -1898,14 +1898,14 @@ export default function BattlePage() {
     return (
       <Background>
         {effectiveStudyMode !== "battle" && (
-          <div className="mb-4 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200 backdrop-blur-sm sm:mb-5">
+          <div className="mb-4 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200 backdrop-blur-sm sm:mb-5">
             {getStudyModeLabel(effectiveStudyMode)}
           </div>
         )}
 
         {requestedPracticeTopics.length > 0 && (
-          <div className="mb-4 flex max-w-full flex-wrap items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-cyan-200 backdrop-blur-sm sm:mb-5">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
+          <div className="mb-4 flex max-w-full flex-wrap items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-indigo-200 backdrop-blur-sm sm:mb-5">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-300" />
             Practice Weak Topics
             <span className="normal-case tracking-normal text-white/70">
               {requestedPracticeTopics.join(" · ")}
@@ -1913,13 +1913,13 @@ export default function BattlePage() {
           </div>
         )}
 
-        <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-fuchsia-300 backdrop-blur-sm sm:mb-6">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-fuchsia-400" />
+        <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-indigo-300 backdrop-blur-sm sm:mb-6">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
           BATTLE READY
         </div>
 
         {challengeFromMatchId && challengeBaseScore && (
-          <div className="mb-4 w-full max-w-sm rounded-xl border border-cyan-400/20 bg-cyan-500/10 px-4 py-3 text-center text-xs font-semibold text-cyan-100 backdrop-blur-sm sm:mb-5">
+          <div className="mb-4 w-full max-w-sm rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-4 py-3 text-center text-xs font-semibold text-indigo-100 backdrop-blur-sm sm:mb-5">
             Challenge mode enabled. Beat the original score of {challengeBaseScore}%.
           </div>
         )}
@@ -1931,9 +1931,9 @@ export default function BattlePage() {
         )}
 
         {effectiveStudyMode === "boss" && (
-          <div className="mb-4 w-full max-w-xl rounded-2xl border border-fuchsia-400/25 bg-gradient-to-r from-fuchsia-500/10 via-black/30 to-cyan-500/10 px-4 py-3.5 sm:mb-6">
+          <div className="mb-4 w-full max-w-xl rounded-2xl border border-indigo-400/25 bg-gradient-to-r from-indigo-500/10 via-black/30 to-indigo-500/10 px-4 py-3.5 sm:mb-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-fuchsia-200">
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-indigo-200">
                 Boss Battle Protocol
               </p>
               {isBossLoading ? (
@@ -1941,7 +1941,7 @@ export default function BattlePage() {
                   Checking unlock status...
                 </span>
               ) : bossReadiness?.unlocked ? (
-                <span className="rounded-full border border-emerald-400/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300">
+                <span className="rounded-full border border-green-400/30 bg-green-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-green-300">
                   Unlocked
                 </span>
               ) : (
@@ -1968,7 +1968,7 @@ export default function BattlePage() {
             )}
 
             {bossReadiness && bossReadiness.strongTopics.length > 0 && (
-              <p className="mt-1 text-xs text-emerald-200/85">
+              <p className="mt-1 text-xs text-green-200/85">
                 Strong topics: {bossReadiness.strongTopics.join(" · ")}
               </p>
             )}
@@ -1976,12 +1976,12 @@ export default function BattlePage() {
         )}
 
         {effectiveStudyMode === "rival" && rivalReadiness && (
-          <div className="mb-4 w-full max-w-xl rounded-2xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/12 via-black/30 to-fuchsia-500/10 px-4 py-3.5 sm:mb-6">
+          <div className="mb-4 w-full max-w-xl rounded-2xl border border-indigo-400/25 bg-gradient-to-r from-indigo-500/12 via-black/30 to-indigo-500/10 px-4 py-3.5 sm:mb-6">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-bold uppercase tracking-[0.25em] text-cyan-200">
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-indigo-200">
                 {isGhostRival ? "Ghost Rival Protocol" : "Study Rival Protocol"}
               </p>
-              <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-fuchsia-200">
+              <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-200">
                 {isGhostRival ? "Recorded Run" : `Rank ${rivalReadiness.rank}`}
               </span>
             </div>
@@ -2012,12 +2012,12 @@ export default function BattlePage() {
             <p className="mt-2 text-xs text-red-200/85">
               Weak-topic focus: {rivalReadiness.weakTopics.length > 0 ? rivalReadiness.weakTopics.slice(0, 3).join(" · ") : "Building baseline focus from this run."}
             </p>
-            <p className="mt-1 text-xs text-emerald-200/85">
+            <p className="mt-1 text-xs text-green-200/85">
               Rival strengths: {rivalReadiness.rivalStrengths.join(" · ")}
             </p>
 
             {rivalReadiness.nextUnlock && (
-              <p className="mt-2 text-xs text-cyan-100/90">
+              <p className="mt-2 text-xs text-indigo-100/90">
                 Unlock next rival ({rivalReadiness.nextUnlock.rank}): {rivalReadiness.nextUnlock.requirement}
               </p>
             )}
@@ -2025,7 +2025,7 @@ export default function BattlePage() {
         )}
 
         <h1 className="max-w-full text-center text-3xl font-black tracking-tight break-words sm:text-4xl md:text-5xl">
-          <span className="bg-gradient-to-r from-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
             {deck.title}
           </span>
         </h1>
@@ -2033,7 +2033,7 @@ export default function BattlePage() {
           {deck.course_name} · {questions.length} questions
         </p>
 
-        <div className="mt-4 w-full max-w-xl rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] px-4 py-3 text-center text-xs text-cyan-100/90">
+        <div className="mt-4 w-full max-w-xl rounded-xl border border-indigo-400/20 bg-indigo-500/[0.06] px-4 py-3 text-center text-xs text-indigo-100/90">
           Flow: Battle now &rarr; review weak topics in results &rarr; run a focused rematch &rarr; improve your score.
         </div>
 
@@ -2042,7 +2042,7 @@ export default function BattlePage() {
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
                 <p className="text-[10px] uppercase tracking-wider text-white/45">Level</p>
-                <p className="mt-1 text-base font-black text-cyan-200">{engagementPreview.level}</p>
+                <p className="mt-1 text-base font-black text-indigo-200">{engagementPreview.level}</p>
               </div>
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
                 <p className="text-[10px] uppercase tracking-wider text-white/45">Day Streak</p>
@@ -2050,27 +2050,27 @@ export default function BattlePage() {
               </div>
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
                 <p className="text-[10px] uppercase tracking-wider text-white/45">Daily Goal</p>
-                <p className="mt-1 text-base font-black text-emerald-200">{engagementPreview.dailyBattles}/2</p>
+                <p className="mt-1 text-base font-black text-green-200">{engagementPreview.dailyBattles}/2</p>
               </div>
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
                 <p className="text-[10px] uppercase tracking-wider text-white/45">Rank</p>
-                <p className="mt-1 text-base font-black text-fuchsia-200">{engagementPreview.rankLabel}</p>
+                <p className="mt-1 text-base font-black text-indigo-200">{engagementPreview.rankLabel}</p>
               </div>
             </div>
 
-            <div className="mt-3 rounded-xl border border-cyan-400/20 bg-cyan-500/[0.08] px-3 py-2.5">
-              <div className="flex items-center justify-between gap-3 text-[11px] font-semibold text-cyan-100">
+            <div className="mt-3 rounded-xl border border-indigo-400/20 bg-indigo-500/[0.08] px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3 text-[11px] font-semibold text-indigo-100">
                 <span>{engagementPreview.seasonLabel} progression</span>
                 <span>{Math.round(engagementPreview.seasonProgressPercent)}%</span>
               </div>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-black/30">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300 transition-all duration-700"
+                  className="h-full rounded-full bg-gradient-to-r from-indigo-300 to-green-300 transition-all duration-700"
                   style={{ width: `${Math.max(4, engagementPreview.seasonProgressPercent)}%` }}
                 />
               </div>
               {engagementPreview.nextMilestoneXp !== null && (
-                <p className="mt-2 text-[11px] text-cyan-100/80">
+                <p className="mt-2 text-[11px] text-indigo-100/80">
                   Next XP milestone: {engagementPreview.nextMilestoneXp}
                 </p>
               )}
@@ -2083,7 +2083,7 @@ export default function BattlePage() {
                   {engagementPreview.recentHistory.map((entry) => (
                     <span
                       key={entry.matchId}
-                      className="rounded-full border border-cyan-400/25 bg-cyan-500/10 px-2.5 py-1 text-[10px] font-semibold text-cyan-100"
+                      className="rounded-full border border-indigo-400/25 bg-indigo-500/10 px-2.5 py-1 text-[10px] font-semibold text-indigo-100"
                     >
                       {entry.score} pts · {entry.accuracy}%
                     </span>
@@ -2096,7 +2096,7 @@ export default function BattlePage() {
 
         <div className="mt-8 w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:mt-10 sm:p-6">
           {accountDisplayName && !isEditingPlayerName ? (
-            <div className="rounded-xl border border-cyan-400/20 bg-cyan-500/[0.06] px-4 py-3.5">
+            <div className="rounded-xl border border-indigo-400/20 bg-indigo-500/[0.06] px-4 py-3.5">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold text-white/90">
@@ -2109,7 +2109,7 @@ export default function BattlePage() {
                 <button
                   type="button"
                   onClick={() => setIsEditingPlayerName(true)}
-                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white/85 transition-colors duration-150 hover:border-fuchsia-400/30 hover:bg-white/10"
+                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs font-bold text-white/85 transition-colors duration-150 hover:border-indigo-400/30 hover:bg-white/10"
                 >
                   Change Name
                 </button>
@@ -2133,7 +2133,7 @@ export default function BattlePage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleStart();
                 }}
-                className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-fuchsia-400/50 focus:ring-2 focus:ring-fuchsia-500/20 sm:text-sm"
+                className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
               />
               <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-white/30">
                 <span>
@@ -2145,7 +2145,7 @@ export default function BattlePage() {
                   <button
                     type="button"
                     onClick={() => setIsEditingPlayerName(false)}
-                    className="font-bold text-cyan-300 transition-colors duration-150 hover:text-cyan-200"
+                    className="font-bold text-indigo-300 transition-colors duration-150 hover:text-indigo-200"
                   >
                     Keep account name
                   </button>
@@ -2161,7 +2161,7 @@ export default function BattlePage() {
               !!bossReadiness &&
               !bossReadiness.unlocked
             }
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-8 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
           >
             {effectiveStudyMode === "boss"
               ? "Start Boss Battle"
@@ -2182,7 +2182,7 @@ export default function BattlePage() {
           <button
             type="button"
             onClick={() => setStudyModeActive(true)}
-            className="mt-3 w-full rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white/70 transition-colors duration-150 hover:border-cyan-400/30 hover:bg-white/10 hover:text-cyan-100"
+            className="mt-3 w-full rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white/70 transition-colors duration-150 hover:border-indigo-400/30 hover:bg-white/10 hover:text-indigo-100"
           >
             Or preview as flashcards (Study Mode)
           </button>
@@ -2200,7 +2200,7 @@ export default function BattlePage() {
         <div className="mt-6 w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:mt-8 sm:p-6">
           <div className="flex items-center gap-2">
             <svg
-              className="h-4 w-4 flex-shrink-0 text-cyan-300"
+              className="h-4 w-4 flex-shrink-0 text-indigo-300"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -2241,7 +2241,7 @@ export default function BattlePage() {
                     key={entry.id}
                     className={`rounded-xl border px-3 py-3 transition-colors duration-150 ${
                       isTopScore
-                        ? "border-yellow-400/40 bg-gradient-to-r from-yellow-500/10 to-amber-500/5 shadow-[0_0_20px_-5px_rgba(250,204,21,0.3)]"
+                        ? "border-amber-400/40 bg-gradient-to-r from-amber-500/10 to-amber-500/5 shadow-[0_0_20px_-5px_rgba(250,204,21,0.3)]"
                         : "border-white/10 bg-black/30"
                     }`}
                   >
@@ -2250,8 +2250,8 @@ export default function BattlePage() {
                         <span
                           className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
                             isTopScore
-                              ? "bg-gradient-to-br from-yellow-300 to-amber-500 text-black"
-                              : "bg-gradient-to-br from-fuchsia-500/20 to-cyan-500/20 text-fuchsia-300"
+                              ? "bg-gradient-to-br from-amber-300 to-amber-500 text-black"
+                              : "bg-gradient-to-br from-indigo-500/20 to-indigo-500/20 text-indigo-300"
                           }`}
                         >
                           {index + 1}
@@ -2262,7 +2262,7 @@ export default function BattlePage() {
                       </div>
                       <span
                         className={`flex-shrink-0 text-sm font-bold ${
-                          isTopScore ? "text-yellow-300" : "text-cyan-300"
+                          isTopScore ? "text-amber-300" : "text-indigo-300"
                         }`}
                       >
                         {entry.score} pts
@@ -2306,7 +2306,7 @@ export default function BattlePage() {
     return (
       <Background>
         <div className="w-full max-w-md text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.3em] text-fuchsia-300/80">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-indigo-300/80">
             Battle Complete
           </p>
 
@@ -2357,7 +2357,7 @@ export default function BattlePage() {
           )}
 
           <div className="mt-6 flex items-center justify-center gap-2 text-sm text-white/50">
-            <svg className="h-4 w-4 animate-spin text-fuchsia-400" fill="none" viewBox="0 0 24 24">
+            <svg className="h-4 w-4 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path
                 className="opacity-75"
@@ -2539,26 +2539,26 @@ export default function BattlePage() {
         <div className="grid items-start gap-4 xl:gap-6 2xl:gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="w-full max-w-3xl xl:max-w-none">
         {effectiveStudyMode === "boss" && bossReadiness && (
-          <div className="mb-3 flex items-center justify-between rounded-xl border border-fuchsia-400/25 bg-fuchsia-500/10 px-3.5 py-2.5">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-200">
+          <div className="mb-3 flex items-center justify-between rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-3.5 py-2.5">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-200">
               {bossReadiness.bossName}
             </p>
-            <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-cyan-200">
+            <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-indigo-200">
               Goal {bossReadiness.requiredScore}+ pts
             </span>
           </div>
         )}
 
         {effectiveStudyMode === "rival" && rivalReadiness && (
-          <div className="mb-3 rounded-xl border border-cyan-400/25 bg-gradient-to-r from-cyan-500/[0.1] via-black/25 to-fuchsia-500/[0.08] px-3.5 py-3">
+          <div className="mb-3 rounded-xl border border-indigo-400/25 bg-gradient-to-r from-indigo-500/[0.1] via-black/25 to-indigo-500/[0.08] px-3.5 py-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5">
                 <OpponentFace mood={moodFromStreak(rivalCurrentStreak)} className="h-9 w-9 text-lg" />
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-cyan-200">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-200">
                   {isGhostRival ? "Ghost Rival Arena" : "Study Rival Arena"}
                 </p>
               </div>
-              <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-fuchsia-200">
+              <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-indigo-200">
                 {rivalReadiness.rivalName} · {rivalReadiness.rank}
               </span>
             </div>
@@ -2599,7 +2599,7 @@ export default function BattlePage() {
           <span className="text-xs font-bold uppercase tracking-wider text-white/50">
             Question {currentIndex + 1} of {questions.length}
           </span>
-          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-bold text-cyan-300">
+          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-bold text-indigo-300">
             <svg
               className="h-4 w-4 flex-shrink-0"
               fill="none"
@@ -2624,12 +2624,12 @@ export default function BattlePage() {
             initial={{ scale: 0.85 }}
             animate={{ scale: 1 }}
             transition={springBouncy}
-            className="flex items-center gap-1.5 rounded-full border border-fuchsia-400/20 bg-fuchsia-500/10 px-3 py-1"
+            className="flex items-center gap-1.5 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1"
           >
-            <span className="text-sm font-black text-fuchsia-300 tabular-nums">
+            <span className="text-sm font-black text-indigo-300 tabular-nums">
               {displayedScore}
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-fuchsia-300/70">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300/70">
               pts
             </span>
           </motion.div>
@@ -2647,7 +2647,7 @@ export default function BattlePage() {
               transition={springBouncy}
               className={`flex items-center gap-1.5 rounded-full border px-3 py-1 ${
                 currentStreak >= 5
-                  ? "border-orange-400/40 bg-orange-500/15"
+                  ? "border-amber-400/40 bg-amber-500/15"
                   : currentStreak >= 3
                   ? "border-amber-400/30 bg-amber-500/10"
                   : "border-white/10 bg-white/5"
@@ -2659,7 +2659,7 @@ export default function BattlePage() {
               <span
                 className={`text-sm font-bold tabular-nums ${
                   currentStreak >= 5
-                    ? "text-orange-300"
+                    ? "text-amber-300"
                     : currentStreak >= 3
                     ? "text-amber-300"
                     : "text-white/60"
@@ -2690,7 +2690,7 @@ export default function BattlePage() {
               }}
               className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-bold uppercase tracking-wider transition-colors ${
                 voiceModeEnabled
-                  ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-200"
+                  ? "border-green-400/40 bg-green-500/15 text-green-200"
                   : "border-white/10 bg-white/5 text-white/50 hover:bg-white/10"
               }`}
             >
@@ -2700,7 +2700,7 @@ export default function BattlePage() {
 
             {voiceModeEnabled && (voice.isSpeaking || voice.isListening) && (
               <span className="flex items-center gap-1.5 text-[11px] font-semibold text-white/50">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" />
                 {voice.isSpeaking ? "VYRA is reading the question..." : "Listening for your answer..."}
               </span>
             )}
@@ -2710,7 +2710,7 @@ export default function BattlePage() {
         {/* Progress bar */}
         <div className="mb-6 h-2 w-full overflow-hidden rounded-full bg-white/10 sm:mb-8">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-fuchsia-500 to-cyan-400 transition-all duration-300"
+            className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-400 transition-all duration-300"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -2733,7 +2733,7 @@ export default function BattlePage() {
               style={{ zIndex: UI_Z_INDEX.pageContent }}
             >
               <div key={introCountdown} className="text-center" style={{ animation: "pulse-enter 260ms ease-out" }}>
-                <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-200">
+                <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-indigo-200">
                   Battle Intro
                 </p>
                 <p className="mt-2 text-6xl font-black text-white sm:text-7xl">
@@ -2746,7 +2746,7 @@ export default function BattlePage() {
             </div>
           )}
 
-          <span className="text-xs font-bold uppercase tracking-wider text-fuchsia-300">
+          <span className="text-xs font-bold uppercase tracking-wider text-indigo-300">
             {currentQuestion.topic}
           </span>
           <h2 className="mt-3 text-base font-bold leading-snug break-words sm:text-lg md:text-xl">
@@ -2767,7 +2767,7 @@ export default function BattlePage() {
                         ? "Show your work step by step, then state your final answer..."
                         : "Take a position and back it up with evidence from your notes..."
                     }
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white/90 placeholder:text-white/30 focus:border-fuchsia-400/50 focus:outline-none disabled:opacity-60 sm:text-base"
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white/90 placeholder:text-white/30 focus:border-indigo-400/50 focus:outline-none disabled:opacity-60 sm:text-base"
                   />
                   {openResponseError && (
                     <p className="mt-2 text-xs text-red-300">{openResponseError}</p>
@@ -2775,7 +2775,7 @@ export default function BattlePage() {
                   <button
                     onClick={() => handleSubmitOpenResponse()}
                     disabled={!openResponseDraft.trim() || isGradingOpenResponse}
-                    className="mt-3 w-full rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-3.5 text-sm font-bold text-white transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:text-base"
+                    className="mt-3 w-full rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white transition-transform duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 sm:text-base"
                   >
                     {isGradingOpenResponse ? "Grading your answer..." : "Submit Answer"}
                   </button>
@@ -2797,14 +2797,14 @@ export default function BattlePage() {
 
                 // Default (unanswered) style
                 let choiceStyles =
-                  "border-white/10 bg-black/30 hover:border-fuchsia-400/40 hover:bg-white/5";
+                  "border-white/10 bg-black/30 hover:border-indigo-400/40 hover:bg-white/5";
                 let resultIcon: string | null = null;
 
                 if (showFeedback) {
                   if (isCorrectChoice) {
                     // Always highlight the correct answer once answered
                     choiceStyles =
-                      "border-emerald-400/50 bg-emerald-500/10";
+                      "border-green-400/50 bg-green-500/10";
                     resultIcon = "✅";
                   } else if (isSelected) {
                     // The wrong answer the user picked
@@ -2865,14 +2865,14 @@ export default function BattlePage() {
             <div
               className={`mt-5 rounded-xl border px-4 py-3.5 text-sm ${
                 answeredCorrectly
-                  ? "border-emerald-400/30 bg-emerald-500/5"
+                  ? "border-green-400/30 bg-green-500/5"
                   : "border-red-400/30 bg-red-500/5"
               }`}
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p
                   className={`text-xs font-bold uppercase tracking-wider ${
-                    answeredCorrectly ? "text-emerald-300" : "text-red-300"
+                    answeredCorrectly ? "text-green-300" : "text-red-300"
                   }`}
                 >
                   {isOpenResponseQuestion
@@ -2883,10 +2883,10 @@ export default function BattlePage() {
                 </p>
 
                 {answeredCorrectly && (
-                  <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-300">
+                  <span className="flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-bold text-green-300">
                     +{lastPointsEarned} pts
                     {lastPointsEarned > BASE_POINTS_PER_CORRECT && (
-                      <span className="text-orange-300">
+                      <span className="text-amber-300">
                         🔥 streak bonus
                       </span>
                     )}
@@ -2901,7 +2901,7 @@ export default function BattlePage() {
 
                     {openResponseFeedback.pointsAddressed.length > 0 && (
                       <div>
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-300/80">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-green-300/80">
                           Addressed
                         </p>
                         <ul className="mt-1 list-inside list-disc space-y-0.5 text-white/60">
@@ -2942,7 +2942,7 @@ export default function BattlePage() {
                         <MathText text={selectedChoice || ""} />
                       </span>
                       . The correct answer is{" "}
-                      <span className="font-semibold text-emerald-300">
+                      <span className="font-semibold text-green-300">
                         <MathText text={currentQuestion.correct_answer} />
                       </span>
                       .
@@ -2956,14 +2956,14 @@ export default function BattlePage() {
               )}
 
               {effectiveStudyMode === "rival" && !isOpenResponseQuestion && (
-                <div className="mt-2 text-xs text-cyan-200/85">
+                <div className="mt-2 text-xs text-indigo-200/85">
                   {isRivalResolving ? (
                     <span className="inline-flex items-center gap-2">
                       {rivalReadiness?.rivalName || "Rival"} is locking in an answer
                       <span className="inline-flex items-center gap-1">
-                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300" />
-                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300 [animation-delay:150ms]" />
-                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-cyan-300 [animation-delay:300ms]" />
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-300" />
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-300 [animation-delay:150ms]" />
+                        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-300 [animation-delay:300ms]" />
                       </span>
                     </span>
                   ) : (
@@ -2985,7 +2985,7 @@ export default function BattlePage() {
             <button
               onClick={handleNext}
               disabled={effectiveStudyMode === "rival" && isRivalResolving}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-fuchsia-500 to-violet-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(217,70,239,0.6)] transition-transform duration-200 active:scale-95 sm:px-8 sm:hover:scale-[1.02]"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-4 text-base font-bold text-white shadow-[0_0_40px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 sm:px-8 sm:hover:scale-[1.02]"
             >
               {effectiveStudyMode === "rival" && isRivalResolving
                 ? "Rival Answering..."

@@ -150,7 +150,7 @@ export default function DiagnosticResultsPage() {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[#05050a] px-4 text-center text-white">
         <p className="text-sm text-red-300">{error || "Results not found."}</p>
-        <Link href="/diagnostics" className="text-sm font-semibold text-cyan-300">
+        <Link href="/diagnostics" className="text-sm font-semibold text-indigo-300">
           &larr; Back to diagnostics
         </Link>
       </main>
@@ -162,18 +162,18 @@ export default function DiagnosticResultsPage() {
   return (
     <main className="min-h-dvh bg-[#05050a] px-4 py-10 text-white sm:px-6">
       <div className="mx-auto max-w-4xl">
-        <Link href="/diagnostics" className="text-sm font-semibold text-cyan-300">
+        <Link href="/diagnostics" className="text-sm font-semibold text-indigo-300">
           &larr; Back to diagnostics
         </Link>
 
         <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
-          <span className="bg-gradient-to-r from-cyan-300 via-white to-fuchsia-300 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
             {attempt.exam.name} Results
           </span>
         </h1>
 
         <Card tone="fuchsia" className="mt-6" padding="lg">
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-fuchsia-300">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-indigo-300">
             StudyClash diagnostic estimate
           </p>
           <p className="mt-2 text-4xl font-black text-white sm:text-5xl">
@@ -203,7 +203,7 @@ export default function DiagnosticResultsPage() {
 
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Card tone="emerald" padding="md">
-            <p className="text-xs font-bold uppercase tracking-wider text-emerald-300">Strongest skills</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-green-300">Strongest skills</p>
             <p className="mt-2 text-sm text-white/70">
               You are currently strongest in{" "}
               {results.strongest_skills.map((s) => s.skill).join(", ") || "no clear standout yet"}.
@@ -217,7 +217,7 @@ export default function DiagnosticResultsPage() {
                       <span className="ml-1.5 text-[10px] font-semibold text-white/35">(1-2 questions)</span>
                     )}
                   </span>
-                  <span className="font-bold text-emerald-300">{s.accuracy}%</span>
+                  <span className="font-bold text-green-300">{s.accuracy}%</span>
                 </li>
               ))}
             </ul>
@@ -253,14 +253,14 @@ export default function DiagnosticResultsPage() {
         </div>
 
         <Card className="mt-4" padding="md">
-          <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Domain breakdown</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Domain breakdown</p>
           <div className="mt-3 space-y-2">
             {Object.entries(results.domain_results).map(([domain, stats]) => (
               <div key={domain} className="flex items-center gap-3">
                 <span className="w-48 flex-shrink-0 truncate text-sm text-white/80">{domain}</span>
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-400"
+                    className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-400"
                     style={{ width: `${stats.accuracy}%` }}
                   />
                 </div>
@@ -273,7 +273,7 @@ export default function DiagnosticResultsPage() {
         </Card>
 
         <Card className="mt-4" padding="md">
-          <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Pacing analysis</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Pacing analysis</p>
           <p className="mt-2 text-sm text-white/70">
             Average {results.pacing_results.averageSecondsPerQuestion} seconds per question.{" "}
             {results.pacing_results.guessedTooQuickly.length} question
@@ -285,7 +285,7 @@ export default function DiagnosticResultsPage() {
 
         {resources.length > 0 && (
           <Card className="mt-4" padding="md">
-            <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Recommended resources</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Recommended resources</p>
             <div className="mt-3 space-y-2">
               {resources.map((resource) => (
                 <a
@@ -294,7 +294,7 @@ export default function DiagnosticResultsPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => void trackEvent("recommended_resource_clicked", { attemptId, url: resource.url })}
-                  className="block rounded-xl border border-white/10 bg-white/[0.03] p-3 hover:border-cyan-300/40"
+                  className="block rounded-xl border border-white/10 bg-white/[0.03] p-3 hover:border-indigo-300/40"
                 >
                   <p className="text-sm font-bold text-white">{resource.title}</p>
                   <p className="mt-1 text-xs text-white/50">
@@ -339,14 +339,14 @@ export default function DiagnosticResultsPage() {
               <Card
                 key={response.question_id}
                 padding="md"
-                className={response.is_correct ? "border-emerald-400/20" : "border-red-400/20"}
+                className={response.is_correct ? "border-green-400/20" : "border-red-400/20"}
               >
                 <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-white/40">
                   <span>{response.question.domain}</span>
                   <span>&middot;</span>
                   <span>{response.question.skill}</span>
                   <span>&middot;</span>
-                  <span className={response.is_correct ? "text-emerald-300" : "text-red-300"}>
+                  <span className={response.is_correct ? "text-green-300" : "text-red-300"}>
                     {response.is_correct ? "Correct" : "Incorrect"}
                   </span>
                 </div>
@@ -361,7 +361,7 @@ export default function DiagnosticResultsPage() {
                         key={choice.id}
                         className={
                           choice.id === response.question.correct_answer
-                            ? "font-bold text-emerald-300"
+                            ? "font-bold text-green-300"
                             : choice.id === response.selected_answer
                               ? "font-bold text-red-300"
                               : "text-white/60"
@@ -377,7 +377,7 @@ export default function DiagnosticResultsPage() {
                   </ul>
                 ) : (
                   <p className="mt-2 text-xs text-white/60">
-                    Correct answer: <span className="font-bold text-emerald-300">{response.question.correct_answer}</span>
+                    Correct answer: <span className="font-bold text-green-300">{response.question.correct_answer}</span>
                     {response.selected_answer ? ` -- your answer: ${response.selected_answer}` : " -- not answered"}
                   </p>
                 )}

@@ -1,4 +1,4 @@
-<!-- BEGIN:nextjs-agent-rules -->
+﻿<!-- BEGIN:nextjs-agent-rules -->
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
@@ -6,7 +6,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 # Mastery-first feature gate
 
-StudyJoust's differentiator is depth of learning, not feature count. Before adding a new feature, screen it against these questions; if the answer to all three is no, don't build it yet:
+StudyClash's differentiator is depth of learning, not feature count. Before adding a new feature, screen it against these questions; if the answer to all three is no, don't build it yet:
 
 1. Does it close a loop back to practice, retention, or a mistake the student made (not just a passive view)?
 2. Does it make an existing weak-topic/mastery signal more accurate or more actionable?

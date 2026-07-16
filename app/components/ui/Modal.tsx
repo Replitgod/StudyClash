@@ -61,7 +61,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={`max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#0a0a12] p-5 shadow-glow-fuchsia-md sm:rounded-2xl sm:p-6 outline-none ${className || ""}`}
+        className={`max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl border border-white/10 bg-[#0a0a12] p-5 shadow-glow-indigo-md sm:rounded-2xl sm:p-6 outline-none ${className || ""}`}
       >
         {title && (
           <div className="flex items-center justify-between">

@@ -174,7 +174,7 @@ export default function StudyPlanDetailPage() {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[#05050a] px-4 text-center text-white">
         <p className="text-sm text-red-300">{error || "Plan not found."}</p>
-        <Link href="/dashboard" className="text-sm font-semibold text-cyan-300">
+        <Link href="/dashboard" className="text-sm font-semibold text-indigo-300">
           &larr; Back to dashboard
         </Link>
       </main>
@@ -189,7 +189,7 @@ export default function StudyPlanDetailPage() {
   return (
     <main className="min-h-dvh bg-[#05050a] px-4 py-10 text-white sm:px-6">
       <div className="mx-auto max-w-3xl">
-        <Link href="/dashboard" className="text-sm font-semibold text-cyan-300">
+        <Link href="/dashboard" className="text-sm font-semibold text-indigo-300">
           &larr; Back to dashboard
         </Link>
 
@@ -225,14 +225,14 @@ export default function StudyPlanDetailPage() {
           <Card tone="violet" className="mt-5" padding="md">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-violet-300">Next diagnostic recommended</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Next diagnostic recommended</p>
                 <p className="mt-1 text-sm text-white/70">
                   Retake around {retakeReminder} so this plan updates with your latest weak skills.
                 </p>
               </div>
               <Link
                 href={`/diagnostics/${plan.exam_type}`}
-                className="rounded-lg border border-violet-400/30 bg-violet-500/10 px-3.5 py-2 text-xs font-bold text-violet-100"
+                className="rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-3.5 py-2 text-xs font-bold text-indigo-100"
               >
                 Retake Diagnostic
               </Link>
@@ -241,7 +241,7 @@ export default function StudyPlanDetailPage() {
         )}
 
         <Card tone="cyan" className="mt-4" padding="md">
-          <p className="text-xs font-bold uppercase tracking-wider text-cyan-300">Today</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Today</p>
           {todayTasks.length === 0 ? (
             <p className="mt-2 text-sm text-white/60">Nothing scheduled today.</p>
           ) : (
@@ -266,7 +266,7 @@ export default function StudyPlanDetailPage() {
                   <p className="text-xs font-bold text-white/50">{completionPercent}% complete</p>
                 </div>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-                  <div className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-fuchsia-400" style={{ width: `${completionPercent}%` }} />
+                  <div className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-400" style={{ width: `${completionPercent}%` }} />
                 </div>
                 <div className="mt-3 space-y-2">
                   {weekTasks.map((task) => (
@@ -297,7 +297,7 @@ function TaskRow({
     <div
       className={`rounded-xl border p-3 ${
         task.completed
-          ? "border-emerald-400/20 bg-emerald-500/[0.04] opacity-70"
+          ? "border-green-400/20 bg-green-500/[0.04] opacity-70"
           : isOverdue
             ? "border-amber-400/30 bg-amber-500/[0.05]"
             : "border-white/10 bg-white/[0.03]"
@@ -309,11 +309,11 @@ function TaskRow({
           onClick={() => onToggle(task)}
           aria-pressed={task.completed}
           className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md border ${
-            task.completed ? "border-emerald-400 bg-emerald-500/30" : "border-white/25"
+            task.completed ? "border-green-400 bg-green-500/30" : "border-white/25"
           }`}
         >
           {task.completed && (
-            <svg className="h-3.5 w-3.5 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+            <svg className="h-3.5 w-3.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           )}
@@ -337,7 +337,7 @@ function TaskRow({
                   <Link
                     key={resource.url}
                     href={resource.url}
-                    className="rounded-lg border border-cyan-400/30 bg-cyan-500/10 px-2.5 py-1 text-xs font-bold text-cyan-100 hover:border-cyan-300/50 hover:bg-cyan-500/20"
+                    className="rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-2.5 py-1 text-xs font-bold text-indigo-100 hover:border-indigo-300/50 hover:bg-indigo-500/20"
                   >
                     {resource.title} →
                   </Link>
@@ -347,7 +347,7 @@ function TaskRow({
                     href={resource.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs font-semibold text-cyan-300 underline underline-offset-2"
+                    className="text-xs font-semibold text-indigo-300 underline underline-offset-2"
                   >
                     {resource.title} ↗
                   </a>
