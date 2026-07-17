@@ -5,7 +5,13 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { authFetch } from "@/lib/authFetch";
 import { FLOATING_ACTION, OPEN_FEEDBACK_EVENT, UI_Z_INDEX } from "@/lib/uiLayout";
-import { VYRA_STREAM_HEADER, VYRA_STREAM_META_DELIMITER, type VyraStreamMeta } from "@/lib/vyraStream";
+import {
+  VYRA_STREAM_HEADER,
+  VYRA_STREAM_META_DELIMITER,
+  type VyraStreamMeta,
+  type VyraBattleAction,
+  type VyraStudyPlanAction,
+} from "@/lib/vyraStream";
 import { popIn, pressableSubtle } from "@/lib/motion";
 
 type CoachAction =
@@ -52,6 +58,8 @@ type CoachMessage = {
   resources?: ResourceRecommendation[];
   resourcesDisclaimer?: string;
   blindspotDecks?: BlindspotDeck[];
+  battleAction?: VyraBattleAction;
+  studyPlanAction?: VyraStudyPlanAction;
 };
 
 type MissedQuestion = {
@@ -444,6 +452,8 @@ export default function VyraCoach(props: VyraCoachProps) {
                     content: meta.finalReply || m.content,
                     resources: meta.resources && meta.resources.length > 0 ? meta.resources : undefined,
                     resourcesDisclaimer: meta.resourcesDisclaimer,
+                    battleAction: meta.battleAction,
+                    studyPlanAction: meta.studyPlanAction,
                   }
                 : m
             )
@@ -955,6 +965,24 @@ function ChatPanel(props: {
                       </Link>
                     ))}
                   </div>
+                )}
+
+                {message.battleAction && (
+                  <Link
+                    href={buildWeakTopicHref(message.battleAction.deckId, message.battleAction.topics)}
+                    className="self-start rounded-xl border border-indigo-300/30 bg-indigo-500/[0.08] px-3.5 py-2.5 text-sm font-bold text-indigo-100 transition-colors hover:border-indigo-300/50 hover:bg-indigo-500/[0.14]"
+                  >
+                    Start Weak-Topic Rematch →
+                  </Link>
+                )}
+
+                {message.studyPlanAction && (
+                  <Link
+                    href={`/study-plans/${message.studyPlanAction.planId}`}
+                    className="self-start rounded-xl border border-green-300/30 bg-green-500/[0.08] px-3.5 py-2.5 text-sm font-bold text-green-100 transition-colors hover:border-green-300/50 hover:bg-green-500/[0.14]"
+                  >
+                    View Your Study Plan: {message.studyPlanAction.assessmentName} →
+                  </Link>
                 )}
               </motion.div>
             ))}

@@ -45,9 +45,10 @@ export default async function ExamTrackPage({
   const detail = TRACK_DETAILS[track] || {
     title: "Exam Pro",
     monthly: "Included in Exam Pro ($5/mo)",
-    cue: "High-stakes format tuning and deep remediation.",
+    cue: "AI-generated practice tuned to your exam's format.",
     depth: "VYRA keeps your weak-topic recovery loop active over time.",
   };
+  const isUnreviewedTrack = track === "mcat" || track === "lsat" || track === "nclex";
 
   return (
     <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
@@ -74,13 +75,18 @@ export default async function ExamTrackPage({
           {detail.depth}
         </p>
 
+        <div className="mt-6 max-w-2xl rounded-xl border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-200">
+          Experimental exam practice — currently in beta. Generated questions are not official or professionally validated.
+          {isUnreviewedTrack && " This track has not yet been reviewed by anyone with subject-matter credentials in this field."}
+        </div>
+
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-300">
             Recommended Tier
           </p>
           <p className="mt-2 text-3xl font-black text-white">{detail.monthly}</p>
           <p className="mt-2 text-sm text-white/60">
-            Includes premium queueing, deeper VYRA analysis, and high-frequency rematch loops.
+            Includes higher daily generation limits and access to this exam track.
           </p>
 
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">

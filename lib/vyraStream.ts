@@ -20,10 +20,27 @@ export type StreamedResourceRecommendation = {
 // vyra-chat/route.ts), so this marker will not occur in real model output.
 export const VYRA_STREAM_META_DELIMITER = "\nSSVYRA_STREAM_METASS\n";
 
+// Tool actions VYRA can actually perform instead of just describing --
+// the server does the real work (resolves weak topics, creates a study
+// plan row) and hands back a link to the real result, which the client
+// renders as a clickable action rather than inert chat text.
+export type VyraBattleAction = {
+  deckId: string;
+  topics: string[];
+};
+
+export type VyraStudyPlanAction = {
+  planId: string;
+  assessmentName: string;
+  dueDate: string;
+};
+
 export type VyraStreamMeta = {
   finalReply: string;
   resources?: StreamedResourceRecommendation[];
   resourcesDisclaimer?: string;
+  battleAction?: VyraBattleAction;
+  studyPlanAction?: VyraStudyPlanAction;
 };
 
 // Local-reply paths (mistake_mode/hint_mode with a known missed question)

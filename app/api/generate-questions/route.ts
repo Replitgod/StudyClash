@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import { createHash } from "node:crypto";
 import { FREE_PLAN_IDS, PRIORITY_PLAN_IDS } from "@/lib/plans";
-import { FREE_DAILY_BATTLE_CAP, FREE_DAILY_PDF_CAP } from "@/lib/planLimits";
+import { FREE_DAILY_GENERATION_CAP, FREE_DAILY_PDF_CAP } from "@/lib/planLimits";
 import { hasUnbalancedMathDelimiters } from "@/lib/server/mathValidation";
 import { TERRA_TASK, type ReasoningEffort } from "@/lib/server/aiModels";
 
@@ -1682,29 +1682,26 @@ export async function POST(req: NextRequest) {
     }
 
     if (isFreePlan) {
-      const trimmedPlayerName = String(studentName || "").trim();
-      if (trimmedPlayerName) {
-        const { count: battleCountToday, error: battleCountError } = await supabase
-          .from("matches")
-          .select("id", { count: "exact", head: true })
-          .eq("player_name", trimmedPlayerName)
-          .gte("created_at", startOfTodayIso);
+      const { count: generationCountToday, error: generationCountError } = await supabase
+        .from("generation_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", startOfTodayIso);
 
-        if (battleCountError) {
-          return NextResponse.json(
-            { error: "Could not check your battle usage right now. Please try again." },
-            { status: 500 }
-          );
-        }
+      if (generationCountError) {
+        return NextResponse.json(
+          { error: "Could not check your generation usage right now. Please try again." },
+          { status: 500 }
+        );
+      }
 
-        if ((battleCountToday || 0) >= FREE_DAILY_BATTLE_CAP) {
-          return NextResponse.json(
-            {
-              error: `You've completed ${FREE_DAILY_BATTLE_CAP} battles today, so new deck generation is paused until tomorrow on the Free plan. You can still replay your existing decks. Upgrade to Student Pro to generate anytime.`,
-            },
-            { status: 429 }
-          );
-        }
+      if ((generationCountToday || 0) >= FREE_DAILY_GENERATION_CAP) {
+        return NextResponse.json(
+          {
+            error: `You've generated ${FREE_DAILY_GENERATION_CAP} decks today, so new deck generation is paused until tomorrow on the Free plan. You can still battle your existing decks. Upgrade to Student Pro to generate anytime.`,
+          },
+          { status: 429 }
+        );
       }
 
       if (normalizedUploadKind === "pdf") {

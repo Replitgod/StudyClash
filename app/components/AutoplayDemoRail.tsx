@@ -17,7 +17,7 @@ const SCENES: Scene[] = [
     title: "Upload Notes",
     subtitle: "Drop PDF or paste class notes",
     accent: "from-indigo-400/40 to-indigo-400/10",
-    metric: "2 files in 12s",
+    metric: "2 files uploaded",
     callout: "Drag and drop works on mobile and desktop",
   },
   {

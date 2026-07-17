@@ -438,7 +438,7 @@ export default function Home() {
               <Link href="/demo/battle" className="hover:text-[#0F172A]">Demo</Link>
               <Link href="/pricing" className="hover:text-[#0F172A]">Pricing</Link>
               <Link href="/exams" className="hover:text-[#0F172A]">Exams</Link>
-              <Link href="/classroom" className="hover:text-[#0F172A]">Classroom</Link>
+              <Link href="/classroom" className="hover:text-[#0F172A]">Classroom (Beta)</Link>
               <Link href="/contact" className="hover:text-[#0F172A]">Contact</Link>
               <Link href="/privacy" className="hover:text-[#0F172A]">Privacy</Link>
               <Link href="/terms" className="hover:text-[#0F172A]">Terms</Link>

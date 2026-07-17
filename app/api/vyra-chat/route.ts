@@ -17,6 +17,8 @@ import {
   VYRA_STREAM_HEADER,
   type VyraStreamMeta,
 } from "@/lib/vyraStream";
+import { createShortTermStudyPlan } from "@/lib/server/studyPlanCreation";
+import { extractPlanMarkers, inferAssessmentType } from "@/lib/server/vyraPlanParsing";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -185,6 +187,11 @@ function stripMarkdownArtifacts(text: string): string {
 function ensureStructuredReply(reply: string, action: CoachAction): string {
   const trimmed = reply.trim();
   const isMistake = action === "mistake_mode";
+  // A genuine study-plan reply (rule 8) never contains "Quick answer" as a
+  // heading -- without this branch, every real day-by-day plan failed the
+  // requiredNormal check below and got silently replaced by the generic
+  // fallback, discarding the plan the model just computed.
+  const isPlan = action === "study_plan";
 
   const requiredMistake = [
     "Your answer",
@@ -195,6 +202,13 @@ function ensureStructuredReply(reply: string, action: CoachAction): string {
     "Try this",
   ];
 
+  const requiredPlan = [
+    "Exam & date",
+    "Priority topics",
+    "Day-by-day plan",
+    "Recommended next battle",
+  ];
+
   const requiredNormal = [
     "Quick answer",
     "Simple explanation",
@@ -202,13 +216,20 @@ function ensureStructuredReply(reply: string, action: CoachAction): string {
     "Next step",
   ];
 
-  const required = isMistake ? requiredMistake : requiredNormal;
+  const required = isMistake ? requiredMistake : isPlan ? requiredPlan : requiredNormal;
   const hasAllHeadings = required.every((heading) =>
     new RegExp(`(^|\\n)${heading}(:|\\n)`, "i").test(trimmed)
   );
 
   if (hasAllHeadings) {
     return trimmed;
+  }
+
+  if (isPlan) {
+    // The model didn't follow the plan format (likely because it was asking
+    // a clarifying question, e.g. missing a date) -- surface what it
+    // actually said instead of forcing an unrelated canned plan onto it.
+    return trimmed || "Tell me the subject and date of your upcoming exam and I'll build a day-by-day plan.";
   }
 
   if (isMistake) {
@@ -354,6 +375,7 @@ function buildNoAiHintReply(missed: MissedQuestionInput): string {
 async function resolveSavedBattleContext(matchId: string): Promise<{
   weakTopicSummary: string;
   missedSummary: string;
+  weakTopicNames: string[];
 }> {
   const { data: answers, error: answersError } = await supabase
     .from("match_answers")
@@ -364,6 +386,7 @@ async function resolveSavedBattleContext(matchId: string): Promise<{
     return {
       weakTopicSummary: "No saved weak-topic rows found.",
       missedSummary: "No saved missed-question rows found.",
+      weakTopicNames: [],
     };
   }
 
@@ -380,6 +403,7 @@ async function resolveSavedBattleContext(matchId: string): Promise<{
     return {
       weakTopicSummary: "Saved answer rows found, but question details were unavailable.",
       missedSummary: "Saved answer rows found, but question details were unavailable.",
+      weakTopicNames: [],
     };
   }
 
@@ -430,7 +454,12 @@ async function resolveSavedBattleContext(matchId: string): Promise<{
           )
           .join("\n");
 
-  return { weakTopicSummary, missedSummary };
+  const weakTopicNames = Array.from(byTopic.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([topic]) => topic)
+    .slice(0, 5);
+
+  return { weakTopicSummary, missedSummary, weakTopicNames };
 }
 
 async function enforceVyraUsageLimit(userId: string): Promise<{
@@ -759,11 +788,13 @@ export async function POST(req: NextRequest) {
 
     let savedWeakSummary = "No saved weak-topic context loaded.";
     let savedMissedSummary = "No saved missed-question context loaded.";
+    let savedWeakTopicNames: string[] = [];
 
     if (body.matchId) {
       const saved = await resolveSavedBattleContext(body.matchId);
       savedWeakSummary = saved.weakTopicSummary;
       savedMissedSummary = saved.missedSummary;
+      savedWeakTopicNames = saved.weakTopicNames;
     }
 
     const weakTopicSummary =
@@ -819,6 +850,7 @@ export async function POST(req: NextRequest) {
       "8) If the student states an upcoming exam in one natural sentence (subject, and/or a date like 'next Friday' or 'in 2 weeks', and/or a topic), switch to the study-plan format below. Compute the exact calendar date and days-remaining yourself using 'Today's date' given in the context below -- never guess a relative date. If the student gave a topic, focus the plan on it and closely related weak topics from their StudyClash data; if they gave no topic, prioritize their actual weak topics. If they gave no date, ask for one before planning day-by-day.",
       "9) Plain text only -- the chat UI does not render markdown. Never use **bold**, *italics*, # headers, backtick code, or bullet characters like * or -. Write the required section headings below as plain words alone on their own line, with no symbols around them. For lists, write 'First, ...', 'Second, ...' or separate lines with plain sentences instead of bullet markers.",
       "10) If the context below includes a 'Live resource search' note, a real-time grounded search is running in parallel and any trustworthy results will be shown to the student as clickable cards right after your reply. Do not list, invent, or guess any specific URLs, site names, or sources yourself in this case -- keep your reply focused on coaching (what to look for, how to use the resources once found) and let the cards carry the actual links.",
+      "11) When you produce a study-plan reply under rule 8 AND the context below shows a known Match ID (not 'unknown'), a real study plan can actually be created for the student automatically -- append exactly two extra lines after your normal reply, each on its own line, with no other text on those lines: 'PLAN_DUE_DATE: YYYY-MM-DD' using the exact calendar date you computed, and 'PLAN_ASSESSMENT_NAME: ' followed by a short 2-5 word name for the assessment (e.g. 'PLAN_ASSESSMENT_NAME: AP Bio Unit 4 Exam'). Omit both lines entirely if Match ID is unknown, or if you are only asking a clarifying question rather than giving the actual day-by-day plan.",
       "Response format rules:",
       "For normal questions use exactly: Quick answer, Simple explanation, Example, Next step.",
       "For missed questions use exactly: Your answer, Correct answer, Why yours was wrong, Why the correct answer works, Mistake DNA, Try this.",
@@ -946,6 +978,44 @@ export async function POST(req: NextRequest) {
             finalReply = ensureStructuredReply(postProcessedReply, action);
           }
 
+          // Tool actions: turn what VYRA just decided into something the
+          // student can actually click, instead of leaving it as advice
+          // that evaporates once the chat scrolls past it.
+          let battleAction: VyraStreamMeta["battleAction"];
+          let studyPlanAction: VyraStreamMeta["studyPlanAction"];
+
+          if (action === "rematch_mode" && body.deckId) {
+            const topics = weakTopics.length > 0 ? weakTopics : savedWeakTopicNames;
+            battleAction = { deckId: body.deckId, topics };
+          }
+
+          if (action === "study_plan") {
+            const { cleanedText, dueDate, assessmentName } = extractPlanMarkers(finalReply);
+            finalReply = cleanedText;
+
+            if (dueDate && authedUserId && body.matchId) {
+              const planResult = await createShortTermStudyPlan({
+                supabase,
+                userId: authedUserId,
+                matchId: body.matchId,
+                assessmentType: inferAssessmentType(message),
+                assessmentName: assessmentName || undefined,
+                dueDate,
+              });
+
+              if (planResult.ok) {
+                studyPlanAction = {
+                  planId: planResult.planId,
+                  assessmentName: assessmentName || "Upcoming exam",
+                  dueDate,
+                };
+              }
+              // A failed plan (e.g. no topic data yet for this deck) is not
+              // an error worth surfacing -- the coaching text still stands
+              // on its own, it just won't have a clickable plan attached.
+            }
+          }
+
           await saveChatIfTableExists({
             sessionId,
             userId: authedUserId,
@@ -969,7 +1039,13 @@ export async function POST(req: NextRequest) {
             });
           }
 
-          const meta: VyraStreamMeta = { finalReply, resources, resourcesDisclaimer };
+          const meta: VyraStreamMeta = {
+            finalReply,
+            resources,
+            resourcesDisclaimer,
+            battleAction,
+            studyPlanAction,
+          };
           controller.enqueue(encoder.encode(VYRA_STREAM_META_DELIMITER + JSON.stringify(meta)));
           controller.close();
         } catch (err) {

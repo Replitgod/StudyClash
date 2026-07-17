@@ -29,7 +29,7 @@ const MORE_LINKS = [
   { label: "Demo", href: "/demo/battle" },
   { label: "Exams", href: "/exams" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Classroom", href: "/classroom" },
+  { label: "Classroom (Beta)", href: "/classroom" },
   { label: "Contact", href: "/contact" },
 ];
 
@@ -44,7 +44,7 @@ const MARKETING_LINKS = [
   { label: "Exams", href: "/exams" },
   { label: "Pricing", href: "/pricing" },
   { label: "Contact", href: "/contact" },
-  { label: "Classroom", href: "/classroom" },
+  { label: "Classroom (Beta)", href: "/classroom" },
 ];
 
 function VyraMiniIcon() {

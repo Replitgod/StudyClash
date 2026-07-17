@@ -102,12 +102,17 @@ export default function ClassroomPage() {
   return (
     <Background>
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-sm sm:p-8">
-        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">Classroom Mode</p>
+        <div className="flex items-center gap-2">
+          <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">Classroom Mode</p>
+          <span className="rounded-full border border-amber-400/25 bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-200">Beta</span>
+        </div>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">
           Live Study Rooms
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-white/65 sm:text-base">
           Teachers can launch a room code from the dashboard, and students can join instantly to battle the assigned deck.
+          StudyClash is still primarily built for individual students — Classroom is an early, secondary feature we&rsquo;re
+          still validating, not a fully built-out school product yet.
         </p>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -121,10 +126,11 @@ export default function ClassroomPage() {
 
         <div className="mt-8 rounded-xl border border-amber-400/25 bg-amber-500/10 p-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-200">
-            School Pilot Intake
+            School Pilot Intake (Beta)
           </p>
           <p className="mt-1 text-sm text-white/75">
-            Want district or bootcamp rollout support? Send your details and get a pilot setup plan.
+            Interested in trying Classroom with your school or cohort? Send your details and we&rsquo;ll follow up —
+            this is an early, hands-on pilot process, not a self-serve rollout yet.
           </p>
 
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
