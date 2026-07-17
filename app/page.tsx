@@ -3,8 +3,10 @@ import Link from "next/link";
 import VyraCoach from "./components/VyraCoach";
 import InstantAIBattle from "./components/InstantAIBattle";
 import AutoplayDemoRail from "./components/AutoplayDemoRail";
+import { PageViewTracker } from "./components/PageViewTracker";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { PLAN_METADATA } from "@/lib/plans";
+import { FREE_PLAN_LIMIT_SUMMARY } from "@/lib/planLimits";
 import { HeroReveal, HeroRevealItem } from "./components/HeroReveal";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com";
@@ -105,7 +107,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is there a free plan?",
-    a: `Yes. Core battles stay free. Free accounts receive up to three battles per day; ${PLAN_METADATA.pro_individual.label} unlocks unlimited battles and the full VYRA coach.`,
+    a: `Yes. ${FREE_PLAN_LIMIT_SUMMARY} ${PLAN_METADATA.pro_individual.label} also unlocks the full VYRA coach.`,
   },
 ];
 
@@ -225,6 +227,7 @@ export default function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }} />
 
+      <PageViewTracker page="home" />
       <div className={`mx-auto flex w-full max-w-[1200px] flex-col px-5 sm:px-8 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {/* ---------- 1. Hero ---------- */}
         <header className="grid gap-10 py-12 sm:py-16 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:py-20">
@@ -277,7 +280,7 @@ export default function Home() {
         {/* ---------- 2. Interactive product preview ---------- */}
         <section aria-label="Try a live round" className="border-t border-[#E2E8F0] py-14 sm:py-16">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">Now try it yourself</h2>
+            <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">See StudyClash in action</h2>
             <p className="mx-auto mt-2 max-w-xl text-sm text-[#64748B]">
               Pick a difficulty and answer 5 questions against the AI. No signup required.
             </p>

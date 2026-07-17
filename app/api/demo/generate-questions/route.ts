@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { createHash } from "node:crypto";
 import { TERRA_TASK, type ReasoningEffort } from "@/lib/server/aiModels";
+import { hasUnbalancedMathDelimiters } from "@/lib/server/mathValidation";
 
 // Reasoning-effort models spend part of max_completion_tokens on hidden
 // reasoning before writing visible output. A flat token cap sized only for
@@ -160,6 +161,7 @@ function validateQuestions(
 
   let mediumCount = 0;
   let hardCount = 0;
+  const seenQuestionTexts = new Set<string>();
 
   for (let i = 0; i < questions.length; i++) {
     const q = questions[i] as Partial<DemoQuestion>;
@@ -169,6 +171,14 @@ function validateQuestions(
     if (!q.question_text || typeof q.question_text !== "string" || !q.question_text.trim()) {
       return `${label} is missing question_text.`;
     }
+    if (hasUnbalancedMathDelimiters(q.question_text)) {
+      return `${label} has an unclosed math delimiter ($ or $$) in question_text.`;
+    }
+    const normalizedText = q.question_text.trim().toLowerCase();
+    if (seenQuestionTexts.has(normalizedText)) {
+      return `Duplicate question detected: "${q.question_text.trim()}"`;
+    }
+    seenQuestionTexts.add(normalizedText);
     if (!Array.isArray(q.answer_choices) || q.answer_choices.length !== 4) {
       return `${label} must have exactly 4 answer_choices.`;
     }
@@ -178,11 +188,17 @@ function validateQuestions(
     if (new Set(cleanedChoices.map((c) => c.toLowerCase())).size !== 4) {
       return `${label} has duplicate answer choices.`;
     }
+    if (cleanedChoices.some((c) => hasUnbalancedMathDelimiters(c))) {
+      return `${label} has an unclosed math delimiter ($ or $$) in an answer choice.`;
+    }
     if (!q.correct_answer || !cleanedChoices.includes(q.correct_answer.trim())) {
       return `${label} has a correct_answer that doesn't match its answer_choices.`;
     }
     if (!q.explanation || typeof q.explanation !== "string" || !q.explanation.trim()) {
       return `${label} is missing an explanation.`;
+    }
+    if (hasUnbalancedMathDelimiters(q.explanation)) {
+      return `${label} has an unclosed math delimiter ($ or $$) in explanation.`;
     }
     if (!q.topic || typeof q.topic !== "string" || !q.topic.trim()) {
       return `${label} is missing a topic.`;

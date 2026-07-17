@@ -455,7 +455,7 @@ export default function DeckDetailPage() {
                         {split.before}
                         <mark
                           ref={highlightRef}
-                          className="rounded bg-indigo-400/30 px-0.5 text-indigo-100"
+                          className="rounded bg-indigo-500 px-0.5 text-white"
                         >
                           {split.match}
                         </mark>

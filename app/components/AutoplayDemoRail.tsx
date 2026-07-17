@@ -200,7 +200,7 @@ export default function AutoplayDemoRail() {
           <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
           <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
         </div>
-        <p className="text-xs font-semibold text-white/60">Premium autoplay demo · 18s loop</p>
+        <p className="text-xs font-semibold text-white/60">Product preview</p>
       </div>
 
       <div

@@ -73,8 +73,13 @@ body {
 }
 
 ::selection {
-  background: rgb(79 70 229 / 0.25);
-  color: #0f172a;
+  background: rgb(79 70 229 / 0.9);
+  color: #ffffff;
+}
+
+::-moz-selection {
+  background: rgb(79 70 229 / 0.9);
+  color: #ffffff;
 }
 
 ::-webkit-scrollbar {

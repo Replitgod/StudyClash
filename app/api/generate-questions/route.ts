@@ -3,6 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import { createHash } from "node:crypto";
 import { FREE_PLAN_IDS, PRIORITY_PLAN_IDS } from "@/lib/plans";
+import { FREE_DAILY_BATTLE_CAP, FREE_DAILY_PDF_CAP } from "@/lib/planLimits";
+import { hasUnbalancedMathDelimiters } from "@/lib/server/mathValidation";
 import { TERRA_TASK, type ReasoningEffort } from "@/lib/server/aiModels";
 
 // Reasoning-effort models spend part of max_completion_tokens on hidden
@@ -66,8 +68,6 @@ const ALLOWED_REASONING_FORMATS: ReasoningFormat[] = ["argumentation", "step_by_
 
 type UploadKind = "manual" | "pdf" | "text" | "folder_text" | "image";
 
-const FREE_DAILY_BATTLE_CAP = 3;
-const FREE_DAILY_PDF_CAP = 2;
 const CACHE_VECTOR_DIMENSIONS = 128;
 const VECTOR_CACHE_CANDIDATE_LIMIT = 120;
 const VECTOR_CACHE_MIN_SIMILARITY = 0.9;
@@ -673,6 +673,10 @@ function validateQuestions(
       return `${label} is missing question_text.`;
     }
 
+    if (hasUnbalancedMathDelimiters(q.question_text)) {
+      return `${label} has an unclosed math delimiter ($ or $$) in question_text.`;
+    }
+
     if (
       !Array.isArray(q.answer_choices) ||
       q.answer_choices.length !== expected.choiceCount
@@ -691,6 +695,10 @@ function validateQuestions(
     const uniqueChoices = new Set(cleanedChoices.map((c) => c.toLowerCase()));
     if (uniqueChoices.size !== expected.choiceCount) {
       return `${label} has duplicate answer choices.`;
+    }
+
+    if (cleanedChoices.some((c) => hasUnbalancedMathDelimiters(c))) {
+      return `${label} has an unclosed math delimiter ($ or $$) in an answer choice.`;
     }
 
     if (expected.questionType === "true_false") {
@@ -712,6 +720,10 @@ function validateQuestions(
 
     if (!q.explanation || typeof q.explanation !== "string" || !q.explanation.trim()) {
       return `${label} is missing an explanation.`;
+    }
+
+    if (hasUnbalancedMathDelimiters(q.explanation)) {
+      return `${label} has an unclosed math delimiter ($ or $$) in explanation.`;
     }
 
     if (!q.topic || typeof q.topic !== "string" || !q.topic.trim()) {
@@ -1161,6 +1173,10 @@ function validateOpenResponseQuestions(
       return `${label} is missing question_text.`;
     }
 
+    if (hasUnbalancedMathDelimiters(q.question_text)) {
+      return `${label} has an unclosed math delimiter ($ or $$) in question_text.`;
+    }
+
     if (!Array.isArray(q.rubric_points) || q.rubric_points.length < 2) {
       return `${label} needs at least 2 rubric_points.`;
     }
@@ -1175,6 +1191,10 @@ function validateOpenResponseQuestions(
 
     if (!q.model_answer || typeof q.model_answer !== "string" || !q.model_answer.trim()) {
       return `${label} is missing model_answer.`;
+    }
+
+    if (hasUnbalancedMathDelimiters(q.model_answer)) {
+      return `${label} has an unclosed math delimiter ($ or $$) in model_answer.`;
     }
 
     if (!q.topic || typeof q.topic !== "string" || !q.topic.trim()) {
@@ -1680,8 +1700,7 @@ export async function POST(req: NextRequest) {
         if ((battleCountToday || 0) >= FREE_DAILY_BATTLE_CAP) {
           return NextResponse.json(
             {
-              error:
-                "Free plan limit reached: 3 battles today. Upgrade to Student Pro for unlimited battles.",
+              error: `You've completed ${FREE_DAILY_BATTLE_CAP} battles today, so new deck generation is paused until tomorrow on the Free plan. You can still replay your existing decks. Upgrade to Student Pro to generate anytime.`,
             },
             { status: 429 }
           );

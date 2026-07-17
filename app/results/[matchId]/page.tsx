@@ -11,6 +11,8 @@ import VyraCoach from "@/app/components/VyraCoach";
 import ConfettiBurst from "@/app/components/ConfettiBurst";
 import UpcomingAssessmentPrompt from "@/app/components/UpcomingAssessmentPrompt";
 import { useAuth } from "@/lib/useAuth";
+import { useLoadingTimeout } from "@/lib/useLoadingTimeout";
+import { calculateAccuracy, buildTopicStats } from "@/lib/resultsStats";
 import {
   buildClashPathReport,
   type ClashPathAttempt,
@@ -90,13 +92,6 @@ type ReviewItem = {
   selectedAnswer: string;
   isCorrect: boolean;
   responseTimeMs: number;
-};
-
-type TopicStat = {
-  topic: string;
-  correct: number;
-  total: number;
-  accuracy: number;
 };
 
 type ResourceLink = {
@@ -179,11 +174,6 @@ type ReportState = {
   isSubmitted: boolean;
   error: string | null;
 };
-
-function calculateAccuracy(correctAnswers: number, totalQuestions: number): number {
-  if (totalQuestions <= 0) return 0;
-  return Math.round((correctAnswers / totalQuestions) * 100);
-}
 
 function coerceMatch(value: unknown): Match | null {
   if (!value || typeof value !== "object") return null;
@@ -288,26 +278,6 @@ function buildImprovementMessage(topic: string, missedCount: number): string {
     return `Review your notes on ${topic} — one question slipped through here.`;
   }
   return `Review your notes on ${topic} and practice a few more questions on this topic.`;
-}
-
-// Groups review items by topic and computes accuracy per topic.
-function buildTopicStats(reviewItems: ReviewItem[]): TopicStat[] {
-  const statsByTopic = new Map<string, { correct: number; total: number }>();
-
-  for (const item of reviewItems) {
-    const topic = item.question.topic || "General";
-    const entry = statsByTopic.get(topic) || { correct: 0, total: 0 };
-    entry.total += 1;
-    if (item.isCorrect) entry.correct += 1;
-    statsByTopic.set(topic, entry);
-  }
-
-  return Array.from(statsByTopic.entries()).map(([topic, { correct, total }]) => ({
-    topic,
-    correct,
-    total,
-    accuracy: Math.round((correct / total) * 100),
-  }));
 }
 
 // Builds a short "what to review" explanation for the Study Plan card.
@@ -765,6 +735,7 @@ export default function ResultsPage() {
   const [match, setMatch] = useState<Match | null>(null);
   const [deck, setDeck] = useState<Deck | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const loadTimedOut = useLoadingTimeout(isLoading);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
@@ -1609,6 +1580,27 @@ export default function ResultsPage() {
 
   // ---------- Loading state ----------
   if (isLoading) {
+    if (loadTimedOut) {
+      return (
+        <Background>
+          <p className="text-sm font-semibold text-white/80">This is taking longer than expected.</p>
+          <div className="mt-4 flex items-center gap-2.5">
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition-colors duration-150 hover:bg-indigo-500"
+            >
+              Retry
+            </button>
+            <Link
+              href="/decks"
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
+            >
+              Back to Decks
+            </Link>
+          </div>
+        </Background>
+      );
+    }
     return (
       <Background>
         <svg

@@ -8,6 +8,12 @@
 // entry anywhere on the pricing page, so a user on either plan saw no
 // "Current Plan" badge at all. Both surfaces should read from here instead
 // of maintaining their own list.
+//
+// free_beta.dailyLimit reads from lib/planLimits.ts (the actual enforced
+// numbers in app/api/generate-questions/route.ts) rather than a hand-typed
+// string, so this label can't drift from what's really enforced again.
+
+import { FREE_PLAN_LIMIT_SHORT } from "./planLimits";
 
 export type PlanId =
   | "free_beta"
@@ -41,7 +47,7 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
     label: "Free",
     tagline: "Everyone starts here",
     price: "$0",
-    dailyLimit: "3 deck generations / day",
+    dailyLimit: FREE_PLAN_LIMIT_SHORT,
     features: [
       "Demo battles",
       "Limited deck creation",

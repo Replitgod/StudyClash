@@ -89,6 +89,7 @@ export default function SignupPage() {
     }
 
     setIsSubmitting(true);
+    trackEvent("signup_started", { method: "password" });
 
     // The entire signup flow is wrapped in try/catch. Nothing in here should
     // ever be allowed to throw uncaught — a blank white screen is far worse
@@ -162,6 +163,7 @@ export default function SignupPage() {
   const handleGoogleSignup = async () => {
     setErrorMessage(null);
     setIsGoogleLoading(true);
+    trackEvent("signup_started", { method: "google" });
 
     try {
       const target = getSafeRedirectTarget("/account");

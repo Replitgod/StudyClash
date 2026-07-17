@@ -487,6 +487,7 @@ export default function DemoBattlePage() {
 
 		setIsGeneratingQuestions(false);
 		setDemoQuestions(nextQuestions);
+		void trackEvent("demo_started", { questionCount: nextQuestions.length });
 		setPhase("quiz");
 		setCurrentIndex(0);
 		setSelectedChoice(null);
@@ -575,6 +576,12 @@ export default function DemoBattlePage() {
 			return;
 		}
 
+		void trackEvent("demo_completed", {
+			totalScore,
+			bestStreak,
+			correctCount: answers.filter((a) => a.isCorrect).length,
+			totalQuestions,
+		});
 		setPhase("results");
 	};
 

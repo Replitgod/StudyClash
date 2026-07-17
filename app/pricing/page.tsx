@@ -3,6 +3,7 @@
 import { useAuth } from "@/lib/useAuth";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { PLAN_METADATA, PUBLIC_PLANS, getPlanMetadata } from "@/lib/plans";
+import { FREE_PLAN_LIMIT_SUMMARY } from "@/lib/planLimits";
 import { Button } from "@/app/components/ui/Button";
 import { HoverLiftArticle } from "@/app/components/ui/HoverLift";
 
@@ -88,7 +89,7 @@ export default function PricingPage() {
           </span>
         </h1>
         <p className="mt-3 max-w-lg text-center text-sm text-white/50 sm:text-base">
-          Core battles stay free. Free accounts receive up to three battles per day; Pro unlocks unlimited battles.
+          {FREE_PLAN_LIMIT_SUMMARY}
         </p>
 
         {isOnUnlistedPlan && currentPlanMeta && (
@@ -208,7 +209,7 @@ export default function PricingPage() {
             Core battles stay free
           </p>
           <p className="text-xs text-white/40">
-            Free accounts receive up to three battles per day. {PLAN_METADATA.pro_individual.label} unlocks unlimited battles and the full VYRA coach.
+            {FREE_PLAN_LIMIT_SUMMARY} {PLAN_METADATA.pro_individual.label} also unlocks the full VYRA coach.
           </p>
           {!isLoggedIn && (
             <Button href="/signup" variant="primary" className="mt-3">

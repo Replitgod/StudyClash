@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
+import { useLoadingTimeout } from "@/lib/useLoadingTimeout";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
 import VyraCoach from "@/app/components/VyraCoach";
@@ -578,6 +579,7 @@ export default function BattlePage() {
   const [deck, setDeck] = useState<Deck | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const loadTimedOut = useLoadingTimeout(isLoading);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [practiceTopicsMessage, setPracticeTopicsMessage] = useState<string | null>(null);
 
@@ -1233,6 +1235,25 @@ export default function BattlePage() {
     return () => clearInterval(interval);
   }, [hasStarted, isFinishing, introCountdown]);
 
+  // Warn before an accidental tab close/refresh mid-battle -- there's no
+  // resume-in-progress-battle flow, so navigating away loses the run. Not
+  // active once the battle has finished submitting (isFinishing/hasStarted
+  // false), so it never fires on the results transition itself.
+  useEffect(() => {
+    if (!hasStarted || isFinishing || introCountdown !== null) return;
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+      // Best-effort only -- browsers routinely kill in-flight fetches on
+      // unload, so this may not always land, but it's free to attempt.
+      void trackEvent("battle_abandoned", { deckId, questionIndex: currentIndex });
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasStarted, isFinishing, introCountdown]);
+
   useEffect(() => {
     return () => {
       if (rivalResolveTimerRef.current) {
@@ -1824,6 +1845,27 @@ export default function BattlePage() {
 
   // ---------- Loading state ----------
   if (isLoading) {
+    if (loadTimedOut) {
+      return (
+        <Background>
+          <p className="text-sm font-semibold text-white/80">This is taking longer than expected.</p>
+          <div className="mt-4 flex items-center gap-2.5">
+            <button
+              onClick={() => window.location.reload()}
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition-colors duration-150 hover:bg-indigo-500"
+            >
+              Retry
+            </button>
+            <Link
+              href="/decks"
+              className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
+            >
+              Back to Decks
+            </Link>
+          </div>
+        </Background>
+      );
+    }
     return (
       <Background>
         <svg
