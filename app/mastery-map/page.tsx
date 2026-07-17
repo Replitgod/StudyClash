@@ -16,6 +16,7 @@ import {
   type TopicStatus,
   type ReviewUrgency,
 } from "@/lib/srsSchedule";
+import { getMasteryTier, MASTERY_TIER_LABELS, type MasteryTier } from "@/lib/masteryTiers";
 
 const MASTERY_MAP_MAX_DECKS = 30;
 
@@ -73,6 +74,7 @@ type TopicNode = {
   lastPracticedDate: string;
   recommendedAction: string;
   status: TopicStatus;
+  masteryTier: MasteryTier;
   practiceHref: string;
   rematchHref: string;
   bossHref: string;
@@ -197,16 +199,20 @@ function getMistakeLabel(raw: string | undefined): string {
   return "Mixed errors";
 }
 
-function getStatusStyle(status: TopicStatus): string {
-  if (status === "mastered") {
+function getStatusStyle(tier: MasteryTier): string {
+  if (tier === "mastered") {
     return "border-green-400/30 bg-green-500/[0.08] text-green-100";
   }
 
-  if (status === "improving") {
+  if (tier === "strong") {
     return "border-indigo-400/30 bg-indigo-500/[0.08] text-indigo-100";
   }
 
-  return "border-amber-400/30 bg-amber-500/[0.08] text-amber-100";
+  if (tier === "developing") {
+    return "border-amber-400/30 bg-amber-500/[0.08] text-amber-100";
+  }
+
+  return "border-red-400/30 bg-red-500/[0.08] text-red-100";
 }
 
 function toTopicPrompt(topic: string, subject: string): string {
@@ -440,6 +446,7 @@ function MasteryMapPageContent() {
               const speed =
                 stats.speedCount > 0 ? Math.round(stats.speedSum / stats.speedCount) : 0;
               const status = getTopicStatus(accuracy);
+              const masteryTier = getMasteryTier(stats.correct, stats.total);
               const reviewSchedule = getReviewSchedule({
                 status,
                 attemptedCount: stats.total,
@@ -459,6 +466,7 @@ function MasteryMapPageContent() {
                 ),
                 recommendedAction: getRecommendedAction(status, stats.misses),
                 status,
+                masteryTier,
                 practiceHref: `/battle/${deck.id}?mode=weak_topic&topics=${encodeURIComponent(topic)}&limit=8`,
                 rematchHref: buildRematchHref({
                   deckId: deck.id,
@@ -474,9 +482,16 @@ function MasteryMapPageContent() {
             })
             .sort((a, b) => a.accuracy - b.accuracy || b.attemptedCount - a.attemptedCount);
 
-          const masteredTopics = allTopics.filter((topic) => topic.status === "mastered");
-          const improvingTopics = allTopics.filter((topic) => topic.status === "improving");
-          const weakTopics = allTopics.filter((topic) => topic.status === "weak");
+          // Routed through masteryTier (not the raw status/accuracy) so the
+          // subject-level counts share the same sample-size-guarded
+          // classification as the individual topic badges -- "weak" here
+          // means needs_review specifically (evidenced, not just low-sample
+          // noise), and "improving" covers both developing and strong.
+          const masteredTopics = allTopics.filter((topic) => topic.masteryTier === "mastered");
+          const improvingTopics = allTopics.filter(
+            (topic) => topic.masteryTier === "developing" || topic.masteryTier === "strong"
+          );
+          const weakTopics = allTopics.filter((topic) => topic.masteryTier === "needs_review");
 
           const masteryPercent =
             allTopics.length > 0
@@ -778,12 +793,12 @@ function MasteryMapPageContent() {
                       {subject.allTopics.map((topic) => (
                         <article
                           key={`${subject.deckId}-${topic.topic}`}
-                          className={`relative rounded-xl border p-3 ${getStatusStyle(topic.status)}`}
+                          className={`relative rounded-xl border p-3 ${getStatusStyle(topic.masteryTier)}`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <h3 className="text-sm font-bold leading-tight text-white">{topic.topic}</h3>
                             <span className="flex-shrink-0 rounded-full border border-white/15 bg-black/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/80">
-                              {topic.status}
+                              {MASTERY_TIER_LABELS[topic.masteryTier]}
                             </span>
                           </div>
 

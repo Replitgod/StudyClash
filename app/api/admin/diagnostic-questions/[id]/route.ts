@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabaseClient, requireAdminUser } from "@/lib/server/apiUtils";
+import { hasUnbalancedMathDelimiters } from "@/lib/server/mathValidation";
 
 export const runtime = "nodejs";
 
@@ -40,6 +41,59 @@ export async function PATCH(
 
   if (fetchError || !existing) {
     return NextResponse.json({ error: "Question not found." }, { status: 404 });
+  }
+
+  // PATCH previously accepted these fields with zero validation -- an admin
+  // could save an empty explanation or a broken math delimiter through the
+  // edit form even though the create-time POST route validates them
+  // strictly. This doesn't attempt POST's full cross-field validation
+  // (e.g. correctAnswer matching a choice id), only the checks that make
+  // sense against a single field in isolation.
+  if (body.questionText !== undefined) {
+    if (!body.questionText || body.questionText.trim().length < 5) {
+      return NextResponse.json({ error: "Question text is required." }, { status: 400 });
+    }
+    if (hasUnbalancedMathDelimiters(body.questionText)) {
+      return NextResponse.json(
+        { error: "Question text has an unclosed math delimiter ($ or $$)." },
+        { status: 400 }
+      );
+    }
+  }
+
+  if (body.explanation !== undefined) {
+    if (!body.explanation || body.explanation.trim().length < 5) {
+      return NextResponse.json({ error: "An explanation is required." }, { status: 400 });
+    }
+    if (hasUnbalancedMathDelimiters(body.explanation)) {
+      return NextResponse.json(
+        { error: "Explanation has an unclosed math delimiter ($ or $$)." },
+        { status: 400 }
+      );
+    }
+  }
+
+  if (body.answerChoices !== undefined && Array.isArray(body.answerChoices)) {
+    const choices = body.answerChoices as Array<{ id?: string; text?: string }>;
+    const ids = choices.map((c) => c.id);
+    if (new Set(ids).size !== ids.length) {
+      return NextResponse.json({ error: "Answer choice ids must be unique." }, { status: 400 });
+    }
+    const normalizedTexts = choices.map((c) => (c.text || "").trim().toLowerCase());
+    if (new Set(normalizedTexts).size !== normalizedTexts.length) {
+      return NextResponse.json(
+        { error: "Answer choices must not repeat the same text under different ids." },
+        { status: 400 }
+      );
+    }
+    for (const choice of choices) {
+      if (hasUnbalancedMathDelimiters(choice.text || "")) {
+        return NextResponse.json(
+          { error: `Answer choice "${choice.id}" has an unclosed math delimiter ($ or $$).` },
+          { status: 400 }
+        );
+      }
+    }
   }
 
   const updates: Record<string, unknown> = {};
@@ -111,8 +165,9 @@ export async function PATCH(
     .single();
 
   if (updateError || !updated) {
+    if (updateError) console.error("Failed to update diagnostic question:", updateError.message);
     return NextResponse.json(
-      { error: updateError?.message || "Failed to update the question." },
+      { error: "Failed to update the question." },
       { status: 500 }
     );
   }

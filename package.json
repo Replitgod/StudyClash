@@ -7,10 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
+    "@stripe/stripe-js": "^9.10.0",
     "@supabase/supabase-js": "^2.110.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
@@ -24,9 +26,11 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "sql.js": "^1.14.1",
+    "stripe": "^22.3.2",
     "unpdf": "^1.6.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4",
     "@types/katex": "^0.16.8",
     "@types/node": "^20",

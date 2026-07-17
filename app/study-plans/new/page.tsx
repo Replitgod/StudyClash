@@ -156,7 +156,7 @@ export default function NewStudyPlanPage() {
             <input
               value={targetScore}
               onChange={(e) => setTargetScore(e.target.value)}
-              placeholder="e.g. 95"
+              placeholder="e.g. 1520 (SAT for now; more exams coming soon)"
               className="mt-1 w-full rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm text-white placeholder-white/35"
             />
           </div>

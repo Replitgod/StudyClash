@@ -48,7 +48,10 @@ type FinishBattlePayload = {
   timeTakenSeconds: number;
   answers: AnswerPayload[];
   challengeFromMatchId?: string;
+  clientRequestId?: string;
 };
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type MatchLite = {
   id: string;
@@ -289,6 +292,27 @@ export async function POST(req: NextRequest) {
     // score or boss-battle win.
     const authoritativeScore = computeAuthoritativeScore(body.answers);
 
+    const clientRequestId =
+      typeof body.clientRequestId === "string" && UUID_RE.test(body.clientRequestId)
+        ? body.clientRequestId
+        : null;
+
+    // Fast path: this exact client-generated request already succeeded
+    // (e.g. the client retried after a slow/dropped response). Cheaper than
+    // the signature-based dedupe below, and catches it before doing any of
+    // that work.
+    if (clientRequestId) {
+      const { data: existingByRequestId } = await supabase
+        .from("matches")
+        .select("id")
+        .eq("client_request_id", clientRequestId)
+        .maybeSingle();
+
+      if (existingByRequestId) {
+        return NextResponse.json({ matchId: existingByRequestId.id, deduped: true });
+      }
+    }
+
     // Deduplicate accidental rapid re-submits of the exact same completed
     // battle payload (for example, retry taps after transient network lag).
     const dedupeWindowStart = new Date(Date.now() - 2 * 60 * 1000).toISOString();
@@ -366,9 +390,28 @@ export async function POST(req: NextRequest) {
         total_questions: body.totalQuestions,
         correct_answers: body.correctAnswers,
         time_taken_seconds: body.timeTakenSeconds,
+        client_request_id: clientRequestId,
       })
       .select("id")
       .single();
+
+    // Postgres unique_violation (23505) on client_request_id -- a genuinely
+    // concurrent duplicate request won this insert race by a hair (both
+    // passed the fast-path SELECT above before either had committed). The
+    // DB constraint is what actually stops the second row; this just looks
+    // up whichever request won and returns its id instead of surfacing an
+    // error for what the student correctly experiences as a success.
+    if (matchError?.code === "23505" && clientRequestId) {
+      const { data: winner } = await supabase
+        .from("matches")
+        .select("id")
+        .eq("client_request_id", clientRequestId)
+        .maybeSingle();
+
+      if (winner) {
+        return NextResponse.json({ matchId: winner.id, deduped: true });
+      }
+    }
 
     if (matchError || !matchData) {
       return NextResponse.json(

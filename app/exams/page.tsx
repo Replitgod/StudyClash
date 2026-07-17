@@ -13,7 +13,7 @@ import { Reveal } from "@/app/components/ui/Reveal";
 const PRIMARY_EXAM_TRACK = {
   slug: "ap",
   name: "AP Exams",
-  monthly: "Included in Exam Pro ($5/mo)",
+  monthly: "Included in StudyClash Pro ($3/mo)",
   promise: "AI-generated practice questions styled after AP exam formats and scoring bands.",
   officialLabel: "Free-response questions from past AP exams",
   officialUrl: "https://apcentral.collegeboard.org/courses/past-exam-questions",
@@ -23,7 +23,7 @@ const UNREVIEWED_EXAM_TRACKS = [
   {
     slug: "mcat",
     name: "MCAT",
-    monthly: "Included in Exam Pro ($5/mo)",
+    monthly: "Included in StudyClash Pro ($3/mo)",
     promise: "AI-generated multi-step reasoning questions with passage-heavy science prompts.",
     officialLabel: "AAMC free practice exam",
     officialUrl:
@@ -32,7 +32,7 @@ const UNREVIEWED_EXAM_TRACKS = [
   {
     slug: "lsat",
     name: "LSAT",
-    monthly: "Included in Exam Pro ($5/mo)",
+    monthly: "Included in StudyClash Pro ($3/mo)",
     promise: "AI-generated argument structure, logical flaws, and timed pressure drills.",
     officialLabel: "LSAC free PrepTests (LawHub)",
     officialUrl: "https://www.lsac.org/lsat/prepare/official-lsat-practice-tests",
@@ -40,7 +40,7 @@ const UNREVIEWED_EXAM_TRACKS = [
   {
     slug: "nclex",
     name: "NCLEX",
-    monthly: "Included in Exam Pro ($5/mo)",
+    monthly: "Included in StudyClash Pro ($3/mo)",
     promise: "AI-generated clinical judgment drills with safety-first prioritization patterns.",
     officialLabel: "Official NCLEX prep resources",
     officialUrl: "https://www.nclex.com/prepare.page",

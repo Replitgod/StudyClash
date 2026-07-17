@@ -103,7 +103,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Can I battle instantly without creating a room?",
-    a: "Yes. Tap Try Instant Battle and start instantly in Easy, Medium, Hard, or Adaptive mode. No lobby required.",
+    a: "Yes. Tap Try Quick Battle and start instantly in Easy, Medium, Hard, or Adaptive mode. No lobby required.",
   },
   {
     q: "Is there a free plan?",
@@ -255,7 +255,7 @@ export default function Home() {
                 href="#battle-ai"
                 className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#4F46E5] px-6 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#4338CA]"
               >
-                Try Instant Battle
+                Try Quick Battle
               </Link>
               <Link
                 href="/create"
@@ -282,13 +282,21 @@ export default function Home() {
           <div className="text-center">
             <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">See StudyClash in action</h2>
             <p className="mx-auto mt-2 max-w-xl text-sm text-[#64748B]">
-              Pick a difficulty and answer 5 questions against the AI. No signup required.
+              Quick Battle: pick a difficulty and answer 5 questions against the AI. No signup required.
             </p>
           </div>
 
           <div className="mt-8 rounded-[14px] border border-[#E2E8F0] bg-[#0B1220] p-4 shadow-sm sm:p-6">
             <InstantAIBattle />
           </div>
+
+          <p className="mt-4 text-center text-sm text-[#64748B]">
+            Want the full picture? Try the{" "}
+            <Link href="/demo/battle" className="font-semibold text-[#4F46E5] hover:underline">
+              Guided Product Demo
+            </Link>{" "}
+            for the complete loop: upload, battle, mistakes, and a weak-topic rematch.
+          </p>
         </section>
 
         {/* ---------- 3. Three-step explanation ---------- */}
@@ -342,7 +350,7 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div className="rounded-[14px] border border-[#E2E8F0] bg-white p-6">
               <h3 className="text-base font-semibold text-[#0F172A]">{PLAN_METADATA.free_beta.label}</h3>
               <p className="mt-1 text-3xl font-bold text-[#0F172A]">{PLAN_METADATA.free_beta.price}</p>
@@ -367,18 +375,6 @@ export default function Home() {
                 className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[10px] bg-[#4F46E5] text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#4338CA]"
               >
                 Go Pro
-              </Link>
-            </div>
-
-            <div className="rounded-[14px] border border-[#E2E8F0] bg-white p-6">
-              <h3 className="text-base font-semibold text-[#0F172A]">{PLAN_METADATA.exam_tunnel.label}</h3>
-              <p className="mt-1 text-3xl font-bold text-[#0F172A]">{PLAN_METADATA.exam_tunnel.price}</p>
-              <p className="mt-2 text-sm text-[#64748B]">{PLAN_METADATA.exam_tunnel.tagline}</p>
-              <Link
-                href="/pricing"
-                className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white text-sm font-semibold text-[#0F172A] transition-colors duration-150 hover:bg-[#F8FAFC]"
-              >
-                View {PLAN_METADATA.exam_tunnel.label}
               </Link>
             </div>
           </div>
@@ -417,7 +413,7 @@ export default function Home() {
                 href="#battle-ai"
                 className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#4F46E5] px-6 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#4338CA]"
               >
-                Try Instant Battle
+                Try Quick Battle
               </Link>
               <Link
                 href="/create"
@@ -435,7 +431,7 @@ export default function Home() {
             <p>StudyClash · Competitive studying for the AI era</p>
             <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Footer links">
               <Link href="/create" className="hover:text-[#0F172A]">Create</Link>
-              <Link href="/demo/battle" className="hover:text-[#0F172A]">Demo</Link>
+              <Link href="/demo/battle" className="hover:text-[#0F172A]">Guided Demo</Link>
               <Link href="/pricing" className="hover:text-[#0F172A]">Pricing</Link>
               <Link href="/exams" className="hover:text-[#0F172A]">Exams</Link>
               <Link href="/classroom" className="hover:text-[#0F172A]">Classroom (Beta)</Link>

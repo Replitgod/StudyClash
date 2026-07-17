@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "StudyClash Pricing | Free And Pro Plans",
     description:
-      "Compare Free, Student Pro, and Exam Pro pricing options.",
+      "Compare the Free plan and StudyClash Pro pricing options.",
     url: "/pricing",
     images: ["/opengraph-image"],
   },

@@ -5,7 +5,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
+import { authFetch } from "@/lib/authFetch";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { PRIORITY_PLAN_IDS } from "@/lib/plans";
+
+type SubscriptionStatus = {
+  status: string;
+  cancel_at_period_end: boolean;
+  current_period_end: string | null;
+} | null;
 
 type PlanInfo = {
   id: string;
@@ -53,6 +61,19 @@ export default function AccountPage() {
   const [usageError, setUsageError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
+
+  // Billing state -- subscription row is informational (drives which button
+  // shows), never used to grant access. Access itself is enforced server-side
+  // off profiles.plan, which only the verified Stripe webhook writes.
+  const [subscription, setSubscription] = useState<SubscriptionStatus>(null);
+  const [isLoadingSubscription, setIsLoadingSubscription] = useState(true);
+  const [isStartingCheckout, setIsStartingCheckout] = useState(false);
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [billingError, setBillingError] = useState<string | null>(null);
+  const [checkoutJustSucceeded, setCheckoutJustSucceeded] = useState(false);
+  // Stripe is still in test mode -- see the matching flag in
+  // app/pricing/page.tsx and lib/server/stripe.ts isStripeTestMode.
+  const [isCheckoutAvailable, setIsCheckoutAvailable] = useState(false);
 
   // Display name editing state
   const [isEditingName, setIsEditingName] = useState(false);
@@ -107,6 +128,84 @@ export default function AccountPage() {
       loadUsageAndPlan();
     }
   }, [isLoggedIn, user, profile]);
+
+  useEffect(() => {
+    setCheckoutJustSucceeded(new URLSearchParams(window.location.search).get("checkout") === "success");
+  }, []);
+
+  useEffect(() => {
+    async function loadSubscription() {
+      setIsLoadingSubscription(true);
+      try {
+        const response = await authFetch("/api/stripe/subscription");
+        const data = await response.json();
+        setSubscription(response.ok ? data.subscription : null);
+      } catch {
+        setSubscription(null);
+      } finally {
+        setIsLoadingSubscription(false);
+      }
+    }
+
+    if (isLoggedIn && user) {
+      loadSubscription();
+    } else {
+      setIsLoadingSubscription(false);
+    }
+  }, [isLoggedIn, user]);
+
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    authFetch("/api/stripe/checkout")
+      .then((response) => response.json())
+      .then((data) => setIsCheckoutAvailable(!!data.available))
+      .catch(() => setIsCheckoutAvailable(false));
+  }, [isLoggedIn]);
+
+  const handleUpgradeToPro = async () => {
+    setBillingError(null);
+    setIsStartingCheckout(true);
+
+    try {
+      const response = await authFetch("/api/stripe/checkout", { method: "POST" });
+      const data = await response.json();
+
+      if (!response.ok || !data.url) {
+        setBillingError(data.error || "Could not start checkout. Please try again.");
+        setIsStartingCheckout(false);
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch {
+      setBillingError("Could not start checkout. Please try again.");
+      setIsStartingCheckout(false);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setBillingError(null);
+    setIsOpeningPortal(true);
+
+    try {
+      const response = await authFetch("/api/stripe/portal", { method: "POST" });
+      const data = await response.json();
+
+      if (!response.ok || !data.url) {
+        setBillingError(data.error || "Could not open billing portal. Please try again.");
+        setIsOpeningPortal(false);
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch {
+      setBillingError("Could not open billing portal. Please try again.");
+      setIsOpeningPortal(false);
+    }
+  };
+
+  const hasStripeSubscriptionRow = subscription !== null;
+  const isPriorityPlan = !!profile?.plan && PRIORITY_PLAN_IDS.has(profile.plan);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -282,6 +381,18 @@ export default function AccountPage() {
             Account
           </span>
         </h1>
+
+        {checkoutJustSucceeded && (
+          <div className="mt-6 flex items-center gap-3 rounded-2xl border border-green-400/25 bg-green-500/10 px-4 py-3 text-left">
+            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-500/20 text-sm font-black text-green-300">
+              ✓
+            </span>
+            <p className="text-sm text-green-100/90">
+              Payment received — StudyClash Pro activates automatically once Stripe confirms your
+              subscription. If your plan doesn&apos;t update within a minute, refresh this page.
+            </p>
+          </div>
+        )}
 
         {/* Account card */}
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
@@ -481,12 +592,35 @@ export default function AccountPage() {
                 {logoutError}
               </div>
             )}
+            {billingError && (
+              <div className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                {billingError}
+              </div>
+            )}
             <Link
               href="/create"
               className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3.5 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
             >
               {hasGeneratedToday ? "Create Another Deck" : "Create Your First Deck"}
             </Link>
+            {!isLoadingSubscription && hasStripeSubscriptionRow && (
+              <button
+                onClick={handleManageSubscription}
+                disabled={isOpeningPortal}
+                className="flex items-center justify-center gap-2 rounded-xl border border-indigo-400/30 bg-indigo-500/10 px-6 py-3.5 text-sm font-bold text-indigo-200 transition-colors duration-150 hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isOpeningPortal ? "Opening Billing..." : "Manage Subscription"}
+              </button>
+            )}
+            {!isLoadingSubscription && !hasStripeSubscriptionRow && !isPriorityPlan && isCheckoutAvailable && (
+              <button
+                onClick={handleUpgradeToPro}
+                disabled={isStartingCheckout}
+                className="flex items-center justify-center gap-2 rounded-xl border border-indigo-400/30 bg-indigo-500/10 px-6 py-3.5 text-sm font-bold text-indigo-200 transition-colors duration-150 hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isStartingCheckout ? "Starting Checkout..." : "Upgrade to Pro — $3/month"}
+              </button>
+            )}
             <Link
               href="/pricing"
               className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:border-indigo-400/30 hover:bg-white/10"

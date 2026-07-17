@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getServiceSupabaseClient, requireAdminUser } from "@/lib/server/apiUtils";
 import { TERRA_TASK } from "@/lib/server/aiModels";
+import { hasUnbalancedMathDelimiters } from "@/lib/server/mathValidation";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -71,8 +72,14 @@ function validateAnswerShape(payload: CreateQuestionPayload): string | null {
   if (!payload.questionText || payload.questionText.trim().length < 5) {
     return "Question text is required.";
   }
+  if (hasUnbalancedMathDelimiters(payload.questionText)) {
+    return "Question text has an unclosed math delimiter ($ or $$).";
+  }
   if (!payload.explanation || payload.explanation.trim().length < 5) {
     return "An explanation is required.";
+  }
+  if (hasUnbalancedMathDelimiters(payload.explanation)) {
+    return "Explanation has an unclosed math delimiter ($ or $$).";
   }
   if (!payload.domain || !payload.skill) {
     return "Domain and skill must both be assigned.";
@@ -93,8 +100,17 @@ function validateAnswerShape(payload: CreateQuestionPayload): string | null {
     if (new Set(ids).size !== ids.length) {
       return "Answer choice ids must be unique.";
     }
+    const normalizedTexts = choices.map((c) => (c.text || "").trim().toLowerCase());
+    if (new Set(normalizedTexts).size !== normalizedTexts.length) {
+      return "Answer choices must not repeat the same text under different ids.";
+    }
     if (!ids.includes(payload.correctAnswer)) {
       return "correctAnswer must match one answer choice id -- exactly one unambiguous correct answer.";
+    }
+    for (const choice of choices) {
+      if (hasUnbalancedMathDelimiters(choice.text || "")) {
+        return `Answer choice "${choice.id}" has an unclosed math delimiter ($ or $$).`;
+      }
     }
   } else if (payload.questionType === "student_produced_response") {
     if (payload.answerChoices) {
@@ -276,10 +292,8 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (insertError || !inserted) {
-    return NextResponse.json(
-      { error: insertError?.message || "Failed to save the question." },
-      { status: 500 }
-    );
+    if (insertError) console.error("Failed to save diagnostic question:", insertError.message);
+    return NextResponse.json({ error: "Failed to save the question." }, { status: 500 });
   }
 
   return NextResponse.json({ question: inserted });

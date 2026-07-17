@@ -6,11 +6,10 @@ import { FLOATING_ACTION, UI_Z_INDEX } from "@/lib/uiLayout";
 
 const HIDE_ON_PREFIXES = ["/battle/", "/challenge/", "/results/"];
 // "/" is included because the homepage hero already has its own
-// equally-prominent "Start Instant Battle (No Signup)" CTA right above the
-// fold -- on mobile, the floating duplicate doesn't just repeat that
-// button, it visually sits on top of the AutoplayDemoRail content that
-// follows it, reading as cluttered/broken rather than as a second chance
-// to convert.
+// equally-prominent "Try Quick Battle" CTA right above the fold -- on
+// mobile, the floating duplicate doesn't just repeat that button, it
+// visually sits on top of the AutoplayDemoRail content that follows it,
+// reading as cluttered/broken rather than as a second chance to convert.
 const HIDE_ON_EXACT = new Set(["/demo/battle", "/"]);
 
 export default function FloatingBattleCTA() {
@@ -27,9 +26,9 @@ export default function FloatingBattleCTA() {
     >
       <BattleAILink
         className="flex items-center justify-center rounded-2xl bg-gradient-to-r from-indigo-300 to-green-300 px-5 py-3 text-sm font-black text-[#052538] shadow-[0_22px_45px_-22px_rgba(79,70,229,0.95)]"
-        ariaLabel="Start Battle AI instantly"
+        ariaLabel="Start Quick Battle"
       >
-        Start Battle AI Instantly
+        Start Quick Battle
       </BattleAILink>
     </div>
   );

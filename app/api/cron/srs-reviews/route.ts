@@ -38,7 +38,8 @@ export async function GET(req: NextRequest) {
     .limit(MAX_ROWS_PER_RUN);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("srs-reviews cron failed to load due rows:", error.message);
+    return NextResponse.json({ error: "Could not load due reviews." }, { status: 500 });
   }
 
   let notified = 0;

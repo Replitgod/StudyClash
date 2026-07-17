@@ -653,6 +653,24 @@ export default function BattlePage() {
   // click slip through before the first update is reflected.
   const hasFinishedRef = useRef(false);
 
+  // Same synchronous-guard reasoning as hasFinishedRef above, applied to
+  // answer selection: selectedChoice/isGradingOpenResponse are React state,
+  // which batches, so a fast enough double-click/double-tap on two
+  // different choices (or Enter-key repeat) could theoretically both pass
+  // the state-based guard before the first click's re-render lands. Reset
+  // alongside selectedChoice everywhere it's cleared for a new question.
+  const isAnsweringRef = useRef(false);
+
+  // Client-generated idempotency key for the finish request. hasFinishedRef
+  // + the full-screen swap already stop a normal double-click, but they
+  // can't stop two genuinely concurrent in-flight requests (e.g. a slow
+  // connection where a retry fires before the first response lands) from
+  // both reaching the server and both inserting a `matches` row -- see the
+  // matching unique constraint on client_request_id in finish/route.ts.
+  // Lazily created on first use and reused across retries of the SAME
+  // finish attempt (a fresh battle gets a fresh ref on remount).
+  const finishRequestIdRef = useRef<string | null>(null);
+
   // Saving the finished match
   const [isFinishing, setIsFinishing] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -728,6 +746,7 @@ export default function BattlePage() {
       setCurrentIndex(0);
       setAnswers([]);
       setSelectedChoice(null);
+      isAnsweringRef.current = false;
       setLastAnswerWasCorrect(null);
       setOpenResponseDraft("");
       setOpenResponseFeedback(null);
@@ -1254,6 +1273,45 @@ export default function BattlePage() {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [hasStarted, isFinishing, introCountdown]);
 
+  // beforeunload only covers tab-close/refresh -- it never fires for the
+  // browser back button, since that's a same-document SPA navigation
+  // (popstate), not a document unload. Without this, back-button mid-battle
+  // silently unmounts the page and loses all progress with zero warning.
+  // The trick: push one extra history entry when the battle becomes active,
+  // so the first back-press lands on popstate (which we can intercept)
+  // instead of immediately leaving. Confirming re-fires the back navigation
+  // for real; cancelling re-pushes our sentinel entry to stay put.
+  useEffect(() => {
+    if (!hasStarted || isFinishing || introCountdown !== null) return;
+
+    window.history.pushState({ studyclashBattleGuard: true }, "", window.location.href);
+    let isLeaving = false;
+
+    const handlePopState = () => {
+      // The confirmed "leave" branch below calls history.back() a second
+      // time to actually get past our sentinel entry -- without this guard,
+      // that second back-navigation would re-trigger this same handler and
+      // show the confirm dialog twice.
+      if (isLeaving) return;
+
+      const shouldLeave = window.confirm(
+        "Leave this battle? Your progress will be lost since there's no way to resume it later."
+      );
+
+      if (shouldLeave) {
+        isLeaving = true;
+        void trackEvent("battle_abandoned", { deckId, questionIndex: currentIndex });
+        window.history.back();
+      } else {
+        window.history.pushState({ studyclashBattleGuard: true }, "", window.location.href);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasStarted, isFinishing, introCountdown]);
+
   useEffect(() => {
     return () => {
       if (rivalResolveTimerRef.current) {
@@ -1383,7 +1441,8 @@ export default function BattlePage() {
   };
 
   const handleSelectAnswer = (choice: string) => {
-    if (selectedChoice || introCountdown !== null) return; // question already answered
+    if (isAnsweringRef.current || selectedChoice || introCountdown !== null) return; // question already answered
+    isAnsweringRef.current = true;
 
     const currentQuestion = questions[currentIndex];
     const isCorrect = choice === currentQuestion.correct_answer;
@@ -1554,11 +1613,13 @@ export default function BattlePage() {
   // without first round-tripping through openResponseDraft state (whose
   // setter wouldn't be visible to this closure until the next render).
   const handleSubmitOpenResponse = async (answerOverride?: string) => {
-    if (selectedChoice || introCountdown !== null || isGradingOpenResponse) return;
+    if (isAnsweringRef.current || selectedChoice || introCountdown !== null || isGradingOpenResponse) return;
 
     const trimmedAnswer = (answerOverride ?? openResponseDraft).trim();
     if (!trimmedAnswer) return;
 
+    isAnsweringRef.current = true;
+    let didSucceed = false;
     const currentQuestion = questions[currentIndex];
     setIsGradingOpenResponse(true);
     setOpenResponseError(null);
@@ -1592,6 +1653,7 @@ export default function BattlePage() {
       );
       const isCorrect = Boolean(data.isCorrect);
 
+      didSucceed = true;
       setSelectedChoice(trimmedAnswer);
       setLastAnswerWasCorrect(isCorrect);
       setOpenResponseFeedback({
@@ -1616,6 +1678,12 @@ export default function BattlePage() {
       );
     } finally {
       setIsGradingOpenResponse(false);
+      // Only release the guard on failure -- a successful grade already set
+      // selectedChoice, and handleNext's reset (below) clears this ref
+      // alongside it when the student moves to the next question.
+      if (!didSucceed) {
+        isAnsweringRef.current = false;
+      }
     }
   };
 
@@ -1676,6 +1744,7 @@ export default function BattlePage() {
       questionStartSecondsRef.current = elapsedSeconds;
       setCurrentIndex((prev) => prev + 1);
       setSelectedChoice(null);
+      isAnsweringRef.current = false;
       setLastAnswerWasCorrect(null);
       setOpenResponseDraft("");
       setOpenResponseFeedback(null);
@@ -1720,6 +1789,10 @@ export default function BattlePage() {
       // authFetch attaches the logged-in player's session token (when one
       // exists) so the match can be stamped with a real user_id server-side.
       // Guests get no Authorization header and the battle still saves fine.
+      if (!finishRequestIdRef.current) {
+        finishRequestIdRef.current = crypto.randomUUID();
+      }
+
       response = await authFetch("/api/battle/finish", {
         method: "POST",
         body: JSON.stringify({
@@ -1731,6 +1804,7 @@ export default function BattlePage() {
           timeTakenSeconds: elapsedSeconds,
           answers,
           challengeFromMatchId,
+          clientRequestId: finishRequestIdRef.current,
         }),
       });
     } catch (error) {
@@ -2641,13 +2715,17 @@ export default function BattlePage() {
           <span className="text-xs font-bold uppercase tracking-wider text-white/50">
             Question {currentIndex + 1} of {questions.length}
           </span>
-          <div className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-bold text-indigo-300">
+          <div
+            className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-sm font-bold text-indigo-300"
+            aria-label={`Elapsed time: ${formatTime(elapsedSeconds)}`}
+          >
             <svg
               className="h-4 w-4 flex-shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={2}
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -2655,7 +2733,7 @@ export default function BattlePage() {
                 d="M12 6v6l4 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            {formatTime(elapsedSeconds)}
+            <span aria-hidden="true">{formatTime(elapsedSeconds)}</span>
           </div>
         </div>
 
@@ -2905,6 +2983,8 @@ export default function BattlePage() {
           {/* Explanation / grading feedback shown after answering */}
           {showFeedback && (
             <div
+              role="status"
+              aria-live="polite"
               className={`mt-5 rounded-xl border px-4 py-3.5 text-sm ${
                 answeredCorrectly
                   ? "border-green-400/30 bg-green-500/5"

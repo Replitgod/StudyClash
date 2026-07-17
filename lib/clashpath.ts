@@ -1,3 +1,5 @@
+import { MIN_ATTEMPTS_FOR_HIGH_TIER } from "@/lib/masteryTiers";
+
 export type ClashPathQuestionResult = {
   topic: string;
   difficulty: string;
@@ -237,8 +239,21 @@ export function buildClashPathReport(params: {
       )
     );
 
+    // A topic seen for the first time ever, answered correctly with a fast
+    // response, can hit mastery=100 on this formula alone -- lifetimeAttempts
+    // guards against calling that "mastered" before there's actually enough
+    // evidence, same guard/threshold as lib/masteryTiers.ts uses for Mastery
+    // Map so the two features don't disagree on what "enough attempts" means.
+    const lifetimeAttempts =
+      current.total +
+      historyByTopic.reduce((sum, topicMap) => sum + (topicMap.get(topic)?.total || 0), 0);
+
     const status: ClashPathTopicInsight["status"] =
-      mastery >= 85 ? "mastered" : mastery >= 65 ? "close" : "weak";
+      mastery >= 85 && lifetimeAttempts >= MIN_ATTEMPTS_FOR_HIGH_TIER
+        ? "mastered"
+        : mastery >= 65
+          ? "close"
+          : "weak";
 
     topicInsights.push({
       topic,

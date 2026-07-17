@@ -26,7 +26,7 @@ const CONTINUE_PATH_EXCLUDE = new Set([
 // menu, same as before this component had a rail at all.
 const MORE_LINKS = [
   { label: "Create Deck", href: "/create" },
-  { label: "Demo", href: "/demo/battle" },
+  { label: "Guided Demo", href: "/demo/battle" },
   { label: "Exams", href: "/exams" },
   { label: "Pricing", href: "/pricing" },
   { label: "Classroom (Beta)", href: "/classroom" },
@@ -38,7 +38,7 @@ const MORE_LINKS = [
 const MARKETING_LINKS = [
   { label: "Home", href: "/" },
   { label: "Battle AI", href: "/#battle-ai", isBattle: true },
-  { label: "Demo", href: "/demo/battle" },
+  { label: "Guided Demo", href: "/demo/battle" },
   { label: "Create", href: "/create" },
   { label: "Diagnostics", href: "/diagnostics" },
   { label: "Exams", href: "/exams" },

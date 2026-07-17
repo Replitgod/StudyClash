@@ -8,6 +8,7 @@ import { AuthProvider } from "@/lib/useAuth";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { MotionConfig } from "framer-motion";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -142,22 +143,28 @@ export default function RootLayout({
             __html: JSON.stringify(organizationSchema),
           }}
         />
-        <AuthProvider>
-          <HashAnchorScroller />
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:rounded-lg focus:bg-[#0b1f2a] focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-indigo-100"
-            style={{ zIndex: UI_Z_INDEX.skipLink }}
-          >
-            Skip to main content
-          </a>
-          <Navigation />
-          <MainContentShell>
-            <PageTransition>{children}</PageTransition>
-          </MainContentShell>
-          <FloatingBattleCTA />
-          <FeedbackButton />
-        </AuthProvider>
+        {/* reducedMotion="user" makes every motion.* component in the tree
+            respect prefers-reduced-motion automatically (framer-motion
+            animates transform/opacity via JS, so the CSS media-query rule
+            in globals.css can't reach it on its own). */}
+        <MotionConfig reducedMotion="user">
+          <AuthProvider>
+            <HashAnchorScroller />
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:rounded-lg focus:bg-[#0b1f2a] focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-indigo-100"
+              style={{ zIndex: UI_Z_INDEX.skipLink }}
+            >
+              Skip to main content
+            </a>
+            <Navigation />
+            <MainContentShell>
+              <PageTransition>{children}</PageTransition>
+            </MainContentShell>
+            <FloatingBattleCTA />
+            <FeedbackButton />
+          </AuthProvider>
+        </MotionConfig>
       </body>
     </html>
   );

@@ -1,6 +1,8 @@
 ﻿"use client";
 
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
+import { authFetch } from "@/lib/authFetch";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { PLAN_METADATA, PUBLIC_PLANS, getPlanMetadata } from "@/lib/plans";
 import { FREE_PLAN_LIMIT_SUMMARY } from "@/lib/planLimits";
@@ -12,6 +14,29 @@ const PLANS = PUBLIC_PLANS;
 export default function PricingPage() {
   const { profile, isLoggedIn } = useAuth();
 
+  // Read directly off window.location instead of useSearchParams() so this
+  // page doesn't need a Suspense boundary just to show a dismissable banner.
+  const [checkoutCancelled, setCheckoutCancelled] = useState(false);
+  useEffect(() => {
+    setCheckoutCancelled(new URLSearchParams(window.location.search).get("checkout") === "cancelled");
+  }, []);
+
+  const [isStartingCheckout, setIsStartingCheckout] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  // Stripe is still in test mode -- checkout stays hidden from everyone
+  // except admin accounts until STRIPE_SECRET_KEY is switched to a live key
+  // (see lib/server/stripe.ts isStripeTestMode). Defaults to false so the
+  // button never flashes visible before this resolves.
+  const [isCheckoutAvailable, setIsCheckoutAvailable] = useState(false);
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    authFetch("/api/stripe/checkout")
+      .then((response) => response.json())
+      .then((data) => setIsCheckoutAvailable(!!data.available))
+      .catch(() => setIsCheckoutAvailable(false));
+  }, [isLoggedIn]);
+
   // A user can be on a plan that isn't publicly sold (e.g. a manually
   // granted "pro_preview"/"founder" seat) — surface that clearly instead of
   // silently showing no "Current Plan" badge anywhere on this page.
@@ -19,13 +44,27 @@ export default function PricingPage() {
   const isOnUnlistedPlan =
     isLoggedIn && currentPlanMeta !== null && !currentPlanMeta.publiclyListed;
 
-  const requestAccessHref =
-    "mailto:studyjoustbeta@gmail.com?subject=StudyClash%20Plan%20Access%20Request";
+  const handleUpgradeToPro = async () => {
+    setCheckoutError(null);
+    setIsStartingCheckout(true);
 
-  // No payment processor is wired up yet -- these plans aren't purchasable
-  // with a working checkout, so the button says exactly that instead of
-  // implying a live "Buy Now" flow. Clicking sends a plan-access request by
-  // email rather than landing on a broken checkout page.
+    try {
+      const response = await authFetch("/api/stripe/checkout", { method: "POST" });
+      const data = await response.json();
+
+      if (!response.ok || !data.url) {
+        setCheckoutError(data.error || "Could not start checkout. Please try again.");
+        setIsStartingCheckout(false);
+        return;
+      }
+
+      window.location.href = data.url;
+    } catch {
+      setCheckoutError("Could not start checkout. Please try again.");
+      setIsStartingCheckout(false);
+    }
+  };
+
   const getButtonLabel = (planId: string): string => {
     if (isLoggedIn && profile?.plan === planId) {
       return "Current Plan";
@@ -33,7 +72,10 @@ export default function PricingPage() {
     if (planId === "free_beta") {
       return "Current Beta";
     }
-    return "Join Waitlist";
+    if (planId === "pro_individual") {
+      return isStartingCheckout ? "Starting checkout..." : "Upgrade to Pro — $3/month";
+    }
+    return "View Plans";
   };
 
   const isCurrentPlan = (planId: string): boolean => {
@@ -45,15 +87,11 @@ export default function PricingPage() {
       return isLoggedIn ? "/create" : "/signup?redirect=/create";
     }
 
-    if (planId === "exam_tunnel") {
-      return "/exams";
+    if (!isLoggedIn) {
+      return `/signup?redirect=${encodeURIComponent("/pricing")}`;
     }
 
-    if (isLoggedIn) {
-      return requestAccessHref;
-    }
-
-    return `/signup?redirect=${encodeURIComponent("/pricing")}`;
+    return "/pricing";
   };
 
   return (
@@ -104,8 +142,22 @@ export default function PricingPage() {
           </div>
         )}
 
+        {checkoutCancelled && (
+          <div className="mt-6 flex w-full max-w-lg items-center gap-3 rounded-2xl border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-left sm:px-5">
+            <p className="text-sm text-amber-100/90">
+              Checkout was cancelled — you weren&apos;t charged. You can upgrade any time.
+            </p>
+          </div>
+        )}
+
+        {checkoutError && (
+          <div className="mt-6 flex w-full max-w-lg items-center gap-3 rounded-2xl border border-red-400/25 bg-red-500/10 px-4 py-3 text-left sm:px-5">
+            <p className="text-sm text-red-100/90">{checkoutError}</p>
+          </div>
+        )}
+
         {/* Plan cards */}
-        <div className="mt-10 grid w-full grid-cols-1 gap-5 sm:mt-12 md:grid-cols-3">
+        <div className="mt-10 grid w-full grid-cols-1 gap-5 sm:mt-12 md:grid-cols-2">
           {PLANS.map((plan) => {
             const current = isCurrentPlan(plan.id);
 
@@ -182,19 +234,24 @@ export default function PricingPage() {
                   <div className="mt-6 flex w-full items-center justify-center rounded-xl border border-green-400/30 bg-green-500/10 px-6 py-3.5 text-sm font-bold text-green-300">
                     {getButtonLabel(plan.id)}
                   </div>
-                ) : plan.id === "free_beta" || !isLoggedIn ? (
-                  <Button href={getPlanHref(plan.id)} variant={plan.highlight ? "primary" : "ghost"} fullWidth className="mt-6">
-                    {getButtonLabel(plan.id)}
-                  </Button>
-                ) : (
+                ) : plan.id === "pro_individual" && isLoggedIn && isCheckoutAvailable ? (
                   <Button
-                    href={getPlanHref(plan.id)}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    type="button"
+                    onClick={handleUpgradeToPro}
+                    isLoading={isStartingCheckout}
+                    loadingLabel="Starting checkout..."
                     variant={plan.highlight ? "primary" : "ghost"}
                     fullWidth
                     className="mt-6"
                   >
+                    Upgrade to Pro — $3/month
+                  </Button>
+                ) : plan.id === "pro_individual" && isLoggedIn ? (
+                  <div className="mt-6 flex w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] px-6 py-3.5 text-sm font-bold text-white/40">
+                    Coming Soon
+                  </div>
+                ) : (
+                  <Button href={getPlanHref(plan.id)} variant={plan.highlight ? "primary" : "ghost"} fullWidth className="mt-6">
                     {getButtonLabel(plan.id)}
                   </Button>
                 )}

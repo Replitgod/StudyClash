@@ -587,7 +587,7 @@ export default function InstantAIBattle() {
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">Instant Mode</p>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">Quick Battle</p>
           <h2 className="mt-1 text-2xl font-black text-white sm:text-3xl">Battle an AI in One Click</h2>
           <p className="mt-1 text-sm text-indigo-100/80">No lobby. Tap start and answer 5 quick questions.</p>
         </div>

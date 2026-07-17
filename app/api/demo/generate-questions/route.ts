@@ -3,6 +3,11 @@ import OpenAI from "openai";
 import { createHash } from "node:crypto";
 import { TERRA_TASK, type ReasoningEffort } from "@/lib/server/aiModels";
 import { hasUnbalancedMathDelimiters } from "@/lib/server/mathValidation";
+import { shuffleAnswerChoices } from "@/lib/server/questionShuffle";
+
+// A one-word explanation like "Correct." passes an empty-string check but
+// doesn't actually explain anything.
+const MIN_EXPLANATION_LENGTH = 20;
 
 // Reasoning-effort models spend part of max_completion_tokens on hidden
 // reasoning before writing visible output. A flat token cap sized only for
@@ -194,8 +199,12 @@ function validateQuestions(
     if (!q.correct_answer || !cleanedChoices.includes(q.correct_answer.trim())) {
       return `${label} has a correct_answer that doesn't match its answer_choices.`;
     }
-    if (!q.explanation || typeof q.explanation !== "string" || !q.explanation.trim()) {
-      return `${label} is missing an explanation.`;
+    if (
+      !q.explanation ||
+      typeof q.explanation !== "string" ||
+      q.explanation.trim().length < MIN_EXPLANATION_LENGTH
+    ) {
+      return `${label} is missing an explanation, or it's too short to actually explain the answer.`;
     }
     if (hasUnbalancedMathDelimiters(q.explanation)) {
       return `${label} has an unclosed math delimiter ($ or $$) in explanation.`;
@@ -257,7 +266,7 @@ async function generateOnce(args: {
 
   const questions = (parsed.questions as DemoQuestion[]).map((q) => ({
     question_text: q.question_text.trim(),
-    answer_choices: q.answer_choices.map((c) => c.trim()),
+    answer_choices: shuffleAnswerChoices(q.answer_choices.map((c) => c.trim())),
     correct_answer: q.correct_answer.trim(),
     explanation: q.explanation.trim(),
     topic: q.topic.trim(),

@@ -59,7 +59,7 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
   },
   pro_individual: {
     id: "pro_individual",
-    label: "Student Pro",
+    label: "StudyClash Pro",
     tagline: "For students who want the full loop",
     price: "$3/mo",
     dailyLimit: "Unlimited uploads and battles",
@@ -69,6 +69,10 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
       "Targeted rematches",
       "Saved study history",
       "Advanced AI explanations",
+      "Full diagnostic tests and exam tunnels (AP, MCAT, LSAT, NCLEX)",
+      "Personalized exam plans",
+      "Skill-by-skill tracking",
+      "Long-term progress analysis",
     ],
     tier: "priority",
     publiclyListed: true,
@@ -92,21 +96,26 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
     // any account already on it, just not advertised as a purchasable card.
     publiclyListed: false,
   },
+  // No longer sold on its own -- every feature that used to be exclusive to
+  // Exam Pro is now bundled into pro_individual (StudyClash Pro, $3/mo), and
+  // Stripe checkout only ever creates pro_individual subscriptions. This id
+  // is kept, unlisted, purely so any account still on it from before the
+  // merge keeps resolving to a real label/tier instead of showing nothing.
   exam_tunnel: {
     id: "exam_tunnel",
-    label: "Exam Pro",
+    label: "StudyClash Pro",
     tagline: "Full diagnostics and long-term tracking",
-    price: "$5/mo",
+    price: "$3/mo",
     dailyLimit: "Premium board-style generation",
     features: [
-      "Everything in Student Pro",
+      "Everything in StudyClash Pro",
       "Full diagnostic tests",
       "Personalized exam plans",
       "Skill-by-skill tracking",
       "Long-term progress analysis",
     ],
     tier: "priority",
-    publiclyListed: true,
+    publiclyListed: false,
   },
   pro_preview: {
     id: "pro_preview",
