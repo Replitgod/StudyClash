@@ -1,6 +1,7 @@
 "use client";
 
 import type { MouseEvent, ReactNode } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 type BattleAILinkProps = {
@@ -51,8 +52,8 @@ export default function BattleAILink({ children, className, onClick, ariaLabel }
   };
 
   return (
-    <a href="/#battle-ai" className={className} aria-label={ariaLabel} onClick={handleClick}>
+    <Link href="/#battle-ai" className={className} aria-label={ariaLabel} onClick={handleClick}>
       {children}
-    </a>
+    </Link>
   );
 }

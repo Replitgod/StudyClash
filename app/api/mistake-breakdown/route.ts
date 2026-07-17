@@ -47,6 +47,23 @@ async function resolvePlayerIdentity(userId: string): Promise<string | null> {
   return displayName || null;
 }
 
+// mistake_breakdowns.user_id (migration 20260720_mistake_breakdowns_user_id.sql)
+// is the stable key -- player_name is a mutable display name, so keying
+// history lookups off it silently lost a user's history every time they
+// renamed themselves (rows saved under the old name became unreachable).
+// Falls back to true if the column genuinely doesn't exist yet (migration
+// not yet applied), so this route degrades to the old behavior instead of
+// hard-failing.
+let userIdColumnAvailable: boolean | null = null;
+
+async function isUserIdColumnAvailable(): Promise<boolean> {
+  if (userIdColumnAvailable !== null) return userIdColumnAvailable;
+
+  const { error } = await supabase.from("mistake_breakdowns").select("user_id").limit(1);
+  userIdColumnAvailable = !error;
+  return userIdColumnAvailable;
+}
+
 function normalizeKey(value: string): string {
   return value
     .toLowerCase()
@@ -86,9 +103,10 @@ export async function GET(req: NextRequest) {
     }
 
     const deckId = req.nextUrl.searchParams.get("deckId") || "";
-    const playerName = await resolvePlayerIdentity(auth.userId);
+    const useUserId = await isUserIdColumnAvailable();
+    const playerName = useUserId ? null : await resolvePlayerIdentity(auth.userId);
 
-    if (!deckId || !playerName) {
+    if (!deckId || (!useUserId && !playerName)) {
       return NextResponse.json(
         {
           topicMisses: {},
@@ -100,13 +118,16 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("mistake_breakdowns")
       .select("topic, question_id, selected_answer, misunderstood_concept, confidence_rating")
       .eq("deck_id", deckId)
-      .eq("player_name", playerName)
       .order("created_at", { ascending: false })
       .limit(500);
+
+    query = useUserId ? query.eq("user_id", auth.userId) : query.eq("player_name", playerName as string);
+
+    const { data, error } = await query;
 
     if (error) {
       return NextResponse.json(
@@ -174,10 +195,16 @@ export async function POST(req: NextRequest) {
     const body = (await req.json()) as SavePayload;
     const deckId = String(body.deckId || "").trim();
     const matchId = String(body.matchId || "").trim();
-    const playerName = await resolvePlayerIdentity(auth.userId);
+    // player_name is stored for display/debugging only now -- user_id
+    // (when the column is available) is the real lookup key, so a missing
+    // or since-changed display name no longer blocks saving or reading
+    // mistake history. Falls back to "Student" rather than blocking the
+    // whole save on a cosmetic label.
+    const playerName = (await resolvePlayerIdentity(auth.userId)) || "Student";
+    const useUserId = await isUserIdColumnAvailable();
     const records = ensureArray<MistakeBreakdownRecord>(body.records);
 
-    if (!deckId || !matchId || !playerName || records.length === 0) {
+    if (!deckId || !matchId || records.length === 0) {
       return NextResponse.json(
         { error: "Missing required mistake breakdown payload." },
         { status: 400 }
@@ -229,6 +256,7 @@ export async function POST(req: NextRequest) {
           deck_id: deckId,
           question_id: String(record.questionId || "").trim(),
           player_name: playerName,
+          ...(useUserId ? { user_id: auth.userId } : {}),
           topic: String(record.topic || "General").trim() || "General",
           selected_answer: String(record.selectedAnswer || "").trim(),
           correct_answer: String(record.correctAnswer || "").trim(),

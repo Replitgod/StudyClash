@@ -769,6 +769,7 @@ export default function ResultsPage() {
   });
   const [isSavingMistakes, setIsSavingMistakes] = useState(false);
   const [showVictoryBurst, setShowVictoryBurst] = useState(false);
+  const [showMoreActions, setShowMoreActions] = useState(false);
   const challengeFromMatchId = searchParams.get("challengeFrom");
   const challengeScoreParam = searchParams.get("challengeScore");
   const modeParam = (searchParams.get("mode") || "").toLowerCase();
@@ -947,15 +948,22 @@ export default function ResultsPage() {
               setHasAnswerData(true);
               setWeakTopics([]);
             } else {
+              // Ranked by miss rate (accuracy), not raw miss count -- a topic
+              // asked twice and missed both times is weaker than a topic
+              // asked ten times and missed three, even though 3 > 2. Raw
+              // miss count alone let a minor blip on a well-known topic
+              // outrank a topic the student has never gotten right, which
+              // fed directly into the "Rematch Weak Topics" CTA below.
               const missedCountByTopic = new Map<string, number>();
+              const totalCountByTopic = new Map<string, number>();
 
-              for (const answer of missedAnswers) {
+              for (const answer of matchAnswersData as MatchAnswerRow[]) {
                 const topic =
                   questionById.get(answer.question_id)?.topic || "General";
-                missedCountByTopic.set(
-                  topic,
-                  (missedCountByTopic.get(topic) || 0) + 1
-                );
+                totalCountByTopic.set(topic, (totalCountByTopic.get(topic) || 0) + 1);
+                if (!answer.is_correct) {
+                  missedCountByTopic.set(topic, (missedCountByTopic.get(topic) || 0) + 1);
+                }
               }
 
               const topicList: WeakTopic[] = Array.from(
@@ -966,7 +974,12 @@ export default function ResultsPage() {
                   missedCount,
                   message: buildImprovementMessage(topic, missedCount),
                 }))
-                .sort((a, b) => b.missedCount - a.missedCount);
+                .sort((a, b) => {
+                  const missRateA = a.missedCount / (totalCountByTopic.get(a.topic) || 1);
+                  const missRateB = b.missedCount / (totalCountByTopic.get(b.topic) || 1);
+                  if (missRateB !== missRateA) return missRateB - missRateA;
+                  return b.missedCount - a.missedCount;
+                });
 
               setHasAnswerData(true);
               setWeakTopics(topicList);
@@ -3193,10 +3206,12 @@ export default function ResultsPage() {
         </div>
 
         {/* Action buttons -- weak-topics rematch and "Challenge a Friend"
-            are the two lead actions (see RESULTS SCREEN spec); the rest of
-            the battle modes stay available, just visually secondary rather
-            than removed -- boss/rival/practice are real mastery loops, not
-            clutter to delete. */}
+            are the two lead actions (see RESULTS SCREEN spec). Previously
+            all 9 modes rendered at equal visual weight despite that stated
+            intent, which buried the actual "what do I do next" decision --
+            Quick Check/Practice/Study Rival/Boss Battle/Create New Deck are
+            real mastery loops, not clutter to delete, so they stay reachable
+            behind "More options" instead of being removed. */}
         <div className="mt-6 flex flex-col gap-3 sm:mt-8 sm:flex-row sm:flex-wrap">
           {weakTopics && weakTopics.length > 0 && (
             <Link
@@ -3258,59 +3273,6 @@ export default function ResultsPage() {
             {isRivalBattle ? "Rematch Rival" : "Rematch This Deck"}
           </Link>
 
-          <Link
-            href={`/battle/${deck.id}?mode=quick_check&limit=5`}
-            onClick={() =>
-              safeTrackEvent("results_quick_check_clicked", {
-                matchId: match.id,
-                deckId: deck.id,
-              })
-            }
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/30 px-6 py-4 text-base font-bold text-white/80 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-white/10 sm:px-8"
-          >
-            Quick Check (5)
-          </Link>
-
-          <Link
-            href={`/battle/${deck.id}?mode=practice`}
-            onClick={() =>
-              safeTrackEvent("results_practice_mode_clicked", {
-                matchId: match.id,
-                deckId: deck.id,
-              })
-            }
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/30 px-6 py-4 text-base font-bold text-white/80 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-white/10 sm:px-8"
-          >
-            Practice Mode
-          </Link>
-
-          <Link
-            href={`/battle/${deck.id}?mode=rival${rivalRank ? `&rivalRank=${encodeURIComponent(rivalRank)}` : ""}`}
-            onClick={() =>
-              safeTrackEvent("results_rival_battle_clicked", {
-                matchId: match.id,
-                deckId: deck.id,
-                rivalRank,
-              })
-            }
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-400/25 bg-indigo-500/12 px-6 py-4 text-base font-bold text-indigo-100 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-indigo-500/20 sm:px-8"
-          >
-            Study Rival
-          </Link>
-
-          <Link
-            href={`/battle/${deck.id}?mode=boss`}
-            onClick={() =>
-              safeTrackEvent("results_boss_battle_clicked", {
-                matchId: match.id,
-                deckId: deck.id,
-              })
-            }
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-400/25 bg-indigo-500/12 px-6 py-4 text-base font-bold text-indigo-100 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-indigo-500/20 sm:px-8"
-          >
-            Boss Battle
-          </Link>
-
           {reviewItems.some((item) => !item.isCorrect) && (
             <Link
               href={`/battle/${deck.id}?mode=review_missed&topics=${missedTopicQueryValue}`}
@@ -3325,20 +3287,92 @@ export default function ResultsPage() {
               Review Missed
             </Link>
           )}
-
-          <Link
-            href="/create"
-            onClick={() =>
-              safeTrackEvent("results_create_new_deck_clicked", {
-                matchId: match.id,
-                deckId: deck.id,
-              })
-            }
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-4 text-base font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-400/30 hover:bg-white/10 sm:px-8"
-          >
-            Create New Deck
-          </Link>
         </div>
+
+        {/* Secondary battle modes -- real mastery loops, just not the "what
+            do I do next" default two-to-four choices above. Collapsed by
+            default so the primary actions aren't visually competing with 5
+            more options of equal weight. */}
+        {!showMoreActions ? (
+          <button
+            type="button"
+            onClick={() => setShowMoreActions(true)}
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-2.5 text-sm font-semibold text-white/50 transition-colors duration-150 hover:border-white/20 hover:text-white/80"
+          >
+            More battle modes
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        ) : (
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+            <Link
+              href={`/battle/${deck.id}?mode=quick_check&limit=5`}
+              onClick={() =>
+                safeTrackEvent("results_quick_check_clicked", {
+                  matchId: match.id,
+                  deckId: deck.id,
+                })
+              }
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/30 px-6 py-4 text-base font-bold text-white/80 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-white/10 sm:px-8"
+            >
+              Quick Check (5)
+            </Link>
+
+            <Link
+              href={`/battle/${deck.id}?mode=practice`}
+              onClick={() =>
+                safeTrackEvent("results_practice_mode_clicked", {
+                  matchId: match.id,
+                  deckId: deck.id,
+                })
+              }
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-black/30 px-6 py-4 text-base font-bold text-white/80 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-white/10 sm:px-8"
+            >
+              Practice Mode
+            </Link>
+
+            <Link
+              href={`/battle/${deck.id}?mode=rival${rivalRank ? `&rivalRank=${encodeURIComponent(rivalRank)}` : ""}`}
+              onClick={() =>
+                safeTrackEvent("results_rival_battle_clicked", {
+                  matchId: match.id,
+                  deckId: deck.id,
+                  rivalRank,
+                })
+              }
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-400/25 bg-indigo-500/12 px-6 py-4 text-base font-bold text-indigo-100 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-indigo-500/20 sm:px-8"
+            >
+              Study Rival
+            </Link>
+
+            <Link
+              href={`/battle/${deck.id}?mode=boss`}
+              onClick={() =>
+                safeTrackEvent("results_boss_battle_clicked", {
+                  matchId: match.id,
+                  deckId: deck.id,
+                })
+              }
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-indigo-400/25 bg-indigo-500/12 px-6 py-4 text-base font-bold text-indigo-100 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-300/40 hover:bg-indigo-500/20 sm:px-8"
+            >
+              Boss Battle
+            </Link>
+
+            <Link
+              href="/create"
+              onClick={() =>
+                safeTrackEvent("results_create_new_deck_clicked", {
+                  matchId: match.id,
+                  deckId: deck.id,
+                })
+              }
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-4 text-base font-bold text-white/90 backdrop-blur-sm transition-colors duration-150 hover:border-indigo-400/30 hover:bg-white/10 sm:px-8"
+            >
+              Create New Deck
+            </Link>
+          </div>
+        )}
 
         <Link
           href="/dashboard"

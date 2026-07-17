@@ -103,7 +103,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Can I battle instantly without creating a room?",
-    a: "Yes. Tap Try Quick Battle and start instantly in Easy, Medium, Hard, or Adaptive mode. No lobby required.",
+    a: "Yes. Tap Try an Instant Battle and start instantly in Easy, Medium, Hard, or Adaptive mode. No lobby required.",
   },
   {
     q: "Is there a free plan?",
@@ -227,7 +227,7 @@ export default function Home() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(webPageSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(howToSchema) }} />
 
-      <PageViewTracker page="home" />
+      <PageViewTracker page="home" funnelEvent="homepage_viewed" />
       <div className={`mx-auto flex w-full max-w-[1200px] flex-col px-5 sm:px-8 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {/* ---------- 1. Hero ---------- */}
         <header className="grid gap-10 py-12 sm:py-16 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:py-20">
@@ -255,7 +255,7 @@ export default function Home() {
                 href="#battle-ai"
                 className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#4F46E5] px-6 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#4338CA]"
               >
-                Try Quick Battle
+                Try an Instant Battle
               </Link>
               <Link
                 href="/create"
@@ -413,7 +413,7 @@ export default function Home() {
                 href="#battle-ai"
                 className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#4F46E5] px-6 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#4338CA]"
               >
-                Try Quick Battle
+                Try an Instant Battle
               </Link>
               <Link
                 href="/create"

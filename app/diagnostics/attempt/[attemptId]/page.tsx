@@ -115,7 +115,6 @@ export default function DiagnosticAttemptPage() {
       return;
     }
     if (isLoggedIn) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       void loadCurrentState();
     }
   }, [isLoggedIn, isAuthLoading, attemptId, loadCurrentState, router]);

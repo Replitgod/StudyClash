@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { getStoredAttribution } from "@/lib/marketingAttribution";
 
 export type AnalyticsEventName =
   | "page_view"
@@ -51,7 +52,15 @@ export type AnalyticsEventName =
   | "study_plan_task_completed"
   | "study_plan_rescheduled"
   | "upcoming_assessment_added"
-  | "recommended_resource_clicked";
+  | "recommended_resource_clicked"
+  | "homepage_viewed"
+  | "pricing_viewed"
+  | "instant_demo_started"
+  | "checkout_started"
+  // Written directly via the service-role client from app/api/stripe/webhook
+  // (server-side, no browser session to call trackEvent() with) -- listed
+  // here so the catalog stays the single source of truth for event names.
+  | "subscription_activated";
 
 // Fire-and-forget analytics logging. This intentionally never throws —
 // a failed analytics insert (network hiccup, RLS misconfiguration, etc.)
@@ -79,5 +88,36 @@ export async function trackEvent(
     }
   } catch (err) {
     console.error(`trackEvent("${eventName}") threw:`, err);
+  }
+
+  // Dual-write into marketing_events when this visitor's session carries
+  // stored campaign attribution (see lib/marketingAttribution.ts) -- lets
+  // the marketing dashboard attribute real product events (signups,
+  // battles, checkouts, subscriptions) back to a campaign/destination/draft
+  // without StudyClash's core analytics pipeline knowing marketing exists.
+  // Fire-and-forget, same as the write above -- never blocks or throws.
+  const attribution = getStoredAttribution();
+  if (attribution) {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      await supabase.from("marketing_events").insert({
+        event_name: eventName,
+        user_id: user?.id ?? null,
+        page_url: typeof window !== "undefined" ? window.location.href : null,
+        utm_source: attribution.utm_source,
+        utm_medium: attribution.utm_medium,
+        utm_campaign: attribution.utm_campaign,
+        utm_content: attribution.utm_content,
+        campaign_id: attribution.campaign_id,
+        destination_id: attribution.destination_id,
+        draft_id: attribution.draft_id,
+        metadata: metadata ?? null,
+      });
+    } catch (err) {
+      console.error(`marketing_events dual-write for "${eventName}" threw:`, err);
+    }
   }
 }

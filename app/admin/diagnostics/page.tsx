@@ -105,7 +105,6 @@ export default function AdminDiagnosticsPage() {
 
   useEffect(() => {
     if (isLoggedIn && examId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadQuestions();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

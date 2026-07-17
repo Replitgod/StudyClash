@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
+import { trackEvent } from "@/lib/trackEvent";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { PLAN_METADATA, PUBLIC_PLANS, getPlanMetadata } from "@/lib/plans";
 import { FREE_PLAN_LIMIT_SUMMARY } from "@/lib/planLimits";
@@ -13,6 +14,10 @@ const PLANS = PUBLIC_PLANS;
 
 export default function PricingPage() {
   const { profile, isLoggedIn } = useAuth();
+
+  useEffect(() => {
+    void trackEvent("pricing_viewed");
+  }, []);
 
   // Read directly off window.location instead of useSearchParams() so this
   // page doesn't need a Suspense boundary just to show a dismissable banner.
@@ -47,6 +52,7 @@ export default function PricingPage() {
   const handleUpgradeToPro = async () => {
     setCheckoutError(null);
     setIsStartingCheckout(true);
+    void trackEvent("checkout_started", { source: "pricing" });
 
     try {
       const response = await authFetch("/api/stripe/checkout", { method: "POST" });

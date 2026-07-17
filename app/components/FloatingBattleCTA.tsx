@@ -4,13 +4,23 @@ import { usePathname } from "next/navigation";
 import BattleAILink from "./BattleAILink";
 import { FLOATING_ACTION, UI_Z_INDEX } from "@/lib/uiLayout";
 
-const HIDE_ON_PREFIXES = ["/battle/", "/challenge/", "/results/"];
+// "/exams" as a prefix covers both the landing page and every
+// "/exams/[track]" sub-page -- same overlap problem on each.
+const HIDE_ON_PREFIXES = ["/battle/", "/challenge/", "/results/", "/exams"];
 // "/" is included because the homepage hero already has its own
 // equally-prominent "Try Quick Battle" CTA right above the fold -- on
 // mobile, the floating duplicate doesn't just repeat that button, it
 // visually sits on top of the AutoplayDemoRail content that follows it,
 // reading as cluttered/broken rather than as a second chance to convert.
-const HIDE_ON_EXACT = new Set(["/demo/battle", "/"]);
+//
+// "/pricing", "/signup", and "/login" were added after a 320-430px mobile
+// audit found the same problem in a worse form: the fixed bar physically
+// overlapped the plan card's own CTA on /pricing, clipped the "Included in
+// StudyClash Pro" text on /exams, and sat directly on top of the
+// signup form's "Create Account" submit button -- a floating "battle"
+// nudge should never be able to intercept a tap meant for a checkout,
+// auth, or plan-selection button.
+const HIDE_ON_EXACT = new Set(["/demo/battle", "/", "/pricing", "/signup", "/login"]);
 
 export default function FloatingBattleCTA() {
   const pathname = usePathname();

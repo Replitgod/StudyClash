@@ -326,6 +326,7 @@ export default function InstantAIBattle() {
       window.clearTimeout(aiTimerRef.current);
     }
 
+    void trackEvent("instant_demo_started", { difficulty: level });
     setIsLoadingQuestions(true);
     setShowDifficultyPicker(false);
     const avoidQuestionTexts = battleQuestions.map((question) => question.prompt);
@@ -419,6 +420,11 @@ export default function InstantAIBattle() {
     }
 
     const cfg = DIFFICULTY_CONFIG[difficulty];
+    // handlePickChoice only ever runs inside a button's onClick (an event
+    // handler, not the render body), so Date.now()/Math.random() here don't
+    // violate component purity -- the compiler's purity check can't prove
+    // that from the call graph alone, hence the scoped disables below.
+    // eslint-disable-next-line react-hooks/purity
     const playerResponseMs = Math.max(500, Date.now() - roundStartMsRef.current);
 
     // IRT: predicted P(correct) for THIS question, from the player's
@@ -435,6 +441,7 @@ export default function InstantAIBattle() {
         : 0;
 
     const responseMs =
+      // eslint-disable-next-line react-hooks/purity -- same event-handler-only justification as above
       Math.floor(Math.random() * (cfg.maxMs - cfg.minMs + 1)) +
       cfg.minMs +
       adaptiveOffset;

@@ -50,7 +50,6 @@ export function useVoiceStudyMode() {
     // useEffect exists for, not app state derived from React data.
     const hasRecognition = !!getSpeechRecognitionConstructor();
     const hasSynthesis = typeof window !== "undefined" && "speechSynthesis" in window;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsSupported(hasRecognition && hasSynthesis);
   }, []);
 

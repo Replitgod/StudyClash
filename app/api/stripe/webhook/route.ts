@@ -63,7 +63,7 @@ async function syncSubscription(
     typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id;
   const { priceId, currentPeriodEnd } = extractSubscriptionDetails(subscription);
 
-  await supabase.from("subscriptions").upsert(
+  const { error: subUpsertError } = await supabase.from("subscriptions").upsert(
     {
       user_id: userId,
       stripe_customer_id: customerId,
@@ -76,6 +76,13 @@ async function syncSubscription(
     },
     { onConflict: "user_id" }
   );
+  // Throwing (instead of swallowing) surfaces the failure as a 500, which
+  // makes Stripe automatically retry the webhook delivery -- a silently
+  // dropped .upsert()/.update() error here previously meant a paying user's
+  // subscription row (or plan grant below) could vanish with zero signal.
+  if (subUpsertError) {
+    throw new Error(`subscriptions upsert failed: ${subUpsertError.message}`);
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -93,7 +100,25 @@ async function syncSubscription(
   const nextPlan = shouldGrantPro ? "pro_individual" : "free_beta";
 
   if (nextPlan !== profile.plan) {
-    await supabase.from("profiles").update({ plan: nextPlan }).eq("id", userId);
+    const { error: planUpdateError } = await supabase
+      .from("profiles")
+      .update({ plan: nextPlan })
+      .eq("id", userId);
+    if (planUpdateError) {
+      throw new Error(`profiles.plan update failed (${profile.plan} -> ${nextPlan}): ${planUpdateError.message}`);
+    }
+
+    if (nextPlan === "pro_individual") {
+      // trackEvent() (lib/trackEvent.ts) uses the browser Supabase client and
+      // an active session -- neither exists in a server webhook, so this
+      // writes directly with the service client instead.
+      await supabase.from("analytics_events").insert({
+        user_id: userId,
+        event_name: "subscription_activated",
+        page_url: null,
+        metadata: { subscription_id: subscription.id, status: subscription.status },
+      });
+    }
   }
 }
 

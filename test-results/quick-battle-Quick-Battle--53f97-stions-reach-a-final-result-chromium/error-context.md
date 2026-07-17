@@ -12,16 +12,221 @@
 # Error details
 
 ```
-Test timeout of 90000ms exceeded.
-```
-
-```
 Error: expect(locator).toBeEnabled() failed
 
-Locator:  getByRole('region', { name: 'Try a live round' }).getByRole('button').filter({ hasNotText: /^(🔊|🔇|Next|Finish|Battle Now|Preparing questions\.\.\.|Hide difficulty options|Choose difficulty instead)$/ }).first()
+Locator: getByRole('region', { name: 'Try a live round' }).getByRole('button').filter({ hasNotText: /^(🔊|🔇|Next|Finish|Battle Now|Preparing questions\.\.\.|Hide difficulty options|Choose difficulty instead)$/ }).first()
 Expected: enabled
-Received: undefined
+Timeout: 30000ms
+Error: element(s) not found
 
+Call log:
+  - Expect "toBeEnabled" with timeout 30000ms
+  - waiting for getByRole('region', { name: 'Try a live round' }).getByRole('button').filter({ hasNotText: /^(🔊|🔇|Next|Finish|Battle Now|Preparing questions\.\.\.|Hide difficulty options|Choose difficulty instead)$/ }).first()
+
+```
+
+```yaml
+- link "Skip to main content":
+  - /url: "#main-content"
+- navigation "Primary":
+  - link "S":
+    - /url: /
+  - link "Home":
+    - /url: /
+    - img
+    - text: Home
+  - link "Battle":
+    - /url: /#battle-ai
+    - img
+    - text: Battle
+  - link "Study Plan":
+    - /url: /study-plans/new
+    - img
+    - text: Study Plan
+  - link "Decks":
+    - /url: /decks
+    - img
+    - text: Decks
+  - link "Diagnostics":
+    - /url: /diagnostics
+    - img
+    - text: Diagnostics
+  - button "More":
+    - img
+    - text: More
+  - link "Login":
+    - /url: /login
+    - img
+    - text: Login
+  - link "Sign Up":
+    - /url: /signup
+    - img
+    - text: Sign Up
+- banner:
+  - paragraph: Competitive studying, powered by AI
+  - heading "Turn your notes into a study battle." [level=1]
+  - paragraph: Upload your material, compete against AI or friends, and rematch the topics you miss.
+  - link "Try an Instant Battle":
+    - /url: "#battle-ai"
+  - link "Upload Notes":
+    - /url: /create
+  - paragraph: Try the demo without signing up. Create an account when you want to upload and save your own material.
+  - region "Autoplay product demo":
+    - paragraph: Product preview
+    - text: Victory
+    - paragraph: Instant result with streak feedback
+    - paragraph: Clear winner with next-step actions
+    - text: 🏆 You 4 · AI 3 You 4 • AI 3
+- region "Try a live round":
+  - heading "See StudyClash in action" [level=2]
+  - paragraph: "Quick Battle: pick a difficulty and answer 5 questions against the AI. No signup required."
+  - paragraph: Quick Battle
+  - heading "Battle an AI in One Click" [level=2]
+  - paragraph: No lobby. Tap start and answer 5 quick questions.
+  - text: No Signup Needed ~60 Seconds
+  - button "🔊" [pressed]
+  - paragraph: Ready when you are
+  - paragraph: Quick Play auto-balances to your pace.
+  - button "Preparing questions..." [disabled]
+  - button "Choose difficulty instead"
+  - paragraph: Mode
+  - paragraph: Not started
+  - paragraph: You
+  - paragraph: "0"
+  - paragraph: AI
+  - paragraph: "0"
+  - paragraph: Round
+  - paragraph: 0/5
+  - paragraph: Your Accuracy
+  - paragraph: "-"
+  - paragraph: AI Accuracy
+  - paragraph: "-"
+  - paragraph: Your Avg Time
+  - paragraph: "-"
+  - paragraph: AI Avg Time
+  - paragraph: "-"
+  - text: Tap Battle Now to launch an instant duel.
+  - paragraph:
+    - text: Want the full picture? Try the
+    - link "Guided Product Demo":
+      - /url: /demo/battle
+    - text: "for the complete loop: upload, battle, mistakes, and a weak-topic rematch."
+- region "From notes to mastery":
+  - heading "From notes to mastery" [level=2]
+  - img
+  - heading "Upload your material" [level=3]
+  - paragraph: Add notes, a PDF, or a study topic.
+  - img
+  - heading "Battle to practice" [level=3]
+  - paragraph: Compete against AI or challenge a friend.
+  - img
+  - heading "Rematch your weaknesses" [level=3]
+  - paragraph: Study the topics you missed until you master them.
+- region "Core benefits":
+  - img
+  - text: AI-generated questions from your material
+  - img
+  - text: Instant AI and friend battles
+  - img
+  - text: Weak-topic detection
+  - img
+  - text: Targeted rematches
+  - img
+  - text: Clear explanations
+  - img
+  - text: Progress tracking
+- region "What makes StudyClash different":
+  - heading "What makes StudyClash different" [level=2]
+  - text: Live AI battles Timed scoring Weak-topic detection Targeted rematches Friend challenge links Questions generated from your own material
+- region "Pricing preview":
+  - heading "Start free, scale when you need more" [level=2]
+  - link "View all plans":
+    - /url: /pricing
+  - heading "Free" [level=3]
+  - paragraph: $0
+  - paragraph: Everyone starts here
+  - link "Start Free":
+    - /url: /pricing
+  - text: Most Popular
+  - heading "StudyClash Pro" [level=3]
+  - paragraph: $3/mo
+  - paragraph: For students who want the full loop
+  - link "Go Pro":
+    - /url: /pricing
+- region "Frequently asked questions":
+  - heading "FAQ" [level=2]
+  - group:
+    - text: What is StudyClash?
+    - img
+  - group:
+    - text: How is this different from Quizlet or Knowt?
+    - img
+  - group:
+    - text: Can I battle instantly without creating a room?
+    - img
+  - group:
+    - text: Is there a free plan?
+    - img
+- region "Get started":
+  - heading "Ready to make studying competitive?" [level=2]
+  - link "Try an Instant Battle":
+    - /url: "#battle-ai"
+  - link "Create Your First Deck":
+    - /url: /create
+- contentinfo:
+  - paragraph: StudyClash · Competitive studying for the AI era
+  - navigation "Footer links":
+    - link "Create":
+      - /url: /create
+    - link "Guided Demo":
+      - /url: /demo/battle
+    - link "Pricing":
+      - /url: /pricing
+    - link "Exams":
+      - /url: /exams
+    - link "Classroom (Beta)":
+      - /url: /classroom
+    - link "Contact":
+      - /url: /contact
+    - link "Privacy":
+      - /url: /privacy
+    - link "Terms":
+      - /url: /terms
+- button "Toggle VYRA AI coach":
+  - img
+  - text: VYRA
+- complementary:
+  - img
+  - paragraph: VYRA AI Coach
+  - paragraph: Personal study assistant
+  - button "Send feedback or report a problem":
+    - img
+  - button "Close"
+  - paragraph: Website · explain
+  - button "Explain"
+  - button "Hint"
+  - button "Quiz"
+  - button "Mistake"
+  - button "Plan"
+  - button "Rematch"
+  - button "Explain this easier"
+  - button "Quiz me"
+  - button "Give me a hint"
+  - button "Why was I wrong?"
+  - button "Make a study plan"
+  - button "Create weak-topic rematch"
+  - button "What should I study next?"
+  - button "Find Study Resources":
+    - img
+    - text: Find Study Resources
+  - button "My Blindspots":
+    - img
+    - text: My Blindspots
+  - text: Play a battle first, and I'll analyze your weak topics. You can also ask me about a topic directly.
+  - paragraph: "Tip: complete one battle for fully personalized coaching context."
+  - textbox "Choose a deck, topic, or missed question to begin..."
+  - button "Send" [disabled]
+- alert
 ```
 
 # Test source

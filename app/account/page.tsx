@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
+import { trackEvent } from "@/lib/trackEvent";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { PRIORITY_PLAN_IDS } from "@/lib/plans";
 
@@ -165,6 +166,7 @@ export default function AccountPage() {
   const handleUpgradeToPro = async () => {
     setBillingError(null);
     setIsStartingCheckout(true);
+    void trackEvent("checkout_started", { source: "account" });
 
     try {
       const response = await authFetch("/api/stripe/checkout", { method: "POST" });
