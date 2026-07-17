@@ -19,6 +19,7 @@ type Destination = {
   manual_review_required: boolean;
   last_rules_review_date: string | null;
   last_posted_date: string | null;
+  best_posting_time: string | null;
   active: boolean;
 };
 
@@ -116,6 +117,7 @@ export default function DestinationsPage() {
               <th className="px-4 py-3">Self-promo</th>
               <th className="px-4 py-3">Rules verified</th>
               <th className="px-4 py-3">Last posted</th>
+              <th className="px-4 py-3">Best posting time</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -131,6 +133,7 @@ export default function DestinationsPage() {
                 </td>
                 <td className="px-4 py-3 text-white/50">{rulesAgeLabel(d.last_rules_review_date)}</td>
                 <td className="px-4 py-3 text-white/50">{d.last_posted_date || "Never"}</td>
+                <td className="px-4 py-3 text-white/50">{d.best_posting_time || "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -150,6 +153,7 @@ function AddDestinationForm({ onCreated }: { onCreated: () => void }) {
   const [submissionUrl, setSubmissionUrl] = useState("");
   const [audience, setAudience] = useState("");
   const [selfPromotionAllowed, setSelfPromotionAllowed] = useState("unknown");
+  const [bestPostingTime, setBestPostingTime] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -173,6 +177,7 @@ function AddDestinationForm({ onCreated }: { onCreated: () => void }) {
           submission_url: submissionUrl || undefined,
           audience: audience || undefined,
           self_promotion_allowed: selfPromotionAllowed === "unknown" ? null : selfPromotionAllowed === "yes",
+          best_posting_time: bestPostingTime || undefined,
           last_rules_review_date: null,
         }),
       });
@@ -220,6 +225,15 @@ function AddDestinationForm({ onCreated }: { onCreated: () => void }) {
         <label className="text-sm font-semibold text-white/80">
           Audience
           <input className={inputClass} value={audience} onChange={(e) => setAudience(e.target.value)} />
+        </label>
+        <label className="text-sm font-semibold text-white/80">
+          Best posting time (from your own research, e.g. Pulse for Reddit)
+          <input
+            className={inputClass}
+            value={bestPostingTime}
+            onChange={(e) => setBestPostingTime(e.target.value)}
+            placeholder="e.g. Weekday mornings, 8-10am ET"
+          />
         </label>
         <label className="text-sm font-semibold text-white/80">
           Self-promotion allowed?

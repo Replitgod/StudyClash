@@ -81,6 +81,11 @@ export type MarketingDestination = {
   account_requirements: string | null;
   min_karma_or_reputation: number | null;
   reposting_cooldown_days: number | null;
+  // Freeform notes from external research (e.g. Pulse for Reddit, or any
+  // other subreddit/audience-activity tool) about when this destination's
+  // audience is most active. Informational only -- never used to schedule
+  // an automatic post, just surfaced to help a human time a manual one.
+  best_posting_time: string | null;
   api_availability: boolean;
   manual_review_required: boolean;
   last_rules_review_date: string | null;

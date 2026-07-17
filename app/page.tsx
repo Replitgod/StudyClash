@@ -240,13 +240,13 @@ export default function Home() {
 
             <HeroRevealItem className="mt-5">
               <h1 className="max-w-[620px] text-4xl font-bold leading-[1.1] tracking-tight text-[#0F172A] sm:text-5xl">
-                Turn your notes into a study battle.
+                Roast your friends&rsquo; grades in 5-minute quiz duels before the test.
               </h1>
             </HeroRevealItem>
 
             <HeroRevealItem className="mt-4">
               <p className="max-w-[560px] text-base leading-relaxed text-[#64748B] sm:text-lg">
-                Upload your material, compete against AI or friends, and rematch the topics you miss.
+                Upload your notes, challenge a friend or the AI, and find out who actually studied.
               </p>
             </HeroRevealItem>
 

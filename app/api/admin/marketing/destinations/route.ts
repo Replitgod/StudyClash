@@ -97,6 +97,7 @@ export async function POST(request: NextRequest) {
       account_requirements: typeof body.account_requirements === "string" ? body.account_requirements : null,
       min_karma_or_reputation: typeof body.min_karma_or_reputation === "number" ? body.min_karma_or_reputation : null,
       reposting_cooldown_days: typeof body.reposting_cooldown_days === "number" ? body.reposting_cooldown_days : null,
+      best_posting_time: typeof body.best_posting_time === "string" ? body.best_posting_time : null,
       api_availability: typeof body.api_availability === "boolean" ? body.api_availability : false,
       manual_review_required: typeof body.manual_review_required === "boolean" ? body.manual_review_required : true,
       last_rules_review_date:

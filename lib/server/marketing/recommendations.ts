@@ -88,6 +88,10 @@ export function recommendDestinations(
         risks.push("Manual review/submission required -- not an instant post.");
       }
 
+      if (destination.best_posting_time) {
+        reasons.push(`Best posting time (from your own research): ${destination.best_posting_time}.`);
+      }
+
       if (destination.min_karma_or_reputation) {
         risks.push(`Requires minimum karma/reputation: ${destination.min_karma_or_reputation}.`);
       }

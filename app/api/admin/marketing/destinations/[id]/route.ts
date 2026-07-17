@@ -24,6 +24,7 @@ const UPDATABLE_FIELDS = [
   "account_requirements",
   "min_karma_or_reputation",
   "reposting_cooldown_days",
+  "best_posting_time",
   "api_availability",
   "manual_review_required",
   "last_rules_review_date",
