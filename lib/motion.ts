@@ -45,3 +45,27 @@ export function staggerContainer(staggerDelay = 0.06, initialDelay = 0): Variant
     },
   };
 }
+
+// Shared tokens for the app/components/motion/* primitives (FadeIn, SlideIn,
+// StaggerContainer, etc.) -- "duration, easing, distance and stagger" named
+// once so every primitive stays visually consistent instead of each one
+// picking its own numbers. Mirrors app/globals.css's --duration-*/
+// --ease-brand-bounce CSS custom properties as plain JS values, since
+// framer/motion's `transition` prop takes numbers/strings, not CSS vars.
+export const DURATION_MS = {
+  fast: 150,
+  base: 200,
+  slow: 450,
+} as const;
+
+export const EASE_BRAND_BOUNCE: [number, number, number, number] = [0.34, 1.56, 0.64, 1];
+
+// Standard travel distance for enter/exit slide animations (FadeIn's `y`,
+// SlideIn's `x`/`y`) -- one number so a FadeIn and a SlideIn on the same
+// screen travel the same visual distance.
+export const MOTION_DISTANCE_PX = 16;
+
+// Default per-child delay for StaggerContainer/StaggerItem -- same value
+// staggerContainer() already defaults to, exported as a named constant so
+// call sites can reference "the standard stagger" without a magic number.
+export const STAGGER_DELAY_S = 0.06;

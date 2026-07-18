@@ -28,6 +28,9 @@ type CreateQuestionPayload = {
   explanation?: string;
   sourceType?: "ai_generated" | "human_authored";
   originalityConfirmed?: boolean;
+  conceptLabel?: string | null;
+  curriculumStandard?: string | null;
+  sourceReference?: string | null;
   aiAssist?: {
     topicHint?: string;
   };
@@ -48,7 +51,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("diagnostic_questions")
     .select(
-      "id, exam_id, section, domain, skill, difficulty, question_type, stimulus, question_text, answer_choices, correct_answer, explanation, status, source_type, reviewed_at, created_at"
+      "id, exam_id, section, domain, skill, difficulty, question_type, stimulus, question_text, answer_choices, correct_answer, explanation, status, source_type, concept_label, curriculum_standard, source_reference, reviewed_at, created_at"
     )
     .order("created_at", { ascending: true })
     .limit(100);
@@ -285,9 +288,12 @@ export async function POST(request: NextRequest) {
       explanation: draft.explanation,
       status: "draft",
       source_type: draft.sourceType || (body.aiAssist ? "ai_generated" : "human_authored"),
+      concept_label: body.conceptLabel || null,
+      curriculum_standard: body.curriculumStandard || null,
+      source_reference: body.sourceReference || null,
     })
     .select(
-      "id, exam_id, section, domain, skill, difficulty, question_type, stimulus, question_text, answer_choices, correct_answer, explanation, status, source_type, reviewed_at, created_at"
+      "id, exam_id, section, domain, skill, difficulty, question_type, stimulus, question_text, answer_choices, correct_answer, explanation, status, source_type, concept_label, curriculum_standard, source_reference, reviewed_at, created_at"
     )
     .single();
 

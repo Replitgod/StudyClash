@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/useAuth";
 import { useLoadingTimeout } from "@/lib/useLoadingTimeout";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
-import VyraCoach from "@/app/components/VyraCoach";
+import dynamic from "next/dynamic";
 import { StudyModeReview } from "@/app/components/StudyModeReview";
 import ConfettiBurst from "@/app/components/ConfettiBurst";
 import { OpponentFace, moodFromStreak } from "@/app/components/OpponentFace";
@@ -30,6 +30,12 @@ import {
 } from "@/lib/playerProgress";
 import type { User } from "@supabase/supabase-js";
 import type { Profile } from "@/lib/useAuth";
+
+// Closed-by-default chat widget -- code-split out of the main chunk so it
+// doesn't block first paint/hydration of the battle itself.
+const VyraCoach = dynamic(() => import("@/app/components/VyraCoach"), {
+  ssr: false,
+});
 
 type Question = {
   id: string;
@@ -777,11 +783,17 @@ export default function BattlePage() {
       }
       hasFinishedRef.current = false;
 
-      const { data: deckData, error: deckError } = await supabase
-        .from("decks")
-        .select("*")
-        .eq("id", deckId)
-        .single();
+      // Deck and questions are independent reads (both keyed off deckId from
+      // the URL, neither depends on the other's result), so fetching them in
+      // parallel instead of one-after-the-other roughly halves the time to
+      // first paint on every single battle page load.
+      const [
+        { data: deckData, error: deckError },
+        { data: questionsData, error: questionsError },
+      ] = await Promise.all([
+        supabase.from("decks").select("*").eq("id", deckId).single(),
+        supabase.from("questions").select("*").eq("deck_id", deckId),
+      ]);
 
       if (deckError || !deckData) {
         setLoadError(deckError?.message || "This deck could not be found.");
@@ -795,11 +807,6 @@ export default function BattlePage() {
         setIsLoading(false);
         return;
       }
-
-      const { data: questionsData, error: questionsError } = await supabase
-        .from("questions")
-        .select("*")
-        .eq("deck_id", deckId);
 
       if (questionsError || !questionsData || questionsData.length === 0) {
         setLoadError(

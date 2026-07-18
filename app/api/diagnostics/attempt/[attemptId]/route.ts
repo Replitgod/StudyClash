@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabaseClient, requireAuthenticatedUser } from "@/lib/server/apiUtils";
-import { loadAssignedModuleQuestions } from "@/lib/server/diagnosticBank";
+import { loadAllAssignedQuestions, loadAssignedModuleQuestions } from "@/lib/server/diagnosticBank";
 
 export const runtime = "nodejs";
 
 type ExamModuleConfig = { module: number; questions: number; minutes: number };
 type ExamSectionConfig = { key: string; label: string; modules: ExamModuleConfig[] };
 type ExamConfiguration = { sections: ExamSectionConfig[]; breakMinutesBetweenSections: number };
+
+const MINUTES_PER_WEAK_AREA_QUESTION = 1.5;
+const MIN_WEAK_AREA_TIME_LIMIT_MINUTES = 10;
 
 // Loads current state for the attempt-taking page on every mount --
 // whether that's a brand-new module just handed off from /start, a page
@@ -27,7 +30,7 @@ export async function GET(
 
   const { data: attempt, error: attemptError } = await supabase
     .from("diagnostic_attempts")
-    .select("id, user_id, exam_id, mode, status, current_section, current_module, updated_at")
+    .select("id, user_id, exam_id, mode, status, current_section, current_module, target_skills, updated_at")
     .eq("id", attemptId)
     .single();
 
@@ -37,6 +40,26 @@ export async function GET(
 
   if (attempt.status === "completed") {
     return NextResponse.json({ status: "completed", attemptId });
+  }
+
+  // Weak-area attempts have no section/module structure to look up in
+  // exam_definitions.configuration -- a single flat set of questions,
+  // possibly spanning multiple real sections.
+  if (attempt.mode === "weak_area") {
+    const items = await loadAllAssignedQuestions(supabase, attemptId);
+    const timeLimitMinutes = Math.max(
+      MIN_WEAK_AREA_TIME_LIMIT_MINUTES,
+      Math.round(items.length * MINUTES_PER_WEAK_AREA_QUESTION)
+    );
+    return NextResponse.json({
+      status: "in_progress",
+      section: "weak_area",
+      module: 1,
+      timeLimitMinutes,
+      moduleStartedAt: attempt.updated_at,
+      targetSkills: attempt.target_skills,
+      items,
+    });
   }
 
   const { data: exam } = await supabase

@@ -27,6 +27,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Isolated git worktrees background agents work in (see the Agent
+    // tool's `isolation: "worktree"` option) -- without this, a lint run
+    // that overlaps with a running background agent recurses into that
+    // agent's full second copy of the repo (including ITS .next build
+    // output) and drowns real results in thousands of unrelated errors.
+    ".claude/worktrees/**",
   ]),
 ]);
 

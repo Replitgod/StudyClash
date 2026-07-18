@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
-import VyraCoach from "@/app/components/VyraCoach";
+import dynamic from "next/dynamic";
 import { EmptyState } from "@/app/components/ui/EmptyState";
 import { Button } from "@/app/components/ui/Button";
 import { StatCard } from "@/app/components/ui/StatCard";
@@ -19,6 +19,12 @@ import {
   getSeasonProgress,
   loadProgressSnapshot,
 } from "@/lib/playerProgress";
+
+// Closed-by-default chat widget -- code-split out of the main chunk so it
+// doesn't block first paint/hydration of the dashboard's actual content.
+const VyraCoach = dynamic(() => import("@/app/components/VyraCoach"), {
+  ssr: false,
+});
 
 type PlanInfo = {
   id: string;

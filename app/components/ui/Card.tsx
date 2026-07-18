@@ -1,17 +1,22 @@
 import { SURFACE } from "@/lib/theme";
 
-export type CardTone = "neutral" | "cyan" | "fuchsia" | "emerald" | "violet" | "amber" | "danger" | "indigo" | "sky";
+// "accent" is the canonical name going forward (see lib/theme.ts) --
+// cyan/fuchsia/violet/sky are legacy aliases of indigo, kept working for
+// existing call sites but not to be used in new code.
+export type CardTone = "neutral" | "indigo" | "accent" | "amber" | "danger" | "cyan" | "fuchsia" | "emerald" | "violet" | "sky";
 
 const TONE_CLASSES: Record<CardTone, string> = {
   neutral: SURFACE.neutralSubtle,
-  cyan: SURFACE.cyanSubtle,
-  fuchsia: SURFACE.fuchsiaSubtle,
-  emerald: SURFACE.emeraldSubtle,
-  violet: SURFACE.violetSubtle,
+  indigo: SURFACE.indigoSubtle,
+  accent: SURFACE.accentSubtle,
   amber: SURFACE.amberSubtle,
   danger: SURFACE.dangerSubtle,
-  indigo: SURFACE.indigoSubtle,
+  // --- legacy aliases ---
+  cyan: SURFACE.cyanSubtle,
+  fuchsia: SURFACE.fuchsiaSubtle,
+  violet: SURFACE.violetSubtle,
   sky: SURFACE.skySubtle,
+  emerald: SURFACE.emeraldSubtle,
 };
 
 export type CardProps = React.HTMLAttributes<HTMLDivElement> & {

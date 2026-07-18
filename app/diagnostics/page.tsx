@@ -95,8 +95,13 @@ export default function DiagnosticsLandingPage() {
 
   return (
     <Background>
-      <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-4 py-1.5 text-xs font-semibold tracking-[0.22em] text-indigo-200">
-        DIAGNOSTIC CENTER
+      <div className="flex items-center justify-between">
+        <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-4 py-1.5 text-xs font-semibold tracking-[0.22em] text-indigo-200">
+          DIAGNOSTIC CENTER
+        </div>
+        <Link href="/diagnostics/history" className="text-xs font-semibold text-white/50 hover:text-white/80">
+          History &rarr;
+        </Link>
       </div>
 
       <h1 className="mx-auto max-w-3xl text-center text-3xl font-black tracking-tight sm:text-5xl">

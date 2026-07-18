@@ -2,11 +2,17 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import VyraCoach from "@/app/components/VyraCoach";
+import dynamic from "next/dynamic";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { Button } from "@/app/components/ui/Button";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { trackEvent } from "@/lib/trackEvent";
+
+// Closed-by-default chat widget -- code-split out of the main chunk so it
+// doesn't block first paint/hydration of the demo battle experience.
+const VyraCoach = dynamic(() => import("@/app/components/VyraCoach"), {
+  ssr: false,
+});
 
 type DemoQuestion = {
 	id: string;

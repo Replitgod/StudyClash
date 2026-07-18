@@ -39,6 +39,7 @@ type ModuleState = {
 const SECTION_LABELS: Record<string, string> = {
   reading_writing: "Reading and Writing",
   math: "Math",
+  weak_area: "Weak-Area Retest",
 };
 
 function computeRemainingSeconds(timeLimitMinutes: number, moduleStartedAt: string): number {
@@ -354,7 +355,8 @@ export default function DiagnosticAttemptPage() {
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">
-              {state.section ? SECTION_LABELS[state.section] || state.section : ""} &middot; Module {state.module}
+              {state.section ? SECTION_LABELS[state.section] || state.section : ""}
+              {state.section !== "weak_area" ? ` · Module ${state.module}` : ""}
             </p>
             <p className="text-sm font-semibold text-white/80">
               Question {currentIndex + 1} of {state.items.length}

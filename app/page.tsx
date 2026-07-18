@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import VyraCoach from "./components/VyraCoach";
+import VyraCoach from "./components/LazyVyraCoach";
 import InstantAIBattle from "./components/InstantAIBattle";
 import AutoplayDemoRail from "./components/AutoplayDemoRail";
 import { PageViewTracker } from "./components/PageViewTracker";

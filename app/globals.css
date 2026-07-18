@@ -3,15 +3,33 @@
 /*
  * Design tokens — additive Tailwind v4 @theme extensions.
  *
- * The app's accent language was unified to a single indigo brand hue plus
- * three semantic state colors (green/amber/red) -- the old cyan/fuchsia/
- * violet/emerald "battle" palette no longer exists anywhere in app/ or
- * lib/. These glow-shadow tokens name that so components pull from one
- * recipe instead of hand-tuning rgba() shadow values per component.
+ * StudyClash's system: one primary brand hue (indigo — AI-powered mastery),
+ * one energetic accent hue (green — competitive/win energy, already the
+ * app's de facto "battle win" color via GRADIENTS.battle and every
+ * correct-answer/confetti/success state), neutral dark surfaces, and three
+ * semantic state colors (green doubles as both accent and success — a
+ * deliberate, common pairing, not a conflict: green reads as "positive
+ * energy" in both contexts) plus amber/red for warning/danger. The old
+ * cyan/fuchsia/violet/sky SURFACE tone names in lib/theme.ts are kept as
+ * backward-compatible aliases of indigo (removing them would require
+ * touching every call site that passes those tone props) but are not part
+ * of the canonical palette going forward — see lib/theme.ts for the full
+ * explanation.
  */
 @theme {
+  /* Primary + accent as real Tailwind color tokens (usable as
+     `bg-brand-primary`, `text-brand-accent`, etc.), not just class-string
+     recipes in lib/theme.ts -- lets new components reach for a token
+     instead of a raw `indigo-600`/`green-500` literal. */
+  --color-brand-primary: #4f46e5;
+  --color-brand-primary-emphasis: #6366f1;
+  --color-brand-accent: #16a34a;
+  --color-brand-accent-emphasis: #22c55e;
+
   /* Glow shadows — one recipe per brand color, two intensities. Use via
-     `shadow-glow-indigo-md` etc. */
+     `shadow-glow-indigo-md` etc. Deliberately used sparingly (emphasis
+     moments only — streak escalation, milestone reveals) rather than as a
+     default resting-state treatment; see the redesign direction notes. */
   --shadow-glow-indigo-sm: 0 0 20px -10px rgba(79, 70, 229, 0.75);
   --shadow-glow-indigo-md: 0 20px 45px -20px rgba(79, 70, 229, 0.9);
   --shadow-glow-green-sm: 0 0 20px -10px rgba(22, 163, 74, 0.7);
@@ -21,7 +39,9 @@
      (`duration-150` for color/border transitions, `duration-200` for
      transform/scale), named so intent is explicit, plus a slower entrance
      tier for premium success/milestone moments. Use via `duration-fast`,
-     `duration-base`, `duration-slow`. */
+     `duration-base`, `duration-slow`. Mirrored as plain-number exports in
+     lib/motion.ts (DURATION_MS) for framer/motion `transition` props, which
+     can't consume CSS custom properties directly. */
   --duration-fast: 150ms;
   --duration-base: 200ms;
   --duration-slow: 450ms;
@@ -41,14 +61,19 @@ body {
   scroll-behavior: smooth;
 }
 
-/* Light system -- see the "COLORS"/"DESIGN STYLE" spec. Pages still on the
-   older dark battle-game look (most of the app outside the homepage/create
-   flow, for now) set their own literal dark background per page and are
-   unaffected by these root tokens; this is the baseline for pages that have
-   been converted. */
+/* Dark system -- the canonical StudyClash surface (redesign direction:
+   refined dark "battle energy", extended app-wide). This was previously a
+   light SaaS baseline used only by the homepage while all 42 other routes
+   set their own literal dark background per page; that split is being
+   resolved by making dark canonical here and rebuilding the homepage onto
+   it, rather than the other way around -- most of the app, including the
+   most heavily-used and richly-animated screen (battle), already lives on
+   this palette. Pages that still set a literal `bg-[#05050a]`-family
+   background inline are unaffected either way (their own value wins) and
+   can be simplified to rely on this root default as they're touched. */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #05050a;
+  --foreground: #f8fafc;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -68,17 +93,17 @@ body {
 }
 
 *:focus-visible {
-  outline: 2px solid rgb(79 70 229 / 0.85);
+  outline: 2px solid rgb(129 140 248 / 0.9);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: rgb(79 70 229 / 0.9);
+  background: rgb(99 102 241 / 0.9);
   color: #ffffff;
 }
 
 ::-moz-selection {
-  background: rgb(79 70 229 / 0.9);
+  background: rgb(99 102 241 / 0.9);
   color: #ffffff;
 }
 
@@ -88,11 +113,11 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgb(226 232 240 / 0.6);
+  background: rgb(255 255 255 / 0.04);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(79 70 229 / 0.35);
+  background: rgb(129 140 248 / 0.45);
   border-radius: 999px;
 }
 
@@ -102,8 +127,8 @@ input:-webkit-autofill:focus,
 textarea:-webkit-autofill,
 textarea:-webkit-autofill:hover,
 textarea:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
-  -webkit-text-fill-color: #0f172a;
+  -webkit-box-shadow: 0 0 0 1000px #111114 inset;
+  -webkit-text-fill-color: #f8fafc;
   transition: background-color 9999s ease-in-out 0s;
 }
 

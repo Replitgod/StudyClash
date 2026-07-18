@@ -36,7 +36,7 @@ export async function GET(
   const { data: results } = await supabase
     .from("diagnostic_results")
     .select(
-      "overall_accuracy, section_results, domain_results, skill_results, pacing_results, strongest_skills, weakest_skills, estimated_score_low, estimated_score_high"
+      "overall_accuracy, section_results, domain_results, skill_results, difficulty_results, pacing_results, strongest_skills, weakest_skills, common_mistakes, confidence_score, readiness_score, readiness_tier, estimated_score_low, estimated_score_high"
     )
     .eq("attempt_id", attemptId)
     .single();

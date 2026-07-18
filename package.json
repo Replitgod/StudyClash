@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
+    "@napi-rs/canvas": "^0.1.100",
     "@stripe/stripe-js": "^9.10.0",
     "@supabase/supabase-js": "^2.110.0",
     "@upstash/ratelimit": "^2.0.8",

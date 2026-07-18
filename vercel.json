@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/srs-reviews",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/curriculum/process",
+      "schedule": "0 14 * * *"
     }
   ]
 }

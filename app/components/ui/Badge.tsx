@@ -1,15 +1,20 @@
-export type BadgeTone = "neutral" | "cyan" | "fuchsia" | "emerald" | "violet" | "amber" | "danger" | "indigo" | "sky";
+// "accent" is the canonical name going forward (see lib/theme.ts) --
+// cyan/fuchsia/violet/sky are legacy aliases of indigo, kept working for
+// existing call sites but not to be used in new code.
+export type BadgeTone = "neutral" | "indigo" | "accent" | "amber" | "danger" | "cyan" | "fuchsia" | "emerald" | "violet" | "sky";
 
 const TONE_CLASSES: Record<BadgeTone, string> = {
   neutral: "border-white/20 bg-white/5 text-white/60",
-  cyan: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
-  fuchsia: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
-  emerald: "border-green-300/40 bg-green-500/15 text-green-200",
-  violet: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
+  indigo: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
+  accent: "border-green-300/40 bg-green-500/15 text-green-200",
   amber: "border-amber-300/40 bg-amber-500/15 text-amber-200",
   danger: "border-red-300/40 bg-red-500/15 text-red-200",
-  indigo: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
+  // --- legacy aliases ---
+  cyan: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
+  fuchsia: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
+  violet: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
   sky: "border-indigo-300/40 bg-indigo-500/15 text-indigo-200",
+  emerald: "border-green-300/40 bg-green-500/15 text-green-200",
 };
 
 const SIZE_CLASSES = {

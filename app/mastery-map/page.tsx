@@ -7,7 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { authFetch } from "@/lib/authFetch";
 import { useAuth } from "@/lib/useAuth";
-import VyraCoach from "@/app/components/VyraCoach";
+import dynamic from "next/dynamic";
 import { Button } from "@/app/components/ui/Button";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import {
@@ -17,6 +17,12 @@ import {
   type ReviewUrgency,
 } from "@/lib/srsSchedule";
 import { getMasteryTier, MASTERY_TIER_LABELS, type MasteryTier } from "@/lib/masteryTiers";
+
+// Closed-by-default chat widget -- code-split out of the main chunk so it
+// doesn't block first paint/hydration of the mastery map.
+const VyraCoach = dynamic(() => import("@/app/components/VyraCoach"), {
+  ssr: false,
+});
 
 const MASTERY_MAP_MAX_DECKS = 30;
 

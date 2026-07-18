@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
 import type { AnalyticsEventName } from "@/lib/trackEvent";
 import { copyTextToClipboard } from "@/lib/clipboard";
-import VyraCoach from "@/app/components/VyraCoach";
+import dynamic from "next/dynamic";
 import ConfettiBurst from "@/app/components/ConfettiBurst";
 import UpcomingAssessmentPrompt from "@/app/components/UpcomingAssessmentPrompt";
 import { useAuth } from "@/lib/useAuth";
@@ -26,6 +26,12 @@ import {
   type MistakeHistoryStats,
 } from "@/lib/mistakeBreakdown";
 import { getNextMilestoneXp, getRankInfo, getSeasonProgress } from "@/lib/playerProgress";
+
+// Closed-by-default chat widget -- code-split out of the main chunk so it
+// doesn't block first paint/hydration of the results page.
+const VyraCoach = dynamic(() => import("@/app/components/VyraCoach"), {
+  ssr: false,
+});
 
 type Match = {
   id: string;

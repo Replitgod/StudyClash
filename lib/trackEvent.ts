@@ -60,7 +60,11 @@ export type AnalyticsEventName =
   // Written directly via the service-role client from app/api/stripe/webhook
   // (server-side, no browser session to call trackEvent() with) -- listed
   // here so the catalog stays the single source of truth for event names.
-  | "subscription_activated";
+  | "subscription_activated"
+  | "curriculum_course_created"
+  | "curriculum_document_uploaded"
+  | "diagnostic_tutor_action_clicked"
+  | "diagnostic_retry_weak_topics_clicked";
 
 // Fire-and-forget analytics logging. This intentionally never throws —
 // a failed analytics insert (network hiccup, RLS misconfiguration, etc.)

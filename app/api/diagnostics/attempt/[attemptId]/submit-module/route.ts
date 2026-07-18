@@ -51,6 +51,14 @@ export async function POST(
     return NextResponse.json({ error: "This module has already been submitted." }, { status: 409 });
   }
 
+  // Weak-area attempts are always exactly one flat module -- submitting it
+  // finishes the whole attempt directly, no section transition, no
+  // adaptive Module 2 routing, no exam-config lookup needed.
+  if (attempt.mode === "weak_area") {
+    const results = await finalizeAttempt(supabase, attemptId);
+    return NextResponse.json({ status: "completed", attemptId, results });
+  }
+
   const { data: exam, error: examError } = await supabase
     .from("exam_definitions")
     .select("id, configuration")

@@ -18,6 +18,9 @@ type PatchPayload = {
   answerChoices?: unknown;
   correctAnswer?: string;
   explanation?: string;
+  conceptLabel?: string | null;
+  curriculumStandard?: string | null;
+  sourceReference?: string | null;
 };
 
 export async function PATCH(
@@ -106,6 +109,9 @@ export async function PATCH(
   if (body.answerChoices !== undefined) updates.answer_choices = body.answerChoices;
   if (body.correctAnswer !== undefined) updates.correct_answer = body.correctAnswer;
   if (body.explanation !== undefined) updates.explanation = body.explanation;
+  if (body.conceptLabel !== undefined) updates.concept_label = body.conceptLabel;
+  if (body.curriculumStandard !== undefined) updates.curriculum_standard = body.curriculumStandard;
+  if (body.sourceReference !== undefined) updates.source_reference = body.sourceReference;
 
   if (body.status !== undefined) {
     if (!ALLOWED_STATUSES.includes(body.status)) {
@@ -160,7 +166,7 @@ export async function PATCH(
     .update(updates)
     .eq("id", id)
     .select(
-      "id, exam_id, section, domain, skill, difficulty, question_type, stimulus, question_text, answer_choices, correct_answer, explanation, status, source_type, reviewed_at, created_at"
+      "id, exam_id, section, domain, skill, difficulty, question_type, stimulus, question_text, answer_choices, correct_answer, explanation, status, source_type, concept_label, curriculum_standard, source_reference, reviewed_at, created_at"
     )
     .single();
 

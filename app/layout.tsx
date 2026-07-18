@@ -1,4 +1,4 @@
-﻿import FeedbackButton from "./components/FeedbackButton";
+﻿import FeedbackButton from "./components/LazyFeedbackButton";
 import FloatingBattleCTA from "./components/FloatingBattleCTA";
 import HashAnchorScroller from "./components/HashAnchorScroller";
 import MainContentShell from "./components/MainContentShell";

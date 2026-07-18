@@ -10,6 +10,14 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/import/anki": ["./node_modules/sql.js/dist/sql-wasm.wasm"],
   },
+  // @napi-rs/canvas ships a native .node binary addon (loaded via
+  // js-binding.js) that Turbopack can't bundle as an ES module -- this
+  // tells Next.js to require() it at runtime in the Node.js server
+  // environment instead of bundling it, which is the standard fix for
+  // native-binary packages (same category as sharp, better-sqlite3, etc.).
+  // Used by lib/server/curriculum/extraction.ts to render a scanned PDF
+  // page to an image before OCR.
+  serverExternalPackages: ["@napi-rs/canvas"],
 };
 
 export default nextConfig;

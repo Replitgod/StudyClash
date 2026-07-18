@@ -14,6 +14,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { difficultyToBeta, probabilityCorrect, updateAbility } from "@/lib/irt";
+import { getMasteryTier, MIN_ATTEMPTS_FOR_HIGH_TIER, type MasteryTier } from "@/lib/masteryTiers";
 
 export type DifficultyLabel = "easy" | "medium" | "hard";
 
@@ -173,6 +174,26 @@ export function pickModule2Questions(
   return pickByDifficultyDistribution(pool, count, MODULE_2_WEIGHTS[path], excludeIds);
 }
 
+export type AttemptMode = "quick" | "full" | "weak_area";
+
+// Weak-area retest: draws a balanced sample from ONLY the flagged skills,
+// across whatever sections those skills happen to span -- unlike Module 1/2
+// selection, there's no difficulty-distribution target here (a weak skill
+// should be tested at whatever difficulty it has published questions at,
+// not skewed toward a particular tier).
+export function pickWeakAreaQuestions(
+  pool: DiagnosticQuestionRow[],
+  skills: string[],
+  countPerSkill: number
+): DiagnosticQuestionRow[] {
+  const selected: DiagnosticQuestionRow[] = [];
+  for (const skill of skills) {
+    const skillPool = shuffle(pool.filter((q) => q.skill === skill));
+    selected.push(...skillPool.slice(0, countPerSkill));
+  }
+  return shuffle(selected);
+}
+
 export type ScoredResponse = {
   difficulty: DifficultyLabel;
   isCorrect: boolean;
@@ -259,7 +280,7 @@ export async function finalizeAttempt(
 ): Promise<DiagnosticResultsPayload> {
   const { data: attempt, error: attemptError } = await supabase
     .from("diagnostic_attempts")
-    .select("id, mode, adaptive_path")
+    .select("id, user_id, exam_id, mode, adaptive_path")
     .eq("id", attemptId)
     .single();
 
@@ -291,7 +312,7 @@ export async function finalizeAttempt(
 
   const results = computeDiagnosticResults(
     responses,
-    attempt.mode as "quick" | "full",
+    attempt.mode as AttemptMode,
     (attempt.adaptive_path || {}) as Record<string, AdaptivePath>
   );
 
@@ -301,9 +322,14 @@ export async function finalizeAttempt(
     section_results: results.sectionResults,
     domain_results: results.domainResults,
     skill_results: results.skillResults,
+    difficulty_results: results.difficultyResults,
     pacing_results: results.pacingResults,
     strongest_skills: results.strongestSkills,
     weakest_skills: results.weakestSkills,
+    common_mistakes: results.commonMistakes,
+    confidence_score: results.confidenceScore,
+    readiness_score: results.readinessScore,
+    readiness_tier: results.readinessTier,
     estimated_score_low: results.estimatedScoreLow,
     estimated_score_high: results.estimatedScoreHigh,
   });
@@ -318,7 +344,73 @@ export async function finalizeAttempt(
     })
     .eq("id", attemptId);
 
+  await persistSkillMastery(supabase, attempt.user_id as string, attempt.exam_id as string, responses);
+
   return results;
+}
+
+type SkillMasteryDelta = { section: string; domain: string; skill: string; correct: number; total: number };
+
+// The cross-attempt mastery persistence that was entirely missing: without
+// this, diagnostic_results.weakest_skills/strongest_skills are a snapshot
+// on one attempt row that nothing ever aggregates. Reads whatever prior
+// row exists for (user, exam, skill) and folds this attempt's counts in,
+// rather than overwriting -- mastery is evidence accumulated across every
+// attempt a student has ever taken on this exam, not just the latest one.
+async function persistSkillMastery(
+  supabase: SupabaseClient,
+  userId: string,
+  examId: string,
+  responses: ResponseForResults[]
+): Promise<void> {
+  const bySkill = new Map<string, SkillMasteryDelta>();
+  for (const r of responses) {
+    const key = r.question.skill;
+    const entry = bySkill.get(key) || { section: r.section, domain: r.question.domain, skill: r.question.skill, correct: 0, total: 0 };
+    entry.total += 1;
+    if (r.is_correct) entry.correct += 1;
+    bySkill.set(key, entry);
+  }
+  if (bySkill.size === 0) return;
+
+  const skills = Array.from(bySkill.keys());
+  const { data: existingRows } = await supabase
+    .from("diagnostic_skill_mastery")
+    .select("skill, attempts_count, correct_count")
+    .eq("user_id", userId)
+    .eq("exam_id", examId)
+    .in("skill", skills);
+
+  const existingBySkill = new Map((existingRows || []).map((r) => [r.skill as string, r]));
+  const now = new Date().toISOString();
+
+  const upsertRows = Array.from(bySkill.values()).map((delta) => {
+    const existing = existingBySkill.get(delta.skill);
+    const attemptsCount = (existing?.attempts_count || 0) + delta.total;
+    const correctCount = (existing?.correct_count || 0) + delta.correct;
+    return {
+      user_id: userId,
+      exam_id: examId,
+      section: delta.section,
+      domain: delta.domain,
+      skill: delta.skill,
+      mastery_score: Math.round((((correctCount + 1) / (attemptsCount + 2)) * 100) * 10) / 10,
+      is_estimate: attemptsCount < MIN_ATTEMPTS_FOR_HIGH_TIER,
+      attempts_count: attemptsCount,
+      correct_count: correctCount,
+      last_attempt_at: now,
+    };
+  });
+
+  const { error } = await supabase
+    .from("diagnostic_skill_mastery")
+    .upsert(upsertRows, { onConflict: "user_id,exam_id,skill" });
+
+  if (error) {
+    // Mastery persistence failing must never take down attempt finalization
+    // (the student still gets their results) -- log and move on.
+    console.error(`Failed to persist skill mastery: ${error.message}`);
+  }
 }
 
 // Quick Diagnostic doesn't have an official College Board spec to mirror --
@@ -395,11 +487,19 @@ function computePacingFlags(responses: ResponseForResults[]): {
   return { guessedTooQuickly, spentTooLong };
 }
 
+export type CommonMistake = {
+  skill: string;
+  domain: string;
+  missCount: number;
+  exampleQuestionIds: string[];
+};
+
 export type DiagnosticResultsPayload = {
   overallAccuracy: number;
   sectionResults: Record<string, { correct: number; total: number; accuracy: number }>;
   domainResults: Record<string, { correct: number; total: number; accuracy: number }>;
   skillResults: Record<string, { domain: string; correct: number; total: number; accuracy: number }>;
+  difficultyResults: Record<DifficultyLabel, { correct: number; total: number; accuracy: number }>;
   pacingResults: {
     averageSecondsPerQuestion: number;
     guessedTooQuickly: string[];
@@ -407,8 +507,24 @@ export type DiagnosticResultsPayload = {
   };
   strongestSkills: { skill: string; accuracy: number; sampleSize: number; lowConfidence: boolean }[];
   weakestSkills: { skill: string; accuracy: number; sampleSize: number; lowConfidence: boolean }[];
-  estimatedScoreLow: number;
-  estimatedScoreHigh: number;
+  // Most-missed skills by raw miss COUNT, not lowest accuracy -- a skill
+  // hit hard on volume (e.g. 6 misses out of 10) is a different signal from
+  // "weakest skills" (which ranks by smoothed accuracy and can surface a
+  // 1-miss-out-of-2 skill above it). Both are useful; neither replaces the
+  // other.
+  commonMistakes: CommonMistake[];
+  // How much evidence backs this attempt's skill breakdown, 0-100: the
+  // share of skills seen with enough samples (MIN_ATTEMPTS_FOR_HIGH_TIER)
+  // to trust, not a confidence interval on any single number.
+  confidenceScore: number;
+  // Distinct from overallAccuracy: readiness reuses the same
+  // getMasteryTier() thresholds every other mastery signal in this app
+  // uses (lib/masteryTiers.ts), so "Strong" here means the same thing it
+  // means on the mastery map.
+  readinessScore: number;
+  readinessTier: MasteryTier;
+  estimatedScoreLow: number | null;
+  estimatedScoreHigh: number | null;
 };
 
 export type AssignedModuleItem = {
@@ -454,6 +570,32 @@ export async function loadAssignedModuleQuestions(
   }));
 }
 
+// Weak-area attempts have no section/module structure to filter on -- their
+// questions can span both reading_writing and math (whichever sections the
+// flagged skills happen to live in), all under module 1. Loads every
+// assigned question for the attempt, full stop.
+export async function loadAllAssignedQuestions(
+  supabase: SupabaseClient,
+  attemptId: string
+): Promise<AssignedModuleItem[]> {
+  const { data, error } = await supabase
+    .from("diagnostic_responses")
+    .select(
+      "selected_answer, flagged, question:diagnostic_questions(id, exam_id, section, domain, skill, difficulty, question_type, stimulus, question_text, answer_choices, correct_answer, explanation, status, source_type, reviewed_at, created_at)"
+    )
+    .eq("attempt_id", attemptId);
+
+  if (error) {
+    throw new Error(`Failed to load assigned questions: ${error.message}`);
+  }
+
+  return ((data || []) as unknown as AssignedQuestionJoinRow[]).map((row) => ({
+    question: sanitizeQuestionForClient(row.question),
+    selectedAnswer: row.selected_answer,
+    flagged: row.flagged,
+  }));
+}
+
 // Assigning a module pre-inserts one diagnostic_responses row per question
 // (selected_answer/is_correct null, flagged false) instead of only creating
 // rows once the student answers. That makes "the set of questions in this
@@ -484,7 +626,7 @@ export async function assignModuleQuestions(
 
 export function computeDiagnosticResults(
   responses: ResponseForResults[],
-  mode: "quick" | "full",
+  mode: AttemptMode,
   adaptivePath: Record<string, AdaptivePath>
 ): DiagnosticResultsPayload {
   const totalCorrect = responses.filter((r) => r.is_correct).length;
@@ -494,6 +636,12 @@ export function computeDiagnosticResults(
   const domainAgg = new Map<string, { correct: number; total: number }>();
   const skillAgg = new Map<string, SkillAggregate>();
   const sectionResponses = new Map<string, ScoredResponse[]>();
+  const difficultyAgg: Record<DifficultyLabel, { correct: number; total: number }> = {
+    easy: { correct: 0, total: 0 },
+    medium: { correct: 0, total: 0 },
+    hard: { correct: 0, total: 0 },
+  };
+  const missesBySkill = new Map<string, { domain: string; missCount: number; exampleQuestionIds: string[] }>();
 
   for (const response of responses) {
     const section = response.section;
@@ -512,6 +660,17 @@ export function computeDiagnosticResults(
     skillEntry.total += 1;
     if (response.is_correct) skillEntry.correct += 1;
     skillAgg.set(skillKey, skillEntry);
+
+    const difficultyEntry = difficultyAgg[response.question.difficulty];
+    difficultyEntry.total += 1;
+    if (response.is_correct) difficultyEntry.correct += 1;
+
+    if (response.is_correct === false) {
+      const missEntry = missesBySkill.get(skillKey) || { domain: domainKey, missCount: 0, exampleQuestionIds: [] };
+      missEntry.missCount += 1;
+      if (missEntry.exampleQuestionIds.length < 3) missEntry.exampleQuestionIds.push(response.question_id);
+      missesBySkill.set(skillKey, missEntry);
+    }
 
     const sectionScored = sectionResponses.get(section) || [];
     sectionScored.push({ difficulty: response.question.difficulty, isCorrect: !!response.is_correct });
@@ -549,8 +708,8 @@ export function computeDiagnosticResults(
   // displayed number -- and sampleSize/lowConfidence let the results page
   // caveat anything backed by fewer than 3 questions honestly.
   const skillsWithData = Array.from(skillAgg.values()).filter((s) => s.total >= 1);
-  const confidenceScore = (s: SkillAggregate) => (s.correct + 1) / (s.total + 2);
-  const sortedByConfidence = [...skillsWithData].sort((a, b) => confidenceScore(b) - confidenceScore(a));
+  const smoothedConfidence = (s: SkillAggregate) => (s.correct + 1) / (s.total + 2);
+  const sortedByConfidence = [...skillsWithData].sort((a, b) => smoothedConfidence(b) - smoothedConfidence(a));
 
   const toSkillSummary = (s: SkillAggregate) => ({
     skill: s.skill,
@@ -571,21 +730,58 @@ export function computeDiagnosticResults(
     responses.length > 0 ? Math.round(totalTimeSeconds / responses.length) : 0;
   const { guessedTooQuickly, spentTooLong } = computePacingFlags(responses);
 
-  const rwTheta = estimateSectionTheta(sectionResponses.get("reading_writing") || []);
-  const mathTheta = estimateSectionTheta(sectionResponses.get("math") || []);
-  const rwRange = estimateSectionScoreRange(rwTheta, adaptivePath.reading_writing || null, mode);
-  const mathRange = estimateSectionScoreRange(mathTheta, adaptivePath.math || null, mode);
-  const composite = combineToCompositeRange(rwRange, mathRange);
+  const difficultyResults: DiagnosticResultsPayload["difficultyResults"] = {
+    easy: { ...difficultyAgg.easy, accuracy: accuracyPercent(difficultyAgg.easy.correct, difficultyAgg.easy.total) },
+    medium: { ...difficultyAgg.medium, accuracy: accuracyPercent(difficultyAgg.medium.correct, difficultyAgg.medium.total) },
+    hard: { ...difficultyAgg.hard, accuracy: accuracyPercent(difficultyAgg.hard.correct, difficultyAgg.hard.total) },
+  };
+
+  const commonMistakes: CommonMistake[] = Array.from(missesBySkill.entries())
+    .map(([skill, v]) => ({ skill, domain: v.domain, missCount: v.missCount, exampleQuestionIds: v.exampleQuestionIds }))
+    .sort((a, b) => b.missCount - a.missCount)
+    .slice(0, 5);
+
+  const skillsWithEnoughSamples = skillsWithData.filter((s) => s.total >= MIN_ATTEMPTS_FOR_HIGH_TIER).length;
+  const confidenceScore =
+    skillsWithData.length > 0 ? Math.round((skillsWithEnoughSamples / skillsWithData.length) * 100) : 0;
+
+  const readinessTier = getMasteryTier(totalCorrect, responses.length);
+  // Readiness starts from raw accuracy (the same number the results page
+  // already shows) but is nudged down when confidence is thin -- a 90%
+  // accuracy score built on 3 questions shouldn't read as equally "ready"
+  // as the same 90% built on 60.
+  const readinessScore = Math.round(overallAccuracy * (0.7 + 0.3 * (confidenceScore / 100)) * 10) / 10;
+
+  // A weak-area retest produces no new exam score estimate -- it's a
+  // targeted mastery check across whatever sections the flagged skills
+  // happen to span, not a fresh full/quick diagnostic, so an RW/Math
+  // composite score here would be misleading rather than informative.
+  let estimatedScoreLow: number | null = null;
+  let estimatedScoreHigh: number | null = null;
+  if (mode !== "weak_area") {
+    const rwTheta = estimateSectionTheta(sectionResponses.get("reading_writing") || []);
+    const mathTheta = estimateSectionTheta(sectionResponses.get("math") || []);
+    const rwRange = estimateSectionScoreRange(rwTheta, adaptivePath.reading_writing || null, mode);
+    const mathRange = estimateSectionScoreRange(mathTheta, adaptivePath.math || null, mode);
+    const composite = combineToCompositeRange(rwRange, mathRange);
+    estimatedScoreLow = composite.low;
+    estimatedScoreHigh = composite.high;
+  }
 
   return {
     overallAccuracy,
     sectionResults,
     domainResults,
     skillResults,
+    difficultyResults,
     pacingResults: { averageSecondsPerQuestion, guessedTooQuickly, spentTooLong },
     strongestSkills,
     weakestSkills,
-    estimatedScoreLow: composite.low,
-    estimatedScoreHigh: composite.high,
+    commonMistakes,
+    confidenceScore,
+    readinessScore,
+    readinessTier,
+    estimatedScoreLow,
+    estimatedScoreHigh,
   };
 }

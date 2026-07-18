@@ -1,3 +1,5 @@
+import { getReviewIntervalDays, getTopicStatus } from "@/lib/srsSchedule";
+
 // Pure, deterministic study-plan scaffolding shared by BOTH entry points:
 // the multi-month post-diagnostic plan (Part 3) and the short-term
 // post-battle plan (Part 4). No Supabase/secrets/Node-only APIs here, so
@@ -241,6 +243,19 @@ export function generateStudyPlanTasks(args: GeneratePlanArgs): GeneratedTask[] 
   const sortedWeakTopics = [...args.weakTopics].sort((a, b) => a.accuracy - b.accuracy);
   const topicRotation = sortedWeakTopics.length > 0 ? sortedWeakTopics.map((t) => t.topic) : ["your weakest topics so far"];
 
+  // Review-day cadence reuses lib/srsSchedule.ts's canonical interval
+  // function (the same one driving the Mastery Map and topic_review_schedule)
+  // instead of a hardcoded "every 6 days" -- a plan built from a genuinely
+  // weak topic set should consolidate more often than one built from
+  // mostly-improving topics. srsSchedule's raw intervals (weak=1, improving=3,
+  // mastered=7-21) are tuned for a single topic's next-touch timing, not a
+  // whole-plan cumulative review day, so this clamps into a sensible weekly
+  // range [4, 8] rather than using the raw value verbatim (an unclamped
+  // weak=1 would turn every single day into a review day and erase the
+  // phase structure entirely).
+  const worstTopicStatus = sortedWeakTopics.length > 0 ? getTopicStatus(sortedWeakTopics[0].accuracy) : "improving";
+  const reviewCadenceDays = Math.max(4, Math.min(8, getReviewIntervalDays(worstTopicStatus, 0)));
+
   const tasks: GeneratedTask[] = [];
   const lastIndex = availableDates.length - 1;
   const recentTopicsThisWeek: string[] = [];
@@ -264,11 +279,11 @@ export function generateStudyPlanTasks(args: GeneratePlanArgs): GeneratedTask[] 
     }
 
     daysSinceReview += 1;
-    const isReviewDay = daysSinceReview >= 6 && index < lastIndex - 1;
+    const isReviewDay = daysSinceReview >= reviewCadenceDays && index < lastIndex - 1;
     const isCatchUpDay =
       !isReviewDay &&
       args.intensity !== "intensive" &&
-      daysSinceReview === 5 &&
+      daysSinceReview === reviewCadenceDays - 1 &&
       index < lastIndex - 1;
 
     if (isReviewDay) {
