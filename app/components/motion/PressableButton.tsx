@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { pressable } from "@/lib/motion";
 
 // A bare pressable primitive for arbitrary interactive elements that aren't
@@ -23,13 +23,15 @@ export function PressableButton({
   disabled?: boolean;
   ariaLabel?: string;
 }) {
+  const reducedMotion = useReducedMotion();
+
   return (
     <motion.button
       type="button"
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      {...(disabled ? {} : pressable)}
+      {...(disabled || reducedMotion ? {} : pressable)}
       className={`disabled:cursor-not-allowed disabled:opacity-50 ${className || ""}`}
     >
       {children}

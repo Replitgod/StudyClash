@@ -21,6 +21,18 @@ export type AiAnalysis = {
   canSkipForNow: string[];
   estimatedStudyHours: number;
   priorityOrder: string[];
+  // Real edges from diagnostic_skill_relationships for this student's weak
+  // skills, not LLM-invented -- empty when no authored relationship exists
+  // for any of them (most of the taxonomy doesn't have edges yet; see the
+  // seed migration's own coverage). The LLM is grounded in this list when
+  // writing downstreamConcepts, not asked to guess the graph itself.
+  groundedPrerequisites: {
+    skill: string;
+    relatedSkill: string;
+    relationshipType: string;
+    confidence: number;
+    notes: string | null;
+  }[];
 };
 
 type MissedQuestionRow = {
@@ -45,7 +57,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const { data: attempt, error: attemptError } = await supabase
     .from("diagnostic_attempts")
-    .select("id, user_id, status, mode")
+    .select("id, user_id, status, mode, exam_id")
     .eq("id", attemptId)
     .single();
 
@@ -92,6 +104,32 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       explanation: r.question!.explanation,
     }));
 
+  // Real prerequisite/related edges for this student's weak skills, looked
+  // up from diagnostic_skill_relationships -- grounds downstreamConcepts in
+  // an actual authored graph instead of letting the model invent one from
+  // accuracy stats alone (see that table's migration for provenance/limits:
+  // only ~18 seeded edges today, so this is often empty).
+  const weakestSkillNames = (
+    (results.weakest_skills || []) as { skill: string }[]
+  ).map((s) => s.skill);
+
+  let groundedPrerequisites: AiAnalysis["groundedPrerequisites"] = [];
+  if (weakestSkillNames.length > 0) {
+    const { data: relationshipRows } = await supabase
+      .from("diagnostic_skill_relationships")
+      .select("skill, related_skill, relationship_type, confidence, notes")
+      .eq("exam_id", attempt.exam_id)
+      .in("skill", weakestSkillNames);
+
+    groundedPrerequisites = (relationshipRows || []).map((r) => ({
+      skill: r.skill,
+      relatedSkill: r.related_skill,
+      relationshipType: r.relationship_type,
+      confidence: r.confidence,
+      notes: r.notes,
+    }));
+  }
+
   const prompt = `
 You are an expert tutor writing a personalized diagnostic analysis for a student, based ONLY on the data below. Never invent facts not supported by this data. Do not simply restate percentages -- explain the PATTERN behind the mistakes.
 
@@ -104,11 +142,12 @@ Weakest/highest-priority skills: ${JSON.stringify(results.weakest_skills)}
 Most common mistakes (by miss count): ${JSON.stringify(results.common_mistakes)}
 Pacing: ${JSON.stringify(results.pacing_results)}
 Sample of missed questions (up to ${MAX_MISSED_QUESTIONS_IN_PROMPT}): ${JSON.stringify(missed)}
+Authored prerequisite/related-skill relationships for this student's weakest skills (ground truth -- use these for downstreamConcepts when present; do not invent additional relationships beyond this list): ${groundedPrerequisites.length > 0 ? JSON.stringify(groundedPrerequisites) : "None authored yet for these specific skills -- write downstreamConcepts as a general statement about why the weak skill matters, without claiming a specific prerequisite chain."}
 
 Write:
 - summary: 2-3 sentences, the single biggest takeaway from this diagnostic.
 - whyStruggled: 2-4 sentences explaining WHY the student likely struggled where they did (a real pattern -- e.g. a prerequisite gap, a specific misconception, a pacing issue -- not just "needs more practice").
-- downstreamConcepts: 1-3 sentences on which concepts, if left unaddressed, will cause mistakes on LATER/harder material too (a prerequisite-gap analysis).
+- downstreamConcepts: 1-3 sentences on which concepts, if left unaddressed, will cause mistakes on LATER/harder material too (a prerequisite-gap analysis). If the authored relationships above are non-empty, base this on them specifically (name the related skill). If empty, keep this general and do not name a specific downstream skill you're not given evidence for.
 - learnFirst: array of 2-4 skill/concept names to study first, in priority order.
 - canSkipForNow: array of 0-3 skill/concept names that are already strong enough to deprioritize for now.
 - estimatedStudyHours: a realistic number of hours to close the gaps identified (integer).
@@ -136,6 +175,7 @@ Return ONLY valid JSON: {"summary": string, "whyStruggled": string, "downstreamC
       canSkipForNow: Array.isArray(parsed.canSkipForNow) ? (parsed.canSkipForNow as string[]) : [],
       estimatedStudyHours: typeof parsed.estimatedStudyHours === "number" ? parsed.estimatedStudyHours : 5,
       priorityOrder: Array.isArray(parsed.priorityOrder) ? (parsed.priorityOrder as string[]) : [],
+      groundedPrerequisites,
     };
   } catch (err) {
     return NextResponse.json(

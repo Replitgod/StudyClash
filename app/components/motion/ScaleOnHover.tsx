@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { springSnappy } from "@/lib/motion";
 
 // Wraps any element (an image, an icon tile, a preview card) with a small
@@ -18,10 +18,12 @@ export function ScaleOnHover({
   scale?: number;
   lift?: boolean;
 }) {
+  const reducedMotion = useReducedMotion();
+
   return (
     <motion.div
-      whileHover={{ scale, y: lift ? -2 : 0 }}
-      whileTap={{ scale: scale - 0.05 }}
+      whileHover={reducedMotion ? undefined : { scale, y: lift ? -2 : 0 }}
+      whileTap={reducedMotion ? undefined : { scale: scale - 0.05 }}
       transition={springSnappy}
       className={className}
     >

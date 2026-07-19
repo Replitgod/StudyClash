@@ -7,9 +7,10 @@ import { PageViewTracker } from "./components/PageViewTracker";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { PLAN_METADATA } from "@/lib/plans";
 import { FREE_PLAN_LIMIT_SUMMARY } from "@/lib/planLimits";
-import { HeroReveal, HeroRevealItem } from "./components/HeroReveal";
+import { StaggerContainer, StaggerItem } from "./components/motion/Stagger";
+import { FloatingCard } from "./components/motion/FloatingCard";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
 
 export const metadata: Metadata = {
   title: "AI Study App | StudyClash Battle-Based Quizlet Alternative",
@@ -231,50 +232,52 @@ export default function Home() {
       <div className={`mx-auto flex w-full max-w-[1200px] flex-col px-5 sm:px-8 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {/* ---------- 1. Hero ---------- */}
         <header className="grid gap-10 py-12 sm:py-16 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:py-20">
-          <HeroReveal>
-            <HeroRevealItem>
-              <p className="inline-flex items-center gap-2 rounded-full border border-[#E2E8F0] bg-[#EEF2FF] px-3.5 py-1.5 text-xs font-semibold text-[#4F46E5]">
+          <StaggerContainer staggerDelay={0.09}>
+            <StaggerItem>
+              <p className="inline-flex items-center gap-2 rounded-full border border-[#E2E8F0] bg-[#EEF2FF] px-3.5 py-1.5 text-xs font-semibold text-brand-primary">
                 Competitive studying, powered by AI
               </p>
-            </HeroRevealItem>
+            </StaggerItem>
 
-            <HeroRevealItem className="mt-5">
-              <h1 className="max-w-[620px] text-4xl font-bold leading-[1.1] tracking-tight text-[#0F172A] sm:text-5xl">
-                Roast your friends&rsquo; grades in 5-minute quiz duels before the test.
+            <StaggerItem>
+              <h1 className="mt-5 max-w-[620px] text-4xl font-bold leading-[1.1] tracking-tight text-[#0F172A] sm:text-5xl">
+                Know exactly what to study next.
               </h1>
-            </HeroRevealItem>
+            </StaggerItem>
 
-            <HeroRevealItem className="mt-4">
-              <p className="max-w-[560px] text-base leading-relaxed text-[#64748B] sm:text-lg">
-                Upload your notes, challenge a friend or the AI, and find out who actually studied.
+            <StaggerItem>
+              <p className="mt-4 max-w-[560px] text-base leading-relaxed text-[#64748B] sm:text-lg">
+                StudyClash maps your material, finds your weak skills, and turns your personalized plan into competitive study battles.
               </p>
-            </HeroRevealItem>
+            </StaggerItem>
 
-            <HeroRevealItem className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Link
-                href="#battle-ai"
-                className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#4F46E5] px-6 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#4338CA]"
-              >
-                Try an Instant Battle
-              </Link>
-              <Link
-                href="/create"
-                className="inline-flex h-12 items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white px-6 text-sm font-semibold text-[#0F172A] transition-colors duration-150 hover:bg-[#F8FAFC]"
-              >
-                Upload Notes
-              </Link>
-            </HeroRevealItem>
+            <StaggerItem>
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <Link
+                  href="/diagnostics"
+                  className="inline-flex h-12 items-center justify-center rounded-md bg-brand-primary px-6 text-sm font-semibold text-white transition-colors duration-150 hover:bg-brand-primary-emphasis"
+                >
+                  Take a free diagnostic
+                </Link>
+                <Link
+                  href="/demo/battle"
+                  className="inline-flex h-12 items-center justify-center rounded-md border border-[#E2E8F0] bg-white px-6 text-sm font-semibold text-[#0F172A] transition-colors duration-150 hover:bg-[#F8FAFC]"
+                >
+                  See how it works
+                </Link>
+              </div>
+            </StaggerItem>
 
-            <HeroRevealItem className="mt-3">
-              <p className="text-xs font-medium text-[#64748B]">
+            <StaggerItem>
+              <p className="mt-3 text-xs font-medium text-[#64748B]">
                 Try the demo without signing up. Create an account when you want to upload and save your own material.
               </p>
-            </HeroRevealItem>
-          </HeroReveal>
+            </StaggerItem>
+          </StaggerContainer>
 
-          <div className="rounded-[14px] border border-[#E2E8F0] bg-[#0B1220] p-2 shadow-sm">
+          <FloatingCard className="rounded-lg border border-[#E2E8F0] bg-[#0B1220] p-2 shadow-elevation-md" floatDistance={5} tiltStrength={4}>
             <AutoplayDemoRail />
-          </div>
+          </FloatingCard>
         </header>
 
         {/* ---------- 2. Interactive product preview ---------- */}

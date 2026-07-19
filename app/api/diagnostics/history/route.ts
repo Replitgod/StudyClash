@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabaseClient, requireAuthenticatedUser } from "@/lib/server/apiUtils";
+import { getMasteryTier, MASTERY_TIER_LABELS } from "@/lib/masteryTiers";
 
 export const runtime = "nodejs";
 
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
 
   const { data: masteryRows, error: masteryError } = await supabase
     .from("diagnostic_skill_mastery")
-    .select("exam_id, section, domain, skill, mastery_score, is_estimate, attempts_count, last_attempt_at, exam:exam_definitions(name, slug)")
+    .select("exam_id, section, domain, skill, mastery_score, is_estimate, attempts_count, correct_count, last_attempt_at, exam:exam_definitions(name, slug)")
     .eq("user_id", userId)
     .order("mastery_score", { ascending: true });
 
@@ -69,7 +70,20 @@ export async function GET(request: NextRequest) {
 
   const masteryByExam = new Map<
     string,
-    { examName: string; examSlug: string; skills: { skill: string; domain: string; masteryScore: number; isEstimate: boolean; attemptsCount: number; lastAttemptAt: string | null }[] }
+    {
+      examName: string;
+      examSlug: string;
+      skills: {
+        skill: string;
+        domain: string;
+        masteryScore: number;
+        isEstimate: boolean;
+        attemptsCount: number;
+        lastAttemptAt: string | null;
+        masteryTier: string;
+        masteryTierLabel: string;
+      }[];
+    }
   >();
   for (const row of masteryRows || []) {
     const exam = row.exam as unknown as { name: string; slug: string } | null;
@@ -77,6 +91,11 @@ export async function GET(request: NextRequest) {
     if (!masteryByExam.has(key)) {
       masteryByExam.set(key, { examName: exam?.name || "Unknown exam", examSlug: exam?.slug || "", skills: [] });
     }
+    // Same canonical tier function as Mastery Map and the results-page
+    // ClashPath report (lib/masteryTiers.ts) -- this table already stores
+    // correct_count/attempts_count precisely so this could be computed
+    // consistently instead of diagnostics inventing its own thresholds.
+    const masteryTier = getMasteryTier(row.correct_count, row.attempts_count);
     masteryByExam.get(key)!.skills.push({
       skill: row.skill,
       domain: row.domain,
@@ -84,6 +103,8 @@ export async function GET(request: NextRequest) {
       isEstimate: row.is_estimate,
       attemptsCount: row.attempts_count,
       lastAttemptAt: row.last_attempt_at,
+      masteryTier,
+      masteryTierLabel: MASTERY_TIER_LABELS[masteryTier],
     });
   }
 

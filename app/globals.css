@@ -26,6 +26,49 @@
   --color-brand-accent: #16a34a;
   --color-brand-accent-emphasis: #22c55e;
 
+  /* Semantic state colors. Success intentionally reuses the accent green
+     rather than inventing a near-duplicate hue -- "positive energy" already
+     means the same thing in both contexts (see the file-level comment).
+     Warning/danger are new: nothing in the app had a canonical amber/red
+     token before this, just ad hoc `text-amber-300`/`bg-red-500` literals
+     scattered per component. */
+  --color-success: var(--color-brand-accent);
+  --color-success-emphasis: var(--color-brand-accent-emphasis);
+  --color-warning: #d97706;
+  --color-warning-emphasis: #f59e0b;
+  --color-danger: #dc2626;
+  --color-danger-emphasis: #ef4444;
+
+  /* Neutral surfaces -- named steps for the dark-canonical system (see the
+     :root section below) so a card/panel/border reaches for a token
+     instead of a one-off `bg-white/[0.03]`/`border-white/10` literal.
+     Kept as a handful of purpose-named steps rather than a full 50-950
+     ramp -- Tailwind's own gray scale already covers arbitrary shades when
+     a component genuinely needs one; these are just the ones used
+     everywhere (page canvas, raised card, two border weights). */
+  --color-surface: #0b0b12;
+  --color-surface-raised: #131320;
+  --color-border-subtle: rgb(255 255 255 / 0.08);
+  --color-border: rgb(255 255 255 / 0.14);
+
+  /* General elevation shadows -- distinct from the brand glow shadows
+     below. Glow is a deliberate, sparing emphasis effect (streaks,
+     milestones); these are the default "this card is raised off the
+     canvas" shadow any panel/dropdown/dialog should use. */
+  --shadow-elevation-sm: 0 2px 8px -2px rgb(0 0 0 / 0.35);
+  --shadow-elevation-md: 0 12px 32px -12px rgb(0 0 0 / 0.5);
+  --shadow-elevation-lg: 0 24px 60px -20px rgb(0 0 0 / 0.6);
+
+  /* Radius scale -- named so components stop picking their own rounding
+     ad hoc (the app currently mixes rounded-lg/xl/2xl/3xl with no logic
+     tying the choice to element size or role). sm/md/lg map to Tailwind's
+     familiar small/medium/large radii; pill is the recurring "fully round"
+     shape used for badges, chips, and pill buttons throughout. */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.875rem;
+  --radius-lg: 1.25rem;
+  --radius-pill: 999px;
+
   /* Glow shadows — one recipe per brand color, two intensities. Use via
      `shadow-glow-indigo-md` etc. Deliberately used sparingly (emphasis
      moments only — streak escalation, milestone reveals) rather than as a

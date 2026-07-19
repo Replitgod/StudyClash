@@ -15,7 +15,7 @@ import { OpponentFace, moodFromStreak } from "@/app/components/OpponentFace";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
 import { useVoiceStudyMode } from "@/lib/useVoiceStudyMode";
 import { motion } from "framer-motion";
-import { pressable, springBouncy, springSnappy } from "@/lib/motion";
+import { springBouncy, springSnappy } from "@/lib/motion";
 import { useCountUp } from "@/lib/useCountUp";
 import { MathText } from "@/app/components/ui/MathText";
 import {
@@ -1278,6 +1278,10 @@ export default function BattlePage() {
 
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    // deckId is stable for the component's lifetime and currentIndex is
+    // read only for a best-effort analytics ping -- re-attaching this
+    // listener on every question change isn't worth it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasStarted, isFinishing, introCountdown]);
 
   // beforeunload only covers tab-close/refresh -- it never fires for the

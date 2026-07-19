@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { springSmooth } from "@/lib/motion";
+import { motion, useReducedMotion } from "motion/react";
+import { springSmooth, REDUCED_MOTION_TRANSITION } from "@/lib/motion";
 
 // Scroll-triggered rise for long marketing/content pages -- sections settle
 // into place as the student scrolls to them instead of all being static on
@@ -24,12 +24,14 @@ export function Reveal({
   className?: string;
   delay?: number;
 }) {
+  const reducedMotion = useReducedMotion();
+
   return (
     <motion.div
-      initial={{ opacity: 1, y: 20 }}
+      initial={{ opacity: 1, y: reducedMotion ? 0 : 20 }}
       whileInView={{ y: 0 }}
       viewport={{ once: true, margin: "-80px" }}
-      transition={{ ...springSmooth, delay }}
+      transition={reducedMotion ? REDUCED_MOTION_TRANSITION : { ...springSmooth, delay }}
       className={className}
     >
       {children}

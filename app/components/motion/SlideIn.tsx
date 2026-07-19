@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
-import { springSmooth, MOTION_DISTANCE_PX } from "@/lib/motion";
+import { motion, useReducedMotion } from "motion/react";
+import { springSmooth, MOTION_DISTANCE_PX, REDUCED_MOTION_TRANSITION } from "@/lib/motion";
 
 type Direction = "up" | "down" | "left" | "right";
 
@@ -34,13 +34,14 @@ export function SlideIn({
   delay?: number;
   distance?: number;
 }) {
-  const offset = offsetFor(direction, distance);
+  const reducedMotion = useReducedMotion();
+  const offset = offsetFor(direction, reducedMotion ? 0 : distance);
   return (
     <motion.div
       initial={{ opacity: 0, x: offset.x, y: offset.y }}
       animate={{ opacity: 1, x: 0, y: 0 }}
       exit={{ opacity: 0, x: offset.x, y: offset.y }}
-      transition={{ ...springSmooth, delay }}
+      transition={reducedMotion ? REDUCED_MOTION_TRANSITION : { ...springSmooth, delay }}
       className={className}
     >
       {children}

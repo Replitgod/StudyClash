@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useAuth } from "@/lib/useAuth";
 import { supabase } from "@/lib/supabase";
 import { UI_SFX } from "@/lib/uiSound";
-import { springSnappy } from "@/lib/motion";
+import { springSnappy, REDUCED_MOTION_TRANSITION } from "@/lib/motion";
 import BattleAILink from "./BattleAILink";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
 
@@ -27,6 +27,7 @@ const CONTINUE_PATH_EXCLUDE = new Set([
 const MORE_LINKS = [
   { label: "Create Deck", href: "/create" },
   { label: "Guided Demo", href: "/demo/battle" },
+  { label: "Curriculum (Beta)", href: "/curriculum" },
   { label: "Exams", href: "/exams" },
   { label: "Pricing", href: "/pricing" },
   { label: "Classroom (Beta)", href: "/classroom" },
@@ -41,6 +42,7 @@ const MARKETING_LINKS = [
   { label: "Guided Demo", href: "/demo/battle" },
   { label: "Create", href: "/create" },
   { label: "Diagnostics", href: "/diagnostics" },
+  { label: "Curriculum (Beta)", href: "/curriculum" },
   { label: "Exams", href: "/exams" },
   { label: "Pricing", href: "/pricing" },
   { label: "Contact", href: "/contact" },
@@ -153,12 +155,14 @@ function RailButton({
   as?: "battle";
   expanded: boolean;
 }) {
+  const reducedMotion = useReducedMotion();
+
   const className = `group relative flex flex-shrink-0 items-center rounded-xl border border-transparent transition-colors duration-150 ${
     expanded ? "w-full justify-start gap-3 px-4 py-2.5" : "mx-auto w-14 flex-col justify-center gap-1 py-2.5"
-  } ${active ? "text-indigo-400" : "text-white/50 hover:text-white"}`;
+  } ${active ? "text-brand-primary-emphasis" : "text-white/50 hover:text-white"}`;
 
   const tooltip = !expanded && (
-    <span className="pointer-events-none absolute left-full top-1/2 z-20 ml-2.5 -translate-y-1/2 translate-x-[-4px] whitespace-nowrap rounded-lg border border-white/10 bg-[#131316] px-2.5 py-1.5 text-xs font-semibold text-white opacity-0 shadow-lg transition-all duration-150 delay-0 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300">
+    <span className="pointer-events-none absolute left-full top-1/2 z-20 ml-2.5 -translate-y-1/2 translate-x-[-4px] whitespace-nowrap rounded-md border border-border-subtle bg-surface-raised px-2.5 py-1.5 text-xs font-semibold text-white opacity-0 shadow-elevation-sm transition-all duration-150 delay-0 group-hover:translate-x-0 group-hover:opacity-100 group-hover:delay-300">
       {tip}
     </span>
   );
@@ -167,8 +171,8 @@ function RailButton({
     <>
       <motion.span
         className="flex-shrink-0"
-        whileHover={{ scale: 1.08, y: -1 }}
-        whileTap={{ scale: 0.92 }}
+        whileHover={reducedMotion ? undefined : { scale: 1.08, y: -1 }}
+        whileTap={reducedMotion ? undefined : { scale: 0.92 }}
         transition={springSnappy}
       >
         {icon}
@@ -177,8 +181,8 @@ function RailButton({
         {expanded && (
           <motion.span
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1, transition: { delay: 0.08, duration: 0.15 } }}
-            exit={{ opacity: 0, transition: { duration: 0.08 } }}
+            animate={{ opacity: 1, transition: reducedMotion ? REDUCED_MOTION_TRANSITION : { delay: 0.08, duration: 0.15 } }}
+            exit={{ opacity: 0, transition: REDUCED_MOTION_TRANSITION }}
             className="whitespace-nowrap text-sm font-semibold"
           >
             {tip}
@@ -224,6 +228,7 @@ export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
   const { isLoggedIn, isLoading } = useAuth();
+  const reducedMotion = useReducedMotion();
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -336,14 +341,14 @@ export default function Navigation() {
       <motion.nav
         initial={false}
         animate={{ width: isRailOpen ? 232 : 72 }}
-        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        transition={reducedMotion ? REDUCED_MOTION_TRANSITION : { duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         style={{ zIndex: UI_Z_INDEX.stickyHeader }}
-        className="fixed left-0 top-0 hidden h-screen flex-col overflow-hidden border-r border-white/10 bg-[#0a0a0c] py-5 shadow-2xl md:flex"
+        className="fixed left-0 top-0 hidden h-screen flex-col overflow-hidden border-r border-border-subtle bg-surface py-5 shadow-elevation-lg md:flex"
         aria-label="Primary"
         onMouseEnter={() => setIsRailOpen(true)}
         onMouseLeave={() => setIsRailOpen(false)}
       >
-        <Link href={homeHref} className="mx-auto mb-5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-sm font-black text-white">
+        <Link href={homeHref} className="mx-auto mb-5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-brand-primary text-sm font-black text-white">
           S
         </Link>
 
@@ -369,18 +374,18 @@ export default function Navigation() {
                 {isMoreOpen && morePosition && (
                   <motion.div
                     ref={morePopoverRef}
-                    initial={{ opacity: 0, x: -6, scale: 0.97 }}
+                    initial={{ opacity: 0, x: reducedMotion ? 0 : -6, scale: reducedMotion ? 1 : 0.97 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: -6, scale: 0.97 }}
-                    transition={springSnappy}
-                    className="fixed w-52 rounded-xl border border-white/10 bg-[#131316] p-1.5 shadow-2xl"
+                    exit={{ opacity: 0, x: reducedMotion ? 0 : -6, scale: reducedMotion ? 1 : 0.97 }}
+                    transition={reducedMotion ? REDUCED_MOTION_TRANSITION : springSnappy}
+                    className="fixed w-52 rounded-lg border border-border-subtle bg-surface-raised p-1.5 shadow-elevation-lg"
                     style={{ left: morePosition.left, bottom: morePosition.bottom, zIndex: UI_Z_INDEX.stickyHeader }}
                   >
                     {continuePath && (
                       <Link
                         href={continuePath}
                         onClick={() => setIsMoreOpen(false)}
-                        className="block rounded-lg px-3 py-2 text-sm font-semibold text-indigo-300 hover:bg-white/5"
+                        className="block rounded-md px-3 py-2 text-sm font-semibold text-brand-primary-emphasis hover:bg-white/5"
                       >
                         Continue where you left off
                       </Link>
@@ -390,7 +395,7 @@ export default function Navigation() {
                         key={link.href}
                         href={link.href}
                         onClick={() => setIsMoreOpen(false)}
-                        className="block rounded-lg px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/5 hover:text-white"
+                        className="block rounded-md px-3 py-2 text-sm font-semibold text-white/70 hover:bg-white/5 hover:text-white"
                       >
                         {link.label}
                       </Link>
@@ -460,13 +465,31 @@ function MobileTopBar({
   isActive: (href: string) => boolean;
 }) {
   const navLinks = MARKETING_LINKS;
+  const reducedMotion = useReducedMotion();
+  // Compact state after scrolling -- the desktop rail is a fixed sidebar
+  // with its own hover-expand interaction (not scroll-linked, so a
+  // scroll-compact treatment doesn't apply to it), but this top bar is the
+  // one nav surface that actually scrolls with the page, so it's the
+  // literal fit for the redesign brief's "compact state after scrolling."
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 24);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <nav
-      className="sticky top-0 w-full border-b border-white/10 bg-[#05050a]/80 backdrop-blur-md md:hidden"
+      className="sticky top-0 w-full border-b border-border-subtle bg-surface/80 backdrop-blur-md md:hidden"
       style={{ zIndex: UI_Z_INDEX.stickyHeader }}
     >
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6">
+      <div
+        className={`mx-auto flex w-full max-w-6xl items-center justify-between px-4 sm:px-6 transition-[padding] ${
+          reducedMotion ? "" : "duration-base"
+        } ${isScrolled ? "py-2" : "py-3.5"}`}
+      >
         <Link href="/" onClick={closeMobileMenu} className="flex flex-shrink-0 items-center gap-2 text-lg font-black tracking-tight">
           <VyraMiniIcon />
           <span className="bg-gradient-to-r from-indigo-400 via-indigo-500 to-indigo-400 bg-clip-text text-transparent">
@@ -476,7 +499,7 @@ function MobileTopBar({
 
         <button
           onClick={toggleMobileMenu}
-          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white md:hidden"
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md text-white/70 transition-colors duration-150 hover:bg-white/10 hover:text-white md:hidden"
           aria-label="Toggle menu"
           aria-expanded={isMobileMenuOpen}
         >
@@ -495,21 +518,21 @@ function MobileTopBar({
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: reducedMotion ? 0 : -8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={springSnappy}
-            className="border-t border-white/10 bg-[#05050a]/95 px-4 py-4 backdrop-blur-md md:hidden"
+            exit={{ opacity: 0, y: reducedMotion ? 0 : -8 }}
+            transition={reducedMotion ? REDUCED_MOTION_TRANSITION : springSnappy}
+            className="border-t border-border-subtle bg-surface/95 px-4 py-4 backdrop-blur-md md:hidden"
           >
             <div className="flex flex-col gap-1">
-              <BattleAILink onClick={closeMobileMenu} className="mb-2 flex items-center justify-center rounded-xl bg-indigo-600 px-3 py-3 text-sm font-black text-white">
+              <BattleAILink onClick={closeMobileMenu} className="mb-2 flex items-center justify-center rounded-xl bg-brand-primary px-3 py-3 text-sm font-black text-white">
                 Battle AI Now
               </BattleAILink>
 
               <Link
                 href={isLoggedIn ? "/create" : "/signup?redirect=/create"}
                 onClick={closeMobileMenu}
-                className="mb-2 flex items-center justify-center rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-3 py-3 text-sm font-bold text-indigo-100"
+                className="mb-2 flex items-center justify-center rounded-xl border border-brand-primary/25 bg-brand-primary/10 px-3 py-3 text-sm font-bold text-indigo-100"
               >
                 Create Deck
               </Link>
@@ -582,7 +605,7 @@ function MobileTopBar({
                     <Link
                       href={continuePath}
                       onClick={closeMobileMenu}
-                      className="rounded-lg border border-indigo-400/25 bg-indigo-500/10 px-3 py-3 text-sm font-semibold text-indigo-100"
+                      className="rounded-lg border border-brand-primary/25 bg-brand-primary/10 px-3 py-3 text-sm font-semibold text-indigo-100"
                     >
                       Continue where you left off
                     </Link>
@@ -616,7 +639,7 @@ function MobileTopBar({
                   <Link
                     href="/signup"
                     onClick={closeMobileMenu}
-                    className="flex items-center justify-center rounded-lg bg-indigo-600 px-4 py-3 text-sm font-bold text-white transition-colors duration-150 active:scale-95"
+                    className="flex items-center justify-center rounded-lg bg-brand-primary px-4 py-3 text-sm font-bold text-white transition-colors duration-150 active:scale-95"
                   >
                     Sign Up
                   </Link>

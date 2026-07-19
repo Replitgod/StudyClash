@@ -71,7 +71,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       profile: profile as MarketingProductProfile,
       campaign: campaign as MarketingCampaign,
       destination: destination as MarketingDestination,
-      trackingUrl: trackingLink?.full_url || process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com",
+      trackingUrl: trackingLink?.full_url || process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com",
       avoidBodies: [],
       additionalGuidance: `${modeConfig.guidance}\n\nHere is the previous draft to revise:\nTitle: ${draft.title || "(none)"}\nBody: ${draft.body}`,
     });

@@ -2,7 +2,7 @@
 import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { Reveal } from "@/app/components/ui/Reveal";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
 
 export const metadata: Metadata = {
   title: "Contact StudyClash Support",

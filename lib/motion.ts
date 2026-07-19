@@ -1,4 +1,4 @@
-﻿import type { Transition, Variants } from "framer-motion";
+﻿import type { Transition, Variants } from "motion/react";
 
 // Shared motion language for StudyClash's neon-battle aesthetic: quick,
 // springy, a little playful -- not slow/corporate ease-in-out. Import these
@@ -69,3 +69,10 @@ export const MOTION_DISTANCE_PX = 16;
 // staggerContainer() already defaults to, exported as a named constant so
 // call sites can reference "the standard stagger" without a magic number.
 export const STAGGER_DELAY_S = 0.06;
+
+// Used by every app/components/motion/* primitive when useReducedMotion()
+// is true: near-instant rather than literally 0, since a transition of
+// exactly 0 can cause motion/react to skip applying the `animate` state on
+// some browsers. Content still ends up in its final position/opacity --
+// nothing is ever left invisible or offset, it just doesn't visibly move.
+export const REDUCED_MOTION_TRANSITION: Transition = { duration: 0.01 };

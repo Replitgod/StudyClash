@@ -22,7 +22,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
 
 export const viewport: Viewport = {
   width: "device-width",

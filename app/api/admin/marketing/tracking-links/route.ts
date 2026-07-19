@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabaseClient, requireAdminUser } from "@/lib/server/apiUtils";
 import { buildTrackingUrl, slugifyForUtm } from "@/lib/marketingUtm";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
 
 export async function GET(request: NextRequest) {
   const admin = await requireAdminUser(request);

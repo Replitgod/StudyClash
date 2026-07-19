@@ -1,6 +1,6 @@
 ﻿import { NextResponse } from "next/server";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
 
 export function GET() {
   const body = [

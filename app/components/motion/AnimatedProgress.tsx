@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
-import { springSmooth } from "@/lib/motion";
+import { motion, useReducedMotion } from "motion/react";
+import { springSmooth, REDUCED_MOTION_TRANSITION } from "@/lib/motion";
 
 // Real animated progress bar -- replaces the raw `<div style={{width}}
 // className="transition-all duration-300"/>` pattern used ad hoc across the
@@ -26,6 +26,7 @@ export function AnimatedProgress({
   trackClassName?: string;
   heightClassName?: string;
 }) {
+  const reducedMotion = useReducedMotion();
   const percent = max <= 0 ? 0 : Math.max(0, Math.min(100, (value / max) * 100));
   return (
     <div className={`overflow-hidden rounded-full ${heightClassName} ${trackClassName} ${className || ""}`}>
@@ -33,7 +34,7 @@ export function AnimatedProgress({
         className={`h-full w-full origin-left rounded-full ${barClassName}`}
         initial={{ scaleX: 0 }}
         animate={{ scaleX: percent / 100 }}
-        transition={springSmooth}
+        transition={reducedMotion ? REDUCED_MOTION_TRANSITION : springSmooth}
       />
     </div>
   );

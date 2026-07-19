@@ -18,7 +18,7 @@ export function getStripeClient(): Stripe {
 // Same fallback convention used across the app (layout.tsx, sitemap.ts,
 // etc.) for building absolute URLs.
 export function getSiteUrl(): string {
-  return process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com";
+  return process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
 }
 
 // True whenever STRIPE_SECRET_KEY is a test-mode key (sk_test_...). Used to

@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
-import { springSnappy } from "@/lib/motion";
+import { motion, useReducedMotion } from "motion/react";
+import { springSnappy, REDUCED_MOTION_TRANSITION } from "@/lib/motion";
 
 export type TabOption = { key: string; label: string };
 
@@ -24,6 +24,8 @@ export function SharedLayoutTabs({
   className?: string;
   layoutId?: string;
 }) {
+  const reducedMotion = useReducedMotion();
+
   return (
     <div className={`inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] p-1 ${className || ""}`}>
       {options.map((option) => {
@@ -40,7 +42,7 @@ export function SharedLayoutTabs({
               <motion.span
                 layoutId={layoutId}
                 className="absolute inset-0 rounded-full bg-indigo-500/20 border border-indigo-400/30"
-                transition={springSnappy}
+                transition={reducedMotion ? REDUCED_MOTION_TRANSITION : springSnappy}
               />
             )}
             <span className={`relative z-10 ${isActive ? "text-indigo-100" : "text-white/50"}`}>{option.label}</span>

@@ -1,7 +1,7 @@
 "use client";
 
-import { motion } from "motion/react";
-import { fadeInUp, staggerContainer, STAGGER_DELAY_S } from "@/lib/motion";
+import { motion, useReducedMotion } from "motion/react";
+import { fadeInUp, staggerContainer, STAGGER_DELAY_S, REDUCED_MOTION_TRANSITION } from "@/lib/motion";
 
 // Pair: wrap a list/grid in StaggerContainer, wrap each child in
 // StaggerItem. Children reveal in sequence instead of popping in at once --
@@ -21,6 +21,7 @@ export function StaggerContainer({
   initialDelay?: number;
   viewportTriggered?: boolean;
 }) {
+  const reducedMotion = useReducedMotion();
   const viewportProps = viewportTriggered
     ? { whileInView: "visible" as const, viewport: { once: true, margin: "-80px" } }
     : { animate: "visible" as const };
@@ -29,7 +30,7 @@ export function StaggerContainer({
     <motion.div
       initial="hidden"
       {...viewportProps}
-      variants={staggerContainer(staggerDelay, initialDelay)}
+      variants={staggerContainer(reducedMotion ? 0 : staggerDelay, reducedMotion ? 0 : initialDelay)}
       className={className}
     >
       {children}
@@ -38,8 +39,12 @@ export function StaggerContainer({
 }
 
 export function StaggerItem({ children, className }: { children: React.ReactNode; className?: string }) {
+  const reducedMotion = useReducedMotion();
   return (
-    <motion.div variants={fadeInUp} className={className}>
+    <motion.div
+      variants={reducedMotion ? { hidden: { opacity: 0 }, visible: { opacity: 1, transition: REDUCED_MOTION_TRANSITION } } : fadeInUp}
+      className={className}
+    >
       {children}
     </motion.div>
   );

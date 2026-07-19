@@ -1,8 +1,8 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { usePathname } from "next/navigation";
-import { springSnappy } from "@/lib/motion";
+import { springSnappy, REDUCED_MOTION_TRANSITION } from "@/lib/motion";
 
 // mode="wait" (rather than a simultaneous crossfade) is deliberate here, not
 // a default left in place: every page in this app renders its own full-
@@ -21,6 +21,7 @@ import { springSnappy } from "@/lib/motion";
 // exactly the overlap/misplacement bug this component exists to avoid.
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const reducedMotion = useReducedMotion();
 
   return (
     <AnimatePresence mode="wait" initial={false}>
@@ -29,7 +30,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        transition={springSnappy}
+        transition={reducedMotion ? REDUCED_MOTION_TRANSITION : springSnappy}
       >
         {children}
       </motion.div>

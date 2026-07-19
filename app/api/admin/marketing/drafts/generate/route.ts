@@ -7,7 +7,7 @@ import { findMostSimilarDraft } from "@/lib/server/marketing/similarity";
 import { logMarketingActivity } from "@/lib/server/marketing/activityLog";
 import type { MarketingCampaign, MarketingDestination, MarketingProductProfile } from "@/lib/server/marketing/types";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://studyjoust.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
 
 // Generates (or regenerates) one draft for one campaign+destination pair.
 // Never auto-publishes -- this only ever produces a row with status

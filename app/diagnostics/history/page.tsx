@@ -27,13 +27,32 @@ type AttemptHistoryRow = {
 type ExamMastery = {
   examName: string;
   examSlug: string;
-  skills: { skill: string; domain: string; masteryScore: number; isEstimate: boolean; attemptsCount: number; lastAttemptAt: string | null }[];
+  skills: {
+    skill: string;
+    domain: string;
+    masteryScore: number;
+    isEstimate: boolean;
+    attemptsCount: number;
+    lastAttemptAt: string | null;
+    masteryTier: string;
+    masteryTierLabel: string;
+  }[];
 };
 
 type HistoryPayload = {
   attempts: AttemptHistoryRow[];
   masteryByExam: ExamMastery[];
 };
+
+// Same tier→color mapping as app/mastery-map/page.tsx's getStatusStyle, so
+// "Strong"/"Mastered" etc. read the same way across the whole app rather
+// than diagnostics inventing its own color language for the same words.
+function masteryTierBadgeStyle(tier: string): string {
+  if (tier === "mastered") return "border-green-400/30 bg-green-500/[0.08] text-green-100";
+  if (tier === "strong") return "border-indigo-400/30 bg-indigo-500/[0.08] text-indigo-100";
+  if (tier === "developing") return "border-amber-400/30 bg-amber-500/[0.08] text-amber-100";
+  return "border-red-400/30 bg-red-500/[0.08] text-red-100";
+}
 
 const MODE_LABELS: Record<AttemptHistoryRow["mode"], string> = {
   quick: "Quick",
@@ -155,6 +174,11 @@ export default function DiagnosticHistoryPage() {
                       </div>
                       <span className="w-14 flex-shrink-0 text-right text-xs font-bold text-white/60">
                         {s.masteryScore}%{s.isEstimate ? "*" : ""}
+                      </span>
+                      <span
+                        className={`w-[88px] flex-shrink-0 rounded-full border px-2 py-0.5 text-center text-[10px] font-bold uppercase tracking-wide ${masteryTierBadgeStyle(s.masteryTier)}`}
+                      >
+                        {s.masteryTierLabel}
                       </span>
                     </div>
                   ))}
