@@ -796,7 +796,16 @@ export default function DashboardPage() {
     return Math.round((newerAvg - olderAvg) * 10) / 10;
   })();
 
-  const nextAction = (() => {
+  const primaryNextAction = (() => {
+    if (battlesPlayed === 0) {
+      return {
+        title: "Run your first battle",
+        message: "ClashPath activates after your first finished battle and builds your weak-topic roadmap.",
+        href: "/decks",
+        cta: "Choose a deck",
+      };
+    }
+
     if (weakestDeck) {
       return {
         title: "Focus your next battle",
@@ -824,7 +833,12 @@ export default function DashboardPage() {
       };
     }
 
-    return null;
+    return {
+      title: "Keep your streak moving",
+      message: "Play one focused rematch today to lock in retention and raise your arena tier.",
+      href: "/decks",
+      cta: "Start a battle",
+    };
   })();
 
   const arenaTier = (() => {
@@ -864,33 +878,6 @@ export default function DashboardPage() {
   const combinedBadges = [
     ...new Set([...unlockedBadges, ...unlockedAchievementLabels]),
   ];
-
-  const clashPathPulse = (() => {
-    if (battlesPlayed === 0) {
-      return {
-        title: "Run your first battle",
-        detail: "ClashPath activates after your first finished battle and builds your weak-topic roadmap.",
-        href: "/decks",
-        cta: "Choose a deck",
-      };
-    }
-
-    if (nextAction) {
-      return {
-        title: nextAction.title,
-        detail: nextAction.message,
-        href: nextAction.href,
-        cta: nextAction.cta,
-      };
-    }
-
-    return {
-      title: "Keep your streak moving",
-      detail: "Play one focused rematch today to lock in retention and raise your arena tier.",
-      href: "/decks",
-      cta: "Start a battle",
-    };
-  })();
 
   const coachDeckId =
     deckInsights.recommendedNextBattle?.id ||
@@ -1026,49 +1013,56 @@ export default function DashboardPage() {
           </div>
         ) : null}
 
-        {(nextAction || trendDeltaPercent !== null) && (
-          <div className="grid gap-4 md:grid-cols-2">
-            {nextAction && (
-              <div className="rounded-2xl border border-indigo-400/25 bg-indigo-500/[0.06] p-5 backdrop-blur-sm">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-2xl border border-indigo-400/25 bg-gradient-to-br from-indigo-500/[0.08] to-indigo-500/[0.06] p-5 backdrop-blur-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">Do this next</p>
-                <h2 className="mt-2 text-lg font-bold text-white">{nextAction.title}</h2>
-                <p className="mt-2 text-sm text-white/70">{nextAction.message}</p>
-                <Link
-                  href={nextAction.href}
-                  className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-500 px-4 py-2.5 text-sm font-bold text-white"
-                >
-                  {nextAction.cta}
-                </Link>
+                <h2 className="mt-2 text-lg font-bold text-white">{primaryNextAction.title}</h2>
+                <p className="mt-2 text-sm text-white/70">{primaryNextAction.message}</p>
               </div>
-            )}
-
-            {trendDeltaPercent !== null && (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm">
-                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">Improvement trend</p>
-                <h2 className="mt-2 text-lg font-bold text-white">Last 5 battles</h2>
-                <p
-                  className={`mt-3 text-3xl font-black ${
-                    trendDeltaPercent > 0
-                      ? "text-green-300"
-                      : trendDeltaPercent < 0
-                        ? "text-amber-300"
-                        : "text-white"
-                  }`}
-                >
-                  {trendDeltaPercent > 0 ? "+" : ""}
-                  {trendDeltaPercent}%
-                </p>
-                <p className="mt-2 text-sm text-white/55">
-                  {trendDeltaPercent > 0
-                    ? "Accuracy is trending up versus your earlier recent matches."
-                    : trendDeltaPercent < 0
-                      ? "Accuracy dipped versus earlier recent matches. Run a targeted rematch today."
-                      : "Accuracy is steady. Keep momentum with one more battle."}
-                </p>
+              <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-right">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">Arena Tier</p>
+                <p className="mt-1 text-base font-black text-indigo-200">{arenaTier}</p>
               </div>
-            )}
+            </div>
+            <Link
+              href={primaryNextAction.href}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-400 px-4 py-2.5 text-sm font-bold text-white"
+            >
+              {primaryNextAction.cta}
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </Link>
           </div>
-        )}
+
+          {trendDeltaPercent !== null && (
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm">
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">Improvement trend</p>
+              <h2 className="mt-2 text-lg font-bold text-white">Last 5 battles</h2>
+              <p
+                className={`mt-3 text-3xl font-black ${
+                  trendDeltaPercent > 0
+                    ? "text-green-300"
+                    : trendDeltaPercent < 0
+                      ? "text-amber-300"
+                      : "text-white"
+                }`}
+              >
+                {trendDeltaPercent > 0 ? "+" : ""}
+                {trendDeltaPercent}%
+              </p>
+              <p className="mt-2 text-sm text-white/55">
+                {trendDeltaPercent > 0
+                  ? "Accuracy is trending up versus your earlier recent matches."
+                  : trendDeltaPercent < 0
+                    ? "Accuracy dipped versus earlier recent matches. Run a targeted rematch today."
+                    : "Accuracy is steady. Keep momentum with one more battle."}
+              </p>
+            </div>
+          )}
+        </div>
 
         <div className="rounded-2xl border border-green-400/25 bg-gradient-to-br from-green-500/[0.08] to-indigo-500/[0.08] p-5 backdrop-blur-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1192,44 +1186,6 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
-        </div>
-
-        <div className="rounded-2xl border border-indigo-400/25 bg-gradient-to-br from-indigo-500/[0.08] to-indigo-500/[0.06] p-5 backdrop-blur-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">
-                ClashPath Command Center
-              </p>
-              <h2 className="mt-2 text-lg font-bold text-white">{clashPathPulse.title}</h2>
-              <p className="mt-2 max-w-2xl text-sm text-white/70">{clashPathPulse.detail}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-right">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">
-                Arena Tier
-              </p>
-              <p className="mt-1 text-base font-black text-indigo-200">{arenaTier}</p>
-            </div>
-          </div>
-
-          <Link
-            href={clashPathPulse.href}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-400 px-4 py-2.5 text-sm font-bold text-white"
-          >
-            {clashPathPulse.cta}
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13 7l5 5m0 0l-5 5m5-5H6"
-              />
-            </svg>
-          </Link>
         </div>
 
         <div className="rounded-2xl border border-indigo-400/25 bg-indigo-500/[0.06] p-5 backdrop-blur-sm sm:p-6">

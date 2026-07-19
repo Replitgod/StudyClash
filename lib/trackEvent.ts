@@ -34,6 +34,8 @@ export type AnalyticsEventName =
   | "results_boss_battle_clicked"
   | "results_challenge_friend_clicked"
   | "results_return_to_dashboard_clicked"
+  | "results_roast_shown"
+  | "results_roast_toggled"
   | "classroom_room_created"
   | "classroom_invite_copied"
   | "classroom_join_attempted"

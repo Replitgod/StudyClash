@@ -1,98 +1,66 @@
 @import "tailwindcss";
 
 /*
- * Design tokens — additive Tailwind v4 @theme extensions.
- *
- * AcedIQ's system: one primary brand hue (indigo — AI-powered mastery),
- * one energetic accent hue (green — competitive/win energy, already the
- * app's de facto "battle win" color via GRADIENTS.battle and every
- * correct-answer/confetti/success state), neutral dark surfaces, and three
- * semantic state colors (green doubles as both accent and success — a
- * deliberate, common pairing, not a conflict: green reads as "positive
- * energy" in both contexts) plus amber/red for warning/danger. The old
- * cyan/fuchsia/violet/sky SURFACE tone names in lib/theme.ts are kept as
- * backward-compatible aliases of indigo (removing them would require
- * touching every call site that passes those tone props) but are not part
- * of the canonical palette going forward — see lib/theme.ts for the full
- * explanation.
+ * AcedIQ design tokens — "Premium Dark": cyber violet primary, electric
+ * indigo accent, dark app surfaces + dark marketing surfaces (the homepage
+ * moved from its earlier light treatment to match this palette).
  */
 @theme {
-  /* Primary + accent as real Tailwind color tokens (usable as
-     `bg-brand-primary`, `text-brand-accent`, etc.), not just class-string
-     recipes in lib/theme.ts -- lets new components reach for a token
-     instead of a raw `indigo-600`/`green-500` literal. */
-  --color-brand-primary: #4f46e5;
-  --color-brand-primary-emphasis: #6366f1;
-  --color-brand-accent: #16a34a;
-  --color-brand-accent-emphasis: #22c55e;
+  --color-brand-primary: #a855f7;
+  --color-brand-primary-emphasis: #c084fc;
+  --color-brand-accent: #6366f1;
+  --color-brand-accent-emphasis: #818cf8;
 
-  /* Semantic state colors. Success intentionally reuses the accent green
-     rather than inventing a near-duplicate hue -- "positive energy" already
-     means the same thing in both contexts (see the file-level comment).
-     Warning/danger are new: nothing in the app had a canonical amber/red
-     token before this, just ad hoc `text-amber-300`/`bg-red-500` literals
-     scattered per component. */
-  --color-success: var(--color-brand-accent);
-  --color-success-emphasis: var(--color-brand-accent-emphasis);
+  --color-success: #10b981;
+  --color-success-emphasis: #34d399;
   --color-warning: #d97706;
   --color-warning-emphasis: #f59e0b;
-  --color-danger: #dc2626;
-  --color-danger-emphasis: #ef4444;
+  --color-danger: #e5484d;
+  --color-danger-emphasis: #fb7185;
 
-  /* Neutral surfaces -- named steps for the dark-canonical system (see the
-     :root section below) so a card/panel/border reaches for a token
-     instead of a one-off `bg-white/[0.03]`/`border-white/10` literal.
-     Kept as a handful of purpose-named steps rather than a full 50-950
-     ramp -- Tailwind's own gray scale already covers arbitrary shades when
-     a component genuinely needs one; these are just the ones used
-     everywhere (page canvas, raised card, two border weights). */
-  --color-surface: #0b0b12;
-  --color-surface-raised: #131320;
+  --color-surface: #0b0f19;
+  --color-surface-raised: #131a2c;
   --color-border-subtle: rgb(255 255 255 / 0.08);
   --color-border: rgb(255 255 255 / 0.14);
 
-  /* General elevation shadows -- distinct from the brand glow shadows
-     below. Glow is a deliberate, sparing emphasis effect (streaks,
-     milestones); these are the default "this card is raised off the
-     canvas" shadow any panel/dropdown/dialog should use. */
+  --color-marketing-bg: #fafaf9;
+  --color-marketing-surface: #ffffff;
+  --color-marketing-text: #1a1a2e;
+  --color-marketing-text-secondary: #64748b;
+  --color-marketing-border: #e8e8ed;
+
   --shadow-elevation-sm: 0 2px 8px -2px rgb(0 0 0 / 0.35);
   --shadow-elevation-md: 0 12px 32px -12px rgb(0 0 0 / 0.5);
   --shadow-elevation-lg: 0 24px 60px -20px rgb(0 0 0 / 0.6);
+  --shadow-marketing-sm: 0 2px 12px -4px rgb(26 26 46 / 0.08);
+  --shadow-marketing-md: 0 16px 40px -16px rgb(26 26 46 / 0.12);
+  --shadow-marketing-lg: 0 28px 64px -24px rgb(26 26 46 / 0.16);
 
-  /* Radius scale -- named so components stop picking their own rounding
-     ad hoc (the app currently mixes rounded-lg/xl/2xl/3xl with no logic
-     tying the choice to element size or role). sm/md/lg map to Tailwind's
-     familiar small/medium/large radii; pill is the recurring "fully round"
-     shape used for badges, chips, and pill buttons throughout. */
   --radius-sm: 0.5rem;
   --radius-md: 0.875rem;
   --radius-lg: 1.25rem;
   --radius-pill: 999px;
 
-  /* Glow shadows — one recipe per brand color, two intensities. Use via
-     `shadow-glow-indigo-md` etc. Deliberately used sparingly (emphasis
-     moments only — streak escalation, milestone reveals) rather than as a
-     default resting-state treatment; see the redesign direction notes. */
-  --shadow-glow-indigo-sm: 0 0 20px -10px rgba(79, 70, 229, 0.75);
-  --shadow-glow-indigo-md: 0 20px 45px -20px rgba(79, 70, 229, 0.9);
-  --shadow-glow-green-sm: 0 0 20px -10px rgba(22, 163, 74, 0.7);
-  --shadow-glow-green-md: 0 20px 45px -20px rgba(22, 163, 74, 0.85);
+  --shadow-glow-primary-sm: 0 0 20px -10px rgb(168 85 247 / 0.65);
+  --shadow-glow-primary-md: 0 20px 45px -20px rgb(168 85 247 / 0.75);
+  --shadow-glow-accent-sm: 0 0 20px -10px rgb(99 102 241 / 0.55);
+  --shadow-glow-accent-md: 0 20px 45px -20px rgb(99 102 241 / 0.65);
+  /* Legacy aliases — map to new primary glow */
+  --shadow-glow-indigo-sm: var(--shadow-glow-accent-sm);
+  --shadow-glow-indigo-md: var(--shadow-glow-accent-md);
+  --shadow-glow-green-sm: 0 0 20px -10px rgb(16 185 129 / 0.7);
+  --shadow-glow-green-md: 0 20px 45px -20px rgb(16 185 129 / 0.85);
 
-  /* Motion — the two durations already dominant in the codebase
-     (`duration-150` for color/border transitions, `duration-200` for
-     transform/scale), named so intent is explicit, plus a slower entrance
-     tier for premium success/milestone moments. Use via `duration-fast`,
-     `duration-base`, `duration-slow`. Mirrored as plain-number exports in
-     lib/motion.ts (DURATION_MS) for framer/motion `transition` props, which
-     can't consume CSS custom properties directly. */
   --duration-fast: 150ms;
-  --duration-base: 200ms;
+  --duration-base: 250ms;
   --duration-slow: 450ms;
+  --duration-reveal: 550ms;
 
-  /* The "settle into place" bounce already used ad hoc on CTA hover/tap
-     (`hover:scale-[1.03] active:scale-95`) and on the pulse-enter keyframe
-     below. Use via `ease-brand-bounce`. */
+  --ease-premium-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-premium-in-out: cubic-bezier(0.45, 0, 0.25, 1);
   --ease-brand-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --spacing-section: clamp(3.5rem, 6vw, 5.5rem);
 }
 
 html,
@@ -104,19 +72,9 @@ body {
   scroll-behavior: smooth;
 }
 
-/* Dark system -- the canonical AcedIQ surface (redesign direction:
-   refined dark "battle energy", extended app-wide). This was previously a
-   light SaaS baseline used only by the homepage while all 42 other routes
-   set their own literal dark background per page; that split is being
-   resolved by making dark canonical here and rebuilding the homepage onto
-   it, rather than the other way around -- most of the app, including the
-   most heavily-used and richly-animated screen (battle), already lives on
-   this palette. Pages that still set a literal `bg-[#05050a]`-family
-   background inline are unaffected either way (their own value wins) and
-   can be simplified to rely on this root default as they're touched. */
 :root {
-  --background: #05050a;
-  --foreground: #f8fafc;
+  --background: #0b0f19;
+  --foreground: #f2f4fa;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -136,17 +94,17 @@ body {
 }
 
 *:focus-visible {
-  outline: 2px solid rgb(129 140 248 / 0.9);
+  outline: 2px solid rgb(168 85 247 / 0.85);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: rgb(99 102 241 / 0.9);
+  background: rgb(168 85 247 / 0.85);
   color: #ffffff;
 }
 
 ::-moz-selection {
-  background: rgb(99 102 241 / 0.9);
+  background: rgb(168 85 247 / 0.85);
   color: #ffffff;
 }
 
@@ -160,8 +118,94 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgb(129 140 248 / 0.45);
+  background: rgb(168 85 247 / 0.45);
   border-radius: 999px;
+}
+
+/*
+ * Ambient "Premium Dark" atmosphere — fixed mesh grid + drifting glow
+ * blooms used behind the marketing homepage. Pure CSS, no external assets;
+ * the grid fades out toward the page edges via mask so it doesn't compete
+ * with content everywhere at once.
+ */
+.mesh-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mesh-bloom {
+  position: absolute;
+  width: 560px;
+  height: 560px;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.28;
+}
+
+.mesh-bloom-violet {
+  background: var(--color-brand-primary);
+  top: -180px;
+  left: -140px;
+  animation: mesh-drift-a 34s ease-in-out infinite;
+}
+
+.mesh-bloom-indigo {
+  background: var(--color-brand-accent);
+  top: 140px;
+  right: -220px;
+  animation: mesh-drift-b 40s ease-in-out infinite;
+}
+
+.mesh-grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 55% at 50% 0%, black 35%, transparent 88%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 55% at 50% 0%, black 35%, transparent 88%);
+}
+
+@keyframes mesh-drift-a {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(40px, 30px); }
+}
+
+@keyframes mesh-drift-b {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-30px, -40px); }
+}
+
+/* Cursor-tracked radial-gradient border glow, used on hoverable module/step
+   cards. Set on hover via JS (--mx/--my), falls back to a centered glow for
+   keyboard focus. */
+.glow-border {
+  position: relative;
+}
+
+.glow-border::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: radial-gradient(160px 160px at var(--mx, 50%) var(--my, 20%), var(--color-brand-primary), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.glow-border:hover::after,
+.glow-border:focus-visible::after {
+  opacity: 1;
 }
 
 input:-webkit-autofill,
@@ -188,12 +232,8 @@ textarea:-webkit-autofill:focus {
 
 @keyframes pulse-enter {
   0% {
-    transform: scale(0.85);
+    transform: scale(0.92);
     opacity: 0;
-  }
-  60% {
-    transform: scale(1.05);
-    opacity: 1;
   }
   100% {
     transform: scale(1);
@@ -224,7 +264,6 @@ textarea:-webkit-autofill:focus {
   }
 }
 
-/* Skeleton loading shimmer — used by app/components/ui/Skeleton.tsx */
 @keyframes skeleton-shimmer {
   0% {
     background-position: -200% 0;
@@ -234,7 +273,6 @@ textarea:-webkit-autofill:focus {
   }
 }
 
-/* Slide up + fade — used by InlineBanner/Toast-style success & error moments */
 @keyframes slide-up-fade {
   0% {
     transform: translateY(8px);
@@ -246,21 +284,33 @@ textarea:-webkit-autofill:focus {
   }
 }
 
-/* Battle-result screen shake — used by InstantAIBattle when a round resolves */
 @keyframes battle-shake {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateX(0);
   }
   20% {
-    transform: translateX(-6px);
+    transform: translateX(-5px);
   }
   40% {
-    transform: translateX(5px);
+    transform: translateX(4px);
   }
   60% {
-    transform: translateX(-3px);
+    transform: translateX(-2px);
   }
   80% {
-    transform: translateX(2px);
+    transform: translateX(1px);
+  }
+}
+
+@keyframes mic-ring-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 0.25;
   }
 }

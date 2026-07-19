@@ -9,6 +9,7 @@ import { PLAN_METADATA } from "@/lib/plans";
 import { FREE_PLAN_LIMIT_SUMMARY } from "@/lib/planLimits";
 import { StaggerContainer, StaggerItem } from "./components/motion/Stagger";
 import { FloatingCard } from "./components/motion/FloatingCard";
+import { ProductStory } from "./components/ProductStory";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
 
@@ -112,19 +113,6 @@ const FAQ_ITEMS = [
   },
 ];
 
-function StepIcon({ index }: { index: number }) {
-  const paths = [
-    <path key="upload" strokeLinecap="round" strokeLinejoin="round" d="M12 16V4m0 0-4 4m4-4 4 4M5 16v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" />,
-    <path key="battle" strokeLinecap="round" strokeLinejoin="round" d="M13 3 L5 13h5l-1 8 8-10h-5z" />,
-    <path key="fix" strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
-  ];
-  return (
-    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      {paths[index]}
-    </svg>
-  );
-}
-
 export default function Home() {
   const faqSchema = {
     "@context": "https://schema.org",
@@ -221,7 +209,12 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-dvh bg-[#F8FAFC] text-[#0F172A]">
+    <div className="relative min-h-dvh bg-[#0B0F19] text-[#F2F4FA]">
+      <div className="mesh-bg" aria-hidden="true">
+        <div className="mesh-bloom mesh-bloom-violet" />
+        <div className="mesh-bloom mesh-bloom-indigo" />
+        <div className="mesh-grid-overlay" />
+      </div>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }} />
@@ -234,20 +227,20 @@ export default function Home() {
         <header className="grid gap-10 py-12 sm:py-16 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:py-20">
           <StaggerContainer staggerDelay={0.09}>
             <StaggerItem>
-              <p className="inline-flex items-center gap-2 rounded-full border border-[#E2E8F0] bg-[#EEF2FF] px-3.5 py-1.5 text-xs font-semibold text-brand-primary">
+              <p className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3.5 py-1.5 text-xs font-semibold text-brand-primary-emphasis">
                 Competitive studying, powered by AI
               </p>
             </StaggerItem>
 
             <StaggerItem>
-              <h1 className="mt-5 max-w-[620px] text-4xl font-bold leading-[1.1] tracking-tight text-[#0F172A] sm:text-5xl">
-                Know exactly what to study next.
+              <h1 className="mt-5 max-w-[620px] bg-gradient-to-b from-white to-[#C9CEE8] bg-clip-text text-4xl font-bold leading-[1.1] tracking-tight text-transparent sm:text-5xl">
+                Roast Your Friends. Ace Your Tests.
               </h1>
             </StaggerItem>
 
             <StaggerItem>
-              <p className="mt-4 max-w-[560px] text-base leading-relaxed text-[#64748B] sm:text-lg">
-                AcedIQ maps your material, finds your weak skills, and turns your personalized plan into competitive study battles.
+              <p className="mt-4 max-w-[560px] text-base leading-relaxed text-[#8B93B0] sm:text-lg">
+                Upload anything, challenge your friends, and let AcedIQ expose exactly what each of you needs to study.
               </p>
             </StaggerItem>
 
@@ -261,7 +254,7 @@ export default function Home() {
                 </Link>
                 <Link
                   href="/demo/battle"
-                  className="inline-flex h-12 items-center justify-center rounded-md border border-[#E2E8F0] bg-white px-6 text-sm font-semibold text-[#0F172A] transition-colors duration-150 hover:bg-[#F8FAFC]"
+                  className="inline-flex h-12 items-center justify-center rounded-md border border-white/10 bg-white/[0.03] glow-border px-6 text-sm font-semibold text-white transition-colors duration-150 hover:bg-white/10"
                 >
                   See how it works
                 </Link>
@@ -269,113 +262,108 @@ export default function Home() {
             </StaggerItem>
 
             <StaggerItem>
-              <p className="mt-3 text-xs font-medium text-[#64748B]">
+              <p className="mt-3 text-xs font-medium text-[#8B93B0]">
                 Try the demo without signing up. Create an account when you want to upload and save your own material.
               </p>
             </StaggerItem>
           </StaggerContainer>
 
-          <FloatingCard className="rounded-lg border border-[#E2E8F0] bg-[#0B1220] p-2 shadow-elevation-md" floatDistance={5} tiltStrength={4}>
+          <FloatingCard className="rounded-lg border border-white/10 bg-[#0B1220] p-2 shadow-elevation-md" floatDistance={5} tiltStrength={4}>
             <AutoplayDemoRail />
           </FloatingCard>
         </header>
 
         {/* ---------- 2. Interactive product preview ---------- */}
-        <section aria-label="Try a live round" className="border-t border-[#E2E8F0] py-14 sm:py-16">
+        <section aria-label="Try a live round" className="border-t border-white/10 py-14 sm:py-16">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">See AcedIQ in action</h2>
-            <p className="mx-auto mt-2 max-w-xl text-sm text-[#64748B]">
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">See AcedIQ in action</h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm text-[#8B93B0]">
               Quick Battle: pick a difficulty and answer 5 questions against the AI. No signup required.
             </p>
           </div>
 
-          <div className="mt-8 rounded-[14px] border border-[#E2E8F0] bg-[#0B1220] p-4 shadow-sm sm:p-6">
+          <div className="mt-8 rounded-[14px] border border-white/10 bg-[#0B1220] p-4 shadow-sm sm:p-6">
             <InstantAIBattle />
           </div>
 
-          <p className="mt-4 text-center text-sm text-[#64748B]">
+          <p className="mt-4 text-center text-sm text-[#8B93B0]">
             Want the full picture? Try the{" "}
-            <Link href="/demo/battle" className="font-semibold text-[#4F46E5] hover:underline">
+            <Link href="/demo/battle" className="font-semibold text-[#A855F7] hover:underline">
               Guided Product Demo
             </Link>{" "}
             for the complete loop: upload, battle, mistakes, and a weak-topic rematch.
           </p>
         </section>
 
-        {/* ---------- 3. Three-step explanation ---------- */}
-        <section aria-label="From notes to mastery" className="border-t border-[#E2E8F0] py-14 sm:py-16">
-          <h2 className="text-center text-2xl font-bold text-[#0F172A] sm:text-3xl">From notes to mastery</h2>
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            {STEPS.map((step, index) => (
-              <div key={step.title} className="rounded-[14px] border border-[#E2E8F0] bg-white p-6">
-                <div className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#EEF2FF] text-[#4F46E5]">
-                  <StepIcon index={index} />
-                </div>
-                <h3 className="mt-4 text-base font-semibold text-[#0F172A]">{step.title}</h3>
-                <p className="mt-1.5 text-sm text-[#64748B]">{step.body}</p>
-              </div>
-            ))}
+        {/* ---------- 3. Product story ---------- */}
+        <section aria-label="From notes to mastery" className="border-t border-white/10 py-14 sm:py-16">
+          <h2 className="text-center text-2xl font-bold text-white sm:text-3xl">From notes to mastery</h2>
+          <p className="mx-auto mt-2 max-w-xl text-center text-sm text-[#8B93B0]">
+            The same loop every battle runs on, step by step.
+          </p>
+          <div className="mt-8">
+            <ProductStory />
           </div>
         </section>
 
         {/* ---------- 4. Core benefits ---------- */}
-        <section aria-label="Core benefits" className="border-t border-[#E2E8F0] py-14 sm:py-16">
+        <section aria-label="Core benefits" className="border-t border-white/10 py-14 sm:py-16">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {BENEFITS.map((benefit) => (
-              <div key={benefit} className="flex items-center gap-3 rounded-[14px] border border-[#E2E8F0] bg-white p-4">
-                <svg className="h-5 w-5 flex-shrink-0 text-[#4F46E5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <div key={benefit} className="flex items-center gap-3 rounded-[14px] border border-white/10 bg-white/[0.03] glow-border p-4">
+                <svg className="h-5 w-5 flex-shrink-0 text-[#A855F7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
-                <span className="text-sm font-medium text-[#0F172A]">{benefit}</span>
+                <span className="text-sm font-medium text-white">{benefit}</span>
               </div>
             ))}
           </div>
         </section>
 
         {/* ---------- What makes AcedIQ different ---------- */}
-        <section aria-label="What makes AcedIQ different" className="border-t border-[#E2E8F0] py-14 sm:py-16">
-          <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">What makes AcedIQ different</h2>
+        <section aria-label="What makes AcedIQ different" className="border-t border-white/10 py-14 sm:py-16">
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">What makes AcedIQ different</h2>
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {DIFFERENTIATORS.map((item) => (
-              <div key={item} className="rounded-[14px] border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-                <span className="text-sm font-medium text-[#0F172A]">{item}</span>
+              <div key={item} className="rounded-[14px] border border-white/10 bg-white/[0.03] glow-border p-4">
+                <span className="text-sm font-medium text-white">{item}</span>
               </div>
             ))}
           </div>
         </section>
 
         {/* ---------- 6. Simple pricing preview ---------- */}
-        <section id="pricing" aria-label="Pricing preview" className="border-t border-[#E2E8F0] py-14 sm:py-16">
+        <section id="pricing" aria-label="Pricing preview" className="border-t border-white/10 py-14 sm:py-16">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">Start free, scale when you need more</h2>
-            <Link href="/pricing" className="text-sm font-semibold text-[#4F46E5] hover:text-[#4338CA]">
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">Start free, scale when you need more</h2>
+            <Link href="/pricing" className="text-sm font-semibold text-[#A855F7] hover:text-[#9333EA]">
               View all plans
             </Link>
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
-            <div className="rounded-[14px] border border-[#E2E8F0] bg-white p-6">
-              <h3 className="text-base font-semibold text-[#0F172A]">{PLAN_METADATA.free_beta.label}</h3>
-              <p className="mt-1 text-3xl font-bold text-[#0F172A]">{PLAN_METADATA.free_beta.price}</p>
-              <p className="mt-2 text-sm text-[#64748B]">{PLAN_METADATA.free_beta.tagline}</p>
+            <div className="rounded-[14px] border border-white/10 bg-white/[0.03] glow-border p-6">
+              <h3 className="text-base font-semibold text-white">{PLAN_METADATA.free_beta.label}</h3>
+              <p className="mt-1 text-3xl font-bold text-white">{PLAN_METADATA.free_beta.price}</p>
+              <p className="mt-2 text-sm text-[#8B93B0]">{PLAN_METADATA.free_beta.tagline}</p>
               <Link
                 href="/pricing"
-                className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white text-sm font-semibold text-[#0F172A] transition-colors duration-150 hover:bg-[#F8FAFC]"
+                className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.03] glow-border text-sm font-semibold text-white transition-colors duration-150 hover:bg-white/10"
               >
                 Start Free
               </Link>
             </div>
 
-            <div className="relative rounded-[14px] border-2 border-[#4F46E5] bg-white p-6">
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#4F46E5] px-3 py-1 text-[11px] font-semibold text-white">
+            <div className="relative rounded-[14px] border-2 border-[#A855F7] bg-white/[0.04] p-6">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#A855F7] px-3 py-1 text-[11px] font-semibold text-white">
                 Most Popular
               </span>
-              <h3 className="text-base font-semibold text-[#0F172A]">{PLAN_METADATA.pro_individual.label}</h3>
-              <p className="mt-1 text-3xl font-bold text-[#0F172A]">{PLAN_METADATA.pro_individual.price}</p>
-              <p className="mt-2 text-sm text-[#64748B]">{PLAN_METADATA.pro_individual.tagline}</p>
+              <h3 className="text-base font-semibold text-white">{PLAN_METADATA.pro_individual.label}</h3>
+              <p className="mt-1 text-3xl font-bold text-white">{PLAN_METADATA.pro_individual.price}</p>
+              <p className="mt-2 text-sm text-[#8B93B0]">{PLAN_METADATA.pro_individual.tagline}</p>
               <Link
                 href="/pricing"
-                className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[10px] bg-[#4F46E5] text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#4338CA]"
+                className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[10px] bg-[#A855F7] text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#9333EA]"
               >
                 Go Pro
               </Link>
@@ -384,15 +372,15 @@ export default function Home() {
         </section>
 
         {/* ---------- 7. FAQ ---------- */}
-        <section id="faq" aria-label="Frequently asked questions" className="border-t border-[#E2E8F0] py-14 sm:py-16">
-          <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">FAQ</h2>
+        <section id="faq" aria-label="Frequently asked questions" className="border-t border-white/10 py-14 sm:py-16">
+          <h2 className="text-2xl font-bold text-white sm:text-3xl">FAQ</h2>
           <div className="mt-5 space-y-3">
             {FAQ_ITEMS.map((item) => (
-              <details key={item.q} className="group rounded-[14px] border border-[#E2E8F0] bg-white p-4 transition-colors duration-150 open:border-[#4F46E5]/40">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-[#0F172A] sm:text-base">
+              <details key={item.q} className="group rounded-[14px] border border-white/10 bg-white/[0.03] glow-border p-4 transition-colors duration-150 open:border-[#A855F7]/40">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-white sm:text-base">
                   {item.q}
                   <svg
-                    className="h-4 w-4 flex-shrink-0 text-[#4F46E5] transition-transform duration-200 group-open:rotate-180"
+                    className="h-4 w-4 flex-shrink-0 text-[#A855F7] transition-transform duration-200 group-open:rotate-180"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -401,26 +389,26 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                   </svg>
                 </summary>
-                <p className="mt-2 text-sm text-[#64748B]">{item.a}</p>
+                <p className="mt-2 text-sm text-[#8B93B0]">{item.a}</p>
               </details>
             ))}
           </div>
         </section>
 
         {/* ---------- Final call to action ---------- */}
-        <section aria-label="Get started" className="border-t border-[#E2E8F0] py-14 sm:py-16">
-          <div className="rounded-[14px] border border-[#E2E8F0] bg-[#EEF2FF] p-8 text-center sm:p-10">
-            <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">Ready to make studying competitive?</h2>
+        <section aria-label="Get started" className="border-t border-white/10 py-14 sm:py-16">
+          <div className="rounded-[14px] border border-white/10 bg-[#131A2C] p-8 text-center sm:p-10">
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">Ready to make studying competitive?</h2>
             <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href="#battle-ai"
-                className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#4F46E5] px-6 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#4338CA]"
+                className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[#A855F7] px-6 text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#9333EA]"
               >
                 Try an Instant Battle
               </Link>
               <Link
                 href="/create"
-                className="inline-flex h-12 items-center justify-center rounded-[10px] border border-[#E2E8F0] bg-white px-6 text-sm font-semibold text-[#0F172A] transition-colors duration-150 hover:bg-[#F8FAFC]"
+                className="inline-flex h-12 items-center justify-center rounded-[10px] border border-white/10 bg-white/[0.03] glow-border px-6 text-sm font-semibold text-white transition-colors duration-150 hover:bg-white/10"
               >
                 Create Your First Deck
               </Link>
@@ -429,18 +417,18 @@ export default function Home() {
         </section>
 
         {/* ---------- 8. Footer ---------- */}
-        <footer className="border-t border-[#E2E8F0] py-8 text-sm text-[#64748B]">
+        <footer className="border-t border-white/10 py-8 text-sm text-[#8B93B0]">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p>AcedIQ · Competitive studying for the AI era</p>
             <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Footer links">
-              <Link href="/create" className="hover:text-[#0F172A]">Create</Link>
-              <Link href="/demo/battle" className="hover:text-[#0F172A]">Guided Demo</Link>
-              <Link href="/pricing" className="hover:text-[#0F172A]">Pricing</Link>
-              <Link href="/exams" className="hover:text-[#0F172A]">Exams</Link>
-              <Link href="/classroom" className="hover:text-[#0F172A]">Classroom (Beta)</Link>
-              <Link href="/contact" className="hover:text-[#0F172A]">Contact</Link>
-              <Link href="/privacy" className="hover:text-[#0F172A]">Privacy</Link>
-              <Link href="/terms" className="hover:text-[#0F172A]">Terms</Link>
+              <Link href="/create" className="hover:text-white">Create</Link>
+              <Link href="/demo/battle" className="hover:text-white">Guided Demo</Link>
+              <Link href="/pricing" className="hover:text-white">Pricing</Link>
+              <Link href="/exams" className="hover:text-white">Exams</Link>
+              <Link href="/classroom" className="hover:text-white">Classroom (Beta)</Link>
+              <Link href="/contact" className="hover:text-white">Contact</Link>
+              <Link href="/privacy" className="hover:text-white">Privacy</Link>
+              <Link href="/terms" className="hover:text-white">Terms</Link>
             </nav>
           </div>
         </footer>

@@ -17,6 +17,7 @@ export type Profile = {
   plan: string;
   created_at: string;
   display_name?: string | null;
+  roasts_enabled?: boolean;
 };
 
 type AuthContextValue = {

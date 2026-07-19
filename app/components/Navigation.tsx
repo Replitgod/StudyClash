@@ -348,8 +348,10 @@ export default function Navigation() {
         onMouseEnter={() => setIsRailOpen(true)}
         onMouseLeave={() => setIsRailOpen(false)}
       >
-        <Link href={homeHref} className="mx-auto mb-5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-brand-primary text-sm font-black text-white">
-          S
+        <Link href={homeHref} className="mx-auto mb-5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-indigo-500 text-white" aria-label="AcedIQ home">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+            <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" />
+          </svg>
         </Link>
 
         <RailButton icon={RAIL_ICONS.home} tip="Home" href={homeHref} active={isActive(homeHref)} expanded={isRailOpen} />
@@ -492,7 +494,7 @@ function MobileTopBar({
       >
         <Link href="/" onClick={closeMobileMenu} className="flex flex-shrink-0 items-center gap-2 text-lg font-black tracking-tight">
           <VyraMiniIcon />
-          <span className="bg-gradient-to-r from-indigo-400 via-indigo-500 to-indigo-400 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-violet-400 via-indigo-400 to-violet-400 bg-clip-text text-transparent">
             AcedIQ
           </span>
         </Link>

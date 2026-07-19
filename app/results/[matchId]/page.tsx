@@ -10,6 +10,8 @@ import { copyTextToClipboard } from "@/lib/clipboard";
 import dynamic from "next/dynamic";
 import ConfettiBurst from "@/app/components/ConfettiBurst";
 import UpcomingAssessmentPrompt from "@/app/components/UpcomingAssessmentPrompt";
+import { RoastCard } from "@/app/components/RoastCard";
+import type { RoastMatchStats } from "@/lib/roastGenerator";
 import { useAuth } from "@/lib/useAuth";
 import { useLoadingTimeout } from "@/lib/useLoadingTimeout";
 import { calculateAccuracy, buildTopicStats } from "@/lib/resultsStats";
@@ -736,7 +738,7 @@ export default function ResultsPage() {
   const params = useParams();
   const searchParams = useSearchParams();
   const matchId = params.matchId as string;
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user, profile, refreshProfile } = useAuth();
 
   const [match, setMatch] = useState<Match | null>(null);
   const [deck, setDeck] = useState<Deck | null>(null);
@@ -1801,6 +1803,30 @@ export default function ResultsPage() {
     weakTopics && weakTopics.length > 0
       ? encodeURIComponent(weakTopics.map((topic) => topic.topic).join(","))
       : "";
+  const weakTopicsHref =
+    weakTopics && weakTopics.length > 0 ? `/battle/${deck.id}?mode=weak_topic&topics=${weakTopicQueryValue}` : null;
+  const roastStats: RoastMatchStats = {
+    scorePoints: match.score,
+    accuracyPercent: currentAccuracyPercent,
+    longestStreak,
+    totalQuestions: reviewItems.length,
+    correctAnswers: reviewItems.filter((item) => item.isCorrect).length,
+    avgResponseMs,
+    questions: reviewItems.map((item, index) => ({
+      questionIndex: index + 1,
+      topic: item.question.topic,
+      difficulty: item.question.difficulty,
+      responseTimeMs: item.responseTimeMs,
+      isCorrect: item.isCorrect,
+    })),
+    missedTopics: (weakTopics || []).map((wt) => ({ topic: wt.topic, missedCount: wt.missedCount })),
+  };
+  const handleDisableRoasts = async () => {
+    safeTrackEvent("results_roast_toggled", { enabled: false, matchId: match.id });
+    if (!user) return;
+    const { error } = await supabase.from("profiles").update({ roasts_enabled: false }).eq("id", user.id);
+    if (!error) refreshProfile();
+  };
   const missedTopicQueryValue = encodeURIComponent(
     Array.from(
       new Set(
@@ -3209,6 +3235,18 @@ export default function ResultsPage() {
 
         <div className="mt-6 rounded-xl border border-indigo-400/20 bg-indigo-500/[0.06] px-4 py-3 text-center text-xs text-indigo-100/90 sm:mt-8">
           Next move: run a rematch, review weak topics, then repeat until accuracy climbs.
+        </div>
+
+        <div className="mt-6 sm:mt-8">
+          <RoastCard
+            stats={roastStats}
+            seed={match.id}
+            weakTopicsHref={weakTopicsHref}
+            roastsEnabled={profile?.roasts_enabled ?? true}
+            isLoggedIn={isLoggedIn}
+            onDisable={handleDisableRoasts}
+            onShown={() => safeTrackEvent("results_roast_shown", { matchId: match.id, deckId: deck.id })}
+          />
         </div>
 
         {/* Action buttons -- weak-topics rematch and "Challenge a Friend"
