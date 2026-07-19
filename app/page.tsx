@@ -10,6 +10,7 @@ import { FREE_PLAN_LIMIT_SUMMARY } from "@/lib/planLimits";
 import { StaggerContainer, StaggerItem } from "./components/motion/Stagger";
 import { FloatingCard } from "./components/motion/FloatingCard";
 import { ProductStory } from "./components/ProductStory";
+import { Reveal } from "./components/ui/Reveal";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
 
@@ -275,32 +276,36 @@ export default function Home() {
 
         {/* ---------- 2. Interactive product preview ---------- */}
         <section aria-label="Try a live round" className="border-t border-white/10 py-14 sm:py-16">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-white sm:text-3xl">See AcedIQ in action</h2>
-            <p className="mx-auto mt-2 max-w-xl text-sm text-[#8B93B0]">
-              Quick Battle: pick a difficulty and answer 5 questions against the AI. No signup required.
+          <Reveal>
+            <div className="text-center">
+              <h2 className="text-2xl font-bold text-white sm:text-3xl">See AcedIQ in action</h2>
+              <p className="mx-auto mt-2 max-w-xl text-sm text-[#8B93B0]">
+                Quick Battle: pick a difficulty and answer 5 questions against the AI. No signup required.
+              </p>
+            </div>
+
+            <div className="mt-8 rounded-[14px] border border-white/10 bg-[#0B1220] p-4 shadow-sm sm:p-6">
+              <InstantAIBattle />
+            </div>
+
+            <p className="mt-4 text-center text-sm text-[#8B93B0]">
+              Want the full picture? Try the{" "}
+              <Link href="/demo/battle" className="font-semibold text-[#A855F7] hover:underline">
+                Guided Product Demo
+              </Link>{" "}
+              for the complete loop: upload, battle, mistakes, and a weak-topic rematch.
             </p>
-          </div>
-
-          <div className="mt-8 rounded-[14px] border border-white/10 bg-[#0B1220] p-4 shadow-sm sm:p-6">
-            <InstantAIBattle />
-          </div>
-
-          <p className="mt-4 text-center text-sm text-[#8B93B0]">
-            Want the full picture? Try the{" "}
-            <Link href="/demo/battle" className="font-semibold text-[#A855F7] hover:underline">
-              Guided Product Demo
-            </Link>{" "}
-            for the complete loop: upload, battle, mistakes, and a weak-topic rematch.
-          </p>
+          </Reveal>
         </section>
 
         {/* ---------- 3. Product story ---------- */}
         <section aria-label="From notes to mastery" className="border-t border-white/10 py-14 sm:py-16">
-          <h2 className="text-center text-2xl font-bold text-white sm:text-3xl">From notes to mastery</h2>
-          <p className="mx-auto mt-2 max-w-xl text-center text-sm text-[#8B93B0]">
-            The same loop every battle runs on, step by step.
-          </p>
+          <Reveal>
+            <h2 className="text-center text-2xl font-bold text-white sm:text-3xl">From notes to mastery</h2>
+            <p className="mx-auto mt-2 max-w-xl text-center text-sm text-[#8B93B0]">
+              The same loop every battle runs on, step by step.
+            </p>
+          </Reveal>
           <div className="mt-8">
             <ProductStory />
           </div>
@@ -309,40 +314,46 @@ export default function Home() {
         {/* ---------- 4. Core benefits ---------- */}
         <section aria-label="Core benefits" className="border-t border-white/10 py-14 sm:py-16">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {BENEFITS.map((benefit) => (
-              <div key={benefit} className="flex items-center gap-3 rounded-[14px] border border-white/10 bg-white/[0.03] glow-border p-4">
+            {BENEFITS.map((benefit, index) => (
+              <Reveal
+                key={benefit}
+                delay={index * 0.04}
+                className="flex items-center gap-3 rounded-[14px] border border-white/10 bg-white/[0.03] glow-border p-4"
+              >
                 <svg className="h-5 w-5 flex-shrink-0 text-[#A855F7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
                 <span className="text-sm font-medium text-white">{benefit}</span>
-              </div>
+              </Reveal>
             ))}
           </div>
         </section>
 
         {/* ---------- What makes AcedIQ different ---------- */}
         <section aria-label="What makes AcedIQ different" className="border-t border-white/10 py-14 sm:py-16">
-          <h2 className="text-2xl font-bold text-white sm:text-3xl">What makes AcedIQ different</h2>
+          <Reveal>
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">What makes AcedIQ different</h2>
+          </Reveal>
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {DIFFERENTIATORS.map((item) => (
-              <div key={item} className="rounded-[14px] border border-white/10 bg-white/[0.03] glow-border p-4">
+            {DIFFERENTIATORS.map((item, index) => (
+              <Reveal key={item} delay={index * 0.04} className="rounded-[14px] border border-white/10 bg-white/[0.03] glow-border p-4">
                 <span className="text-sm font-medium text-white">{item}</span>
-              </div>
+              </Reveal>
             ))}
           </div>
         </section>
 
         {/* ---------- 6. Simple pricing preview ---------- */}
         <section id="pricing" aria-label="Pricing preview" className="border-t border-white/10 py-14 sm:py-16">
-          <div className="flex flex-wrap items-end justify-between gap-3">
+          <Reveal className="flex flex-wrap items-end justify-between gap-3">
             <h2 className="text-2xl font-bold text-white sm:text-3xl">Start free, scale when you need more</h2>
             <Link href="/pricing" className="text-sm font-semibold text-[#A855F7] hover:text-[#9333EA]">
               View all plans
             </Link>
-          </div>
+          </Reveal>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
-            <div className="rounded-[14px] border border-white/10 bg-white/[0.03] glow-border p-6">
+            <Reveal className="rounded-[14px] border border-white/10 bg-white/[0.03] glow-border p-6">
               <h3 className="text-base font-semibold text-white">{PLAN_METADATA.free_beta.label}</h3>
               <p className="mt-1 text-3xl font-bold text-white">{PLAN_METADATA.free_beta.price}</p>
               <p className="mt-2 text-sm text-[#8B93B0]">{PLAN_METADATA.free_beta.tagline}</p>
@@ -352,9 +363,9 @@ export default function Home() {
               >
                 Start Free
               </Link>
-            </div>
+            </Reveal>
 
-            <div className="relative rounded-[14px] border-2 border-[#A855F7] bg-white/[0.04] p-6">
+            <Reveal delay={0.06} className="relative rounded-[14px] border-2 border-[#A855F7] bg-white/[0.04] p-6">
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#A855F7] px-3 py-1 text-[11px] font-semibold text-white">
                 Most Popular
               </span>
@@ -367,37 +378,41 @@ export default function Home() {
               >
                 Go Pro
               </Link>
-            </div>
+            </Reveal>
           </div>
         </section>
 
         {/* ---------- 7. FAQ ---------- */}
         <section id="faq" aria-label="Frequently asked questions" className="border-t border-white/10 py-14 sm:py-16">
-          <h2 className="text-2xl font-bold text-white sm:text-3xl">FAQ</h2>
+          <Reveal>
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">FAQ</h2>
+          </Reveal>
           <div className="mt-5 space-y-3">
-            {FAQ_ITEMS.map((item) => (
-              <details key={item.q} className="group rounded-[14px] border border-white/10 bg-white/[0.03] glow-border p-4 transition-colors duration-150 open:border-[#A855F7]/40">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-white sm:text-base">
-                  {item.q}
-                  <svg
-                    className="h-4 w-4 flex-shrink-0 text-[#A855F7] transition-transform duration-200 group-open:rotate-180"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                  </svg>
-                </summary>
-                <p className="mt-2 text-sm text-[#8B93B0]">{item.a}</p>
-              </details>
+            {FAQ_ITEMS.map((item, index) => (
+              <Reveal key={item.q} delay={index * 0.04}>
+                <details className="group rounded-[14px] border border-white/10 bg-white/[0.03] glow-border p-4 transition-colors duration-150 open:border-[#A855F7]/40">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-white sm:text-base">
+                    {item.q}
+                    <svg
+                      className="h-4 w-4 flex-shrink-0 text-[#A855F7] transition-transform duration-200 group-open:rotate-180"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                    </svg>
+                  </summary>
+                  <p className="mt-2 text-sm text-[#8B93B0]">{item.a}</p>
+                </details>
+              </Reveal>
             ))}
           </div>
         </section>
 
         {/* ---------- Final call to action ---------- */}
         <section aria-label="Get started" className="border-t border-white/10 py-14 sm:py-16">
-          <div className="rounded-[14px] border border-white/10 bg-[#131A2C] p-8 text-center sm:p-10">
+          <Reveal className="rounded-[14px] border border-white/10 bg-[#131A2C] p-8 text-center sm:p-10">
             <h2 className="text-2xl font-bold text-white sm:text-3xl">Ready to make studying competitive?</h2>
             <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
@@ -413,12 +428,12 @@ export default function Home() {
                 Create Your First Deck
               </Link>
             </div>
-          </div>
+          </Reveal>
         </section>
 
         {/* ---------- 8. Footer ---------- */}
         <footer className="border-t border-white/10 py-8 text-sm text-[#8B93B0]">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <Reveal className="flex flex-wrap items-center justify-between gap-4">
             <p>AcedIQ · Competitive studying for the AI era</p>
             <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Footer links">
               <Link href="/create" className="hover:text-white">Create</Link>
@@ -430,7 +445,7 @@ export default function Home() {
               <Link href="/privacy" className="hover:text-white">Privacy</Link>
               <Link href="/terms" className="hover:text-white">Terms</Link>
             </nav>
-          </div>
+          </Reveal>
         </footer>
       </div>
 
