@@ -12,7 +12,7 @@ import { springSnappy, REDUCED_MOTION_TRANSITION } from "@/lib/motion";
 import BattleAILink from "./BattleAILink";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
 
-const CONTINUE_PATH_STORAGE_KEY = "studyjoust_last_path";
+const CONTINUE_PATH_STORAGE_KEY = "acediq_last_path";
 const CONTINUE_PATH_EXCLUDE = new Set([
   "/login",
   "/signup",
@@ -493,7 +493,7 @@ function MobileTopBar({
         <Link href="/" onClick={closeMobileMenu} className="flex flex-shrink-0 items-center gap-2 text-lg font-black tracking-tight">
           <VyraMiniIcon />
           <span className="bg-gradient-to-r from-indigo-400 via-indigo-500 to-indigo-400 bg-clip-text text-transparent">
-            StudyClash
+            AcedIQ
           </span>
         </Link>
 

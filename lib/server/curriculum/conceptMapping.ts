@@ -33,7 +33,7 @@ export async function extractConceptsFromChapterSummary(args: {
   summary: SummaryContent;
 }): Promise<ChapterConceptBreakdown> {
   const prompt = `
-You are building a curriculum knowledge graph for StudyClash from an already-extracted chapter summary. Break this chapter down into its distinct teachable concepts (roughly topic/skill-sized -- not every single fact, and not just one concept for the whole chapter).
+You are building a curriculum knowledge graph for AcedIQ from an already-extracted chapter summary. Break this chapter down into its distinct teachable concepts (roughly topic/skill-sized -- not every single fact, and not just one concept for the whole chapter).
 
 Chapter: ${args.chapterTitle}
 

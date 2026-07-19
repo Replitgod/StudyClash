@@ -623,7 +623,7 @@ export default function DemoBattlePage() {
 	// back to the demo itself, rather than a personalized /challenge/[token]
 	// comparison link like the real battle results page uses.
 	const handleCopyDemoResult = async () => {
-		const shareMessage = `I scored ${accuracyPercent}% on the StudyClash Algebra Skills Battle demo. Try to beat me: ${window.location.origin}/demo/battle`;
+		const shareMessage = `I scored ${accuracyPercent}% on the AcedIQ Algebra Skills Battle demo. Try to beat me: ${window.location.origin}/demo/battle`;
 		const copied = await copyTextToClipboard(shareMessage);
 
 		if (copied) {
@@ -695,11 +695,11 @@ export default function DemoBattlePage() {
 
 						<h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
 							<span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
-								Try the StudyClash flow in 60 seconds.
+								Try the AcedIQ flow in 60 seconds.
 							</span>
 						</h1>
 						<p className="mx-auto mt-4 max-w-2xl text-center text-sm leading-relaxed text-white/60 sm:text-base">
-							This Algebra Skills Battle shows the full StudyClash loop: answer questions, see your score, review weak topics, and jump straight into topic-specific study links. Inspired by common high-school algebra skills — not an official SAT practice test.
+							This Algebra Skills Battle shows the full AcedIQ loop: answer questions, see your score, review weak topics, and jump straight into topic-specific study links. Inspired by common high-school algebra skills — not an official SAT practice test.
 						</p>
 
 						<p className="mx-auto mt-3 max-w-xl rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-4 py-2 text-center text-xs font-semibold text-indigo-100 sm:text-sm">
@@ -923,7 +923,7 @@ export default function DemoBattlePage() {
 							</span>
 						</h2>
 						<p className="mx-auto mt-3 max-w-2xl text-center text-sm text-white/55 sm:text-base">
-							Here is the same StudyClash feedback loop you get instantly, without making a full deck first.
+							Here is the same AcedIQ feedback loop you get instantly, without making a full deck first.
 						</p>
 
 						<div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

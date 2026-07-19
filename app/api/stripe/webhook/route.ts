@@ -55,7 +55,7 @@ async function syncSubscription(
 ): Promise<void> {
   const userId = await resolveUserId(supabase, subscription);
   if (!userId) {
-    console.error("Stripe webhook: could not resolve a StudyClash user for subscription", subscription.id);
+    console.error("Stripe webhook: could not resolve a AcedIQ user for subscription", subscription.id);
     return;
   }
 

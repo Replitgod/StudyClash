@@ -13,9 +13,9 @@ import { FloatingCard } from "./components/motion/FloatingCard";
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
 
 export const metadata: Metadata = {
-  title: "AI Study App | StudyClash Battle-Based Quizlet Alternative",
+  title: "AI Study App | AcedIQ Battle-Based Quizlet Alternative",
   description:
-    "StudyClash is an AI study app and Quizlet alternative where students turn notes into instant study battles, flashcard battle loops, and adaptive AI practice for SAT and AP prep.",
+    "AcedIQ is an AI study app and Quizlet alternative where students turn notes into instant study battles, flashcard battle loops, and adaptive AI practice for SAT and AP prep.",
   alternates: {
     canonical: "/",
   },
@@ -34,24 +34,24 @@ export const metadata: Metadata = {
     "AP Study App",
   ],
   openGraph: {
-    title: "StudyClash | AI Study App, Flashcard Battle, Quizlet Alternative",
+    title: "AcedIQ | AI Study App, Flashcard Battle, Quizlet Alternative",
     description:
       "Upload notes, auto-generate questions, battle an AI, and improve with weak-topic recovery loops.",
     url: "/",
-    siteName: "StudyClash",
+    siteName: "AcedIQ",
     type: "website",
     images: [
       {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "StudyClash AI study battle preview",
+        alt: "AcedIQ AI study battle preview",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "StudyClash | AI Study App and Competitive Learning",
+    title: "AcedIQ | AI Study App and Competitive Learning",
     description:
       "Study faster with AI study battles, adaptive opponents, and weak-topic remediation.",
     images: ["/twitter-image"],
@@ -95,12 +95,12 @@ const DIFFERENTIATORS = [
 
 const FAQ_ITEMS = [
   {
-    q: "What is StudyClash?",
-    a: "StudyClash is an AI study platform where your notes become live quiz battles with instant feedback and weak-topic diagnostics.",
+    q: "What is AcedIQ?",
+    a: "AcedIQ is an AI study platform where your notes become live quiz battles with instant feedback and weak-topic diagnostics.",
   },
   {
     q: "How is this different from Quizlet or Knowt?",
-    a: "StudyClash is battle-first, with realistic AI opponents, live duel scoring, and targeted rematch loops instead of passive flashcard scrolling.",
+    a: "AcedIQ is battle-first, with realistic AI opponents, live duel scoring, and targeted rematch loops instead of passive flashcard scrolling.",
   },
   {
     q: "Can I battle instantly without creating a room?",
@@ -143,7 +143,7 @@ export default function Home() {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     "@id": `${siteUrl}/#software`,
-    name: "StudyClash",
+    name: "AcedIQ",
     mainEntityOfPage: `${siteUrl}/`,
     url: siteUrl,
     applicationCategory: "EducationalApplication",
@@ -180,7 +180,7 @@ export default function Home() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "@id": `${siteUrl}/#website`,
-    name: "StudyClash",
+    name: "AcedIQ",
     url: siteUrl,
     description:
       "AI learning platform for study battles, weak-topic insights, and rematch-based mastery.",
@@ -194,7 +194,7 @@ export default function Home() {
     "@context": "https://schema.org",
     "@type": "WebPage",
     "@id": `${siteUrl}/#home`,
-    name: "StudyClash Homepage",
+    name: "AcedIQ Homepage",
     url: siteUrl,
     isPartOf: {
       "@id": `${siteUrl}/#website`,
@@ -203,13 +203,13 @@ export default function Home() {
       "@id": `${siteUrl}/#software`,
     },
     description:
-      "Homepage for StudyClash, an AI study app focused on battle-style learning and weak-topic recovery.",
+      "Homepage for AcedIQ, an AI study app focused on battle-style learning and weak-topic recovery.",
   };
 
   const howToSchema = {
     "@context": "https://schema.org",
     "@type": "HowTo",
-    name: "How to study with StudyClash",
+    name: "How to study with AcedIQ",
     description: "Turn notes into battle-based study sessions and improve weak topics quickly.",
     totalTime: "PT18M",
     step: STEPS.map((step, index) => ({
@@ -283,7 +283,7 @@ export default function Home() {
         {/* ---------- 2. Interactive product preview ---------- */}
         <section aria-label="Try a live round" className="border-t border-[#E2E8F0] py-14 sm:py-16">
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">See StudyClash in action</h2>
+            <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">See AcedIQ in action</h2>
             <p className="mx-auto mt-2 max-w-xl text-sm text-[#64748B]">
               Quick Battle: pick a difficulty and answer 5 questions against the AI. No signup required.
             </p>
@@ -332,9 +332,9 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ---------- What makes StudyClash different ---------- */}
-        <section aria-label="What makes StudyClash different" className="border-t border-[#E2E8F0] py-14 sm:py-16">
-          <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">What makes StudyClash different</h2>
+        {/* ---------- What makes AcedIQ different ---------- */}
+        <section aria-label="What makes AcedIQ different" className="border-t border-[#E2E8F0] py-14 sm:py-16">
+          <h2 className="text-2xl font-bold text-[#0F172A] sm:text-3xl">What makes AcedIQ different</h2>
           <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {DIFFERENTIATORS.map((item) => (
               <div key={item} className="rounded-[14px] border border-[#E2E8F0] bg-[#F8FAFC] p-4">
@@ -431,7 +431,7 @@ export default function Home() {
         {/* ---------- 8. Footer ---------- */}
         <footer className="border-t border-[#E2E8F0] py-8 text-sm text-[#64748B]">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <p>StudyClash · Competitive studying for the AI era</p>
+            <p>AcedIQ · Competitive studying for the AI era</p>
             <nav className="flex flex-wrap gap-x-5 gap-y-2" aria-label="Footer links">
               <Link href="/create" className="hover:text-[#0F172A]">Create</Link>
               <Link href="/demo/battle" className="hover:text-[#0F172A]">Guided Demo</Link>

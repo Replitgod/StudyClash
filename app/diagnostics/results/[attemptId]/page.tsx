@@ -374,7 +374,7 @@ export default function DiagnosticResultsPage() {
           ) : (
             <>
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-indigo-300">
-                StudyClash diagnostic estimate
+                AcedIQ diagnostic estimate
               </p>
               <p className="mt-2 text-4xl font-black text-white sm:text-5xl">
                 {results.estimated_score_low}&ndash;{results.estimated_score_high}

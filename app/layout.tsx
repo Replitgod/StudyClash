@@ -34,17 +34,17 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "StudyClash | AI Study App for Battle-Based Learning",
-    template: "%s | StudyClash",
+    default: "AcedIQ | AI Study App for Battle-Based Learning",
+    template: "%s | AcedIQ",
   },
   description:
-    "StudyClash is an AI study app where students upload notes, battle an AI, and improve with weak-topic diagnostics, rematches, and exam-focused practice loops.",
-  applicationName: "StudyClash",
+    "AcedIQ is an AI study app where students upload notes, battle an AI, and improve with weak-topic diagnostics, rematches, and exam-focused practice loops.",
+  applicationName: "AcedIQ",
   category: "education",
   referrer: "origin-when-cross-origin",
-  creator: "StudyClash",
-  publisher: "StudyClash",
-  authors: [{ name: "StudyClash" }],
+  creator: "AcedIQ",
+  publisher: "AcedIQ",
+  authors: [{ name: "AcedIQ" }],
   keywords: [
     "AI Study App",
     "Quizlet Alternative",
@@ -66,10 +66,10 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    title: "StudyClash | AI Study App for Competitive Learning",
+    title: "AcedIQ | AI Study App for Competitive Learning",
     description:
       "Turn notes into AI study battles with weak-topic diagnostics, flashcard battle loops, and exam-ready practice.",
-    siteName: "StudyClash",
+    siteName: "AcedIQ",
     url: "/",
     locale: "en_US",
     images: [
@@ -77,13 +77,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "StudyClash AI study battles preview",
+        alt: "AcedIQ AI study battles preview",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "StudyClash | AI Study App and Quizlet Alternative",
+    title: "AcedIQ | AI Study App and Quizlet Alternative",
     description:
       "Upload notes, battle an AI instantly, and improve with weak-topic diagnostics.",
     images: ["/twitter-image"],
@@ -105,11 +105,11 @@ const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   "@id": `${siteUrl}/#organization`,
-  name: "StudyClash",
+  name: "AcedIQ",
   url: siteUrl,
   logo: `${siteUrl}/opengraph-image`,
   description:
-    "StudyClash is an AI study platform for interactive quiz battles, weak-topic analysis, and personalized study improvement.",
+    "AcedIQ is an AI study platform for interactive quiz battles, weak-topic analysis, and personalized study improvement.",
   sameAs: [
     `${siteUrl}/`,
   ],

@@ -1,5 +1,5 @@
 -- Private internal marketing/launch-distribution dashboard (/admin/marketing).
--- Every table here is admin-only: normal StudyClash users have zero access,
+-- Every table here is admin-only: normal AcedIQ users have zero access,
 -- enforced by RLS with no anon/authenticated policies at all (service-role
 -- always bypasses RLS -- every read/write goes through
 -- app/api/admin/marketing/* routes, which independently re-check
@@ -12,7 +12,7 @@
 -- Safe to run multiple times.
 
 -- ---------------------------------------------------------------------
--- marketing_product_profile: one reusable row describing StudyClash for
+-- marketing_product_profile: one reusable row describing AcedIQ for
 -- content generation. The app always upserts against a single fixed id
 -- (MARKETING_PROFILE_ID in lib/server/marketing/constants.ts) rather than
 -- allowing multiple rows -- enforced here by a check constraint, not just
@@ -281,7 +281,7 @@ create index if not exists idx_marketing_publications_destination
 -- session carries stored UTM/campaign attribution (see
 -- lib/marketingAttribution.ts), so real product events (signup_completed,
 -- battle_started, checkout_started, subscription_activated, etc.) get
--- attributed without duplicating StudyClash's whole analytics pipeline;
+-- attributed without duplicating AcedIQ's whole analytics pipeline;
 -- (2) server-side from the webhook/checkout routes for
 -- subscription_activated specifically, same as analytics_events.
 -- ---------------------------------------------------------------------

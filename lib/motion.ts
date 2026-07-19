@@ -1,6 +1,6 @@
 ﻿import type { Transition, Variants } from "motion/react";
 
-// Shared motion language for StudyClash's neon-battle aesthetic: quick,
+// Shared motion language for AcedIQ's neon-battle aesthetic: quick,
 // springy, a little playful -- not slow/corporate ease-in-out. Import these
 // instead of inventing new timing/easing per component, so every animated
 // surface in the app reads as one system rather than a pile of one-off

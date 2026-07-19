@@ -16,7 +16,7 @@ const HIDE_ON_PREFIXES = ["/battle/", "/challenge/", "/results/", "/exams"];
 // "/pricing", "/signup", and "/login" were added after a 320-430px mobile
 // audit found the same problem in a worse form: the fixed bar physically
 // overlapped the plan card's own CTA on /pricing, clipped the "Included in
-// StudyClash Pro" text on /exams, and sat directly on top of the
+// AcedIQ Pro" text on /exams, and sat directly on top of the
 // signup form's "Create Account" submit button -- a floating "battle"
 // nudge should never be able to intercept a tap meant for a checkout,
 // auth, or plan-selection button.

@@ -74,7 +74,7 @@ export async function summarizeChunksBatch(
   if (chunks.length === 0) return new Map();
 
   const prompt = `
-You are extracting structured study content from textbook excerpts for StudyClash's curriculum engine.
+You are extracting structured study content from textbook excerpts for AcedIQ's curriculum engine.
 
 ${FIELD_INSTRUCTIONS}
 
@@ -129,7 +129,7 @@ export async function summarizeFromChildren(args: {
   title: string;
 }): Promise<SummaryContent> {
   const prompt = `
-You are synthesizing a ${args.levelLabel}-level summary for StudyClash's curriculum engine, from the summaries of its parts (already extracted, don't re-derive from scratch -- merge and deduplicate them).
+You are synthesizing a ${args.levelLabel}-level summary for AcedIQ's curriculum engine, from the summaries of its parts (already extracted, don't re-derive from scratch -- merge and deduplicate them).
 
 Title for this ${args.levelLabel}: ${args.title}
 

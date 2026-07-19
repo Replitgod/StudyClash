@@ -974,7 +974,7 @@ export default function DashboardPage() {
             </div>
             <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
               <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
-                Your StudyClash Hub
+                Your AcedIQ Hub
               </span>
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-white/55 sm:text-base">
@@ -1967,7 +1967,7 @@ export default function DashboardPage() {
       <VyraCoach
         deckId={coachDeckId}
         deckTitle={coachDeckId ? "Recommended deck context" : "Dashboard study context"}
-        courseName="StudyClash Dashboard"
+        courseName="AcedIQ Dashboard"
         playerName={profile?.display_name || user?.email || "Student"}
         weakTopics={coachWeakTopics}
         missedQuestions={[]}

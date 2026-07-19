@@ -32,7 +32,7 @@ function getLimiter(limit: number, windowSeconds: number): Ratelimit {
     redis: redis as Redis,
     limiter: Ratelimit.slidingWindow(limit, `${windowSeconds} s`),
     analytics: false,
-    prefix: "studyjoust:ratelimit",
+    prefix: "acediq:ratelimit",
   });
 
   limiterCache.set(cacheKey, limiter);

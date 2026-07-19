@@ -390,7 +390,7 @@ export default function AccountPage() {
               ✓
             </span>
             <p className="text-sm text-green-100/90">
-              Payment received — StudyClash Pro activates automatically once Stripe confirms your
+              Payment received — AcedIQ Pro activates automatically once Stripe confirms your
               subscription. If your plan doesn&apos;t update within a minute, refresh this page.
             </p>
           </div>

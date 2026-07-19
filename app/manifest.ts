@@ -4,8 +4,8 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "StudyClash - AI Study App",
-    short_name: "StudyClash",
+    name: "AcedIQ - AI Study App",
+    short_name: "AcedIQ",
     description:
       "AI study app for competitive learning, flashcard battles, and exam-focused practice.",
     start_url: "/",

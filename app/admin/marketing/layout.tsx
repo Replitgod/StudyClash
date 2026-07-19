@@ -17,7 +17,7 @@ const NAV_ITEMS = [
 ];
 
 // This layout is the ONLY client-side gate this app can offer -- there's no
-// server-side session cookie to check in Next.js middleware (StudyClash
+// server-side session cookie to check in Next.js middleware (AcedIQ
 // auth is Bearer-token/localStorage based, see lib/authFetch.ts), so a
 // non-admin who loads this page shell sees an empty "Checking access..."
 // state and nothing else. The REAL security boundary is server-side: every
@@ -85,7 +85,7 @@ export default function MarketingAdminLayout({ children }: { children: React.Rea
                 href="/"
                 className="mt-6 inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white/80 hover:bg-white/10"
               >
-                Back to StudyClash
+                Back to AcedIQ
               </Link>
             </>
           )}

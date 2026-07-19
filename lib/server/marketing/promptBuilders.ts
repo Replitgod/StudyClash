@@ -35,7 +35,7 @@ function profileFactsBlock(profile: MarketingProductProfile): string {
   if (profile.main_features.length) push("Main features", profile.main_features.join("; "));
   if (profile.unique_advantages.length) push("Unique advantages", profile.unique_advantages.join("; "));
   push("Free plan", profile.free_plan_details);
-  push("StudyClash Pro", profile.pro_details);
+  push("AcedIQ Pro", profile.pro_details);
   push("Current pricing", profile.current_pricing);
   push("Beta status", profile.beta_status);
   push("Founder story", profile.founder_story);
@@ -92,9 +92,9 @@ function destinationFactsBlock(destination: MarketingDestination): string {
 const SHARED_GUARDRAILS = `
 Hard rules, no exceptions:
 - Never invent statistics, user counts, revenue, testimonials, awards, or partnerships. Only use numbers explicitly given above under "Verified usage stats."
-- Never say StudyClash guarantees higher grades or better test scores.
+- Never say AcedIQ guarantees higher grades or better test scores.
 - Never claim "thousands of users" or any user-count claim unless that exact number is in the verified stats above.
-- Be honest that this is a real product built by a real person -- when the destination expects a personal voice (Reddit, founder communities, beta communities, LinkedIn), disclose that you (the poster) built StudyClash.
+- Be honest that this is a real product built by a real person -- when the destination expects a personal voice (Reddit, founder communities, beta communities, LinkedIn), disclose that you (the poster) built AcedIQ.
 - Do not write generic corporate marketing language ("revolutionize," "game-changer," "seamless," "unlock your potential"). Write like an actual person.
 - This content must be genuinely different from content generated for any other destination -- don't reuse the same phrasing, opening line, or structure.
 `.trim();
@@ -112,7 +112,7 @@ Write a Reddit post for this specific subreddit/community.
 Required approach:
 - Natural, conversational title (not clickbait, not corporate).
 - Conversational body written like a real person posting to a community they respect, not an ad.
-- Honestly disclose that you built StudyClash.
+- Honestly disclose that you built AcedIQ.
 - Make a specific request for feedback, not a vague "check it out."
 - Clearly explain what testers should actually try (e.g. "try uploading a page of your own notes and battling the AI").
 - Minimal emojis (zero to one, only if it fits the community's normal tone).
@@ -160,7 +160,7 @@ Structure:
 - Strong opening line (not "I'm excited to announce").
 - Brief student-founder story grounded only in the founder story/notes provided -- if no founder story was provided, keep this to one honest sentence about why you built it rather than inventing a backstory.
 - The problem being solved.
-- A plain-language explanation of what StudyClash is.
+- A plain-language explanation of what AcedIQ is.
 - One honest sentence on what you learned building it.
 - A specific beta-testing request.
 - A clear call to action.
@@ -220,7 +220,7 @@ Required fields inside "structured":
 - known_limitations: array of honest known limitations (use only what's implied by beta_status/notes -- if none given, write a generic honest line like "still in beta, rough edges expected" rather than inventing specifics).
 - exact_feedback_requested: array of specific feedback questions.
 - access_instructions: how to actually try it (sign up / try demo).
-"title" is the post title. "body" is what StudyClash is, in plain terms, plus the product link placed naturally.
+"title" is the post title. "body" is what AcedIQ is, in plain terms, plus the product link placed naturally.
 `.trim(),
     jsonShape: `{"title": string, "body": string, "hashtags": [], "structured": {"who_should_test": string, "what_to_test": string[], "known_limitations": string[], "exact_feedback_requested": string[], "access_instructions": string}}`,
   },
@@ -231,7 +231,7 @@ Write simple, student-friendly text for a school/student community (a club, a Di
 Explicitly avoid anything that sounds like an advertisement written by a company -- write like a student or a teacher/tutor sharing something genuinely useful, short sentences, no marketing buzzwords.
 
 Required fields inside "structured": none needed beyond the base shape.
-"body" must cover, in plain language: what StudyClash does, why a student might want to use it, how to try it, and what feedback is wanted.
+"body" must cover, in plain language: what AcedIQ does, why a student might want to use it, how to try it, and what feedback is wanted.
 "hashtags" should be an empty array.
 `.trim(),
     jsonShape: `{"title": null, "body": string, "hashtags": [], "structured": {}}`,
@@ -254,9 +254,9 @@ export function buildMarketingPrompt(args: {
     : "";
 
   return `
-You are drafting marketing/outreach content for StudyClash, written by its founder for their own review before posting anywhere. This is a real product with a real person behind it -- not a spam bot, not a content mill.
+You are drafting marketing/outreach content for AcedIQ, written by its founder for their own review before posting anywhere. This is a real product with a real person behind it -- not a spam bot, not a content mill.
 
-=== StudyClash facts (use ONLY these facts, never invent additional claims) ===
+=== AcedIQ facts (use ONLY these facts, never invent additional claims) ===
 ${profileFactsBlock(args.profile)}
 
 === Campaign ===

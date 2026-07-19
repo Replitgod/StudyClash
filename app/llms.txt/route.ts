@@ -4,9 +4,9 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
 
 export function GET() {
   const body = [
-    "# StudyClash",
+    "# AcedIQ",
     "",
-    "StudyClash is an AI study app that turns notes into competitive quiz battles with weak-topic analysis and rematch loops.",
+    "AcedIQ is an AI study app that turns notes into competitive quiz battles with weak-topic analysis and rematch loops.",
     "",
     "## Canonical discovery pages",
     `- Home: ${siteUrl}/`,
@@ -19,7 +19,7 @@ export function GET() {
     `- Terms: ${siteUrl}/terms`,
     "",
     "## Product entity",
-    "- Entity: StudyClash",
+    "- Entity: AcedIQ",
     "- Type: Educational software / AI learning platform / study game",
     "- Primary category: SoftwareApplication (web)",
     "- Core use cases: AI study app, study battle, flashcard battle, competitive learning, SAT study app, AP study app",
@@ -37,7 +37,7 @@ export function GET() {
     "- MCAT",
     "- LSAT",
     "- NCLEX",
-    "- SAT prep links to College Board's official practice tests (StudyClash does not generate SAT drills)",
+    "- SAT prep links to College Board's official practice tests (AcedIQ does not generate SAT drills)",
     "",
     "## Audience",
     "- High school students",

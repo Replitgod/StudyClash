@@ -67,7 +67,7 @@ export async function generateQuestionsForConcept(args: {
     .join("\n\n");
 
   const prompt = `
-You are writing exam-quality practice questions for StudyClash, grounded STRICTLY in the excerpts below. Never use outside knowledge, never invent facts not supported by these excerpts.
+You are writing exam-quality practice questions for AcedIQ, grounded STRICTLY in the excerpts below. Never use outside knowledge, never invent facts not supported by these excerpts.
 
 Concept: ${args.concept.name}
 Description: ${args.concept.description || "(none provided)"}

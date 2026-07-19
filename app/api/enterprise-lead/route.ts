@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
   }
 
   await supabase.from("email_notification_queue").insert({
-    recipient_email: "founders@studyjoust.app",
+    recipient_email: "founders@acediq.app",
     event_type: "enterprise_lead",
     subject: `Enterprise pilot lead from ${organization}`,
     body: `Lead Email: ${email}\n${formattedBody}`,

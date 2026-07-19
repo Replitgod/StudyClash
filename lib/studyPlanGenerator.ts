@@ -31,7 +31,7 @@ export type GeneratedTask = {
   title: string;
   description: string;
   estimatedMinutes: number;
-  // `internal: true` marks a link back into StudyClash itself (replay this
+  // `internal: true` marks a link back into AcedIQ itself (replay this
   // deck, practice this weak topic) rather than an external study
   // resource -- the plan page renders these as an in-app action button
   // instead of an external target="_blank" link, so a task actually closes

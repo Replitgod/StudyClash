@@ -52,7 +52,7 @@ const TEXT_FIELDS: { key: keyof NonNullable<Profile>; label: string; multiline?:
   { key: "target_users", label: "Target users" },
   { key: "main_problem_solved", label: "Main problem solved", multiline: true },
   { key: "free_plan_details", label: "Free plan details", multiline: true },
-  { key: "pro_details", label: "StudyClash Pro details", multiline: true },
+  { key: "pro_details", label: "AcedIQ Pro details", multiline: true },
   { key: "current_pricing", label: "Current pricing" },
   { key: "beta_status", label: "Beta status" },
   { key: "founder_story", label: "Founder story", multiline: true },
@@ -79,7 +79,7 @@ export default function MarketingSettingsPage() {
       .then(async (r) => {
         const json = await r.json();
         const p = json.profile || {
-          product_name: "StudyClash",
+          product_name: "AcedIQ",
           main_features: [],
           unique_advantages: [],
           verified_usage_stats: {},
@@ -149,7 +149,7 @@ export default function MarketingSettingsPage() {
     <div className="mx-auto max-w-3xl">
       <h1 className="text-2xl font-black">Settings</h1>
 
-      <h2 className="mt-6 text-lg font-bold">StudyClash marketing profile</h2>
+      <h2 className="mt-6 text-lg font-bold">AcedIQ marketing profile</h2>
       <p className="text-sm text-white/50">
         The single source of truth every generator uses. Leave a field blank rather than guessing -- blank fields are omitted, never invented.
       </p>

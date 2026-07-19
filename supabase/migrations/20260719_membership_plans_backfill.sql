@@ -15,8 +15,8 @@
 
 insert into public.membership_plans (id, label, daily_limit, description)
 values
-  ('pro_individual', 'StudyClash Pro', null, 'Unlimited deck generation, full diagnostics, and every exam tunnel.'),
-  ('exam_tunnel', 'StudyClash Pro', null, 'Legacy plan id, folded into StudyClash Pro -- kept resolvable for existing accounts.'),
+  ('pro_individual', 'AcedIQ Pro', null, 'Unlimited deck generation, full diagnostics, and every exam tunnel.'),
+  ('exam_tunnel', 'AcedIQ Pro', null, 'Legacy plan id, folded into AcedIQ Pro -- kept resolvable for existing accounts.'),
   ('team_pass', 'Team/Guild Pass', null, 'Shared unlimited group usage during the pilot.')
 on conflict (id) do update set
   label = excluded.label,

@@ -414,7 +414,7 @@ async function persistSkillMastery(
 }
 
 // Quick Diagnostic doesn't have an official College Board spec to mirror --
-// it's StudyClash's own shorter, balanced sample. Sized so the two
+// it's AcedIQ's own shorter, balanced sample. Sized so the two
 // sections together land inside the spec's "approximately 35-45 minutes"
 // target, using the same rough per-question pace as the real Digital SAT
 // (~1.2 min/RW question, ~1.6 min/Math question) rather than an arbitrary

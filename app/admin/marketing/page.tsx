@@ -65,14 +65,14 @@ export default function MarketingDashboardHome() {
         <div>
           <h1 className="text-2xl font-black">Marketing Dashboard</h1>
           <p className="mt-1 text-sm text-white/50">
-            Private, admin-only. Not marketed or sold -- for promoting StudyClash only.
+            Private, admin-only. Not marketed or sold -- for promoting AcedIQ only.
           </p>
         </div>
         <Link
           href="/admin/marketing/campaigns/new"
           className="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-5 py-3 text-sm font-bold text-white shadow-[0_0_30px_-10px_rgba(79,70,229,0.6)]"
         >
-          Create StudyClash Campaign
+          Create AcedIQ Campaign
         </Link>
       </div>
 

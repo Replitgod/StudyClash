@@ -309,7 +309,7 @@ function getProgressStorageKey(match: Match): string {
     ? `user:${match.user_id}`
     : `player:${normalizeProgressScope(match.player_name || "guest")}`;
 
-  return `studyjoust-progression:v1:${scope}`;
+  return `acediq-progression:v1:${scope}`;
 }
 
 function loadProgressSnapshot(storageKey: string): ProgressSnapshot {
@@ -572,7 +572,7 @@ function buildStudyPlan(weakTopics: WeakTopic[]): StudyDay[] {
         day: 3,
         title: "Stay Sharp",
         tasks: [
-          "Replay this StudyClash deck to confirm you're still at 85%+ accuracy.",
+          "Replay this AcedIQ deck to confirm you're still at 85%+ accuracy.",
           "If you have newer notes, generate a fresh deck to keep testing yourself.",
         ],
       },
@@ -603,7 +603,7 @@ function buildStudyPlan(weakTopics: WeakTopic[]): StudyDay[] {
       day: 3,
       title: "Retest & Confirm",
       tasks: [
-        "Replay this StudyClash deck.",
+        "Replay this AcedIQ deck.",
         "Aim for 85%+ accuracy this time.",
         "Review anything you still miss, one more time, before moving on.",
       ],

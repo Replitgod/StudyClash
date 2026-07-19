@@ -71,7 +71,7 @@ export default function NewCampaignPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-black">Create StudyClash Campaign</h1>
+      <h1 className="text-2xl font-black">Create AcedIQ Campaign</h1>
       <p className="mt-1 text-sm text-white/50">
         Every draft this campaign generates still requires your review and approval before anything goes out.
       </p>

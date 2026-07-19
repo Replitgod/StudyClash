@@ -4,21 +4,21 @@ import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { Reveal } from "@/app/components/ui/Reveal";
 
 export const metadata: Metadata = {
-  title: "Terms of Use | StudyClash",
-  description: "Terms for using StudyClash public beta, including acceptable use and account responsibilities.",
+  title: "Terms of Use | AcedIQ",
+  description: "Terms for using AcedIQ public beta, including acceptable use and account responsibilities.",
   alternates: {
     canonical: "/terms",
   },
   openGraph: {
-    title: "Terms of Use | StudyClash",
-    description: "Terms and conditions for using StudyClash.",
+    title: "Terms of Use | AcedIQ",
+    description: "Terms and conditions for using AcedIQ.",
     url: "/terms",
     images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Terms of Use | StudyClash",
-    description: "Read StudyClash terms for beta usage and account responsibilities.",
+    title: "Terms of Use | AcedIQ",
+    description: "Read AcedIQ terms for beta usage and account responsibilities.",
     images: ["/twitter-image"],
   },
 };
@@ -27,14 +27,14 @@ export default function TermsPage() {
   return (
     <main className={`relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] px-4 pt-12 text-white sm:px-6 sm:pt-16 ${FLOATING_ACTION.mobileBottomPadding}`}>
       <Reveal className="mx-auto w-full max-w-3xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-8">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">StudyClash Public Beta</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">AcedIQ Public Beta</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight">Terms of Use</h1>
         <p className="mt-2 text-sm text-white/55">Last updated: July 9, 2026</p>
 
         <div className="mt-6 space-y-5 text-sm leading-relaxed text-white/80">
           <section>
             <h2 className="text-base font-bold text-white">Use of the service</h2>
-            <p className="mt-1">StudyClash is provided for educational use. Do not misuse the app, automate abuse, or attempt to bypass usage limits.</p>
+            <p className="mt-1">AcedIQ is provided for educational use. Do not misuse the app, automate abuse, or attempt to bypass usage limits.</p>
           </section>
 
           <section>
@@ -49,7 +49,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-base font-bold text-white">No guaranteed outcomes</h2>
-            <p className="mt-1">StudyClash is a study tool. We do not guarantee exam scores or academic results.</p>
+            <p className="mt-1">AcedIQ is a study tool. We do not guarantee exam scores or academic results.</p>
           </section>
 
           <section>

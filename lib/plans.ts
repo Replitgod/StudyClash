@@ -1,5 +1,5 @@
 ﻿// Canonical plan metadata — the single source of truth for every plan id
-// StudyClash recognizes, whether or not it's publicly sold on /pricing.
+// AcedIQ recognizes, whether or not it's publicly sold on /pricing.
 //
 // This exists because /api/generate-questions previously hardcoded its own
 // plan-id allowlist (FREE_PLAN_IDS/PRIORITY_PLAN_IDS) independently from the
@@ -59,7 +59,7 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
   },
   pro_individual: {
     id: "pro_individual",
-    label: "StudyClash Pro",
+    label: "AcedIQ Pro",
     tagline: "For students who want the full loop",
     price: "$3/mo",
     dailyLimit: "Unlimited uploads and battles",
@@ -97,18 +97,18 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
     publiclyListed: false,
   },
   // No longer sold on its own -- every feature that used to be exclusive to
-  // Exam Pro is now bundled into pro_individual (StudyClash Pro, $3/mo), and
+  // Exam Pro is now bundled into pro_individual (AcedIQ Pro, $3/mo), and
   // Stripe checkout only ever creates pro_individual subscriptions. This id
   // is kept, unlisted, purely so any account still on it from before the
   // merge keeps resolving to a real label/tier instead of showing nothing.
   exam_tunnel: {
     id: "exam_tunnel",
-    label: "StudyClash Pro",
+    label: "AcedIQ Pro",
     tagline: "Full diagnostics and long-term tracking",
     price: "$3/mo",
     dailyLimit: "Premium board-style generation",
     features: [
-      "Everything in StudyClash Pro",
+      "Everything in AcedIQ Pro",
       "Full diagnostic tests",
       "Personalized exam plans",
       "Skill-by-skill tracking",

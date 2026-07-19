@@ -11,7 +11,7 @@ import {
   isStripeTestMode,
 } from "@/lib/server/stripe";
 
-// Subscription statuses that mean "this user already has a StudyClash Pro
+// Subscription statuses that mean "this user already has a AcedIQ Pro
 // subscription in flight" -- checkout is blocked while one of these exists
 // so a user can never end up with two live Stripe subscriptions.
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set([
@@ -21,7 +21,7 @@ const ACTIVE_SUBSCRIPTION_STATUSES = new Set([
 ]);
 
 const TEST_MODE_MESSAGE =
-  "StudyClash Pro checkout is still being tested and isn't open to the public yet.";
+  "AcedIQ Pro checkout is still being tested and isn't open to the public yet.";
 
 // Lets the pricing/account pages ask "should I even show the checkout
 // button?" before the user clicks anything -- avoids showing a live "Upgrade
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     if (existingSubscription && ACTIVE_SUBSCRIPTION_STATUSES.has(existingSubscription.status)) {
       return NextResponse.json(
-        { error: "You already have an active StudyClash Pro subscription." },
+        { error: "You already have an active AcedIQ Pro subscription." },
         { status: 400 }
       );
     }

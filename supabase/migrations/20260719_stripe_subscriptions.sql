@@ -1,4 +1,4 @@
--- Stripe subscriptions for StudyClash Pro ($3/mo, price id in
+-- Stripe subscriptions for AcedIQ Pro ($3/mo, price id in
 -- STRIPE_PRO_PRICE_ID). Adds a customer-id column to profiles (set on first
 -- checkout attempt, service-role only) and a subscriptions table synced
 -- exclusively from the verified /api/stripe/webhook handler -- the client

@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     if (profileError || !profile?.stripe_customer_id) {
       return NextResponse.json(
-        { error: "No billing account found for your StudyClash account yet." },
+        { error: "No billing account found for your AcedIQ account yet." },
         { status: 400 }
       );
     }

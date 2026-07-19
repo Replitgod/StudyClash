@@ -165,9 +165,9 @@ const DECK_TITLE_EXAMPLES = [
 
 const MIN_NOTES_CHARACTERS = 300;
 const LONG_NOTES_CHARACTERS = 15000;
-const LAST_COURSE_STORAGE_KEY = "studyjoust_last_course";
-const BETA_ACCESS_CODE_STORAGE_KEY = "studyjoust_beta_access_code";
-const CREATE_PREFS_STORAGE_KEY = "studyjoust_create_prefs_v1";
+const LAST_COURSE_STORAGE_KEY = "acediq_last_course";
+const BETA_ACCESS_CODE_STORAGE_KEY = "acediq_beta_access_code";
+const CREATE_PREFS_STORAGE_KEY = "acediq_create_prefs_v1";
 
 type CreatePrefs = {
   studentName?: string;

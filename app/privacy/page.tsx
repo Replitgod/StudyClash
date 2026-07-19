@@ -4,21 +4,21 @@ import { FLOATING_ACTION } from "@/lib/uiLayout";
 import { Reveal } from "@/app/components/ui/Reveal";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | StudyClash",
-  description: "How StudyClash handles account, study content, AI processing, and privacy requests.",
+  title: "Privacy Policy | AcedIQ",
+  description: "How AcedIQ handles account, study content, AI processing, and privacy requests.",
   alternates: {
     canonical: "/privacy",
   },
   openGraph: {
-    title: "Privacy Policy | StudyClash",
-    description: "Learn how StudyClash handles data in public beta.",
+    title: "Privacy Policy | AcedIQ",
+    description: "Learn how AcedIQ handles data in public beta.",
     url: "/privacy",
     images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Privacy Policy | StudyClash",
-    description: "StudyClash privacy policy for account and study data.",
+    title: "Privacy Policy | AcedIQ",
+    description: "AcedIQ privacy policy for account and study data.",
     images: ["/twitter-image"],
   },
 };
@@ -27,7 +27,7 @@ export default function PrivacyPage() {
   return (
     <main className={`relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] px-4 pt-12 text-white sm:px-6 sm:pt-16 ${FLOATING_ACTION.mobileBottomPadding}`}>
       <Reveal className="mx-auto w-full max-w-3xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-8">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">StudyClash Public Beta</p>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">AcedIQ Public Beta</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight">Privacy Policy</h1>
         <p className="mt-2 text-sm text-white/55">Last updated: July 9, 2026</p>
 
@@ -39,12 +39,12 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-base font-bold text-white">How we use it</h2>
-            <p className="mt-1">We use your data to run StudyClash features: generate decks, score battles, show weak-topic reports, and power VYRA coaching responses.</p>
+            <p className="mt-1">We use your data to run AcedIQ features: generate decks, score battles, show weak-topic reports, and power VYRA coaching responses.</p>
           </section>
 
           <section>
             <h2 className="text-base font-bold text-white">AI processing</h2>
-            <p className="mt-1">When you use AI features, relevant study context (your notes, uploaded material, and battle history) is sent to OpenAI from secure server routes to generate questions, explanations, and coaching responses. API keys are never exposed in the browser. We do not use your uploaded material to train StudyClash&apos;s own models. We don&apos;t control or independently verify how OpenAI itself retains or uses API data on its end &mdash; see <a href="https://openai.com/enterprise-privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-200 hover:text-indigo-100">OpenAI&apos;s own data usage policy</a> for their current terms.</p>
+            <p className="mt-1">When you use AI features, relevant study context (your notes, uploaded material, and battle history) is sent to OpenAI from secure server routes to generate questions, explanations, and coaching responses. API keys are never exposed in the browser. We do not use your uploaded material to train AcedIQ&apos;s own models. We don&apos;t control or independently verify how OpenAI itself retains or uses API data on its end &mdash; see <a href="https://openai.com/enterprise-privacy" target="_blank" rel="noopener noreferrer" className="text-indigo-200 hover:text-indigo-100">OpenAI&apos;s own data usage policy</a> for their current terms.</p>
           </section>
 
           <section>
@@ -64,7 +64,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-base font-bold text-white">Younger students</h2>
-            <p className="mt-1">StudyClash does not currently ask for or collect a student&apos;s age or date of birth, and we don&apos;t have a separate parental-consent flow for younger users. If you&apos;re a parent or guardian with questions about a student&apos;s account, <Link href="/contact" className="text-indigo-200 hover:text-indigo-100">contact us</Link> and we&apos;ll help directly.</p>
+            <p className="mt-1">AcedIQ does not currently ask for or collect a student&apos;s age or date of birth, and we don&apos;t have a separate parental-consent flow for younger users. If you&apos;re a parent or guardian with questions about a student&apos;s account, <Link href="/contact" className="text-indigo-200 hover:text-indigo-100">contact us</Link> and we&apos;ll help directly.</p>
           </section>
 
           <section>
@@ -74,7 +74,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-base font-bold text-white">Contact</h2>
-            <p className="mt-1">Questions about privacy: <Link href="/contact" className="text-indigo-200 hover:text-indigo-100">Contact StudyClash</Link>.</p>
+            <p className="mt-1">Questions about privacy: <Link href="/contact" className="text-indigo-200 hover:text-indigo-100">Contact AcedIQ</Link>.</p>
           </section>
         </div>
       </Reveal>

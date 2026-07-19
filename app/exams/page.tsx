@@ -13,7 +13,7 @@ import { Reveal } from "@/app/components/ui/Reveal";
 const PRIMARY_EXAM_TRACK = {
   slug: "ap",
   name: "AP Exams",
-  monthly: "Included in StudyClash Pro ($3/mo)",
+  monthly: "Included in AcedIQ Pro ($3/mo)",
   promise: "AI-generated practice questions styled after AP exam formats and scoring bands.",
   officialLabel: "Free-response questions from past AP exams",
   officialUrl: "https://apcentral.collegeboard.org/courses/past-exam-questions",
@@ -23,7 +23,7 @@ const UNREVIEWED_EXAM_TRACKS = [
   {
     slug: "mcat",
     name: "MCAT",
-    monthly: "Included in StudyClash Pro ($3/mo)",
+    monthly: "Included in AcedIQ Pro ($3/mo)",
     promise: "AI-generated multi-step reasoning questions with passage-heavy science prompts.",
     officialLabel: "AAMC free practice exam",
     officialUrl:
@@ -32,7 +32,7 @@ const UNREVIEWED_EXAM_TRACKS = [
   {
     slug: "lsat",
     name: "LSAT",
-    monthly: "Included in StudyClash Pro ($3/mo)",
+    monthly: "Included in AcedIQ Pro ($3/mo)",
     promise: "AI-generated argument structure, logical flaws, and timed pressure drills.",
     officialLabel: "LSAC free PrepTests (LawHub)",
     officialUrl: "https://www.lsac.org/lsat/prepare/official-lsat-practice-tests",
@@ -40,7 +40,7 @@ const UNREVIEWED_EXAM_TRACKS = [
   {
     slug: "nclex",
     name: "NCLEX",
-    monthly: "Included in StudyClash Pro ($3/mo)",
+    monthly: "Included in AcedIQ Pro ($3/mo)",
     promise: "AI-generated clinical judgment drills with safety-first prioritization patterns.",
     officialLabel: "Official NCLEX prep resources",
     officialUrl: "https://www.nclex.com/prepare.page",
@@ -50,7 +50,7 @@ const UNREVIEWED_EXAM_TRACKS = [
 // SAT has no generated drill track (College Board's own released practice
 // tests are already the best-in-class prep material for it) -- this card
 // only ever points to College Board's official free practice, never to a
-// StudyClash-generated substitute.
+// AcedIQ-generated substitute.
 const SAT_OFFICIAL_PRACTICE = {
   label: "Full-length official SAT practice tests",
   url: "https://satsuite.collegeboard.org/practice",
@@ -159,7 +159,7 @@ export default function ExamsLandingPage() {
                 </div>
 
                 {/* Real retired/official exams are copyrighted by their issuing
-                    org (AAMC, LSAC, NCSBN, College Board) -- StudyClash never
+                    org (AAMC, LSAC, NCSBN, College Board) -- AcedIQ never
                     hosts or reproduces them. This links straight to each org's
                     own free official practice instead. */}
                 <a
@@ -197,7 +197,7 @@ export default function ExamsLandingPage() {
 
         <Reveal className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center sm:p-6" delay={0.08}>
           <p className="text-sm text-white/70">
-            Main StudyClash flow still applies: create or try a deck, battle, review weak topics,
+            Main AcedIQ flow still applies: create or try a deck, battle, review weak topics,
             rematch, improve. Exam tunnels add stricter format and higher coaching depth.
           </p>
         </Reveal>

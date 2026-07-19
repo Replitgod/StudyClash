@@ -51,7 +51,7 @@ export default function CampaignsListPage() {
           href="/admin/marketing/campaigns/new"
           className="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white"
         >
-          Create StudyClash Campaign
+          Create AcedIQ Campaign
         </Link>
       </div>
 

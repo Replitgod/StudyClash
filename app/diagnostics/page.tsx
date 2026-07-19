@@ -144,7 +144,7 @@ export default function DiagnosticsLandingPage() {
                 </div>
                 <p className="mt-1 text-xs text-white/50">{exam.provider}</p>
                 <p className="mt-3 text-sm text-white/70">
-                  Quick or full-length diagnostic, adaptive modules, and a StudyClash score estimate.
+                  Quick or full-length diagnostic, adaptive modules, and a AcedIQ score estimate.
                 </p>
               </Link>
             ))}

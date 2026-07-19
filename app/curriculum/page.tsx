@@ -114,7 +114,7 @@ export default function CurriculumCoursesPage() {
         </span>
       </h1>
       <p className="mx-auto mt-3 max-w-xl text-center text-sm text-white/60">
-        Upload a textbook, syllabus, or a semester of notes. StudyClash reads it, maps every concept, and
+        Upload a textbook, syllabus, or a semester of notes. AcedIQ reads it, maps every concept, and
         builds a verified question bank you can track progress against.
       </p>
 

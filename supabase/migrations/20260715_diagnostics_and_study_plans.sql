@@ -88,7 +88,7 @@ values (
   'Digital SAT',
   'College Board',
   'available',
-  'This is an unofficial StudyClash diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.',
+  'This is an unofficial AcedIQ diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.',
   '{
     "sections": [
       {
@@ -128,12 +128,12 @@ on conflict (slug) do nothing;
 
 insert into public.exam_definitions (slug, name, provider, status, disclaimer, configuration)
 values
-  ('psat-nmsqt', 'PSAT/NMSQT', 'College Board', 'coming_soon', 'This is an unofficial StudyClash diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.', '{}'::jsonb),
-  ('act', 'ACT', 'ACT, Inc.', 'coming_soon', 'This is an unofficial StudyClash diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.', '{}'::jsonb),
-  ('lsat', 'LSAT', 'LSAC', 'coming_soon', 'This is an unofficial StudyClash diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.', '{}'::jsonb),
-  ('mcat', 'MCAT', 'AAMC', 'coming_soon', 'This is an unofficial StudyClash diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.', '{}'::jsonb),
-  ('gre', 'GRE', 'ETS', 'coming_soon', 'This is an unofficial StudyClash diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.', '{}'::jsonb),
-  ('ap-exams', 'AP Exams', 'College Board', 'coming_soon', 'This is an unofficial StudyClash diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.', '{}'::jsonb)
+  ('psat-nmsqt', 'PSAT/NMSQT', 'College Board', 'coming_soon', 'This is an unofficial AcedIQ diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.', '{}'::jsonb),
+  ('act', 'ACT', 'ACT, Inc.', 'coming_soon', 'This is an unofficial AcedIQ diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.', '{}'::jsonb),
+  ('lsat', 'LSAT', 'LSAC', 'coming_soon', 'This is an unofficial AcedIQ diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.', '{}'::jsonb),
+  ('mcat', 'MCAT', 'AAMC', 'coming_soon', 'This is an unofficial AcedIQ diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.', '{}'::jsonb),
+  ('gre', 'GRE', 'ETS', 'coming_soon', 'This is an unofficial AcedIQ diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.', '{}'::jsonb),
+  ('ap-exams', 'AP Exams', 'College Board', 'coming_soon', 'This is an unofficial AcedIQ diagnostic and is not affiliated with or endorsed by College Board, LSAC, AAMC, ACT, or other testing organizations.', '{}'::jsonb)
 on conflict (slug) do nothing;
 
 -- ============================================================

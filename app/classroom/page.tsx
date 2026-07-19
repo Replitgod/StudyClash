@@ -111,7 +111,7 @@ export default function ClassroomPage() {
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-white/65 sm:text-base">
           Teachers can launch a room code from the dashboard, and students can join instantly to battle the assigned deck.
-          StudyClash is still primarily built for individual students — Classroom is an early, secondary feature we&rsquo;re
+          AcedIQ is still primarily built for individual students — Classroom is an early, secondary feature we&rsquo;re
           still validating, not a fully built-out school product yet.
         </p>
 

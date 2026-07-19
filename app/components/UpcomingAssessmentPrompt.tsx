@@ -30,7 +30,7 @@ type Props = {
   deckTitle: string;
 };
 
-// Shown once, inline, after a normal StudyClash battle's results -- not a
+// Shown once, inline, after a normal AcedIQ battle's results -- not a
 // blocking auto-popup (the spec allows either "a section or modal"; a
 // dismissible inline card is the less intrusive reading of that). Only
 // meaningful for logged-in users, since a study plan needs a user_id.

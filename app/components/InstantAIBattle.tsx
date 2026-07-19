@@ -548,7 +548,7 @@ export default function InstantAIBattle() {
   // creates). Matches the same "don't gate sharing behind signup"
   // principle the real battle results page and demo already use.
   const handleCopyResult = async () => {
-    const shareMessage = `I scored ${playerScore}-${aiScore} against the AI on StudyClash${playerAccuracy != null ? ` (${playerAccuracy}% accuracy)` : ""}. Beat me: ${window.location.origin}/#battle-ai`;
+    const shareMessage = `I scored ${playerScore}-${aiScore} against the AI on AcedIQ${playerAccuracy != null ? ` (${playerAccuracy}% accuracy)` : ""}. Beat me: ${window.location.origin}/#battle-ai`;
     const copied = await copyTextToClipboard(shareMessage);
 
     if (copied) {

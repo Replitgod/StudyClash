@@ -672,7 +672,7 @@ export default function AdminPage() {
         </span>
       </h1>
       <p className="mt-3 max-w-md text-center text-sm text-white/50 sm:text-base">
-        Live overview of StudyClash usage and reports.
+        Live overview of AcedIQ usage and reports.
       </p>
 
       <Link

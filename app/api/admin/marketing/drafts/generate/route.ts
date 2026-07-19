@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
   if (!profile) {
     return NextResponse.json(
-      { error: "Set up the StudyClash marketing profile first (Settings page)." },
+      { error: "Set up the AcedIQ marketing profile first (Settings page)." },
       { status: 400 }
     );
   }

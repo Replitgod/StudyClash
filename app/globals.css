@@ -3,7 +3,7 @@
 /*
  * Design tokens — additive Tailwind v4 @theme extensions.
  *
- * StudyClash's system: one primary brand hue (indigo — AI-powered mastery),
+ * AcedIQ's system: one primary brand hue (indigo — AI-powered mastery),
  * one energetic accent hue (green — competitive/win energy, already the
  * app's de facto "battle win" color via GRADIENTS.battle and every
  * correct-answer/confetti/success state), neutral dark surfaces, and three
@@ -104,7 +104,7 @@ body {
   scroll-behavior: smooth;
 }
 
-/* Dark system -- the canonical StudyClash surface (redesign direction:
+/* Dark system -- the canonical AcedIQ surface (redesign direction:
    refined dark "battle energy", extended app-wide). This was previously a
    light SaaS baseline used only by the homepage while all 42 other routes
    set their own literal dark background per page; that split is being

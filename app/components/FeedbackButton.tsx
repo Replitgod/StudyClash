@@ -6,7 +6,7 @@ import { trackEvent } from "@/lib/trackEvent";
 import { OPEN_FEEDBACK_EVENT } from "@/lib/uiLayout";
 import { Modal } from "@/app/components/ui/Modal";
 
-const FEEDBACK_DRAFT_KEY = "studyjoust_feedback_draft";
+const FEEDBACK_DRAFT_KEY = "acediq_feedback_draft";
 
 const FEEDBACK_TEMPLATES = [
   "Wrong answer marked correct",
