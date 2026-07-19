@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { useRef } from "react";
+import { motion, useInView, useReducedMotion } from "motion/react";
 import { springSmooth, REDUCED_MOTION_TRANSITION } from "@/lib/motion";
 
 // Scroll-triggered rise for long marketing/content pages -- sections settle
@@ -15,6 +16,16 @@ import { springSmooth, REDUCED_MOTION_TRANSITION } from "@/lib/motion";
 // before indexing). This page carries real SEO weight (FAQPage schema,
 // keyword-targeted copy) -- text must never be invisible by default.
 // Worst-case failure mode here is "sits 20px low forever", never "invisible".
+//
+// Driven by useInView + a plain `animate` prop rather than the declarative
+// whileInView/viewport shorthand -- on this stack (motion 12.42.2 + Next
+// 16.2.10 canary), whileInView silently never applies any style at all
+// (verified with an isolated repro, reproduces in both dev and a production
+// build). This means the rise motion documented above has never actually
+// played anywhere it was used (terms/privacy/exams/contact) -- content
+// rendered directly at its final position instead, which is exactly the
+// documented safe worst case, so nothing was ever visibly broken, just
+// static instead of animated.
 export function Reveal({
   children,
   className,
@@ -24,13 +35,18 @@ export function Reveal({
   className?: string;
   delay?: number;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, margin: "-80px" });
   const reducedMotion = useReducedMotion();
+
+  const hidden = { opacity: 1, y: reducedMotion ? 0 : 20 };
+  const visible = { opacity: 1, y: 0 };
 
   return (
     <motion.div
-      initial={{ opacity: 1, y: reducedMotion ? 0 : 20 }}
-      whileInView={{ y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
+      ref={ref}
+      initial={hidden}
+      animate={inView ? visible : hidden}
       transition={reducedMotion ? REDUCED_MOTION_TRANSITION : { ...springSmooth, delay }}
       className={className}
     >
