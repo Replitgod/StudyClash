@@ -247,7 +247,7 @@ export default function Home() {
 
             <StaggerItem>
               <p className="mt-4 max-w-[560px] text-base leading-relaxed text-[#64748B] sm:text-lg">
-                StudyClash maps your material, finds your weak skills, and turns your personalized plan into competitive study battles.
+                AcedIQ maps your material, finds your weak skills, and turns your personalized plan into competitive study battles.
               </p>
             </StaggerItem>
 
