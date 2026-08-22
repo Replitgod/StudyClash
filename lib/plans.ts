@@ -45,17 +45,18 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
   free_beta: {
     id: "free_beta",
     label: "Free",
-    tagline: "Everyone starts here",
+    tagline: "Everything, unlocked",
     price: "$0",
     dailyLimit: FREE_PLAN_LIMIT_SHORT,
     features: [
-      "Demo battles",
-      "Limited deck creation",
-      "Basic results",
-      "Friend challenges",
+      "Unlimited decks and uploads",
+      "Unlimited practice and tests",
+      "Unlimited Vyra (AI tutor)",
+      "Full mastery tracking and mistake repair",
     ],
     tier: "free",
     publiclyListed: true,
+    highlight: true,
   },
   pro_individual: {
     id: "pro_individual",
@@ -76,7 +77,6 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
     ],
     tier: "priority",
     publiclyListed: true,
-    highlight: true,
   },
   team_pass: {
     id: "team_pass",

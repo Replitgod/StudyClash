@@ -13,7 +13,7 @@ export type ButtonSize = "sm" | "md" | "lg";
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary: BRAND.indigo,
-  battle: `${GRADIENTS.battle} text-[#052538] shadow-glow-indigo-sm hover:shadow-glow-indigo-md`,
+  battle: `${GRADIENTS.battle} text-white shadow-glow-indigo-sm hover:shadow-glow-indigo-md`,
   secondary:
     "border border-indigo-400/30 bg-indigo-500/10 text-indigo-100 hover:border-indigo-300/45 hover:bg-indigo-500/20",
   success:

@@ -173,7 +173,7 @@ export default function StudyPlanDetailPage() {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[#05050a] px-4 text-center text-white">
         <p className="text-sm text-red-300">{error || "Plan not found."}</p>
-        <Link href="/dashboard" className="text-sm font-semibold text-indigo-300">
+        <Link href="/home" className="text-sm font-semibold text-indigo-300">
           &larr; Back to dashboard
         </Link>
       </main>
@@ -188,7 +188,7 @@ export default function StudyPlanDetailPage() {
   return (
     <main className="min-h-dvh bg-[#05050a] px-4 py-10 text-white sm:px-6">
       <div className="mx-auto max-w-3xl">
-        <Link href="/dashboard" className="text-sm font-semibold text-indigo-300">
+        <Link href="/home" className="text-sm font-semibold text-indigo-300">
           &larr; Back to dashboard
         </Link>
 

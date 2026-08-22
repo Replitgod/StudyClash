@@ -613,7 +613,7 @@ export default function AdminPage() {
             {accessError || "Could not load the admin dashboard."}
           </p>
           <Link
-            href="/account"
+            href="/settings"
             className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white/80 transition-colors duration-150 hover:border-white/20 hover:bg-white/10"
           >
             Back to Account

@@ -47,3 +47,12 @@ export const UI_SFX = {
   menuOpen: () => playTone([{ freq: 660, startMs: 0, durationMs: 55 }, { freq: 900, startMs: 50, durationMs: 65 }]),
   menuClose: () => playTone([{ freq: 720, startMs: 0, durationMs: 65 }]),
 };
+
+// Answer-outcome tones -- shared by every battle surface (the homepage demo
+// widget and the real battle screen) so a "correct"/"wrong" sound means the
+// same thing everywhere in the app, not a slightly different jingle per
+// component.
+export const BATTLE_SFX = {
+  correct: () => playTone([{ freq: 720, startMs: 0, durationMs: 90 }, { freq: 980, startMs: 90, durationMs: 120 }]),
+  wrong: () => playTone([{ freq: 220, startMs: 0, durationMs: 180, type: "sawtooth" }]),
+};

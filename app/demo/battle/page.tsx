@@ -730,7 +730,7 @@ export default function DemoBattlePage() {
 							>
 								Start Guided Demo
 							</Button>
-							<Button href="/create" variant="ghost">
+							<Button href="/home" variant="ghost">
 								Create Your Own Deck
 							</Button>
 						</div>
@@ -1084,13 +1084,13 @@ export default function DemoBattlePage() {
 								Run Demo Again
 							</button>
 							<Link
-								href="/create"
+								href="/home"
 								className="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-5 py-3 text-sm font-bold text-white text-center shadow-[0_0_30px_-10px_rgba(79,70,229,0.6)] transition-transform duration-200 active:scale-95 sm:hover:scale-[1.02]"
 							>
 								Create a Real Deck
 							</Link>
 							<Link
-								href="/dashboard"
+								href="/home"
 								className="rounded-xl border border-indigo-400/20 bg-indigo-500/10 px-5 py-3 text-sm font-bold text-indigo-200 text-center transition-colors duration-150 hover:border-indigo-300/40 hover:bg-indigo-500/15"
 							>
 								Go to Dashboard

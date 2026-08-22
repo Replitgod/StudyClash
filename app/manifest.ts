@@ -25,10 +25,10 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       {
-        name: "Create Deck",
-        short_name: "Create",
-        description: "Upload notes and generate AI questions",
-        url: "/create",
+        name: "Start studying",
+        short_name: "Study",
+        description: "Add material and start a study session",
+        url: "/home",
       },
       {
         name: "Demo Battle",

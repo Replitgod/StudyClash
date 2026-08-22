@@ -3,10 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import OpenAI from "openai";
 import { createHash } from "node:crypto";
 import { FREE_PLAN_IDS, PRIORITY_PLAN_IDS } from "@/lib/plans";
-import { FREE_DAILY_GENERATION_CAP, FREE_DAILY_PDF_CAP } from "@/lib/planLimits";
 import { hasUnbalancedMathDelimiters } from "@/lib/server/mathValidation";
 import { shuffleAnswerChoices } from "@/lib/server/questionShuffle";
-import { TERRA_TASK, type ReasoningEffort } from "@/lib/server/aiModels";
+import { TERRA_TASK, LUNA_TASK, type ReasoningEffort } from "@/lib/server/aiModels";
 
 // Reasoning-effort models spend part of max_completion_tokens on hidden
 // reasoning before writing visible output, unlike the flat-rate gpt-4o-mini
@@ -79,11 +78,11 @@ const VECTOR_CACHE_CANDIDATE_LIMIT = 120;
 const VECTOR_CACHE_MIN_SIMILARITY = 0.9;
 const MAX_NOTES_CHARACTERS = 120_000;
 const USER_BURST_WINDOW_SECONDS = 60;
-const USER_BURST_LIMIT_FREE = 2;
-const USER_BURST_LIMIT_PAID = 6;
+const USER_BURST_LIMIT_FREE = 12;
+const USER_BURST_LIMIT_PAID = 12;
 const IP_BURST_WINDOW_SECONDS = 60;
-const IP_BURST_LIMIT_FREE = 6;
-const IP_BURST_LIMIT_PAID = 20;
+const IP_BURST_LIMIT_FREE = 40;
+const IP_BURST_LIMIT_PAID = 40;
 const MAX_COMPLETION_TOKENS_DEFAULT = 2200;
 
 // Hidden reasoning tokens for gpt-5.6-family models count against
@@ -101,6 +100,25 @@ const REASONING_TOKEN_HEADROOM: Record<ReasoningEffort, number> = {
   high: 5000,
   xhigh: 10000,
 };
+
+// The fact-check below only has to spot flat contradictions between a stated
+// answer and the source notes -- it never has to author anything. That's a
+// Luna-class extraction job, not a Terra reasoning job, and running it on
+// Terra/medium made it cost about as much wall time as the generation call
+// it was verifying. Overridable if the cheaper model ever proves too loose.
+const GROUNDING_CHECK_TASK = {
+  model: process.env.OPENAI_MODEL_GROUNDING || LUNA_TASK.model,
+  reasoning_effort:
+    (process.env.OPENAI_REASONING_GROUNDING as ReasoningEffort) || "low",
+} as const;
+
+// Reasoning models get disproportionately slower as the requested output
+// grows, so one 15-question call runs much longer than two 8-question calls
+// issued at the same time. Above this threshold we fan out; below it the
+// single call is already fast enough that the extra overhead isn't worth it.
+const PARALLEL_CHUNK_THRESHOLD = 10;
+const PARALLEL_CHUNK_TARGET_SIZE = 8;
+const PARALLEL_CHUNK_MAX = 3;
 
 function computeCompletionTokenBudget(args: {
   itemCount: number;
@@ -183,26 +201,6 @@ async function verifyTurnstileToken(args: {
   } catch {
     return false;
   }
-}
-
-function parseAllowedBetaCodes(rawValue: string): string[] {
-  return rawValue
-    .split(",")
-    .map((code) => code.trim())
-    .filter(Boolean);
-}
-
-function isBetaAccessCodeValid(submittedCode: string): boolean {
-  const rawCodes =
-    process.env.BETA_ACCESS_CODES || process.env.BETA_ACCESS_CODE || "";
-  const allowedCodes = parseAllowedBetaCodes(rawCodes);
-
-  // If no beta codes are configured, skip enforcement for local/dev safety.
-  if (allowedCodes.length === 0) {
-    return true;
-  }
-
-  return allowedCodes.some((allowed) => allowed === submittedCode.trim());
 }
 
 // Splits a total question count into easy/medium/hard counts. For "mixed",
@@ -361,6 +359,39 @@ function validateNotes(notes: string): string | null {
   return null;
 }
 
+// "Topic mode": the student typed what they are studying ("AP World Unit 3",
+// "photosynthesis") instead of pasting notes or uploading a file.
+//
+// Everything downstream of here -- validation, generation, the verbatim
+// source_excerpt check, the Notes tab -- is built around having real study
+// material to work from. Rather than threading a second, notes-free code
+// path through all of it, topic mode writes the study material first and
+// then feeds it through the exact same pipeline. That also means the
+// student ends up with a real set of notes they can read, not just a quiz
+// that came from nowhere.
+async function expandTopicIntoStudyMaterial(topic: string): Promise<string> {
+  const completion = await openai.chat.completions.create({
+    model: LUNA_TASK.model,
+    reasoning_effort: LUNA_TASK.reasoning_effort,
+    max_completion_tokens: 4000,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You write concise, accurate study notes for students. Output plain prose with short paragraphs and clear topic sentences. No markdown, no headings with #, no bullet characters, no preamble, no meta-commentary. Only the study material itself.",
+      },
+      {
+        role: "user",
+        content: `Write approximately 500-700 words of study notes covering the most important, testable content for this topic: "${topic}".
+
+Cover the key definitions, the main concepts, the cause-and-effect relationships, and the specific facts, names, dates, formulas, or examples a student would be expected to know. Be concrete and specific -- a student should be able to answer exam questions from these notes alone. If the topic is ambiguous, cover the most common academic interpretation.`,
+      },
+    ],
+  });
+
+  return (completion.choices[0]?.message?.content || "").trim();
+}
+
 function buildExamGuidanceBlock(args: {
   examTrack?: ExamTrack;
   examMode?: string;
@@ -484,6 +515,27 @@ function normalizeQuestionText(value: unknown, index: number): string {
     return `Question ${index + 1} from your notes`;
   }
   return text;
+}
+
+// Keeps the first occurrence of each question text and discards later ones.
+// Only used to merge concurrently-generated chunks, where the writers can't
+// see each other and may land on the same fact.
+function dropDuplicateQuestionTexts(questions: unknown[]): unknown[] {
+  const seen = new Set<string>();
+
+  return questions.filter((question) => {
+    const text =
+      question && typeof question === "object"
+        ? (question as Record<string, unknown>).question_text
+        : null;
+
+    if (typeof text !== "string" || !text.trim()) return true;
+
+    const key = text.trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function ensureUniqueQuestionTexts(
@@ -784,7 +836,7 @@ async function runGroundingCheck(
       itemCount: questions.length,
       perItemTokens: 60,
       baseTokens: 300,
-      effort: TERRA_TASK.reasoning_effort,
+      effort: GROUNDING_CHECK_TASK.reasoning_effort,
       floor: 1000,
     });
 
@@ -796,8 +848,8 @@ async function runGroundingCheck(
       .join("\n\n");
 
     const completion = await openai.chat.completions.create({
-      model: TERRA_TASK.model,
-      reasoning_effort: TERRA_TASK.reasoning_effort,
+      model: GROUNDING_CHECK_TASK.model,
+      reasoning_effort: GROUNDING_CHECK_TASK.reasoning_effort,
       messages: [
         {
           role: "user",
@@ -915,26 +967,114 @@ function verifySourceExcerpts(
 // Calls OpenAI once and returns either the validated questions or an
 // error describing what went wrong (parsing failure, validation failure,
 // or a failed fact-check against the source notes).
-async function generateAndValidate(
-  notes: string,
-  genParams: {
-    totalQuestions: number;
-    easyCount: number;
-    mediumCount: number;
-    hardCount: number;
-    choiceCount: number;
-    questionType: QuestionType;
-    gradeLevel?: string;
-    topicFocus?: string;
-    examTrack?: ExamTrack;
-    examMode?: string;
-    additionalGuidance?: string;
-    reasoningEffort?: ReasoningEffort;
+type GenParams = {
+  totalQuestions: number;
+  easyCount: number;
+  mediumCount: number;
+  hardCount: number;
+  choiceCount: number;
+  questionType: QuestionType;
+  gradeLevel?: string;
+  topicFocus?: string;
+  examTrack?: ExamTrack;
+  examMode?: string;
+  additionalGuidance?: string;
+  reasoningEffort?: ReasoningEffort;
+  // Set on the retry path: a retry is already the slow case, and a single
+  // call is the shape most likely to satisfy strict validation, so it never
+  // fans out.
+  disableParallelChunks?: boolean;
+};
+
+type ChunkShape = {
+  totalQuestions: number;
+  easyCount: number;
+  mediumCount: number;
+  hardCount: number;
+};
+
+// Splits the requested question count into chunks that can be generated
+// concurrently. Difficulties are dealt round-robin rather than in contiguous
+// blocks so every chunk sees a representative easy/medium/hard spread, and
+// the per-chunk counts always sum back to exactly what the caller asked for
+// -- validateQuestions checks the totals, so any drift here would fail the
+// whole generation.
+function splitIntoParallelChunks(genParams: GenParams): ChunkShape[] {
+  const single: ChunkShape = {
+    totalQuestions: genParams.totalQuestions,
+    easyCount: genParams.easyCount,
+    mediumCount: genParams.mediumCount,
+    hardCount: genParams.hardCount,
+  };
+
+  if (
+    genParams.disableParallelChunks ||
+    genParams.totalQuestions < PARALLEL_CHUNK_THRESHOLD
+  ) {
+    return [single];
   }
-): Promise<{ questions: GeneratedQuestion[] } | { error: string }> {
-  const effort = genParams.reasoningEffort ?? TERRA_TASK.reasoning_effort;
+
+  const chunkCount = Math.min(
+    PARALLEL_CHUNK_MAX,
+    Math.ceil(genParams.totalQuestions / PARALLEL_CHUNK_TARGET_SIZE)
+  );
+
+  if (chunkCount <= 1) return [single];
+
+  const ordered = [
+    ...Array(genParams.easyCount).fill("easy"),
+    ...Array(genParams.mediumCount).fill("medium"),
+    ...Array(genParams.hardCount).fill("hard"),
+  ] as Array<"easy" | "medium" | "hard">;
+
+  const buckets = Array.from({ length: chunkCount }, () => ({
+    easy: 0,
+    medium: 0,
+    hard: 0,
+  }));
+
+  ordered.forEach((difficulty, index) => {
+    buckets[index % chunkCount][difficulty] += 1;
+  });
+
+  return buckets
+    .map((bucket) => ({
+      totalQuestions: bucket.easy + bucket.medium + bucket.hard,
+      easyCount: bucket.easy,
+      mediumCount: bucket.medium,
+      hardCount: bucket.hard,
+    }))
+    .filter((chunk) => chunk.totalQuestions > 0);
+}
+
+// Concurrent chunks can't see each other's output, so without this they all
+// reach for the same headline facts and the merged set trips the duplicate
+// check. Pointing each chunk at a different slice of the notes keeps overlap
+// low and, as a side effect, spreads coverage across the whole document.
+function buildChunkGuidance(chunkIndex: number, chunkCount: number): string {
+  if (chunkCount <= 1) return "";
+
+  return (
+    `You are writing part ${chunkIndex + 1} of ${chunkCount} of a single quiz; ` +
+    `the other parts are being written at the same time by other writers who cannot see your output. ` +
+    `Draw your questions primarily from section ${chunkIndex + 1} of ${chunkCount} of the notes, ` +
+    `reading top to bottom, so the finished quiz covers the whole document without repeating itself. ` +
+    `Do not write questions about the single most obvious headline fact in the notes unless it falls in your section.`
+  );
+}
+
+// One OpenAI generation call. Returns the raw parsed `questions` value --
+// shape validation happens once on the merged result, not per chunk.
+async function runGenerationCall(
+  notes: string,
+  genParams: GenParams,
+  chunk: ChunkShape,
+  effort: ReasoningEffort,
+  chunkIndex: number,
+  chunkCount: number
+): Promise<{ questions: unknown } | { error: string }> {
   const maxCompletionTokens = computeCompletionTokenBudget({
-    itemCount: genParams.totalQuestions,
+    itemCount: chunk.totalQuestions,
     perItemTokens: 260,
     baseTokens: 800,
     effort,
@@ -944,6 +1084,11 @@ async function generateAndValidate(
     ),
   });
 
+  const chunkGuidance = buildChunkGuidance(chunkIndex, chunkCount);
+  const additionalGuidance = [genParams.additionalGuidance, chunkGuidance]
+    .filter(Boolean)
+    .join(" ");
+
   const completion = await openai.chat.completions.create({
     model: TERRA_TASK.model,
     reasoning_effort: effort,
@@ -952,16 +1097,16 @@ async function generateAndValidate(
         role: "user",
         content: buildPrompt({
           notes,
-          totalQuestions: genParams.totalQuestions,
-          easyCount: genParams.easyCount,
-          mediumCount: genParams.mediumCount,
-          hardCount: genParams.hardCount,
+          totalQuestions: chunk.totalQuestions,
+          easyCount: chunk.easyCount,
+          mediumCount: chunk.mediumCount,
+          hardCount: chunk.hardCount,
           questionType: genParams.questionType,
           gradeLevel: genParams.gradeLevel,
           topicFocus: genParams.topicFocus,
           examTrack: genParams.examTrack,
           examMode: genParams.examMode,
-          additionalGuidance: genParams.additionalGuidance,
+          additionalGuidance: additionalGuidance || undefined,
         }),
       },
     ],
@@ -975,12 +1120,49 @@ async function generateAndValidate(
     return { error: "OpenAI did not return any content." };
   }
 
-  let parsed: { questions?: unknown };
   try {
-    parsed = JSON.parse(rawContent);
+    const parsed = JSON.parse(rawContent) as { questions?: unknown };
+    return { questions: parsed.questions };
   } catch {
     return { error: "Failed to parse AI response as JSON." };
   }
+}
+
+async function generateAndValidate(
+  notes: string,
+  genParams: GenParams
+): Promise<{ questions: GeneratedQuestion[] } | { error: string }> {
+  const effort = genParams.reasoningEffort ?? TERRA_TASK.reasoning_effort;
+  const chunks = splitIntoParallelChunks(genParams);
+
+  const chunkResults = await Promise.all(
+    chunks.map((chunk, index) =>
+      runGenerationCall(notes, genParams, chunk, effort, index, chunks.length)
+    )
+  );
+
+  const failed = chunkResults.find((result) => "error" in result);
+  if (failed && "error" in failed) {
+    return { error: failed.error };
+  }
+
+  const merged: unknown[] = [];
+  for (const result of chunkResults) {
+    const chunkQuestions = (result as { questions: unknown }).questions;
+    if (!Array.isArray(chunkQuestions)) {
+      return { error: "AI response was not a list of questions." };
+    }
+    merged.push(...chunkQuestions);
+  }
+
+  // Drop cross-chunk repeats outright rather than letting the normalizer
+  // rename them to "... (2)", which would ship the student two versions of
+  // the same question. Dropping leaves the merged set short, which fails the
+  // count check below and falls through to the single-call retry -- slower,
+  // but the student still gets a full distinct quiz.
+  const deduped = chunks.length > 1 ? dropDuplicateQuestionTexts(merged) : merged;
+
+  const parsed: { questions?: unknown } = { questions: deduped };
 
   const expected = {
     total: genParams.totalQuestions,
@@ -1546,8 +1728,8 @@ export async function POST(req: NextRequest) {
       studentName,
       courseName,
       deckTitle,
-      notes,
-      betaAccessCode,
+      notes: submittedNotes,
+      sourceMode,
       topicFocus,
       gradeLevel,
       difficulty,
@@ -1562,14 +1744,17 @@ export async function POST(req: NextRequest) {
 
     const normalizedUploadKind = normalizeUploadKind(uploadKind);
 
-    if (!studentName || !courseName || !deckTitle || !notes) {
+    if (!studentName || !courseName || !deckTitle || !submittedNotes) {
       return NextResponse.json(
         { error: "Missing required fields." },
         { status: 400 }
       );
     }
 
-    if (typeof notes !== "string" || notes.trim().length > MAX_NOTES_CHARACTERS) {
+    if (
+      typeof submittedNotes !== "string" ||
+      submittedNotes.trim().length > MAX_NOTES_CHARACTERS
+    ) {
       return NextResponse.json(
         {
           error:
@@ -1578,6 +1763,12 @@ export async function POST(req: NextRequest) {
         { status: 413 }
       );
     }
+
+    const isTopicMode = sourceMode === "topic";
+
+    // Reassignable because topic mode replaces it with generated study
+    // material further down (see expandTopicIntoStudyMaterial).
+    let notes: string = submittedNotes;
 
     const turnstileRequired =
       (process.env.TURNSTILE_REQUIRED || "").trim().toLowerCase() === "true";
@@ -1605,12 +1796,46 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Load the user's profile to find their plan
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("plan")
-      .eq("id", user.id)
-      .single();
+    // 3. Load the profile, both burst counters, and today's usage together.
+    // None of these depend on each other, and running them serially cost a
+    // full round trip each before generation could even start. The checks
+    // below still run in their original order, so which error a blocked
+    // request sees is unchanged.
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfTodayIso = startOfToday.toISOString();
+    const userBurstSince = new Date(
+      Date.now() - USER_BURST_WINDOW_SECONDS * 1000
+    ).toISOString();
+    const ipBurstSince = new Date(
+      Date.now() - IP_BURST_WINDOW_SECONDS * 1000
+    ).toISOString();
+
+    const [
+      profileResult,
+      userBurstResult,
+      ipBurstResult,
+      todayCountResult,
+    ] = await Promise.all([
+      supabase.from("profiles").select("plan").eq("id", user.id).single(),
+      supabase
+        .from("generation_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", userBurstSince),
+      supabase
+        .from("generation_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("ip_hash", clientIpHash)
+        .gte("created_at", ipBurstSince),
+      supabase
+        .from("generation_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("created_at", startOfTodayIso),
+    ]);
+
+    const { data: profileData, error: profileError } = profileResult;
 
     if (profileError || !profileData) {
       return NextResponse.json(
@@ -1639,16 +1864,7 @@ export async function POST(req: NextRequest) {
     const isPriorityPlan = PRIORITY_PLAN_IDS.has(activePlanId);
     const userBurstLimit = isFreePlan ? USER_BURST_LIMIT_FREE : USER_BURST_LIMIT_PAID;
     const ipBurstLimit = isFreePlan ? IP_BURST_LIMIT_FREE : IP_BURST_LIMIT_PAID;
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-    const startOfTodayIso = startOfToday.toISOString();
-
-    const userBurstSince = new Date(Date.now() - USER_BURST_WINDOW_SECONDS * 1000).toISOString();
-    const { count: userBurstCount, error: userBurstError } = await supabase
-      .from("generation_logs")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .gte("created_at", userBurstSince);
+    const { count: userBurstCount, error: userBurstError } = userBurstResult;
 
     if (userBurstError) {
       return NextResponse.json(
@@ -1664,12 +1880,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const ipBurstSince = new Date(Date.now() - IP_BURST_WINDOW_SECONDS * 1000).toISOString();
-    const { count: ipBurstCount, error: ipBurstError } = await supabase
-      .from("generation_logs")
-      .select("id", { count: "exact", head: true })
-      .eq("ip_hash", clientIpHash)
-      .gte("created_at", ipBurstSince);
+    const { count: ipBurstCount, error: ipBurstError } = ipBurstResult;
 
     if (!ipBurstError && (ipBurstCount || 0) >= ipBurstLimit) {
       return NextResponse.json(
@@ -1681,97 +1892,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (isFreePlan) {
-      if (typeof betaAccessCode !== "string" || !betaAccessCode.trim()) {
-        return NextResponse.json(
-          { error: "Beta access code is required." },
-          { status: 400 }
-        );
-      }
+    // Beta access codes and free-plan generation caps were removed when
+    // AcedIQ became open/unlimited. See lib/planLimits.ts -- the caps there
+    // are `null`, meaning "no limit", so there is nothing to enforce here.
 
-      if (!isBetaAccessCodeValid(betaAccessCode)) {
-        return NextResponse.json(
-          { error: "Invalid beta access code." },
-          { status: 403 }
-        );
-      }
-    }
+    // Today's generation count is shared by the free-plan cap here and the
+    // plan daily-limit check below -- it used to be fetched twice.
+    const { count: generationCountToday, error: generationCountError } =
+      todayCountResult;
 
-    if (isFreePlan) {
-      const { count: generationCountToday, error: generationCountError } = await supabase
-        .from("generation_logs")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .gte("created_at", startOfTodayIso);
-
-      if (generationCountError) {
-        return NextResponse.json(
-          { error: "Could not check your generation usage right now. Please try again." },
-          { status: 500 }
-        );
-      }
-
-      if ((generationCountToday || 0) >= FREE_DAILY_GENERATION_CAP) {
-        return NextResponse.json(
-          {
-            error: `You've generated ${FREE_DAILY_GENERATION_CAP} decks today, so new deck generation is paused until tomorrow on the Free plan. You can still battle your existing decks. Upgrade to Student Pro to generate anytime.`,
-          },
-          { status: 429 }
-        );
-      }
-
-      if (normalizedUploadKind === "pdf") {
-        const { count: pdfCountToday, error: pdfCountError } = await supabase
-          .from("generation_logs")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("source_kind", "pdf")
-          .gte("created_at", startOfTodayIso);
-
-        if (pdfCountError) {
-          return NextResponse.json(
-            { error: "Could not check your PDF usage right now. Please try again." },
-            { status: 500 }
-          );
-        }
-
-        if ((pdfCountToday || 0) >= FREE_DAILY_PDF_CAP) {
-          return NextResponse.json(
-            {
-              error:
-                "Free plan limit reached: 2 PDF uploads today. Upgrade to Student Pro for unlimited uploads.",
-            },
-            { status: 429 }
-          );
-        }
-      }
-    }
-
-    // 5. If the plan has a limit (not unlimited), count today's generations
-    if (dailyLimit !== null) {
-      const { count, error: countError } = await supabase
-        .from("generation_logs")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", user.id)
-        .gte("created_at", startOfTodayIso);
-
-      if (countError) {
-        return NextResponse.json(
-          { error: "Could not check your usage. Please try again." },
-          { status: 500 }
-        );
-      }
-
-      if ((count || 0) >= dailyLimit) {
-        const message = isFreePlan
-          ? "Daily generation limit reached for the Free plan. Upgrade on Pricing for higher limits."
-          : "Daily generation limit reached.";
-        return NextResponse.json(
-          { error: message },
-          { status: 429 }
-        );
-      }
-    }
+    // 5. Daily generation limits are disabled -- AcedIQ is unlimited on
+    // every plan (lib/planLimits.ts). `dailyLimit` from membership_plans and
+    // today's generation count are still read above because generation_logs
+    // rows are written for history/analytics, but neither can block a
+    // request any more.
+    void dailyLimit;
+    void generationCountToday;
+    void generationCountError;
 
     // Sanitize the guided generation fields. These only ever shape the
     // prompt/validation below — they are not stored on the deck itself, so
@@ -1814,6 +1951,35 @@ export async function POST(req: NextRequest) {
       sanitizedDifficultyMode
     );
     const choiceCount = sanitizedQuestionType === "true_false" ? 2 : 4;
+
+    if (isTopicMode) {
+      try {
+        const written = await expandTopicIntoStudyMaterial(notes.trim().slice(0, 300));
+        if (written.split(/\s+/).length < MIN_NOTES_WORD_COUNT) {
+          return NextResponse.json(
+            {
+              error:
+                "We could not find enough to teach on that topic. Try being a bit more specific, or paste your notes instead.",
+            },
+            { status: 422 }
+          );
+        }
+        notes = written.slice(0, MAX_NOTES_CHARACTERS);
+      } catch (topicError) {
+        console.error(
+          "Topic expansion failed:",
+          topicError instanceof Error ? topicError.message : topicError
+        );
+        return NextResponse.json(
+          {
+            error:
+              "We could not build study material for that topic. Please try again, or paste your notes instead.",
+          },
+          { status: 502 }
+        );
+      }
+    }
+
     const sourceHash = buildSourceHash(notes);
     const sourceVector = buildSourceVector(notes);
     const cacheKey = buildGenerationCacheKey({
@@ -2007,6 +2173,7 @@ export async function POST(req: NextRequest) {
           `Your previous output failed strict validation: ${result.error}. ` +
           "Return exactly the requested number of questions, exact answer choice count per question type, and an exact easy/medium/hard mix.",
         reasoningEffort: "high",
+        disableParallelChunks: true,
       });
     }
 

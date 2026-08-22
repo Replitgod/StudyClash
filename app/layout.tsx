@@ -1,9 +1,7 @@
 ﻿import FeedbackButton from "./components/LazyFeedbackButton";
-import FloatingBattleCTA from "./components/FloatingBattleCTA";
 import HashAnchorScroller from "./components/HashAnchorScroller";
-import MainContentShell from "./components/MainContentShell";
 import { MarketingAttributionCapture } from "./components/MarketingAttributionCapture";
-import Navigation from "./components/Navigation";
+import AppFrame from "./components/app/AppFrame";
 import { PageTransition } from "./components/PageTransition";
 import { AuthProvider } from "@/lib/useAuth";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
@@ -27,7 +25,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#04070f",
+  themeColor: "#0a0b0f",
   colorScheme: "dark",
 };
 
@@ -154,16 +152,15 @@ export default function RootLayout({
             <MarketingAttributionCapture />
             <a
               href="#main-content"
-              className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:rounded-lg focus:bg-[#0b1f2a] focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-indigo-100"
+              className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:rounded-lg focus:bg-[var(--panel-raised)] focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-[var(--text-1)]"
               style={{ zIndex: UI_Z_INDEX.skipLink }}
             >
               Skip to main content
             </a>
-            <Navigation />
-            <MainContentShell>
+            <AppFrame>
               <PageTransition>{children}</PageTransition>
-            </MainContentShell>
-            <FloatingBattleCTA />
+            </AppFrame>
+            {/* Renders nothing until "Send feedback" is opened from Settings. */}
             <FeedbackButton />
           </AuthProvider>
         </MotionConfig>

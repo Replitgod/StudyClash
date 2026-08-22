@@ -1,4 +1,4 @@
--- Adds support for a third question format alongside multiple_choice/
+ -- Adds support for a third question format alongside multiple_choice/
 -- true_false: "open_response" (argumentation battles and step-by-step STEM
 -- battles), where the student types a free-text answer instead of picking
 -- from answer_choices, and grading happens via an LLM rubric check

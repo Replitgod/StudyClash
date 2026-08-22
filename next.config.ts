@@ -18,6 +18,23 @@ const nextConfig: NextConfig = {
   // Used by lib/server/curriculum/extraction.ts to render a scanned PDF
   // page to an image before OCR.
   serverExternalPackages: ["@napi-rs/canvas"],
+
+  // The redesign collapsed the app to four destinations. These are the old
+  // URLs that no longer have a page of their own -- every one of them now
+  // has a home inside Home / Library / Practice / Settings. Redirecting
+  // rather than 404ing keeps old bookmarks, old links in emails, and the
+  // browser history of anyone mid-session working.
+  //
+  // Permanent (308) because these moves are not coming back.
+  async redirects() {
+    return [
+      { source: "/dashboard", destination: "/home", permanent: true },
+      { source: "/create", destination: "/home", permanent: true },
+      { source: "/decks", destination: "/library", permanent: true },
+      { source: "/decks/:deckId", destination: "/library/:deckId", permanent: true },
+      { source: "/account", destination: "/settings", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;

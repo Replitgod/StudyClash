@@ -5,7 +5,7 @@ test("homepage hero: reduced motion has no horizontal overflow and hero renders"
   const page = await context.newPage();
   await page.goto("/");
   await page.waitForLoadState("networkidle");
-  await expect(page.getByRole("heading", { name: "Know exactly what to study next." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Stop deciding what to study." })).toBeVisible();
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1
   );

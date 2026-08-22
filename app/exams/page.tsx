@@ -104,7 +104,7 @@ export default function ExamsLandingPage() {
             <p className="mt-3 text-sm leading-relaxed text-white/70">{PRIMARY_EXAM_TRACK.promise}</p>
 
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <Button href={`/create?track=${PRIMARY_EXAM_TRACK.slug}`} variant="primary" className="flex-1">
+              <Button href={`/home?track=${PRIMARY_EXAM_TRACK.slug}`} variant="primary" className="flex-1">
                 Start {PRIMARY_EXAM_TRACK.name} Drill
               </Button>
               <Button href="/pricing" variant="ghost" className="flex-1">
@@ -153,7 +153,7 @@ export default function ExamsLandingPage() {
                 <p className="mt-3 text-sm leading-relaxed text-white/60">{track.promise}</p>
 
                 <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-                  <Button href={`/create?track=${track.slug}`} variant="ghost" className="flex-1">
+                  <Button href={`/home?track=${track.slug}`} variant="ghost" className="flex-1">
                     Start {track.name} Drill
                   </Button>
                 </div>

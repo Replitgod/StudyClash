@@ -119,7 +119,7 @@ export default function ClassroomPage() {
           <Button href="/classroom/join" variant="secondary" size="lg">
             Join with Room Code
           </Button>
-          <Button href="/dashboard" variant="primary" size="lg">
+          <Button href="/home" variant="primary" size="lg">
             Open Teacher Dashboard
           </Button>
         </div>

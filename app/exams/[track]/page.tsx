@@ -91,7 +91,7 @@ export default async function ExamTrackPage({
 
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
             <Link
-              href={`/create?track=${encodeURIComponent(track)}`}
+              href={`/home?track=${encodeURIComponent(track)}`}
               className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-500 px-4 py-3 text-center text-sm font-bold text-white"
             >
               Start {track.toUpperCase()} Drill

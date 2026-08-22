@@ -18,6 +18,7 @@ import { motion } from "framer-motion";
 import { springBouncy, springSnappy } from "@/lib/motion";
 import { useCountUp } from "@/lib/useCountUp";
 import { MathText } from "@/app/components/ui/MathText";
+import { BATTLE_SFX } from "@/lib/uiSound";
 import {
   calculateLevel,
   getGoalProgress,
@@ -1419,6 +1420,7 @@ export default function BattlePage() {
   // "this answer was right or wrong" regardless of how that was determined.
   const applyAnswerOutcome = (isCorrect: boolean) => {
     if (isCorrect) {
+      BATTLE_SFX.correct();
       const newStreak = currentStreak + 1;
       const pointsEarned = calculatePointsForStreak(newStreak);
 
@@ -1438,6 +1440,7 @@ export default function BattlePage() {
         }, 980);
       }
     } else {
+      BATTLE_SFX.wrong();
       setCurrentStreak(0);
       setLastPointsEarned(0);
       setWrongShake(true);
@@ -1942,7 +1945,7 @@ export default function BattlePage() {
               Retry
             </button>
             <Link
-              href="/decks"
+              href="/library"
               className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
             >
               Back to Decks
@@ -1990,13 +1993,13 @@ export default function BattlePage() {
           </p>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
             <Link
-              href="/decks"
+              href="/library"
               className="flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
             >
               Back to Decks
             </Link>
             <Link
-              href="/create"
+              href="/home"
               className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white"
             >
               Create New Deck

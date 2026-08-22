@@ -13,7 +13,7 @@ export function GET() {
     `- Pricing: ${siteUrl}/pricing`,
     `- Exams: ${siteUrl}/exams`,
     `- Demo Battle: ${siteUrl}/demo/battle`,
-    `- Create Deck: ${siteUrl}/create`,
+    `- Start studying: ${siteUrl}/home`,
     `- Contact: ${siteUrl}/contact`,
     `- Privacy: ${siteUrl}/privacy`,
     `- Terms: ${siteUrl}/terms`,

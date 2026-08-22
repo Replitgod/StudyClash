@@ -98,7 +98,7 @@ export default function LoginPage() {
         // Analytics failures should never block a successful login.
       }
 
-      const target = getSafeRedirectTarget("/account");
+      const target = getSafeRedirectTarget("/home");
 
       try {
         window.localStorage.setItem(LAST_LOGIN_EMAIL_KEY, email.trim());
@@ -122,7 +122,7 @@ export default function LoginPage() {
     setIsGoogleLoading(true);
 
     try {
-      const target = getSafeRedirectTarget("/account");
+      const target = getSafeRedirectTarget("/home");
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -150,40 +150,21 @@ export default function LoginPage() {
   const isAnyLoading = isSubmitting || isGoogleLoading;
 
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
-      {/* Ambient glow background */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
-      </div>
-
-      {/* Grid texture overlay */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
-
+    <main
+      className="relative min-h-dvh w-full overflow-x-hidden"
+      style={{ background: "var(--app-bg)", color: "var(--text-1)" }}
+    >
       <div className={`relative z-10 flex min-h-dvh flex-col items-center justify-center px-4 pt-14 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
-        {/* Badge */}
-        <div className="mb-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium tracking-wide text-indigo-300 backdrop-blur-sm sm:mb-6">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-indigo-400" />
-          WELCOME BACK
-        </div>
+        <span
+          className="mb-6 inline-flex h-9 w-9 items-center justify-center rounded-xl text-[15px] font-bold text-white"
+          style={{ background: "var(--brand)" }}
+          aria-hidden="true"
+        >
+          A
+        </span>
 
-        {/* Title */}
-        <h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
-          <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
-            Log In
-          </span>
-        </h1>
-        <p className="mt-3 max-w-sm text-center text-sm text-white/50 sm:text-base">
-          Log in to pick up where you left off.
-        </p>
+        <h1 className="t-page text-center">Log in</h1>
+        <p className="t-body mt-2 max-w-sm text-center">Log in to pick up where you left off.</p>
 
         {/* Form card */}
         <motion.div

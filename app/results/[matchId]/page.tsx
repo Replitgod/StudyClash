@@ -1613,7 +1613,7 @@ export default function ResultsPage() {
               Retry
             </button>
             <Link
-              href="/decks"
+              href="/library"
               className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
             >
               Back to Decks
@@ -1661,13 +1661,13 @@ export default function ResultsPage() {
           </p>
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
             <Link
-              href="/decks"
+              href="/library"
               className="flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
             >
               Back to Decks
             </Link>
             <Link
-              href="/create"
+              href="/home"
               className="flex flex-1 items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white"
             >
               Create New Deck
@@ -2968,7 +2968,7 @@ export default function ResultsPage() {
                         generate-questions) -- never shown otherwise. */}
                     {item.question.source_excerpt ? (
                       <Link
-                        href={`/decks/${item.question.deck_id}?highlight=${encodeURIComponent(
+                        href={`/library/${item.question.deck_id}?highlight=${encodeURIComponent(
                           item.question.source_excerpt
                         )}`}
                         className="mt-2 flex items-start gap-2 rounded-lg border border-indigo-400/20 bg-indigo-500/[0.06] px-3.5 py-2.5 text-xs text-indigo-100 transition hover:bg-indigo-500/[0.12] sm:text-sm"
@@ -2989,7 +2989,7 @@ export default function ResultsPage() {
                         // exam-track prompts or notes phrased loosely) -- still give the
                         // student a way back to the source material instead of a dead end.
                         <Link
-                          href={`/decks/${item.question.deck_id}`}
+                          href={`/library/${item.question.deck_id}`}
                           className="mt-2 flex items-start gap-2 rounded-lg border border-indigo-400/20 bg-indigo-500/[0.06] px-3.5 py-2.5 text-xs text-indigo-100 transition hover:bg-indigo-500/[0.12] sm:text-sm"
                         >
                           <span aria-hidden className="mt-0.5">
@@ -3404,7 +3404,7 @@ export default function ResultsPage() {
             </Link>
 
             <Link
-              href="/create"
+              href="/home"
               onClick={() =>
                 safeTrackEvent("results_create_new_deck_clicked", {
                   matchId: match.id,
@@ -3419,7 +3419,7 @@ export default function ResultsPage() {
         )}
 
         <Link
-          href="/dashboard"
+          href="/home"
           onClick={() => safeTrackEvent("results_return_to_dashboard_clicked", { matchId: match.id, deckId: deck.id })}
           className="mt-4 block text-center text-sm font-semibold text-white/50 transition-colors duration-150 hover:text-indigo-300"
         >

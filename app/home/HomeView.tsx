@@ -1,0 +1,236 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useAuth } from "@/lib/useAuth";
+import { useStudy } from "@/lib/useStudy";
+import { useRequireAuth } from "@/lib/useRequireAuth";
+import { getNextAction, getTodaysPlan, greeting } from "@/lib/nextAction";
+import { Composer } from "@/app/components/app/Composer";
+import { ArrowRightIcon } from "@/app/components/app/Icons";
+
+// Home answers exactly one question: what should I study right now?
+//
+// It is deliberately not a dashboard. There are no charts, no streak
+// badges, no stat grid -- those all made everything look equally important,
+// which is the same as nothing being important. There is a greeting, one
+// input, one recommended action, and a short list of what is worth doing
+// today.
+
+function DeckCard({
+  href,
+  title,
+  detail,
+  mastery,
+}: {
+  href: string;
+  title: string;
+  detail: string;
+  mastery: number | null;
+}) {
+  return (
+    <Link href={href} className="card-link group p-4">
+      <p
+        className="truncate text-[15px] font-medium"
+        style={{ color: "var(--text-1)" }}
+      >
+        {title}
+      </p>
+      <p className="t-meta mt-1 truncate">{detail}</p>
+      {mastery !== null && (
+        <div className="meter mt-3">
+          <span style={{ width: `${Math.min(100, Math.max(2, mastery))}%` }} />
+        </div>
+      )}
+    </Link>
+  );
+}
+
+function Skeletons() {
+  return (
+    <div className="app-page">
+      <div className="skeleton h-9 w-64" />
+      <div className="skeleton mt-8 h-[140px] w-full" />
+      <div className="skeleton mt-10 h-5 w-36" />
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="skeleton h-[104px]" />
+        <div className="skeleton h-[104px]" />
+      </div>
+    </div>
+  );
+}
+
+export default function HomeView() {
+  const searchParams = useSearchParams();
+  const { user, profile } = useAuth();
+  const { isReady } = useRequireAuth();
+  const { snapshot, isLoading } = useStudy();
+
+  // Rendered on the client only: the greeting depends on the reader's clock,
+  // and a server-rendered "Good morning" would hydrate into a mismatch.
+  const [hello, setHello] = useState<string | null>(null);
+  useEffect(() => setHello(greeting(new Date())), []);
+
+  const firstName = useMemo(() => {
+    const name = profile?.display_name || user?.email?.split("@")[0] || "";
+    return name.split(/[\s._-]/)[0].replace(/^\w/, (c) => c.toUpperCase());
+  }, [profile?.display_name, user?.email]);
+
+  // Arriving from an exam page (/exams -> /home?track=ap) tells the composer
+  // to write questions in that exam's style.
+  const examTrack = searchParams.get("track");
+
+  const next = useMemo(() => getNextAction(snapshot), [snapshot]);
+  const plan = useMemo(() => getTodaysPlan(snapshot), [snapshot]);
+  const recent = snapshot.decks.slice(0, 4);
+
+  if (isLoading || !isReady) return <Skeletons />;
+
+  return (
+    <div className="app-page">
+      <h1 className="t-page">
+        {hello || "Welcome"}
+        {firstName ? `, ${firstName}` : ""}
+      </h1>
+
+      <div className="mt-6 rise">
+        <Composer
+          autoFocus={snapshot.isEmpty}
+          examTrack={examTrack}
+          placeholder={
+            snapshot.isEmpty
+              ? "What are you studying? Type a topic, or attach your notes."
+              : "What are you studying?"
+          }
+          footer={
+            <p className="t-meta">
+              Type a topic, paste your notes, or attach a PDF or photo.{" "}
+              <Link
+                href="/vyra"
+                className="underline underline-offset-2"
+                style={{ color: "var(--brand-text)" }}
+              >
+                Or ask Vyra
+              </Link>
+              .
+            </p>
+          }
+        />
+      </div>
+
+      {/* ---- The one recommended action ---- */}
+      {next && (
+        <section className="mt-10 rise">
+          <h2 className="t-section">Do this next</h2>
+          <div
+            className="card mt-3 flex flex-col gap-4 p-5 sm:flex-row sm:items-center"
+            style={{ borderColor: "var(--brand-line)", background: "var(--brand-soft)" }}
+          >
+            <div className="min-w-0 flex-1">
+              <p className="text-[17px] font-medium" style={{ color: "var(--text-1)" }}>
+                {next.label}
+              </p>
+              <p className="t-meta mt-1">
+                {next.reason} · about {next.minutes} min
+              </p>
+            </div>
+            <Link href={next.href} className="btn btn-primary btn-lg shrink-0">
+              Start
+              <ArrowRightIcon className="h-[18px] w-[18px]" />
+            </Link>
+          </div>
+        </section>
+      )}
+
+      {/* ---- Continue studying ---- */}
+      {recent.length > 0 && (
+        <section className="mt-10 rise">
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="t-section">Continue studying</h2>
+            <Link
+              href="/library"
+              className="text-[13px] font-medium"
+              style={{ color: "var(--text-3)" }}
+            >
+              Library
+            </Link>
+          </div>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {recent.map((deck) => (
+              <DeckCard
+                key={deck.id}
+                href={`/library/${deck.id}`}
+                title={deck.title}
+                detail={
+                  deck.mastery === null
+                    ? "Not studied yet"
+                    : `${deck.mastery}% mastered`
+                }
+                mastery={deck.mastery}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ---- Today's plan ---- */}
+      {plan.length > 1 && (
+        <section className="mt-10 rise">
+          <h2 className="t-section">Today</h2>
+          <ul className="card mt-3 divide-y" style={{ borderColor: "var(--line)" }}>
+            {plan.map((item) => (
+              <li key={item.id} className="divide-y" style={{ borderColor: "var(--line)" }}>
+                <Link
+                  href={item.href}
+                  className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-[var(--panel-raised)]"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p
+                      className="truncate text-[15px] font-medium"
+                      style={{ color: "var(--text-1)" }}
+                    >
+                      {item.title}
+                    </p>
+                    <p className="t-meta truncate">{item.detail}</p>
+                  </div>
+                  <span className="t-meta shrink-0">{item.minutes} min</span>
+                  <ArrowRightIcon
+                    className="h-4 w-4 shrink-0"
+                    // Decorative: the whole row is the link.
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* ---- Nothing yet ---- */}
+      {snapshot.isEmpty && (
+        <section className="mt-10 rise">
+          <h2 className="t-section">Try one of these</h2>
+          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+            {[
+              "Photosynthesis",
+              "The French Revolution",
+              "Quadratic equations",
+            ].map((idea) => (
+              <p
+                key={idea}
+                className="card px-4 py-3 text-[14px]"
+                style={{ color: "var(--text-2)" }}
+              >
+                {idea}
+              </p>
+            ))}
+          </div>
+          <p className="t-meta mt-3">
+            Type one of those into the box above and press Start studying. AcedIQ
+            writes the notes, the questions, and the flashcards for you.
+          </p>
+        </section>
+      )}
+    </div>
+  );
+}

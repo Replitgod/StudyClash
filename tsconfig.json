@@ -30,5 +30,10 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  // my-study-app is a separate Next app with its own package.json, lockfile,
+  // and node_modules. It is committed to this repo but never installed by the
+  // root build, so type-checking it here fails on dependencies that only
+  // exist in its own node_modules (@base-ui/react) and on "@/*" paths that
+  // resolve to this app's root instead of my-study-app/src.
+  "exclude": ["node_modules", "my-study-app"]
 }

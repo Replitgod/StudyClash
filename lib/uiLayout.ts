@@ -4,6 +4,10 @@ export const UI_Z_INDEX = {
   floatingAction: 40,
   vyraPanel: 55,
   modal: 70,
+  // The global ⌘K command menu sits above regular modals (it can be summoned
+  // from anywhere, including over an open dialog) but below toasts so a
+  // confirmation still shows through.
+  commandMenu: 75,
   toast: 80,
   // Must outrank every other tier -- it's the keyboard-focus skip-to-content
   // link, sr-only until focused, so it needs to sit above whatever's

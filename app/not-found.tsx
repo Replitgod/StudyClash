@@ -27,7 +27,7 @@ export default function NotFound() {
             Go Home
           </Link>
           <Link
-            href="/dashboard"
+            href="/home"
             className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white/85"
           >
             Dashboard

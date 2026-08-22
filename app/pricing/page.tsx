@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
-import { PLAN_METADATA, PUBLIC_PLANS, getPlanMetadata } from "@/lib/plans";
+import { PUBLIC_PLANS, getPlanMetadata } from "@/lib/plans";
 import { FREE_PLAN_LIMIT_SUMMARY } from "@/lib/planLimits";
 import { Button } from "@/app/components/ui/Button";
 import { HoverLiftArticle } from "@/app/components/ui/HoverLift";
@@ -90,7 +90,7 @@ export default function PricingPage() {
 
   const getPlanHref = (planId: string): string => {
     if (planId === "free_beta") {
-      return isLoggedIn ? "/create" : "/signup?redirect=/create";
+      return isLoggedIn ? "/home" : "/signup?redirect=/home";
     }
 
     if (!isLoggedIn) {
@@ -269,11 +269,9 @@ export default function PricingPage() {
         {/* Bottom note */}
         <div className="mt-10 flex w-full max-w-2xl flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center backdrop-blur-sm sm:mt-12 sm:p-6">
           <p className="text-sm font-semibold text-white/80">
-            Core battles stay free
+            Everything is free
           </p>
-          <p className="text-xs text-white/40">
-            {FREE_PLAN_LIMIT_SUMMARY} {PLAN_METADATA.pro_individual.label} also unlocks the full VYRA coach.
-          </p>
+          <p className="text-xs text-white/40">{FREE_PLAN_LIMIT_SUMMARY}</p>
           {!isLoggedIn && (
             <Button href="/signup" variant="primary" className="mt-3">
               Sign Up for Free

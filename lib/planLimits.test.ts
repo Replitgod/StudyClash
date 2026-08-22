@@ -4,30 +4,37 @@ import {
   FREE_DAILY_PDF_CAP,
   FREE_PLAN_LIMIT_SHORT,
   FREE_PLAN_LIMIT_SUMMARY,
+  IS_UNLIMITED,
 } from "./planLimits";
 
-// These guard against copy silently drifting from the numbers actually
-// enforced in app/api/generate-questions/route.ts -- the whole reason this
-// module exists is a bug where the two had already drifted once before.
-describe("plan limit copy", () => {
-  it("summary copy states the exact enforced generation cap", () => {
-    expect(FREE_PLAN_LIMIT_SUMMARY).toContain(String(FREE_DAILY_GENERATION_CAP));
+// These guard against copy silently drifting from what is actually enforced
+// in app/api/generate-questions/route.ts -- the whole reason this module
+// exists is a bug where the two had already drifted once before. AcedIQ is
+// now unlimited on every plan, so the invariant is "no caps, and the copy
+// says so".
+describe("plan limits", () => {
+  it("has no generation cap", () => {
+    expect(FREE_DAILY_GENERATION_CAP).toBeNull();
   });
 
-  it("summary copy states the exact enforced PDF cap", () => {
-    expect(FREE_PLAN_LIMIT_SUMMARY).toContain(String(FREE_DAILY_PDF_CAP));
+  it("has no PDF cap", () => {
+    expect(FREE_DAILY_PDF_CAP).toBeNull();
   });
 
-  it("summary describes generation being limited, with battles explicitly unlimited", () => {
-    expect(FREE_PLAN_LIMIT_SUMMARY.toLowerCase()).toContain("deck generations");
-    expect(FREE_PLAN_LIMIT_SUMMARY.toLowerCase()).toContain("unlimited battles");
+  it("reports itself as unlimited", () => {
+    expect(IS_UNLIMITED).toBe(true);
   });
 
-  it("short copy states the exact enforced generation cap", () => {
-    expect(FREE_PLAN_LIMIT_SHORT).toContain(String(FREE_DAILY_GENERATION_CAP));
+  it("summary copy describes everything as unlimited", () => {
+    expect(FREE_PLAN_LIMIT_SUMMARY.toLowerCase()).toContain("unlimited");
   });
 
-  it("short copy does not describe battles as limited", () => {
-    expect(FREE_PLAN_LIMIT_SHORT.toLowerCase()).toContain("unlimited battles");
+  it("short copy describes everything as unlimited", () => {
+    expect(FREE_PLAN_LIMIT_SHORT.toLowerCase()).toContain("unlimited");
+  });
+
+  it("no copy mentions a numeric daily cap", () => {
+    expect(FREE_PLAN_LIMIT_SUMMARY).not.toMatch(/\d+\s*(deck|pdf|per day)/i);
+    expect(FREE_PLAN_LIMIT_SHORT).not.toMatch(/\d/);
   });
 });

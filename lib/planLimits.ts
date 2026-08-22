@@ -1,31 +1,29 @@
-// Single source of truth for the free plan's actual enforced daily limits.
-// Both the enforcement (app/api/generate-questions/route.ts) and every
-// user-facing description of it (homepage, pricing, error messages) import
-// from here so the numbers can never drift out of sync with each other.
+// Single source of truth for what the free plan is allowed to do.
 //
-// IMPORTANT — what this limit actually gates, precisely:
-// FREE_DAILY_GENERATION_CAP counts rows in `generation_logs` for this user
-// today (any source_kind), checked inside the DECK-GENERATION route. It
-// does NOT touch battle play at all -- nothing in
-// app/api/battle/finish/route.ts enforces a cap, so replaying an existing
-// deck is always unlimited on every plan. The policy is exactly: "3 new
-// deck generations per day, unlimited battles on decks you already have."
-// (This used to be gated on completed-battle count instead of generation
-// count, which produced a genuinely different -- and confusing -- policy
-// than the "N generations/day" copy shown on the pricing page. Switched to
-// a direct generation-count check so the enforcement and the copy describe
-// the same thing.)
-export const FREE_DAILY_GENERATION_CAP = 3;
-// Subset of the cap above: counts `generation_logs` rows with
-// source_kind = "pdf" for today. Not an additional limit on top of the 3 --
-// PDF-sourced generations still count toward FREE_DAILY_GENERATION_CAP too.
-export const FREE_DAILY_PDF_CAP = 2;
+// AcedIQ is now run as a single-user / open-access app: there is no daily
+// generation cap, no PDF cap, and no beta access code gate. Everything is
+// unlimited on every plan.
+//
+// These constants are kept (rather than deleted) because several surfaces
+// import them for copy, and `null` is the app-wide convention for "no
+// limit" (it matches `membership_plans.daily_limit`, which is nullable and
+// means unlimited there too).
 
-// The single line of copy every surface (homepage FAQ, pricing page,
-// dashboard, upgrade prompts) should use to describe the free plan's
-// generation limit, so wording never drifts from what's actually enforced
-// above.
-export const FREE_PLAN_LIMIT_SUMMARY = `Free: ${FREE_DAILY_GENERATION_CAP} deck generations per day (${FREE_DAILY_PDF_CAP} of those can start from a PDF upload) and unlimited battles on decks you already have. Pro removes the generation limit.`;
+/** Deck generations allowed per day. `null` = unlimited. */
+export const FREE_DAILY_GENERATION_CAP: number | null = null;
+
+/** PDF-sourced generations allowed per day. `null` = unlimited. */
+export const FREE_DAILY_PDF_CAP: number | null = null;
+
+/** True when a plan has no generation limits at all. */
+export const IS_UNLIMITED =
+  FREE_DAILY_GENERATION_CAP === null && FREE_DAILY_PDF_CAP === null;
+
+// The single line of copy every surface (homepage, pricing page, home,
+// upgrade prompts) should use to describe the generation limit, so wording
+// never drifts from what's actually enforced.
+export const FREE_PLAN_LIMIT_SUMMARY =
+  "Everything is unlimited: unlimited decks, unlimited uploads, unlimited practice, unlimited AI.";
 
 // Short form for tight spaces (badges, plan cards).
-export const FREE_PLAN_LIMIT_SHORT = `${FREE_DAILY_GENERATION_CAP} deck generations/day, unlimited battles`;
+export const FREE_PLAN_LIMIT_SHORT = "Unlimited everything";

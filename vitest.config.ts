@@ -10,6 +10,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["**/*.test.ts"],
-    exclude: ["node_modules", ".next"],
+    // "**/node_modules/**" rather than "node_modules": the bare form only
+    // matches the top-level directory, so vitest was collecting (and
+    // failing on) test files shipped inside my-study-app's dependencies.
+    exclude: ["**/node_modules/**", "**/.next/**", "my-study-app/**"],
   },
 });

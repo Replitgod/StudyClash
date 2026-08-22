@@ -712,10 +712,10 @@ function MasteryMapPageContent() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Link href="/dashboard" className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white/85">
+              <Link href="/home" className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white/85">
                 Dashboard
               </Link>
-              <Link href="/decks" className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-4 py-2.5 text-sm font-bold text-indigo-100">
+              <Link href="/library" className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-4 py-2.5 text-sm font-bold text-indigo-100">
                 Choose Deck
               </Link>
             </div>

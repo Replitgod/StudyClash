@@ -18,7 +18,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/exams/mcat", changeFrequency: "weekly", priority: 0.84 },
     { path: "/exams/lsat", changeFrequency: "weekly", priority: 0.84 },
     { path: "/exams/nclex", changeFrequency: "weekly", priority: 0.84 },
-    { path: "/create", changeFrequency: "weekly", priority: 0.88 },
     { path: "/demo/battle", changeFrequency: "weekly", priority: 0.86 },
     { path: "/contact", changeFrequency: "monthly", priority: 0.78 },
     { path: "/privacy", changeFrequency: "monthly", priority: 0.35 },

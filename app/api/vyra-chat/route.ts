@@ -119,9 +119,6 @@ type QuestionRow = {
   explanation: string;
 };
 
-const FREE_PLAN_IDS = new Set(["free_beta"]);
-const FREE_DAILY_VYRA_CAP = 80;
-const DEFAULT_DAILY_VYRA_CAP = 180;
 const VYRA_UNAUTH_WINDOW_MS = 60_000;
 const VYRA_UNAUTH_LIMIT = 12;
 // Anonymous callers have no per-day cap otherwise (only the per-minute burst
@@ -462,6 +459,10 @@ async function resolveSavedBattleContext(matchId: string): Promise<{
   return { weakTopicSummary, missedSummary, weakTopicNames };
 }
 
+// VYRA is unlimited -- AcedIQ no longer caps chat usage on any plan (see
+// lib/planLimits.ts). This still resolves the caller's plan id, because
+// logVyraUsage() snapshots it onto the generation_logs row, but it can no
+// longer block a request.
 async function enforceVyraUsageLimit(userId: string): Promise<{
   allowed: boolean;
   status?: number;
@@ -474,53 +475,7 @@ async function enforceVyraUsageLimit(userId: string): Promise<{
     .eq("id", userId)
     .single();
 
-  const activePlanId = String(profileData?.plan || "free_beta");
-
-  const { data: planData } = await supabase
-    .from("membership_plans")
-    .select("daily_limit")
-    .eq("id", activePlanId)
-    .single();
-
-  const dailyPlanLimit =
-    planData && typeof planData.daily_limit === "number"
-      ? Math.max(1, Math.round(planData.daily_limit))
-      : null;
-
-  const planCap = FREE_PLAN_IDS.has(activePlanId)
-    ? FREE_DAILY_VYRA_CAP
-    : dailyPlanLimit ?? DEFAULT_DAILY_VYRA_CAP;
-
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-
-  const { count, error } = await supabase
-    .from("generation_logs")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("source_kind", "vyra_chat")
-    .gte("created_at", startOfToday.toISOString());
-
-  if (error) {
-    return {
-      allowed: false,
-      status: 500,
-      error: "Could not check your VYRA usage right now. Please try again.",
-      planId: activePlanId,
-    };
-  }
-
-  if ((count || 0) >= planCap) {
-    return {
-      allowed: false,
-      status: 429,
-      error:
-        "Daily VYRA chat limit reached for your current plan. Continue tomorrow or upgrade for higher limits.",
-      planId: activePlanId,
-    };
-  }
-
-  return { allowed: true, planId: activePlanId };
+  return { allowed: true, planId: String(profileData?.plan || "free_beta") };
 }
 
 async function logVyraUsage(args: {
@@ -574,6 +529,19 @@ async function saveChatIfTableExists(args: {
 
   if (sessionInsert.error) {
     return;
+  }
+
+  // Name the conversation after whatever the student asked first, so the
+  // sidebar reads like a list of questions instead of a list of ids. The
+  // `.is("title", null)` guard means this only ever names a brand-new
+  // conversation -- it never overwrites a title the student set themselves.
+  const autoTitle = userMessage.replace(/\s+/g, " ").trim().slice(0, 60);
+  if (autoTitle) {
+    await supabase
+      .from("vyra_chat_sessions")
+      .update({ title: autoTitle })
+      .eq("id", sessionId)
+      .is("title", null);
   }
 
   await supabase.from("vyra_chat_messages").insert([

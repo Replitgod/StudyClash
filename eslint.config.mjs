@@ -33,6 +33,11 @@ const eslintConfig = defineConfig([
     // agent's full second copy of the repo (including ITS .next build
     // output) and drowns real results in thousands of unrelated errors.
     ".claude/worktrees/**",
+    // A separate scaffolded project vendored inside this repo, with its own
+    // node_modules, eslint config, and tests. Linting it from here reported
+    // thousands of problems from ITS dependencies, which buried every real
+    // finding in this app.
+    "my-study-app/**",
   ]),
 ]);
 
