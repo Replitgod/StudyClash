@@ -12,6 +12,7 @@ import dynamic from "next/dynamic";
 import { StudyModeReview } from "@/app/components/StudyModeReview";
 import ConfettiBurst from "@/app/components/ConfettiBurst";
 import { OpponentFace, moodFromStreak } from "@/app/components/OpponentFace";
+import { localDateKey } from "@/lib/progression";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
 import { useVoiceStudyMode } from "@/lib/useVoiceStudyMode";
 import { motion } from "framer-motion";
@@ -1819,6 +1820,7 @@ export default function BattlePage() {
           answers,
           challengeFromMatchId,
           clientRequestId: finishRequestIdRef.current,
+          localDate: localDateKey(new Date()),
         }),
       });
     } catch (error) {

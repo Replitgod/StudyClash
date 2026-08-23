@@ -9,14 +9,20 @@ import { useRequireAuth } from "@/lib/useRequireAuth";
 import { getNextAction, getTodaysPlan, greeting } from "@/lib/nextAction";
 import { Composer } from "@/app/components/app/Composer";
 import { ArrowRightIcon } from "@/app/components/app/Icons";
+import { ProgressSummary } from "@/app/components/app/ProgressSummary";
+import { useProgress } from "@/lib/useProgress";
 
 // Home answers exactly one question: what should I study right now?
 //
-// It is deliberately not a dashboard. There are no charts, no streak
-// badges, no stat grid -- those all made everything look equally important,
-// which is the same as nothing being important. There is a greeting, one
-// input, one recommended action, and a short list of what is worth doing
-// today.
+// The order on this screen is the design. A greeting, one input, one
+// recommended action -- and only then progress, quests and today's plan.
+// Progression lives *below* the primary action rather than in a stat grid
+// at the top, because a screen where six things look equally important
+// reads the same as a screen where nothing is.
+//
+// Nothing here is decorative. Every number comes from the database, and a
+// section with nothing real to say renders nothing at all rather than a
+// placeholder zero.
 
 function DeckCard({
   href,
@@ -84,6 +90,13 @@ export default function HomeView() {
   const next = useMemo(() => getNextAction(snapshot), [snapshot]);
   const plan = useMemo(() => getTodaysPlan(snapshot), [snapshot]);
   const recent = snapshot.decks.slice(0, 4);
+
+  // Loaded independently of the study snapshot: a slow progression read
+  // must never delay telling the student what to study.
+  const { progress } = useProgress({
+    hasReviewsDue: snapshot.dueTopics.length > 0,
+    enabled: isReady,
+  });
 
   if (isLoading || !isReady) return <Skeletons />;
 
@@ -173,6 +186,9 @@ export default function HomeView() {
           </div>
         </section>
       )}
+
+      {/* ---- Progress: level, streak, today's quests ---- */}
+      {progress && <ProgressSummary progress={progress} />}
 
       {/* ---- Today's plan ---- */}
       {plan.length > 1 && (

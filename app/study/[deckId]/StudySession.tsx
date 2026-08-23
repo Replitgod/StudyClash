@@ -29,6 +29,7 @@ import { MathText } from "@/app/components/ui/MathText";
 import { ArrowRightIcon, CheckIcon, CloseIcon } from "@/app/components/app/Icons";
 import { MistakeRecovery } from "@/app/components/study/MistakeRecovery";
 import type { RecoveryOutcome } from "@/lib/mistakeRecovery";
+import { localDateKey } from "@/lib/progression";
 
 // The study session.
 //
@@ -280,6 +281,7 @@ export default function StudySession() {
             timeTakenSeconds: elapsedSeconds,
             answers: finalAnswers,
             recoveredQuestionIds: recoveredIds,
+            localDate: localDateKey(new Date()),
           }),
         });
 

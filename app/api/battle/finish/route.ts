@@ -8,6 +8,9 @@ import {
   hashIdentifier,
 } from "@/lib/server/apiUtils";
 import { getQuestionStatus, getReviewIntervalDays, getTopicStatus } from "@/lib/srsSchedule";
+import { recordSessionProgress } from "@/lib/server/progression";
+import { computeMastery } from "@/lib/mastery";
+import { MASTERY_TIER_ORDER as TIER_ORDER } from "@/lib/masteryTiers";
 
 const CHALLENGE_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -55,6 +58,12 @@ type FinishBattlePayload = {
    * repetition, never as an extra correct answer -- the miss still stands.
    */
   recoveredQuestionIds?: string[];
+  /**
+   * The student's local date (YYYY-MM-DD). Streaks and daily quests are
+   * about the student's day; deriving it from the server clock would roll a
+   * late-evening session into tomorrow for anyone west of the server.
+   */
+  localDate?: string;
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -467,6 +476,15 @@ export async function POST(req: NextRequest) {
         .filter((id) => missedIds.has(id))
     );
 
+    // Filled in by updateTopicReviewSchedule below, and used to decide what
+    // this session was worth.
+    let topicsImproved = 0;
+    let clearedReviews = false;
+
+    const localDay = /^\d{4}-\d{2}-\d{2}$/.test(body.localDate || "")
+      ? (body.localDate as string)
+      : new Date().toISOString().slice(0, 10);
+
     try {
       const questionTopics = new Map<string, string>();
       for (const question of questionRows as Array<{
@@ -478,7 +496,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      await updateTopicReviewSchedule({
+      const outcome = await updateTopicReviewSchedule({
         deckId: body.deckId,
         userId: authenticatedUserId,
         playerName: body.playerName,
@@ -486,6 +504,8 @@ export async function POST(req: NextRequest) {
         questionTopics,
         recoveredQuestionIds,
       });
+      topicsImproved = outcome.topicsImproved;
+      clearedReviews = outcome.clearedReviews;
     } catch {
       // topic_review_schedule may not be deployed yet.
     }
@@ -569,7 +589,28 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ matchId: matchData.id, crownTaken });
+    // XP, streak, quests and achievements. Signed-in students only -- there
+    // is nowhere to hang a guest's progression, and inventing one would
+    // mean showing them a level they lose the moment they close the tab.
+    //
+    // recordSessionProgress never throws and every award is keyed on this
+    // match id, so a retried finish cannot pay out twice.
+    let progression = null;
+    if (authenticatedUserId) {
+      progression = await recordSessionProgress(supabase, {
+        userId: authenticatedUserId,
+        matchId: matchData.id,
+        questionsAnswered: body.answers.length,
+        correctAnswers: body.answers.filter((a) => a.isCorrect).length,
+        mistakesRecovered: recoveredQuestionIds.size,
+        topicsImproved,
+        clearedReviews,
+        isBattleWin: crownTaken,
+        today: localDay,
+      });
+    }
+
+    return NextResponse.json({ matchId: matchData.id, crownTaken, progression });
   } catch (error) {
     console.error("Failed to finish battle:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: "Failed to finish battle. Please try again." }, { status: 500 });
@@ -601,7 +642,7 @@ async function updateTopicReviewSchedule(args: {
   answers: AnswerPayload[];
   questionTopics: Map<string, string>;
   recoveredQuestionIds: Set<string>;
-}): Promise<void> {
+}): Promise<{ topicsImproved: number; clearedReviews: boolean }> {
   const { deckId, userId, playerName, answers, questionTopics, recoveredQuestionIds } = args;
 
   const perTopic = new Map<
@@ -623,15 +664,24 @@ async function updateTopicReviewSchedule(args: {
     perTopic.set(topic, bucket);
   }
 
-  if (perTopic.size === 0) return;
+  if (perTopic.size === 0) return { topicsImproved: 0, clearedReviews: false };
 
   const nowMs = Date.now();
   const nowIso = new Date(nowMs).toISOString();
 
+  // A topic that moved up a mastery tier this session is the single thing
+  // most worth rewarding -- it is the difference between practising and
+  // improving. Counted here because this is the only place that sees both
+  // the before and after state.
+  let topicsImproved = 0;
+  let clearedReviews = false;
+
   for (const [topic, delta] of perTopic.entries()) {
     let existingQuery = supabase
       .from("topic_review_schedule")
-      .select("id, correct_count, total_count, attempts, recoveries")
+      .select(
+        "id, correct_count, total_count, attempts, recoveries, last_practiced_at, next_review_at"
+      )
       .eq("deck_id", deckId)
       .eq("topic", topic);
 
@@ -649,6 +699,34 @@ async function updateTopicReviewSchedule(args: {
     const status = getTopicStatus(accuracy);
     const intervalDays = getReviewIntervalDays(status, attempts);
     const nextReviewAt = new Date(nowMs + intervalDays * 24 * 60 * 60 * 1000).toISOString();
+
+    if (existing?.next_review_at && Date.parse(existing.next_review_at) <= nowMs) {
+      clearedReviews = true;
+    }
+
+    const tierBefore = computeMastery({
+      correct: existing?.correct_count || 0,
+      total: existing?.total_count || 0,
+      sessions: existing?.attempts || 0,
+      recoveries: existing?.recoveries || 0,
+      lastPracticedMs: existing?.last_practiced_at
+        ? Date.parse(existing.last_practiced_at)
+        : null,
+      now: nowMs,
+    }).tier;
+
+    const tierAfter = computeMastery({
+      correct: correctCount,
+      total: totalCount,
+      sessions: attempts,
+      recoveries,
+      lastPracticedMs: nowMs,
+      now: nowMs,
+    }).tier;
+
+    if (TIER_ORDER.indexOf(tierAfter) > TIER_ORDER.indexOf(tierBefore)) {
+      topicsImproved += 1;
+    }
 
     const row = {
       user_id: userId,
@@ -672,6 +750,8 @@ async function updateTopicReviewSchedule(args: {
       await supabase.from("topic_review_schedule").insert(row);
     }
   }
+
+  return { topicsImproved, clearedReviews };
 }
 
 // Per-question sibling of updateTopicReviewSchedule above. Status comes
