@@ -7,6 +7,10 @@ import { useRequireAuth } from "@/lib/useRequireAuth";
 import { getNextAction, sessionHref } from "@/lib/nextAction";
 import { MASTERY_TIER_LABELS } from "@/lib/masteryTiers";
 import { ArrowRightIcon } from "@/app/components/app/Icons";
+import {
+  OpportunityCard,
+  useOpportunities,
+} from "@/app/components/app/BiggestOpportunity";
 
 // Practice is where a student deliberately trains.
 //
@@ -76,9 +80,22 @@ export default function PracticePage() {
 
   const next = useMemo(() => getNextAction(snapshot), [snapshot]);
 
+  // What is worth fixing, and what specifically is going wrong inside it.
+  // Null while the recorded mistake patterns are still loading.
+  const opportunities = useOpportunities(snapshot.topics);
+
   // Readiness: the one number a student actually wants. Everything behind
   // it (per-topic accuracy, attempt counts, review timing) stays internal.
   const readiness = snapshot.overallMastery;
+
+  // The list below the opportunity card must not repeat what the card
+  // already says, or the same topic appears twice on one screen.
+  const featuredKey = opportunities?.[0]
+    ? `${opportunities[0].deckId}-${opportunities[0].topic}`
+    : null;
+  const otherWeakTopics = snapshot.weakTopics
+    .filter((topic) => `${topic.deckId}-${topic.topic}` !== featuredKey)
+    .slice(0, 6);
 
   // Review mode targets the deck the student is weakest in overall.
   const reviewDeckId = snapshot.weakTopics[0]?.deckId || snapshot.decks[0]?.id;
@@ -171,15 +188,29 @@ export default function PracticePage() {
         </div>
       </section>
 
-      {/* ---- Weak topics ---- */}
-      {snapshot.weakTopics.length > 0 && (
+      {/* ---- What to fix, and what exactly is going wrong in it ---- */}
+      {opportunities && opportunities.length > 0 && (
         <section className="mt-10">
-          <h2 className="t-section">Needs the most work</h2>
+          <h2 className="t-section">Your biggest opportunity</h2>
+          <div className="mt-3">
+            <OpportunityCard opportunity={opportunities[0]} />
+          </div>
+        </section>
+      )}
+
+      {/* ---- Everything else that needs work ---- */}
+      {otherWeakTopics.length > 0 && (
+        <section className="mt-10">
+          <h2 className="t-section">
+            {opportunities && opportunities.length > 0
+              ? "Also worth a pass"
+              : "Needs the most work"}
+          </h2>
           <ul
             className="card mt-3 divide-y overflow-hidden"
             style={{ borderColor: "var(--line)" }}
           >
-            {snapshot.weakTopics.slice(0, 6).map((topic) => (
+            {otherWeakTopics.map((topic) => (
               <li key={`${topic.deckId}-${topic.topic}`}>
                 <Link
                   href={sessionHref({
