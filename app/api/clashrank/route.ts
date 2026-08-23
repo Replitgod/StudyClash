@@ -80,14 +80,20 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY as string
 );
 
+// The tier names must match the competitive ladder in lib/ranking.ts. This
+// board and that one measure different things -- improvement and
+// consistency here, head-to-head results there -- but a product with two
+// different meanings for "Diamond" has taught its students that ranks mean
+// nothing. One vocabulary, two boards.
 const CLASH_RANKS = [
   { label: "Bronze", min: 0 },
   { label: "Silver", min: 38 },
   { label: "Gold", min: 50 },
   { label: "Platinum", min: 62 },
   { label: "Diamond", min: 74 },
-  { label: "Champion", min: 86 },
-  { label: "Legend", min: 95 },
+  { label: "Master", min: 86 },
+  { label: "Grandmaster", min: 93 },
+  { label: "AcedIQ Elite", min: 97 },
 ] as const;
 
 function normalizePlayerName(input: string): string {

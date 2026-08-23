@@ -265,6 +265,16 @@ export default function PracticePage() {
               label: "Exam practice",
               detail: "AP, SAT, MCAT, LSAT, NCLEX",
             },
+            {
+              href: "/clashrank",
+              label: "Rank and leaderboards",
+              detail: "Where you stand this season",
+            },
+            {
+              href: "/friends",
+              label: "Friends",
+              detail: "Challenge someone you know",
+            },
           ].map((item) => (
             <li key={item.href}>
               <Link

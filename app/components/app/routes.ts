@@ -19,7 +19,15 @@ export const NAV_ITEMS: Array<{
     id: "practice",
     label: "Practice",
     href: "/practice",
-    match: ["/practice", "/mastery-map", "/study-plans", "/diagnostics", "/exams", "/clashrank"],
+    match: [
+      "/practice",
+      "/mastery-map",
+      "/study-plans",
+      "/diagnostics",
+      "/exams",
+      "/clashrank",
+      "/friends",
+    ],
   },
   { id: "vyra", label: "Vyra", href: "/vyra", match: ["/vyra"] },
 ];

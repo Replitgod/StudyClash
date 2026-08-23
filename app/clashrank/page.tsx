@@ -47,14 +47,17 @@ type ClashRankPayload = {
   generatedAt: string;
 };
 
+// Keyed by the tier names in lib/ranking.ts, which both leaderboards and
+// every rank badge in the app share.
 const RANK_COLORS: Record<string, string> = {
   Bronze: "text-amber-300 border-amber-500/30 bg-amber-500/10",
   Silver: "text-slate-200 border-slate-400/30 bg-slate-400/10",
   Gold: "text-amber-300 border-amber-400/30 bg-amber-500/10",
   Platinum: "text-indigo-200 border-indigo-400/30 bg-indigo-500/10",
   Diamond: "text-indigo-200 border-indigo-400/30 bg-indigo-500/10",
-  Champion: "text-indigo-200 border-indigo-400/30 bg-indigo-500/10",
-  Legend: "text-green-200 border-green-400/30 bg-green-500/10",
+  Master: "text-indigo-200 border-indigo-400/30 bg-indigo-500/10",
+  Grandmaster: "text-green-200 border-green-400/30 bg-green-500/10",
+  "AcedIQ Elite": "text-green-200 border-green-400/30 bg-green-500/10",
 };
 
 function rankStyle(rank: string): string {
