@@ -48,5 +48,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ topics: [] });
   }
 
-  return NextResponse.json({ topics: data || [] });
+  // A session screen additionally asks for per-question history on the one
+  // deck it is about to run, so lib/adaptiveSession.ts can lead with the
+  // questions this student actually keeps missing rather than whichever
+  // rows the database returned first. Scoped to a single deck so this stays
+  // a bounded read, and same RLS reasoning as the topic table above.
+  const deckId = req.nextUrl.searchParams.get("deckId");
+  if (!deckId) {
+    return NextResponse.json({ topics: data || [], questions: [] });
+  }
+
+  const { data: questionRows } = await supabase
+    .from("question_review_schedule")
+    .select("question_id, correct_streak, next_review_at")
+    .eq("user_id", userId)
+    .eq("deck_id", deckId)
+    .limit(MAX_ROWS);
+
+  return NextResponse.json({
+    topics: data || [],
+    questions: questionRows || [],
+  });
 }

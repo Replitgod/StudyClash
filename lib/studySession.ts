@@ -1,5 +1,9 @@
-// Pure logic behind a study session: which questions get asked, in what
-// order, and what the student is told at the end.
+// Pure logic behind a study session: how topics are matched, how a session
+// is scored, and what the student is told at the end.
+//
+// Which questions get asked, and in what order, now lives in
+// lib/adaptiveSession.ts -- selection stopped being "the first N rows" and
+// became a real decision driven by mastery.
 //
 // Kept out of the component so it can be tested directly -- these rules
 // decide what a student actually practises, and getting them wrong is
@@ -48,46 +52,6 @@ export function parseTopics(raw: string | null): string[] {
       }
     })
     .filter(Boolean);
-}
-
-/**
- * Picks the questions for this session.
- *
- * Narrowing to topics is best-effort on purpose: if nothing matches (a topic
- * label changed, the deck was regenerated), the student gets the whole deck
- * rather than an empty session, and the caller is told so it can say why.
- */
-export function selectQuestions(args: {
-  questions: SessionQuestion[];
-  topics: string[];
-  limit: number | null;
-}): { questions: SessionQuestion[]; didFallBack: boolean } {
-  const { questions, topics, limit } = args;
-
-  let selected = questions;
-  let didFallBack = false;
-
-  if (topics.length > 0) {
-    const matched = questions.filter((question) => {
-      const key = normalizeTopicKey(question.topic || "");
-      if (!key) return false;
-      return topics.some(
-        (topic) => key === topic || key.includes(topic) || topic.includes(key)
-      );
-    });
-
-    if (matched.length > 0) {
-      selected = matched;
-    } else {
-      didFallBack = true;
-    }
-  }
-
-  if (limit && selected.length > limit) {
-    selected = selected.slice(0, limit);
-  }
-
-  return { questions: selected, didFallBack };
 }
 
 // The same streak scoring the server recomputes in

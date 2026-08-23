@@ -12,11 +12,19 @@ import { sessionHref } from "@/lib/nextAction";
 import {
   parseTopics,
   scoreFor,
-  selectQuestions,
   summarize,
+  normalizeTopicKey,
   type SessionAnswer,
   type SessionQuestion,
 } from "@/lib/studySession";
+import {
+  adaptDifficulty,
+  INITIAL_ADAPTIVE_STATE,
+  planSession,
+  reorderRemaining,
+  type AdaptiveState,
+  type QuestionHistory,
+} from "@/lib/adaptiveSession";
 import { MathText } from "@/app/components/ui/MathText";
 import { ArrowRightIcon, CheckIcon, CloseIcon } from "@/app/components/app/Icons";
 import { MistakeRecovery } from "@/app/components/study/MistakeRecovery";
@@ -45,7 +53,7 @@ export default function StudySession() {
 
   const { user, profile } = useAuth();
   const { isReady } = useRequireAuth();
-  const { refresh } = useStudy();
+  const { refresh, snapshot } = useStudy();
 
   const [deck, setDeck] = useState<DeckRecord | null>(null);
   const [questions, setQuestions] = useState<SessionQuestion[]>([]);
@@ -69,6 +77,19 @@ export default function StudySession() {
   // Recovery is the strongest learning signal the app collects, so it is
   // sent to the server with the session and credited to mastery there.
   const [recoveredIds, setRecoveredIds] = useState<string[]>([]);
+
+  // How the session is going, and what it should ask next. See
+  // lib/adaptiveSession.ts -- this is what makes a session a tutor
+  // controlling the sequence rather than a fixed list.
+  const [adaptive, setAdaptive] = useState<AdaptiveState>(INITIAL_ADAPTIVE_STATE);
+
+  // Read through a ref, never a dependency. The snapshot refreshes when a
+  // session is saved, and if the load effect depended on it the student's
+  // session would reload out from under them mid-answer.
+  const snapshotTopicsRef = useRef(snapshot.topics);
+  useEffect(() => {
+    snapshotTopicsRef.current = snapshot.topics;
+  }, [snapshot.topics]);
 
   const topics = useMemo(
     () => parseTopics(searchParams.get("topics")),
@@ -96,8 +117,14 @@ export default function StudySession() {
           "id, question_text, answer_choices, correct_answer, explanation, topic, difficulty, question_type"
         )
         .eq("deck_id", deckId),
+      // Which questions in this deck the student keeps missing. Best-effort:
+      // without it the session is still correctly ordered by topic mastery,
+      // it just cannot lead with the exact questions they got wrong.
+      authFetch(`/api/study/review-schedule?deckId=${encodeURIComponent(deckId)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .catch(() => null),
     ])
-      .then(([deckResult, questionResult]) => {
+      .then(([deckResult, questionResult, scheduleResult]) => {
         if (cancelled) return;
 
         if (deckResult.error || !deckResult.data) {
@@ -125,13 +152,47 @@ export default function StudySession() {
           return;
         }
 
-        const picked = selectQuestions({ questions: all, topics, limit });
+        const now = Date.now();
+        const history: QuestionHistory[] = Array.isArray(scheduleResult?.questions)
+          ? scheduleResult.questions.map(
+              (row: {
+                question_id: string;
+                correct_streak: number | null;
+                next_review_at: string | null;
+              }) => ({
+                questionId: row.question_id,
+                correctStreak: row.correct_streak ?? 0,
+                isDue: row.next_review_at
+                  ? Date.parse(row.next_review_at) <= now
+                  : false,
+              })
+            )
+          : [];
+
+        // Topic urgency comes from the mastery engine via the shared
+        // snapshot, so the session agrees with what Home and Practice told
+        // the student was worth doing.
+        const topicPriorities = snapshotTopicsRef.current
+          .filter((topic) => topic.deckId === deckId)
+          .map((topic) => ({
+            topic: normalizeTopicKey(topic.topic),
+            priority: topic.priority,
+            isDue: topic.isDue,
+          }));
+
+        const plan = planSession({
+          questions: all,
+          topics,
+          limit,
+          topicPriorities,
+          history,
+        });
+
         setDeck(deckResult.data as DeckRecord);
-        setQuestions(picked.questions);
-        setNarrowingFailed(picked.didFallBack);
+        setQuestions(plan.questions);
+        setNarrowingFailed(plan.didFallBack);
         setIsLoading(false);
 
-        const now = Date.now();
         startedAtRef.current = now;
         questionShownAtRef.current = now;
       })
@@ -164,17 +225,32 @@ export default function StudySession() {
   const check = useCallback(() => {
     if (!current || selected === null || checked) return;
 
+    const isRight = selected === current.correct_answer;
+
     setChecked(true);
     setAnswers((prev) => [
       ...prev,
       {
         questionId: current.id,
         selectedAnswer: selected,
-        isCorrect: selected === current.correct_answer,
+        isCorrect: isRight,
         responseTimeMs: Math.max(0, Date.now() - questionShownAtRef.current),
       },
     ]);
-  }, [current, selected, checked]);
+
+    // Re-aim the rest of the session at where the student actually is.
+    // Only the questions after this one move: reordering the current or the
+    // already-answered ones would change what is on screen under them.
+    const nextState = adaptDifficulty(adaptive, {
+      isCorrect: isRight,
+      topic: current.topic,
+    });
+    setAdaptive(nextState);
+    setQuestions((prev) => [
+      ...prev.slice(0, index + 1),
+      ...reorderRemaining(prev.slice(index + 1), nextState),
+    ]);
+  }, [current, selected, checked, adaptive, index]);
 
   const finish = useCallback(
     async (finalAnswers: SessionAnswer[]) => {

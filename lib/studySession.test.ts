@@ -3,7 +3,6 @@ import {
   normalizeTopicKey,
   parseTopics,
   scoreFor,
-  selectQuestions,
   summarize,
   type SessionAnswer,
   type SessionQuestion,
@@ -53,60 +52,6 @@ describe("parseTopics", () => {
 describe("normalizeTopicKey", () => {
   it("ignores case, punctuation, and spacing", () => {
     expect(normalizeTopicKey("  The Safavid-Empire!  ")).toBe("the safavid empire");
-  });
-});
-
-describe("selectQuestions", () => {
-  const questions = [
-    question("1", "Safavid Empire"),
-    question("2", "Gunpowder Technology"),
-    question("3", "Mughal Architecture"),
-  ];
-
-  it("returns everything when nothing is narrowed", () => {
-    const result = selectQuestions({ questions, topics: [], limit: null });
-    expect(result.questions).toHaveLength(3);
-    expect(result.didFallBack).toBe(false);
-  });
-
-  it("narrows to the requested topics", () => {
-    const result = selectQuestions({
-      questions,
-      topics: ["safavid empire"],
-      limit: null,
-    });
-    expect(result.questions.map((q) => q.id)).toEqual(["1"]);
-  });
-
-  it("matches a topic by partial overlap, not just exact equality", () => {
-    // Topic labels drift between generations ("Gunpowder" vs "Gunpowder
-    // Technology"); an exact-match-only rule would silently return nothing.
-    const result = selectQuestions({ questions, topics: ["gunpowder"], limit: null });
-    expect(result.questions.map((q) => q.id)).toEqual(["2"]);
-  });
-
-  it("falls back to the full set rather than an empty session", () => {
-    const result = selectQuestions({
-      questions,
-      topics: ["nothing like this"],
-      limit: null,
-    });
-    expect(result.questions).toHaveLength(3);
-    expect(result.didFallBack).toBe(true);
-  });
-
-  it("applies the limit after narrowing", () => {
-    const result = selectQuestions({ questions, topics: [], limit: 2 });
-    expect(result.questions).toHaveLength(2);
-  });
-
-  it("ignores a question with no topic when topics were requested", () => {
-    const result = selectQuestions({
-      questions: [question("1", ""), question("2", "Safavid Empire")],
-      topics: ["safavid empire"],
-      limit: null,
-    });
-    expect(result.questions.map((q) => q.id)).toEqual(["2"]);
   });
 });
 
