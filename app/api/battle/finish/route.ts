@@ -9,6 +9,7 @@ import {
 } from "@/lib/server/apiUtils";
 import { getQuestionStatus, getReviewIntervalDays, getTopicStatus } from "@/lib/srsSchedule";
 import { recordSessionProgress } from "@/lib/server/progression";
+import { recordRatedResult, type RatedOpponent } from "@/lib/server/ratings";
 import { computeMastery } from "@/lib/mastery";
 import { MASTERY_TIER_ORDER as TIER_ORDER } from "@/lib/masteryTiers";
 
@@ -64,6 +65,15 @@ type FinishBattlePayload = {
    * late-evening session into tomorrow for anyone west of the server.
    */
   localDate?: string;
+  /**
+   * Present only for a rated battle. The opponent's *strength* is never
+   * taken from here -- the server resolves it from the ghost match or the
+   * bot difficulty (see lib/server/ratings.ts). This only says which kind
+   * of opponent to go and look up.
+   */
+  ratedOpponent?: { kind: "bot" | "ghost"; difficulty?: string; matchId?: string };
+  /** The opponent's final score in a rated battle, if there was one. */
+  opponentScore?: number;
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -217,7 +227,10 @@ export async function POST(req: NextRequest) {
 
     const { data: deckData, error: deckError } = await supabase
       .from("decks")
-      .select("id")
+      // course_name is the subject a ranked result is filed under. Ranks
+      // are per subject: being strong at Algebra says nothing about
+      // Chemistry, and one global number would hide both.
+      .select("id, course_name")
       .eq("id", body.deckId)
       .single();
 
@@ -227,6 +240,8 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       );
     }
+
+    const deckSubject = (deckData.course_name || "").trim() || "overall";
 
     const { data: questionRows, error: questionsError } = await supabase
       .from("questions")
@@ -610,7 +625,41 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    return NextResponse.json({ matchId: matchData.id, crownTaken, progression });
+    // Ranked. Only a battle that actually had an opponent is rated -- a
+    // solo study session has nothing to be rated against, and inventing an
+    // opponent for it would make the ladder meaningless.
+    let rating = null;
+    if (authenticatedUserId && body.ratedOpponent) {
+      const requested = body.ratedOpponent;
+      const opponent: RatedOpponent | null =
+        requested.kind === "ghost" && requested.matchId
+          ? { kind: "ghost", matchId: requested.matchId }
+          : requested.kind === "bot"
+            ? { kind: "bot", difficulty: requested.difficulty ?? null }
+            : null;
+
+      if (opponent) {
+        rating = await recordRatedResult({
+          supabase,
+          userId: authenticatedUserId,
+          matchId: matchData.id,
+          subject: deckSubject,
+          playerScore: authoritativeScore,
+          opponentScore:
+            typeof body.opponentScore === "number" && Number.isFinite(body.opponentScore)
+              ? Math.max(0, Math.round(body.opponentScore))
+              : null,
+          opponent,
+        });
+      }
+    }
+
+    return NextResponse.json({
+      matchId: matchData.id,
+      crownTaken,
+      progression,
+      rating,
+    });
   } catch (error) {
     console.error("Failed to finish battle:", error instanceof Error ? error.message : error);
     return NextResponse.json({ error: "Failed to finish battle. Please try again." }, { status: 500 });

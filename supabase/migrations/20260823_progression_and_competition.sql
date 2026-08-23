@@ -202,6 +202,14 @@ create policy "seasons_public_read"
   to authenticated
   using (true);
 
+-- Open the first season if none is running. Without an active season every
+-- rated result files under a null season, which still works but means the
+-- ladder can never be reset or celebrated. 90 days is long enough for a
+-- rating to mean something and short enough to feel like a season.
+insert into public.seasons (name, started_at, ends_at, is_active)
+select 'Season 1 — First Bell', now(), now() + interval '90 days', true
+where not exists (select 1 from public.seasons where is_active);
+
 create table if not exists public.player_ratings (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,

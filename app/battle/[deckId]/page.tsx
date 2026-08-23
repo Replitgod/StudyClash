@@ -1821,6 +1821,16 @@ export default function BattlePage() {
           challengeFromMatchId,
           clientRequestId: finishRequestIdRef.current,
           localDate: localDateKey(new Date()),
+          // Rated only when there was a real opponent. The server resolves
+          // how strong they were -- this only says which kind to look up.
+          ...(effectiveStudyMode === "rival" && rivalReadiness
+            ? {
+                ratedOpponent: isGhostRival && ghostMatchId
+                  ? { kind: "ghost" as const, matchId: ghostMatchId }
+                  : { kind: "bot" as const, difficulty: rivalReadiness.rank },
+                opponentScore: rivalScore,
+              }
+            : {}),
         }),
       });
     } catch (error) {
@@ -1917,6 +1927,11 @@ export default function BattlePage() {
     answers,
     deckId,
     deck,
+    // Both decide whether this result is rated as a ghost or a bot battle.
+    // Reading a stale value here would file the result against the wrong
+    // opponent, which is a silently wrong rating change.
+    isGhostRival,
+    ghostMatchId,
     accountDisplayName,
     playerName,
     totalScore,
