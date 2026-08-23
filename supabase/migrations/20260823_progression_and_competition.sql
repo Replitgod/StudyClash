@@ -156,6 +156,11 @@ create policy "user_achievements_owner_read"
 
 -- Every achievement here is earned by doing something that actually
 -- improves learning. Nothing is awarded for a trivial click (section 55).
+--
+-- Every key below is also awarded by real code (lib/server/progression.ts
+-- and lib/server/ratings.ts). An achievement nothing can ever award is
+-- worse than no achievement at all -- it is a goal the student pursues and
+-- never reaches -- so this list and that code have to stay in step.
 insert into public.achievements (key, title, description, category, target, sort_order)
 values
   ('comeback_kid', 'Comeback Kid', 'Recover 10 concepts after first getting them wrong.', 'learning', 10, 10),
@@ -163,17 +168,22 @@ values
   ('perfect_round', 'Perfect Round', 'Finish a session without a single mistake.', 'mastery', 1, 30),
   ('locked_in', 'Locked In', 'Study meaningfully seven days running.', 'consistency', 7, 40),
   ('month_of_focus', 'Month of Focus', 'Reach a 30-day streak.', 'consistency', 30, 50),
-  ('unit_master', 'Unit Master', 'Reach durable mastery across a full unit.', 'mastery', 1, 60),
   ('giant_slayer', 'Giant Slayer', 'Beat an opponent rated 200 above you.', 'competitive', 1, 70),
   ('weakness_crusher', 'Weakness Crusher', 'Take 25 weak topics up to strong.', 'mastery', 25, 80),
-  ('deep_work', 'Deep Work', 'Answer 500 questions.', 'learning', 500, 90),
-  ('the_long_game', 'The Long Game', 'Keep a topic mastered for 30 days.', 'mastery', 1, 100)
+  ('deep_work', 'Deep Work', 'Answer 500 questions.', 'learning', 500, 90)
 on conflict (key) do update
   set title = excluded.title,
       description = excluded.description,
       category = excluded.category,
       target = excluded.target,
       sort_order = excluded.sort_order;
+
+-- Retired: seeded before anything could award them. Removed rather than
+-- left on the board as goals no student could ever reach.
+delete from public.user_achievements
+  where achievement_key in ('unit_master', 'the_long_game');
+delete from public.achievements
+  where key in ('unit_master', 'the_long_game');
 
 /* ==========================================================================
    Seasons and ranked rating

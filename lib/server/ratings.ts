@@ -224,6 +224,22 @@ export async function recordRatedResult(args: {
       opponent_rating: resolved.rating,
     });
 
+    // Giant Slayer. Awarded here rather than in the progression module
+    // because this is the only place that knows both ratings, and an
+    // achievement nothing can award is worse than no achievement at all.
+    if (won && resolved.rating - current.rating >= 200) {
+      await supabase.from("user_achievements").upsert(
+        {
+          user_id: userId,
+          achievement_key: "giant_slayer",
+          progress: 1,
+          earned_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id,achievement_key", ignoreDuplicates: true }
+      );
+    }
+
     return {
       subject,
       rating: update.rating,

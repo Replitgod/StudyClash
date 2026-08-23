@@ -237,7 +237,10 @@ export default function FriendsPage() {
       {/* ---- Friends ---- */}
       {graph.friends.length > 0 && (
         <section className="mt-10">
-          <h2 className="t-section">Your friends</h2>
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="t-section">Your friends</h2>
+            <p className="t-meta">Challenge them from any finished session</p>
+          </div>
           <ul className="card mt-3 divide-y" style={{ borderColor: "var(--line)" }}>
             {graph.friends.map((friend) => (
               <li key={friend.id} className="flex items-center gap-3 px-4 py-3">
@@ -248,9 +251,19 @@ export default function FriendsPage() {
                   </p>
                   {friend.rank && <p className="t-meta truncate">{friend.rank}</p>}
                 </div>
-                <Link href="/library" className="btn btn-secondary btn-sm shrink-0">
-                  Challenge
-                </Link>
+                {/* No "Challenge" button here on purpose. A challenge is a
+                    link to a specific finished set, created at the end of a
+                    session -- a button here could only dump the student on
+                    the library to pick one, which is not what the word
+                    promises. */}
+                <button
+                  type="button"
+                  className="btn btn-quiet btn-sm shrink-0"
+                  disabled={busyId === friend.id}
+                  onClick={() => act({ action: "remove", userId: friend.id }, friend.id)}
+                >
+                  Remove
+                </button>
               </li>
             ))}
           </ul>
