@@ -10,13 +10,15 @@ import { useAuth } from "@/lib/useAuth";
 import dynamic from "next/dynamic";
 import { Button } from "@/app/components/ui/Button";
 import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { computeMastery, type AttemptSignal } from "@/lib/mastery";
+import { difficultyValue } from "@/lib/adaptiveSession";
 import {
   getTopicStatus,
   getReviewSchedule,
   type TopicStatus,
   type ReviewUrgency,
 } from "@/lib/srsSchedule";
-import { getMasteryTier, MASTERY_TIER_LABELS, type MasteryTier } from "@/lib/masteryTiers";
+import { MASTERY_TIER_LABELS, type MasteryTier } from "@/lib/masteryTiers";
 
 // Closed-by-default chat widget -- code-split out of the main chunk so it
 // doesn't block first paint/hydration of the mastery map.
@@ -366,11 +368,28 @@ function MasteryMapPageContent() {
           matchById.set(row.id, row);
         }
 
+        // This student's own typical answering pace, across everything they
+        // have ever answered. The mastery engine compares against it to
+        // spot hesitation, so it has to be their baseline and not a global
+        // constant -- a deliberate thinker is not a struggling one.
+        const timedAnswers = answers
+          .map((row) => Number(row.response_time_ms || 0))
+          .filter((ms) => Number.isFinite(ms) && ms > 0);
+        const baselineResponseMs =
+          timedAnswers.length >= 5
+            ? timedAnswers.reduce((sum, ms) => sum + ms, 0) / timedAnswers.length
+            : null;
+
         const subjectRows: SubjectMastery[] = decks.map((deck) => {
           const deckMatches = matchRows.filter((row) => row.deck_id === deck.id);
           const deckMatchIds = new Set(deckMatches.map((row) => row.id));
           const deckAnswers = answers.filter((row) => deckMatchIds.has(row.match_id));
 
+          // Per-attempt history, not just totals. This screen reads raw
+          // match_answers, which means it can hand the mastery engine the
+          // richest input it accepts -- every answer with its difficulty,
+          // response time and timestamp -- rather than the cumulative
+          // counts the shared snapshot has to make do with.
           const topicMap = new Map<
             string,
             {
@@ -380,6 +399,8 @@ function MasteryMapPageContent() {
               speedCount: number;
               lastPracticedTs: number;
               misses: number;
+              sessionIds: Set<string>;
+              attempts: AttemptSignal[];
             }
           >();
 
@@ -395,6 +416,8 @@ function MasteryMapPageContent() {
               speedCount: 0,
               lastPracticedTs: 0,
               misses: 0,
+              sessionIds: new Set<string>(),
+              attempts: [] as AttemptSignal[],
             };
 
             entry.total += 1;
@@ -409,6 +432,14 @@ function MasteryMapPageContent() {
               entry.speedSum += responseMs;
               entry.speedCount += 1;
             }
+
+            entry.sessionIds.add(answer.match_id);
+            entry.attempts.push({
+              isCorrect: Boolean(answer.is_correct),
+              at: Date.parse(matchById.get(answer.match_id)?.created_at || "") || 0,
+              difficulty: difficultyValue(question.difficulty),
+              responseMs: responseMs > 0 ? responseMs : null,
+            });
 
             const practicedAt = matchById.get(answer.match_id)?.created_at || "";
             const practicedTs = new Date(practicedAt).getTime();
@@ -447,12 +478,25 @@ function MasteryMapPageContent() {
 
           const allTopics: TopicNode[] = Array.from(topicMap.entries())
             .map(([topic, stats]) => {
-              const accuracy =
-                stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
               const speed =
                 stats.speedCount > 0 ? Math.round(stats.speedSum / stats.speedCount) : 0;
+
+              // The single mastery calculation, shared with Home, Library
+              // and Practice via lib/mastery.ts. This screen used to report
+              // raw correct/total, so the same topic could read 40% here
+              // and 51% two screens away.
+              const state = computeMastery({
+                correct: stats.correct,
+                total: stats.total,
+                attempts: stats.attempts,
+                sessions: stats.sessionIds.size,
+                lastPracticedMs: stats.lastPracticedTs || null,
+                baselineResponseMs: baselineResponseMs,
+              });
+
+              const accuracy = state.mastery;
               const status = getTopicStatus(accuracy);
-              const masteryTier = getMasteryTier(stats.correct, stats.total);
+              const masteryTier = state.tier;
               const reviewSchedule = getReviewSchedule({
                 status,
                 attemptedCount: stats.total,
@@ -499,6 +543,8 @@ function MasteryMapPageContent() {
           );
           const weakTopics = allTopics.filter((topic) => topic.masteryTier === "needs_review");
 
+          // `topic.accuracy` is the modelled mastery, not raw correct/total,
+          // so this average matches what Home and Practice report.
           const masteryPercent =
             allTopics.length > 0
               ? Math.round(
