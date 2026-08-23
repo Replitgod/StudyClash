@@ -33,7 +33,12 @@ export async function GET(req: NextRequest) {
   const supabase = getServiceSupabaseClient();
   const { data, error } = await supabase
     .from("topic_review_schedule")
-    .select("deck_id, topic, status, correct_count, total_count, next_review_at")
+    // `attempts` and `last_practiced_at` are what let the mastery engine
+    // model forgetting (lib/mastery.ts). Without them every topic looks
+    // equally fresh and nothing can ever be reported as fading.
+    .select(
+      "deck_id, topic, status, correct_count, total_count, next_review_at, attempts, last_practiced_at, recoveries"
+    )
     .eq("user_id", userId)
     .limit(MAX_ROWS);
 

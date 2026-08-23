@@ -49,6 +49,12 @@ type FinishBattlePayload = {
   answers: AnswerPayload[];
   challengeFromMatchId?: string;
   clientRequestId?: string;
+  /**
+   * Questions the student missed and then got right on a follow-up (see
+   * app/api/explain-mistake). Credited to mastery as an extra spaced
+   * repetition, never as an extra correct answer -- the miss still stands.
+   */
+  recoveredQuestionIds?: string[];
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -447,6 +453,20 @@ export async function POST(req: NextRequest) {
     // spaced-repetition schedule so the SRS cron (app/api/cron/srs-reviews)
     // can later remind the student when it comes due. Never blocks the
     // battle-finish response -- the match itself is already saved above.
+    // Recovered questions are filtered against the answers this request
+    // actually submitted, and only misses can count. A client claiming a
+    // recovery on a question it never answered -- or on one it got right
+    // first time -- would be buying extra memory stability for free, so the
+    // claim is checked rather than trusted.
+    const missedIds = new Set(
+      body.answers.filter((a) => !a.isCorrect).map((a) => a.questionId)
+    );
+    const recoveredQuestionIds = new Set(
+      (Array.isArray(body.recoveredQuestionIds) ? body.recoveredQuestionIds : [])
+        .filter((id): id is string => typeof id === "string")
+        .filter((id) => missedIds.has(id))
+    );
+
     try {
       const questionTopics = new Map<string, string>();
       for (const question of questionRows as Array<{
@@ -464,6 +484,7 @@ export async function POST(req: NextRequest) {
         playerName: body.playerName,
         answers: body.answers,
         questionTopics,
+        recoveredQuestionIds,
       });
     } catch {
       // topic_review_schedule may not be deployed yet.
@@ -480,6 +501,7 @@ export async function POST(req: NextRequest) {
         userId: authenticatedUserId,
         playerName: body.playerName,
         answers: body.answers,
+        recoveredQuestionIds,
       });
     } catch {
       // question_review_schedule may not be deployed yet.
@@ -578,16 +600,26 @@ async function updateTopicReviewSchedule(args: {
   playerName: string;
   answers: AnswerPayload[];
   questionTopics: Map<string, string>;
+  recoveredQuestionIds: Set<string>;
 }): Promise<void> {
-  const { deckId, userId, playerName, answers, questionTopics } = args;
+  const { deckId, userId, playerName, answers, questionTopics, recoveredQuestionIds } = args;
 
-  const perTopic = new Map<string, { correct: number; total: number }>();
+  const perTopic = new Map<
+    string,
+    { correct: number; total: number; recoveries: number }
+  >();
   for (const answer of answers) {
     const topic = questionTopics.get(answer.questionId);
     if (!topic) continue;
-    const bucket = perTopic.get(topic) || { correct: 0, total: 0 };
+    const bucket = perTopic.get(topic) || { correct: 0, total: 0, recoveries: 0 };
     bucket.total += 1;
     if (answer.isCorrect) bucket.correct += 1;
+    // A recovery does not turn the miss into a hit -- the student still got
+    // it wrong first, and mastery should keep saying so. It is recorded
+    // alongside as separate evidence that the explanation worked.
+    if (!answer.isCorrect && recoveredQuestionIds.has(answer.questionId)) {
+      bucket.recoveries += 1;
+    }
     perTopic.set(topic, bucket);
   }
 
@@ -599,7 +631,7 @@ async function updateTopicReviewSchedule(args: {
   for (const [topic, delta] of perTopic.entries()) {
     let existingQuery = supabase
       .from("topic_review_schedule")
-      .select("id, correct_count, total_count, attempts")
+      .select("id, correct_count, total_count, attempts, recoveries")
       .eq("deck_id", deckId)
       .eq("topic", topic);
 
@@ -612,6 +644,7 @@ async function updateTopicReviewSchedule(args: {
     const correctCount = (existing?.correct_count || 0) + delta.correct;
     const totalCount = (existing?.total_count || 0) + delta.total;
     const attempts = (existing?.attempts || 0) + 1;
+    const recoveries = (existing?.recoveries || 0) + delta.recoveries;
     const accuracy = totalCount > 0 ? (correctCount / totalCount) * 100 : 0;
     const status = getTopicStatus(accuracy);
     const intervalDays = getReviewIntervalDays(status, attempts);
@@ -626,6 +659,7 @@ async function updateTopicReviewSchedule(args: {
       correct_count: correctCount,
       total_count: totalCount,
       attempts,
+      recoveries,
       last_practiced_at: nowIso,
       next_review_at: nextReviewAt,
       notified_at: null,
@@ -652,8 +686,9 @@ async function updateQuestionReviewSchedule(args: {
   userId: string | null;
   playerName: string;
   answers: AnswerPayload[];
+  recoveredQuestionIds: Set<string>;
 }): Promise<void> {
-  const { deckId, userId, playerName, answers } = args;
+  const { deckId, userId, playerName, answers, recoveredQuestionIds } = args;
 
   if (answers.length === 0) return;
 
@@ -663,7 +698,7 @@ async function updateQuestionReviewSchedule(args: {
   for (const answer of answers) {
     let existingQuery = supabase
       .from("question_review_schedule")
-      .select("id, correct_streak, correct_count, total_count")
+      .select("id, correct_streak, correct_count, total_count, recoveries")
       .eq("deck_id", deckId)
       .eq("question_id", answer.questionId);
 
@@ -678,6 +713,9 @@ async function updateQuestionReviewSchedule(args: {
       : 0;
     const correctCount = (existing?.correct_count || 0) + (answer.isCorrect ? 1 : 0);
     const totalCount = (existing?.total_count || 0) + 1;
+    const recoveries =
+      (existing?.recoveries || 0) +
+      (!answer.isCorrect && recoveredQuestionIds.has(answer.questionId) ? 1 : 0);
     const status = getQuestionStatus(correctStreak);
     const intervalDays = getReviewIntervalDays(status, totalCount);
     const nextReviewAt = new Date(nowMs + intervalDays * 24 * 60 * 60 * 1000).toISOString();
@@ -691,6 +729,7 @@ async function updateQuestionReviewSchedule(args: {
       correct_streak: correctStreak,
       correct_count: correctCount,
       total_count: totalCount,
+      recoveries,
       last_practiced_at: nowIso,
       next_review_at: nextReviewAt,
       updated_at: nowIso,

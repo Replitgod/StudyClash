@@ -9,7 +9,8 @@
 
 import { supabase } from "@/lib/supabase";
 import { authFetch } from "@/lib/authFetch";
-import { getMasteryTier, type MasteryTier } from "@/lib/masteryTiers";
+import { type MasteryTier } from "@/lib/masteryTiers";
+import { computeMastery, opportunityScore, type MasteryState } from "@/lib/mastery";
 
 export type DeckRow = {
   id: string;
@@ -33,6 +34,11 @@ export type TopicRow = {
   correct_count: number;
   total_count: number;
   next_review_at: string;
+  /** Sessions that have touched this topic. Drives stability in the model. */
+  attempts?: number | null;
+  last_practiced_at?: string | null;
+  /** Missed-then-recovered questions. Counts as extra spaced repetitions. */
+  recoveries?: number | null;
 };
 
 export type DeckSummary = {
@@ -56,9 +62,18 @@ export type TopicSummary = {
   course: string;
   correct: number;
   total: number;
+  /** Raw lifetime accuracy. Kept for display; not what ranking reads. */
   accuracy: number;
+  /** 0-100 from the mastery engine: recency, decay and evidence included. */
+  mastery: number;
+  /** The full modelled state, for screens that explain the number. */
+  state: MasteryState;
   tier: MasteryTier;
   isDue: boolean;
+  /** Known once, slipping now. The cheapest thing in the app to save. */
+  isFading: boolean;
+  /** How urgent it is to fix this, relative to every other topic. */
+  priority: number;
 };
 
 export type CourseSummary = {
@@ -71,9 +86,11 @@ export type StudySnapshot = {
   decks: DeckSummary[];
   topics: TopicSummary[];
   courses: CourseSummary[];
-  /** Everything due for review right now, weakest first. */
+  /** Everything due for review right now, most worth fixing first. */
   dueTopics: TopicSummary[];
   weakTopics: TopicSummary[];
+  /** Topics being actively forgotten. Cheap to save, expensive to lose. */
+  fadingTopics: TopicSummary[];
   totalSessions: number;
   overallMastery: number | null;
   /** True when the student has never created a deck. */
@@ -86,6 +103,7 @@ export const EMPTY_SNAPSHOT: StudySnapshot = {
   courses: [],
   dueTopics: [],
   weakTopics: [],
+  fadingTopics: [],
   totalSessions: 0,
   overallMastery: null,
   isEmpty: true,
@@ -132,12 +150,54 @@ export function buildSnapshot(args: {
     topicsByDeck.set(topic.deck_id, list);
   }
 
+  // --- The mastery model, once per topic ----------------------------------
+  //
+  // Everything below reads from these rather than recomputing accuracy in
+  // three different places, which is how Home, Library and Practice used to
+  // end up quoting three different numbers for the same topic.
+  const stateByRow = new Map<TopicRow, MasteryState>();
+  for (const row of topics) {
+    stateByRow.set(
+      row,
+      computeMastery({
+        correct: row.correct_count,
+        total: row.total_count,
+        sessions: row.attempts ?? undefined,
+        recoveries: row.recoveries ?? undefined,
+        lastPracticedMs: row.last_practiced_at
+          ? Date.parse(row.last_practiced_at)
+          : null,
+        now,
+      })
+    );
+  }
+
+  // A topic is due if the server scheduled it due, if it was flagged weak,
+  // or if the model says it has decayed past the review threshold. The
+  // union matters: the stored `next_review_at` is only recomputed when the
+  // student practises, so on its own it cannot notice a topic going stale
+  // between sessions -- which is exactly when a reminder is worth most.
   const isDueRow = (row: TopicRow) =>
-    row.status === "weak" || Date.parse(row.next_review_at) <= now;
+    row.status === "weak" ||
+    Date.parse(row.next_review_at) <= now ||
+    (stateByRow.get(row)?.isDue ?? false);
 
   const deckSummaries: DeckSummary[] = decks.map((deck) => {
     const history = historyByDeck.get(deck.id);
     const deckTopics = topicsByDeck.get(deck.id) || [];
+
+    // Prefer the model when there is per-topic evidence to model from; fall
+    // back to raw session accuracy for a deck that has been practised but
+    // has no topic rows yet.
+    const modelled = deckTopics
+      .map((row) => stateByRow.get(row))
+      .filter((state): state is MasteryState => Boolean(state));
+
+    const mastery = modelled.length
+      ? Math.round(modelled.reduce((sum, s) => sum + s.mastery, 0) / modelled.length)
+      : history
+        ? pct(history.correct, history.total)
+        : null;
 
     return {
       id: deck.id,
@@ -145,7 +205,7 @@ export function buildSnapshot(args: {
       course: (deck.course_name || "").trim() || "General",
       createdAt: deck.created_at,
       lastStudiedAt: history?.last || null,
-      mastery: history ? pct(history.correct, history.total) : null,
+      mastery,
       dueTopics: deckTopics.filter(isDueRow).map((t) => t.topic),
       weakTopics: deckTopics.filter((t) => t.status === "weak").map((t) => t.topic),
     };
@@ -159,6 +219,7 @@ export function buildSnapshot(args: {
     .filter((row) => deckById.has(row.deck_id))
     .map((row) => {
       const deck = deckById.get(row.deck_id) as DeckSummary;
+      const state = stateByRow.get(row) as MasteryState;
       return {
         topic: row.topic,
         deckId: row.deck_id,
@@ -167,8 +228,12 @@ export function buildSnapshot(args: {
         correct: row.correct_count,
         total: row.total_count,
         accuracy: pct(row.correct_count, row.total_count) ?? 0,
-        tier: getMasteryTier(row.correct_count, row.total_count),
+        mastery: state.mastery,
+        state,
+        tier: state.tier,
         isDue: isDueRow(row),
+        isFading: state.isFading,
+        priority: opportunityScore(state),
       };
     });
 
@@ -205,14 +270,23 @@ export function buildSnapshot(args: {
     }),
     topics: topicSummaries,
     courses,
+    // Ordered by how much fixing it is actually worth, not simply by the
+    // lowest number -- see opportunityScore in lib/mastery.ts.
     dueTopics: topicSummaries
       .filter((t) => t.isDue)
-      .sort((a, b) => a.accuracy - b.accuracy),
+      .sort((a, b) => b.priority - a.priority),
     weakTopics: topicSummaries
       .filter((t) => t.tier === "needs_review" || t.tier === "developing")
-      .sort((a, b) => a.accuracy - b.accuracy),
+      .sort((a, b) => b.priority - a.priority),
+    fadingTopics: topicSummaries
+      .filter((t) => t.isFading)
+      .sort((a, b) => a.state.retrievability - b.state.retrievability),
     totalSessions: matches.length,
-    overallMastery: pct(totalCorrect, totalAnswered),
+    overallMastery: topicSummaries.length
+      ? Math.round(
+          topicSummaries.reduce((sum, t) => sum + t.mastery, 0) / topicSummaries.length
+        )
+      : pct(totalCorrect, totalAnswered),
     isEmpty: decks.length === 0,
   };
 }

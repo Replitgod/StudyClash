@@ -19,6 +19,8 @@ import {
 } from "@/lib/studySession";
 import { MathText } from "@/app/components/ui/MathText";
 import { ArrowRightIcon, CheckIcon, CloseIcon } from "@/app/components/app/Icons";
+import { MistakeRecovery } from "@/app/components/study/MistakeRecovery";
+import type { RecoveryOutcome } from "@/lib/mistakeRecovery";
 
 // The study session.
 //
@@ -62,6 +64,11 @@ export default function StudySession() {
 
   const questionShownAtRef = useRef<number>(0);
   const startedAtRef = useRef<number>(0);
+
+  // Questions the student missed and then got right on the follow-up.
+  // Recovery is the strongest learning signal the app collects, so it is
+  // sent to the server with the session and credited to mastery there.
+  const [recoveredIds, setRecoveredIds] = useState<string[]>([]);
 
   const topics = useMemo(
     () => parseTopics(searchParams.get("topics")),
@@ -144,6 +151,16 @@ export default function StudySession() {
 
   /* -------------------------------------------------------------- answer */
 
+  const recordRecovery = useCallback(
+    (outcome: RecoveryOutcome) => {
+      if (outcome !== "recovered" || !current) return;
+      setRecoveredIds((prev) =>
+        prev.includes(current.id) ? prev : [...prev, current.id]
+      );
+    },
+    [current]
+  );
+
   const check = useCallback(() => {
     if (!current || selected === null || checked) return;
 
@@ -186,6 +203,7 @@ export default function StudySession() {
             correctAnswers: finalAnswers.filter((a) => a.isCorrect).length,
             timeTakenSeconds: elapsedSeconds,
             answers: finalAnswers,
+            recoveredQuestionIds: recoveredIds,
           }),
         });
 
@@ -207,7 +225,7 @@ export default function StudySession() {
         refresh();
       }
     },
-    [deckId, profile, user, refresh]
+    [deckId, profile, user, refresh, recoveredIds]
   );
 
   const advance = useCallback(() => {
@@ -477,25 +495,33 @@ export default function StudySession() {
           <div className="rise mt-6">
             <p
               className="text-[15px] font-medium"
-              style={{ color: isCorrect ? "var(--ok)" : "var(--bad)" }}
+              aria-live="polite"
+              style={{ color: isCorrect ? "var(--ok)" : "var(--text-1)" }}
             >
-              {isCorrect ? "Correct" : "Not quite"}
+              {isCorrect ? "Correct" : "Almost."}
             </p>
             {current.explanation && (
               <p className="t-body mt-2">
                 <MathText text={current.explanation} />
               </p>
             )}
-            {!isCorrect && (
-              <Link
-                href={`/vyra?about=${encodeURIComponent(
-                  current.topic || deck.title
-                )}`}
-                className="btn btn-quiet btn-sm mt-3 -ml-3"
-                style={{ color: "var(--brand-text)" }}
-              >
-                Ask Vyra about this
-              </Link>
+            {!isCorrect && selected !== null && (
+              <>
+                <MistakeRecovery
+                  questionId={current.id}
+                  selectedAnswer={selected}
+                  onOutcome={recordRecovery}
+                />
+                <Link
+                  href={`/vyra?about=${encodeURIComponent(
+                    current.topic || deck.title
+                  )}`}
+                  className="btn btn-quiet btn-sm mt-3 -ml-3"
+                  style={{ color: "var(--brand-text)" }}
+                >
+                  Ask Vyra about this
+                </Link>
+              </>
             )}
           </div>
         )}
