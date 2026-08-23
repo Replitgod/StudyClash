@@ -29,7 +29,20 @@ import { MathText } from "@/app/components/ui/MathText";
 import { ArrowRightIcon, CheckIcon, CloseIcon } from "@/app/components/app/Icons";
 import { MistakeRecovery } from "@/app/components/study/MistakeRecovery";
 import type { RecoveryOutcome } from "@/lib/mistakeRecovery";
-import { localDateKey } from "@/lib/progression";
+import { localDateKey, QUEST_CATALOGUE, type QuestKey } from "@/lib/progression";
+import { copyTextToClipboard } from "@/lib/clipboard";
+
+// What /api/battle/finish reports back about a saved session.
+type SessionProgression = {
+  xpAwarded: number;
+  level: number;
+  leveledUp: boolean;
+  currentStreak: number;
+  streakExtended: boolean;
+  usedFreeze: boolean;
+  questsCompleted: QuestKey[];
+  achievementsEarned: string[];
+};
 
 // The study session.
 //
@@ -70,6 +83,16 @@ export default function StudySession() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [matchId, setMatchId] = useState<string | null>(null);
+
+  // What the session was worth: XP, streak, quests, achievements. Comes
+  // back from the finish endpoint, which is the only thing allowed to
+  // decide it -- see lib/server/progression.ts.
+  const [progression, setProgression] = useState<SessionProgression | null>(null);
+
+  // The share link for this result, created on demand.
+  const [shareState, setShareState] = useState<"idle" | "working" | "copied" | "failed">(
+    "idle"
+  );
 
   const questionShownAtRef = useRef<number>(0);
   const startedAtRef = useRef<number>(0);
@@ -290,6 +313,7 @@ export default function StudySession() {
           throw new Error(data?.error || "We could not save this session.");
         }
         setMatchId(data?.matchId || null);
+        setProgression(data?.progression || null);
       } catch (err) {
         // The session still counts for the student even if the write failed;
         // say so rather than pretending it saved.
@@ -305,6 +329,27 @@ export default function StudySession() {
     },
     [deckId, profile, user, refresh, recoveredIds]
   );
+
+  // Creating the share token has to finish before the clipboard write, not
+  // inside it -- Safari revokes the click's user activation the moment an
+  // await sits between the two, and the copy silently fails. See
+  // lib/clipboard.ts.
+  const shareChallenge = useCallback(async (id: string) => {
+    setShareState("working");
+    try {
+      const response = await authFetch("/api/challenge/create", {
+        method: "POST",
+        body: JSON.stringify({ matchId: id }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.token) throw new Error("no token");
+
+      const url = `${window.location.origin}/challenge/${data.token}`;
+      setShareState((await copyTextToClipboard(url)) ? "copied" : "failed");
+    } catch {
+      setShareState("failed");
+    }
+  }, []);
 
   const advance = useCallback(() => {
     if (isLast) {
@@ -427,7 +472,39 @@ export default function StudySession() {
           </section>
         )}
 
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+        {/* ---- What it was worth ---- */}
+        {progression && progression.xpAwarded > 0 && (
+          <section className="mt-8 rise">
+            <div
+              className="card flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3"
+              style={{ background: "var(--panel-raised)" }}
+            >
+              <span
+                className="text-[15px] font-medium tabular-nums"
+                style={{ color: "var(--brand-text)" }}
+              >
+                +{progression.xpAwarded} XP
+              </span>
+              {progression.leveledUp && (
+                <span className="chip chip-brand">Level {progression.level}</span>
+              )}
+              {progression.streakExtended && progression.currentStreak > 1 && (
+                <span className="t-meta">
+                  {progression.currentStreak}-day streak
+                  {progression.usedFreeze ? " · freeze used" : ""}
+                </span>
+              )}
+              {progression.questsCompleted.map((quest) => (
+                <span key={quest} className="chip chip-ok">
+                  {QUEST_CATALOGUE[quest]?.title || "Quest"} done
+                </span>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* ---- Where to go next. Never a dead end. ---- */}
+        <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           {reviewTopics.length > 0 ? (
             <Link
               href={sessionHref({
@@ -438,28 +515,73 @@ export default function StudySession() {
               })}
               className="btn btn-primary btn-lg"
             >
-              Fix my mistakes
+              Train my mistakes
               <ArrowRightIcon className="h-[18px] w-[18px]" />
             </Link>
           ) : (
-            <Link href="/home" className="btn btn-primary btn-lg">
-              Done
+            <Link
+              href={sessionHref({ deckId: deck.id, mode: "practice", limit: 10 })}
+              className="btn btn-primary btn-lg"
+            >
+              Go again
+              <ArrowRightIcon className="h-[18px] w-[18px]" />
             </Link>
           )}
-          <Link href={`/library/${deck.id}`} className="btn btn-secondary btn-lg">
-            Back to material
-          </Link>
+
+          {/* A rematch is the same material again, which is the point: the
+              second run is where the explanation gets tested. */}
+          {reviewTopics.length > 0 && (
+            <Link
+              href={sessionHref({ deckId: deck.id, mode: "practice", limit: 10 })}
+              className="btn btn-secondary btn-lg"
+            >
+              Rematch
+            </Link>
+          )}
+
+          {matchId && (
+            <button
+              type="button"
+              className="btn btn-secondary btn-lg"
+              disabled={shareState === "working"}
+              onClick={() => void shareChallenge(matchId)}
+            >
+              {shareState === "copied"
+                ? "Link copied"
+                : shareState === "working"
+                  ? "Creating…"
+                  : shareState === "failed"
+                    ? "Try again"
+                    : "Challenge a friend"}
+            </button>
+          )}
         </div>
 
-        {matchId && (
+        {shareState === "copied" && (
+          <p className="t-meta mt-3" aria-live="polite">
+            Send that link to anyone. They can play this exact set without an
+            account, and you will see how they did.
+          </p>
+        )}
+
+        <div className="mt-6 flex flex-wrap gap-x-5 gap-y-2">
           <Link
-            href={`/results/${matchId}`}
-            className="btn btn-quiet btn-sm mt-6 -ml-3"
+            href={`/library/${deck.id}`}
+            className="text-[13px]"
             style={{ color: "var(--text-3)" }}
           >
-            See the full breakdown
+            Back to material
           </Link>
-        )}
+          {matchId && (
+            <Link
+              href={`/results/${matchId}`}
+              className="text-[13px]"
+              style={{ color: "var(--text-3)" }}
+            >
+              See the full breakdown
+            </Link>
+          )}
+        </div>
       </div>
     );
   }
