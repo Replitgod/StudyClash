@@ -146,7 +146,7 @@ export function CardArena() {
     verdict === "right"
       ? "rgb(52 227 155 / 0.5)"
       : verdict === "wrong"
-        ? "var(--accent-line)"
+        ? "rgb(244 63 94 / 0.5)"
         : "rgb(255 255 255 / 0.1)";
 
   return (
@@ -174,7 +174,7 @@ export function CardArena() {
                 verdict === "right"
                   ? "0 0 90px -26px rgb(52 227 155 / 0.6)"
                   : verdict === "wrong"
-                    ? "0 0 90px -24px rgb(255 0 122 / 0.7)"
+                    ? "0 0 90px -24px rgb(244 63 94 / 0.7)"
                     : "0 22px 60px -30px rgb(0 0 0 / 0.9)",
               transition: "border-color 400ms, box-shadow 400ms",
             }}
@@ -192,8 +192,8 @@ export function CardArena() {
                   top: p.y,
                   width: p.size,
                   height: p.size,
-                  background: "var(--accent)",
-                  boxShadow: "0 0 8px rgb(255 0 122 / 0.9)",
+                  background: "#f43f5e",
+                  boxShadow: "0 0 8px rgb(244 63 94 / 0.9)",
                   ["--px" as string]: `${p.dx}px`,
                   ["--py" as string]: `${p.dy}px`,
                   animation: "particle-fly 850ms cubic-bezier(0.2,0.7,0.3,1) forwards",
@@ -245,12 +245,12 @@ export function CardArena() {
                           borderColor: showCorrect
                             ? "rgb(52 227 155 / 0.6)"
                             : showWrong
-                              ? "var(--accent)"
+                              ? "rgb(244 63 94 / 0.65)"
                               : "rgb(255 255 255 / 0.12)",
                           background: showCorrect
                             ? "rgb(52 227 155 / 0.1)"
                             : showWrong
-                              ? "var(--accent-soft)"
+                              ? "rgb(244 63 94 / 0.12)"
                               : "rgb(255 255 255 / 0.03)",
                           color: showCorrect
                             ? "#9ff0c8"
@@ -301,14 +301,14 @@ export function CardArena() {
               style={{
                 border: "1px solid var(--accent-line)",
                 background:
-                  "linear-gradient(160deg, rgb(255 0 122 / 0.08), rgb(11 11 12 / 0.7))",
+                  "linear-gradient(160deg, rgb(244 63 94 / 0.08), rgb(11 11 12 / 0.7))",
                 backdropFilter: "blur(14px)",
-                boxShadow: "0 0 70px -26px rgb(255 0 122 / 0.6)",
+                boxShadow: "0 0 70px -26px rgb(244 63 94 / 0.6)",
               }}
             >
               {[
-                ["What went wrong", EXPLANATION.wrong, "var(--accent-bright)"],
-                ["The idea", EXPLANATION.idea, "#8aa8ff"],
+                ["What went wrong", EXPLANATION.wrong, "#ff8fa3"],
+                ["The idea", EXPLANATION.idea, "var(--accent-bright)"],
                 ["Next time", EXPLANATION.next, "#34e39b"],
               ].map(([label, body, colour], i) => (
                 <div key={label} className={i > 0 ? "mt-4" : undefined}>

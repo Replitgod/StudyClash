@@ -65,12 +65,12 @@ export function NeonLanding() {
         <div
           className="halo left-1/2 top-[-14%] h-[46rem] w-[46rem] -translate-x-1/2"
           aria-hidden="true"
-          style={{ background: "rgb(255 0 122 / 0.14)" }}
+          style={{ background: "rgb(124 106 240 / 0.16)" }}
         />
         <div
           className="halo left-[6%] top-[38%] h-[26rem] w-[26rem]"
           aria-hidden="true"
-          style={{ background: "rgb(91 140 255 / 0.09)" }}
+          style={{ background: "rgb(52 227 155 / 0.07)" }}
         />
 
         <div className="shell relative pb-[clamp(5rem,10vw,8rem)] pt-[clamp(5rem,10vw,8rem)]">
@@ -148,7 +148,7 @@ export function NeonLanding() {
         <div
           className="halo right-[-6%] top-[16%] h-[32rem] w-[32rem]"
           aria-hidden="true"
-          style={{ background: "rgb(255 0 122 / 0.1)" }}
+          style={{ background: "rgb(124 106 240 / 0.12)" }}
         />
 
         <div className="shell relative">
@@ -168,7 +168,7 @@ export function NeonLanding() {
 
               <Reveal delay={90}>
                 <p className="lede mt-7">
-                  This is not a loop. The magenta nodes are genuinely decaying
+                  This is not a loop. The fading nodes are genuinely decaying
                   as you read — dimming, flickering and orbiting further out
                   the longer they go untouched.
                 </p>
@@ -244,7 +244,7 @@ export function NeonLanding() {
         <div
           className="halo left-[-4%] top-[24%] h-[30rem] w-[30rem]"
           aria-hidden="true"
-          style={{ background: "rgb(255 0 122 / 0.11)" }}
+          style={{ background: "rgb(124 106 240 / 0.13)" }}
         />
 
         <div className="shell relative">
@@ -351,7 +351,7 @@ export function NeonLanding() {
             <div
               className="halo left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2"
               aria-hidden="true"
-              style={{ background: "rgb(255 0 122 / 0.16)" }}
+              style={{ background: "rgb(124 106 240 / 0.18)" }}
             />
 
             <Reveal>

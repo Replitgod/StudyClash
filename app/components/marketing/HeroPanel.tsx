@@ -29,7 +29,7 @@ const ROWS: Row[] = [
 ];
 
 const TONE: Record<Row["state"], { bar: string; label: string; text: string }> = {
-  decaying: { bar: "var(--accent)", label: "Decaying", text: "var(--accent-bright)" },
+  decaying: { bar: "#f43f5e", label: "Decaying", text: "#ff8fa3" },
   due: { bar: "#ffb020", label: "Due now", text: "#ffc861" },
   holding: { bar: "#34e39b", label: "Holding", text: "#7fe9be" },
 };
@@ -56,7 +56,7 @@ export function HeroPanel() {
         className="absolute -inset-8 rounded-[32px]"
         style={{
           background:
-            "radial-gradient(60% 55% at 50% 30%, rgb(255 0 122 / 0.18), transparent 70%)",
+            "radial-gradient(60% 55% at 50% 30%, rgb(124 106 240 / 0.2), transparent 70%)",
           filter: "blur(28px)",
         }}
       />
@@ -105,7 +105,7 @@ export function HeroPanel() {
         </p>
         <p
           className="mt-1.5 inline-flex items-center gap-1.5 text-[13px]"
-          style={{ color: "var(--accent-bright)" }}
+          style={{ color: "#ff8fa3" }}
         >
           <TrendingDown className="h-3.5 w-3.5 flex-none" aria-hidden="true" />
           2 concepts slipping since Tuesday
