@@ -149,7 +149,7 @@ export default function FriendsPage() {
         </button>
       </form>
       <p className="t-meta mt-2">
-        You need their exact username. AcedIQ does not list other students.
+        You need their exact username. AceDecks does not list other students.
       </p>
 
       {message && (

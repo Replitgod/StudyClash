@@ -1,4 +1,4 @@
-# AcedIQ
+# AceDecks
 
 An AI study app. You give it a topic, your notes, a PDF, or a photo; it
 writes the study material, quizzes you, works out what you keep forgetting,

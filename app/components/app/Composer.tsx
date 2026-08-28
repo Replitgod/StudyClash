@@ -8,12 +8,12 @@ import { useStudy } from "@/lib/useStudy";
 import { trackEvent } from "@/lib/trackEvent";
 import { PaperclipIcon, ArrowRightIcon, CloseIcon } from "./Icons";
 
-// The one input in AcedIQ.
+// The one input in AceDecks.
 //
 // It replaces every "PDF Summarizer" / "Flashcard Generator" / "Quiz
 // Generator" / "Create Deck" flow the app used to have as separate pages
-// with separate forms. The student gives AcedIQ material -- typed, pasted,
-// or attached -- and AcedIQ decides what to do with it. There is nothing to
+// with separate forms. The student gives AceDecks material -- typed, pasted,
+// or attached -- and AceDecks decides what to do with it. There is nothing to
 // configure: question count, difficulty, and question type are all chosen
 // server-side defaults.
 
@@ -23,7 +23,7 @@ const MAX_TEXT_BYTES = 5 * 1024 * 1024;
 const MAX_NOTES_CHARACTERS = 120_000;
 
 // Under this many words, an input is a topic ("AP World Unit 3"), not study
-// material. AcedIQ writes the material itself in that case -- see
+// material. AceDecks writes the material itself in that case -- see
 // `sourceMode: "topic"` in app/api/generate-questions/route.ts.
 const TOPIC_WORD_LIMIT = 25;
 

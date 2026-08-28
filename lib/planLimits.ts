@@ -1,6 +1,6 @@
 // Single source of truth for what the free plan is allowed to do.
 //
-// AcedIQ is now run as a single-user / open-access app: there is no daily
+// AceDecks is now run as a single-user / open-access app: there is no daily
 // generation cap, no PDF cap, and no beta access code gate. Everything is
 // unlimited on every plan.
 //

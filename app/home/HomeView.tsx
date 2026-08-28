@@ -242,7 +242,7 @@ export default function HomeView() {
             ))}
           </div>
           <p className="t-meta mt-3">
-            Type one of those into the box above and press Start studying. AcedIQ
+            Type one of those into the box above and press Start studying. AceDecks
             writes the notes, the questions, and the flashcards for you.
           </p>
         </section>

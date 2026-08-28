@@ -57,7 +57,7 @@ const RANK_COLORS: Record<string, string> = {
   Diamond: "text-indigo-200 border-indigo-400/30 bg-indigo-500/10",
   Master: "text-indigo-200 border-indigo-400/30 bg-indigo-500/10",
   Grandmaster: "text-green-200 border-green-400/30 bg-green-500/10",
-  "AcedIQ Elite": "text-green-200 border-green-400/30 bg-green-500/10",
+  "AceDecks Elite": "text-green-200 border-green-400/30 bg-green-500/10",
 };
 
 function rankStyle(rank: string): string {

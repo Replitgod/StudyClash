@@ -1,4 +1,4 @@
-// Where every route in AcedIQ lives, in one place.
+// Where every route in AceDecks lives, in one place.
 //
 // The app has exactly four primary destinations. Everything else is either
 // a detail screen inside one of them, a distraction-free focus screen, or a

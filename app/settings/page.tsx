@@ -102,7 +102,7 @@ export default function SettingsPage() {
             >
               Your name
             </label>
-            <p className="t-meta mt-0.5">What AcedIQ calls you.</p>
+            <p className="t-meta mt-0.5">What AceDecks calls you.</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <input
                 id="display-name"
@@ -168,7 +168,7 @@ export default function SettingsPage() {
       <section className="mt-8">
         <h2 className="t-section">Everything else</h2>
         <p className="t-meta mt-1.5">
-          Less-used corners of AcedIQ. They all still work; they are just not
+          Less-used corners of AceDecks. They all still work; they are just not
           worth a permanent place in the sidebar.
         </p>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">

@@ -93,7 +93,7 @@ const CLASH_RANKS = [
   { label: "Diamond", min: 74 },
   { label: "Master", min: 86 },
   { label: "Grandmaster", min: 93 },
-  { label: "AcedIQ Elite", min: 97 },
+  { label: "AceDecks Elite", min: 97 },
 ] as const;
 
 function normalizePlayerName(input: string): string {

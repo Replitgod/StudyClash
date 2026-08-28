@@ -127,7 +127,7 @@ export default function LibraryPage() {
             Nothing here yet
           </p>
           <p className="t-body mx-auto mt-2 max-w-sm">
-            Everything you study lives here. Add your first thing and AcedIQ
+            Everything you study lives here. Add your first thing and AceDecks
             will build the notes, questions, and flashcards for you.
           </p>
           {!isAdding && (

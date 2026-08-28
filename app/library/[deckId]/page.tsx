@@ -230,7 +230,7 @@ export default function MaterialWorkspacePage() {
         >
           <CheckIcon className="h-[18px] w-[18px] shrink-0" />
           <p className="text-[14px]" style={{ color: "var(--text-1)" }}>
-            Ready. AcedIQ wrote your notes, {questions.length} questions, and{" "}
+            Ready. AceDecks wrote your notes, {questions.length} questions, and{" "}
             {cards.length} flashcards.
           </p>
         </div>
@@ -292,10 +292,10 @@ export default function MaterialWorkspacePage() {
 
             <p className="t-body mt-4">
               {mastery === null
-                ? "You have not studied this yet. AcedIQ will pick what to ask you first."
+                ? "You have not studied this yet. AceDecks will pick what to ask you first."
                 : dueTopics.length > 0
-                  ? `${dueTopics.length} ${dueTopics.length === 1 ? "topic is" : "topics are"} ready for review. AcedIQ will start there.`
-                  : "AcedIQ will pick what you need next."}
+                  ? `${dueTopics.length} ${dueTopics.length === 1 ? "topic is" : "topics are"} ready for review. AceDecks will start there.`
+                  : "AceDecks will pick what you need next."}
             </p>
 
             <Link

@@ -286,7 +286,7 @@ function buildPrompt(params: {
       : `- "explanation": 2-3 concise sentences. Include why the correct answer is right AND why the single most tempting wrong choice is wrong.`;
 
   return `
-You are a ${examTrack ? "high-stakes exam" : "quiz"} generator for a study app called AcedIQ.
+You are a ${examTrack ? "high-stakes exam" : "quiz"} generator for a study app called AceDecks.
 
 Read the notes below and create exactly ${totalQuestions} ${
     isTrueFalse ? "true/false" : "multiple-choice"
@@ -1295,7 +1295,7 @@ function buildOpenResponsePrompt(params: {
   return `
 You are a study-app quiz generator creating ${
     reasoningFormat === "step_by_step" ? "step-by-step reasoning problems" : "argumentation prompts"
-  } for a battle mode called AcedIQ that deliberately rewards slow, careful reasoning instead of fast recall.
+  } for a battle mode called AceDecks that deliberately rewards slow, careful reasoning instead of fast recall.
 
 Read the notes below and create exactly ${totalQuestions} prompts. Every prompt must be answerable using ONLY the information in the notes below -- do not introduce outside facts.
 
@@ -1893,7 +1893,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Beta access codes and free-plan generation caps were removed when
-    // AcedIQ became open/unlimited. See lib/planLimits.ts -- the caps there
+    // AceDecks became open/unlimited. See lib/planLimits.ts -- the caps there
     // are `null`, meaning "no limit", so there is nothing to enforce here.
 
     // Today's generation count is shared by the free-plan cap here and the
@@ -1901,7 +1901,7 @@ export async function POST(req: NextRequest) {
     const { count: generationCountToday, error: generationCountError } =
       todayCountResult;
 
-    // 5. Daily generation limits are disabled -- AcedIQ is unlimited on
+    // 5. Daily generation limits are disabled -- AceDecks is unlimited on
     // every plan (lib/planLimits.ts). `dailyLimit` from membership_plans and
     // today's generation count are still read above because generation_logs
     // rows are written for history/analytics, but neither can block a

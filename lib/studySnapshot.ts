@@ -1,4 +1,4 @@
-// The single read of "everything AcedIQ knows about what this student is
+// The single read of "everything AceDecks knows about what this student is
 // studying", shared by Home, Library and Practice.
 //
 // Those three screens all answer versions of the same question ("what should

@@ -1,4 +1,4 @@
-// Shared design-token class strings for AcedIQ.
+// Shared design-token class strings for AceDecks.
 // Primary: competitive scarlet. Accent: amber win energy. Legacy "indigo"
 // tone names resolve to primary for backward compatibility.
 

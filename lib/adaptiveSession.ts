@@ -5,7 +5,7 @@
 // in whatever order the database returned them. A student asking for a
 // 10-question session on their weakest material got 10 arbitrary questions,
 // which is indistinguishable from a shuffle and wastes the one thing that
-// makes AcedIQ different: it already knows what they do not know.
+// makes AceDecks different: it already knows what they do not know.
 //
 // Two separate jobs live here:
 //

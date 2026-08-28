@@ -184,7 +184,7 @@ describe("rankForRating", () => {
   it("has no divisions in the apex tiers", () => {
     expect(rankForRating(2200).division).toBeNull();
     expect(rankForRating(2200).name).toBe("Master");
-    expect(rankForRating(9999).name).toBe("AcedIQ Elite");
+    expect(rankForRating(9999).name).toBe("AceDecks Elite");
   });
 
   it("never produces an invalid division for any rating", () => {

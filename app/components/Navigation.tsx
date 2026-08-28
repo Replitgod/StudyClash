@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
+import { LogoMark, Wordmark } from "@/app/components/brand/Logo";
 
 // Public / marketing header only.
 //
@@ -50,19 +51,8 @@ export default function Navigation() {
           onClick={close}
           className="flex flex-shrink-0 items-center gap-2.5"
         >
-          <span
-            className="inline-flex h-7 w-7 items-center justify-center rounded-[9px] text-[13px] font-bold text-white"
-            style={{ background: "var(--brand)" }}
-            aria-hidden="true"
-          >
-            A
-          </span>
-          <span
-            className="text-[15px] font-semibold tracking-tight"
-            style={{ color: "var(--text-1)" }}
-          >
-            AcedIQ
-          </span>
+          <LogoMark className="h-8 w-8" idPrefix="nav" />
+          <Wordmark className="text-[17px]" />
         </Link>
 
         <nav aria-label="Site" className="ml-auto hidden items-center gap-1 sm:flex">
@@ -81,7 +71,7 @@ export default function Navigation() {
         <div className="ml-auto flex items-center gap-2 sm:ml-0">
           {isLoading ? null : isLoggedIn ? (
             <Link href="/home" className="btn btn-primary btn-sm">
-              Open AcedIQ
+              Open AceDecks
             </Link>
           ) : (
             <>
@@ -92,7 +82,7 @@ export default function Navigation() {
               >
                 Log in
               </Link>
-              <Link href="/signup" className="btn btn-primary btn-sm">
+              <Link href="/signup" className="btn btn-gradient btn-sm">
                 Start free
               </Link>
             </>

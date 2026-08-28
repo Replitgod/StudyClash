@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { StudyProvider } from "@/lib/useStudy";
 import Navigation from "@/app/components/Navigation";
+import { LogoMark, Wordmark } from "@/app/components/brand/Logo";
 import { CommandMenu, OPEN_COMMAND_MENU_EVENT } from "@/app/components/CommandMenu";
 import { activeNavId, chromeFor, NAV_ITEMS } from "./routes";
 import {
@@ -27,16 +28,11 @@ function openSearch() {
   window.dispatchEvent(new CustomEvent(OPEN_COMMAND_MENU_EVENT));
 }
 
-function Logo({ className = "" }: { className?: string }) {
-  return (
-    <span
-      className={`inline-flex h-7 w-7 flex-none items-center justify-center rounded-[9px] text-[13px] font-bold tracking-tight text-white ${className}`}
-      style={{ background: "var(--brand)" }}
-      aria-hidden="true"
-    >
-      A
-    </span>
-  );
+// The app shell shows the real mark. `idPrefix` differs per call site
+// because the sidebar and the mobile bar can both be mounted at once and
+// SVG gradient ids are document-global.
+function Logo({ className = "", idPrefix }: { className?: string; idPrefix?: string }) {
+  return <LogoMark className={`h-8 w-8 flex-none ${className}`} idPrefix={idPrefix} />;
 }
 
 /* ---------------------------------------------------------------- sidebar */
@@ -54,10 +50,8 @@ function Sidebar({ pathname }: { pathname: string }) {
         href="/home"
         className="mb-6 flex items-center gap-2.5 rounded-lg px-2 py-1.5"
       >
-        <Logo />
-        <span className="text-[15px] font-semibold tracking-tight" style={{ color: "var(--text-1)" }}>
-          AcedIQ
-        </span>
+        <Logo idPrefix="side" />
+        <Wordmark className="text-[17px]" />
       </Link>
 
       <ul className="flex flex-col gap-0.5">
@@ -126,10 +120,8 @@ function MobileTopBar() {
       style={{ borderColor: "var(--line)", background: "color-mix(in srgb, var(--app-bg) 88%, transparent)", backdropFilter: "blur(12px)" }}
     >
       <Link href="/home" className="flex items-center gap-2">
-        <Logo />
-        <span className="text-[15px] font-semibold tracking-tight" style={{ color: "var(--text-1)" }}>
-          AcedIQ
-        </span>
+        <Logo idPrefix="mob" />
+        <Wordmark className="text-[17px]" />
       </Link>
       <div className="flex items-center gap-1">
         <button

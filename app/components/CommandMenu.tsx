@@ -14,7 +14,7 @@ import { UI_Z_INDEX } from "@/lib/uiLayout";
 // realistically search for (the name of the thing they are studying) was
 // the one thing it could not find.
 
-export const OPEN_COMMAND_MENU_EVENT = "acediq:open-command-menu";
+export const OPEN_COMMAND_MENU_EVENT = "acedecks:open-command-menu";
 
 type Result = {
   id: string;

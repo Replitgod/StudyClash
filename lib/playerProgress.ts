@@ -81,7 +81,7 @@ export function getProgressStorageKey(args: {
     ? `user:${args.userId}`
     : `player:${normalizeProgressScope(args.playerName || "guest")}`;
 
-  return `acediq-progression:v1:${scope}`;
+  return `acedecks-progression:v1:${scope}`;
 }
 
 export function loadProgressSnapshot(storageKey: string): ProgressSnapshot {

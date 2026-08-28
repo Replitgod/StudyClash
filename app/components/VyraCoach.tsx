@@ -268,12 +268,12 @@ export default function VyraCoach(props: VyraCoachProps) {
 
   const storageKey = useMemo(() => {
     const keyRoot = matchId || deckId || "global";
-    return `acediq:vyra:session:${keyRoot}`;
+    return `acedecks:vyra:session:${keyRoot}`;
   }, [deckId, matchId]);
 
   const legacyStorageKey = useMemo(() => {
     const keyRoot = matchId || deckId || "global";
-    return `acediq:giggles:session:${keyRoot}`;
+    return `acedecks:giggles:session:${keyRoot}`;
   }, [deckId, matchId]);
 
   const [messages, setMessages] = useState<CoachMessage[]>(() => {

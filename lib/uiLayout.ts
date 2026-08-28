@@ -20,7 +20,7 @@ export const UI_Z_INDEX = {
 // own floating launcher (see FeedbackButton.tsx/VyraCoach.tsx) -- one
 // persistent floating control (VYRA) instead of two competing for the same
 // corner. FeedbackButton listens for this on `window`.
-export const OPEN_FEEDBACK_EVENT = "acediq:open-feedback";
+export const OPEN_FEEDBACK_EVENT = "acedecks:open-feedback";
 
 // Shared placement rules for all floating actions.
 // Keep these centralized so VYRA/Feedback cannot drift into overlap.

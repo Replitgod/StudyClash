@@ -1,7 +1,7 @@
 // "What should I do next?" -- computed once, in one place.
 //
 // The old dashboard showed a dozen equally-weighted cards and left the
-// student to work this out themselves. AcedIQ now answers it: there is
+// student to work this out themselves. AceDecks now answers it: there is
 // exactly one recommendation on screen at a time, and this decides what it
 // is. Home, Practice and the material workspace all read from here so they
 // can never disagree about what the student should do next.

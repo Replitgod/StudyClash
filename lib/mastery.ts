@@ -1,4 +1,4 @@
-// The AcedIQ mastery engine.
+// The AceDecks mastery engine.
 //
 // Mastery is NOT `correct / total`. That number cannot tell the difference
 // between a topic answered perfectly ten minutes ago and the same topic

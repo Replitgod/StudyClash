@@ -1,26 +1,30 @@
 ﻿import type { MetadataRoute } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acedecks.org";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "AcedIQ - AI Study App",
-    short_name: "AcedIQ",
+    name: "AceDecks - AI Study App",
+    short_name: "AceDecks",
     description:
       "AI study app for competitive learning, flashcard battles, and exam-focused practice.",
     start_url: "/",
     scope: "/",
     display: "standalone",
-    background_color: "#04070f",
-    theme_color: "#04070f",
+    background_color: "#060a14",
+    theme_color: "#060a14",
     categories: ["education", "productivity"],
     lang: "en-US",
     orientation: "portrait-primary",
+    // app/icon.svg is picked up by Next's file convention and injected into
+    // <head>; listing it here as well is what makes it the installed-app
+    // icon rather than only the browser tab icon.
     icons: [
       {
-        src: "/favicon.ico",
-        sizes: "48x48 32x32 16x16",
-        type: "image/x-icon",
+        src: "/icon.svg",
+        sizes: "any",
+        type: "image/svg+xml",
+        purpose: "any",
       },
     ],
     shortcuts: [

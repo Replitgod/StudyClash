@@ -100,7 +100,7 @@ export async function trackEvent(
   // stored campaign attribution (see lib/marketingAttribution.ts) -- lets
   // the marketing dashboard attribute real product events (signups,
   // battles, checkouts, subscriptions) back to a campaign/destination/draft
-  // without AcedIQ's core analytics pipeline knowing marketing exists.
+  // without AceDecks's core analytics pipeline knowing marketing exists.
   // Fire-and-forget, same as the write above -- never blocks or throws.
   const attribution = getStoredAttribution();
   if (attribution) {

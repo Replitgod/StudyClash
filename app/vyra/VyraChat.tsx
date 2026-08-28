@@ -21,7 +21,7 @@ import {
   TrashIcon,
 } from "@/app/components/app/Icons";
 
-// Vyra: a full chat product inside AcedIQ, not a floating widget.
+// Vyra: a full chat product inside AceDecks, not a floating widget.
 //
 // What makes it worth more than a generic chatbot is the context it is
 // handed on every turn -- the student's materials, their weakest topics,

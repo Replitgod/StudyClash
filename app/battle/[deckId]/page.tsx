@@ -1297,7 +1297,7 @@ export default function BattlePage() {
   useEffect(() => {
     if (!hasStarted || isFinishing || introCountdown !== null) return;
 
-    window.history.pushState({ acediqBattleGuard: true }, "", window.location.href);
+    window.history.pushState({ acedecksBattleGuard: true }, "", window.location.href);
     let isLeaving = false;
 
     const handlePopState = () => {
@@ -1316,7 +1316,7 @@ export default function BattlePage() {
         void trackEvent("battle_abandoned", { deckId, questionIndex: currentIndex });
         window.history.back();
       } else {
-        window.history.pushState({ acediqBattleGuard: true }, "", window.location.href);
+        window.history.pushState({ acedecksBattleGuard: true }, "", window.location.href);
       }
     };
 

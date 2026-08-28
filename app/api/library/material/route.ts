@@ -6,7 +6,7 @@ import {
 
 // Deleting a piece of material.
 //
-// Like every other write in AcedIQ, this cannot go through the browser
+// Like every other write in AceDecks, this cannot go through the browser
 // client: `decks` has RLS enabled with a select-only policy and no
 // insert/update/delete policy (see
 // supabase/migrations/20260711_core_tables_rls_hardening.sql). A client-side

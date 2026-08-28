@@ -571,7 +571,7 @@ export async function POST(req: NextRequest) {
         await supabase.from("email_notification_queue").insert({
           recipient_player_name: normalizedPreviousTop.player_name,
           event_type: "crown_taken",
-          subject: "Your AcedIQ crown was taken",
+          subject: "Your AceDecks crown was taken",
           body: message,
           action_href: actionHref,
           metadata: {

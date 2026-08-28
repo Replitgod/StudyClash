@@ -9,7 +9,7 @@ import {
 
 // These guard against copy silently drifting from what is actually enforced
 // in app/api/generate-questions/route.ts -- the whole reason this module
-// exists is a bug where the two had already drifted once before. AcedIQ is
+// exists is a bug where the two had already drifted once before. AceDecks is
 // now unlimited on every plan, so the invariant is "no caps, and the copy
 // says so".
 describe("plan limits", () => {

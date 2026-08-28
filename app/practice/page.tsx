@@ -120,7 +120,7 @@ export default function PracticePage() {
             Nothing to practise yet
           </p>
           <p className="t-body mx-auto mt-2 max-w-sm">
-            Add something you are studying and AcedIQ will work out what you
+            Add something you are studying and AceDecks will work out what you
             should practise, and when.
           </p>
           <Link href="/home" className="btn btn-primary mt-6">
@@ -160,7 +160,7 @@ export default function PracticePage() {
           <ModeCard
             primary
             title="Smart practice"
-            description={next ? next.reason : "AcedIQ picks exactly what you need next."}
+            description={next ? next.reason : "AceDecks picks exactly what you need next."}
             href={next?.href || sessionHref({ deckId: snapshot.decks[0].id })}
           />
           <div className="grid gap-3 sm:grid-cols-2">

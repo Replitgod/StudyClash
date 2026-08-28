@@ -38,7 +38,7 @@ const RATINGS: Array<{ id: Rating; label: string; key: string }> = [
 ];
 
 function storageKey(deckId: string) {
-  return `acediq_cards_${deckId}`;
+  return `acedecks_cards_${deckId}`;
 }
 
 function loadRatings(deckId: string): Record<string, Rating> {

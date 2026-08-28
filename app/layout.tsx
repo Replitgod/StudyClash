@@ -20,29 +20,29 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acediq.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acedecks.org";
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0a0b0f",
+  themeColor: "#060a14",
   colorScheme: "dark",
 };
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "AcedIQ | AI Study App for Battle-Based Learning",
-    template: "%s | AcedIQ",
+    default: "AceDecks | AI Study App for Battle-Based Learning",
+    template: "%s | AceDecks",
   },
   description:
-    "AcedIQ is an AI study app where students upload notes, battle an AI, and improve with weak-topic diagnostics, rematches, and exam-focused practice loops.",
-  applicationName: "AcedIQ",
+    "AceDecks is an AI study app where students upload notes, battle an AI, and improve with weak-topic diagnostics, rematches, and exam-focused practice loops.",
+  applicationName: "AceDecks",
   category: "education",
   referrer: "origin-when-cross-origin",
-  creator: "AcedIQ",
-  publisher: "AcedIQ",
-  authors: [{ name: "AcedIQ" }],
+  creator: "AceDecks",
+  publisher: "AceDecks",
+  authors: [{ name: "AceDecks" }],
   keywords: [
     "AI Study App",
     "Quizlet Alternative",
@@ -64,10 +64,10 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    title: "AcedIQ | AI Study App for Competitive Learning",
+    title: "AceDecks | AI Study App for Competitive Learning",
     description:
       "Turn notes into AI study battles with weak-topic diagnostics, flashcard battle loops, and exam-ready practice.",
-    siteName: "AcedIQ",
+    siteName: "AceDecks",
     url: "/",
     locale: "en_US",
     images: [
@@ -75,13 +75,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "AcedIQ AI study battles preview",
+        alt: "AceDecks AI study battles preview",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "AcedIQ | AI Study App and Quizlet Alternative",
+    title: "AceDecks | AI Study App and Quizlet Alternative",
     description:
       "Upload notes, battle an AI instantly, and improve with weak-topic diagnostics.",
     images: ["/twitter-image"],
@@ -103,11 +103,11 @@ const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   "@id": `${siteUrl}/#organization`,
-  name: "AcedIQ",
+  name: "AceDecks",
   url: siteUrl,
   logo: `${siteUrl}/opengraph-image`,
   description:
-    "AcedIQ is an AI study platform for interactive quiz battles, weak-topic analysis, and personalized study improvement.",
+    "AceDecks is an AI study platform for interactive quiz battles, weak-topic analysis, and personalized study improvement.",
   sameAs: [
     `${siteUrl}/`,
   ],
@@ -115,7 +115,7 @@ const organizationSchema = {
     {
       "@type": "ContactPoint",
       contactType: "customer support",
-      email: "siddharthdatla582@gmail.com",
+      email: "karthik.kt711@gmail.com",
       areaServed: "Worldwide",
       availableLanguage: ["English"],
       url: `${siteUrl}/contact`,

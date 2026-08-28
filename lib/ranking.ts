@@ -146,7 +146,7 @@ const TIERS: Array<{
   { tier: "diamond", label: "Diamond", floor: 1800, divisions: 3 },
   { tier: "master", label: "Master", floor: 2100, divisions: 1 },
   { tier: "grandmaster", label: "Grandmaster", floor: 2350, divisions: 1 },
-  { tier: "elite", label: "AcedIQ Elite", floor: 2600, divisions: 1 },
+  { tier: "elite", label: "AceDecks Elite", floor: 2600, divisions: 1 },
 ];
 
 export function rankForRating(rating: number): Rank {
