@@ -8,6 +8,7 @@ import { CardArena } from "@/app/components/marketing/CardArena";
 import { Reveal } from "@/app/components/marketing/Reveal";
 import { MagneticButton } from "@/app/components/motion/MagneticButton";
 import { LogoMark } from "@/app/components/brand/Logo";
+import { HeroPanel } from "@/app/components/marketing/HeroPanel";
 
 // The landing page.
 //
@@ -72,28 +73,13 @@ export function NeonLanding() {
           style={{ background: "rgb(91 140 255 / 0.09)" }}
         />
 
-        <div className="shell relative pb-[clamp(5rem,10vw,8rem)] pt-[clamp(6rem,12vw,10rem)]">
-          <Reveal>
-            <div
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1.5"
-              style={{
-                border: "1px solid var(--accent-line)",
-                background: "var(--accent-soft)",
-              }}
-            >
-              <span
-                aria-hidden="true"
-                className="h-1.5 w-1.5 rounded-full"
-                style={{ background: "var(--accent)", boxShadow: "0 0 10px var(--accent)" }}
-              />
-              <span className="eyebrow" style={{ letterSpacing: "0.16em" }}>
-                Free · Unlimited · No card
-              </span>
-            </div>
-          </Reveal>
-
+        <div className="shell relative pb-[clamp(5rem,10vw,8rem)] pt-[clamp(5rem,10vw,8rem)]">
+          <div className="grid items-center gap-16 lg:grid-cols-[1.06fr_0.94fr]">
+            <div>
+          {/* The offer pill lives in the header now; repeating it here made
+              the same seven words appear twice above the fold. */}
           <Reveal delay={80}>
-            <h1 className="headline-xl mt-8 text-[clamp(2.75rem,7.4vw,5.25rem)]">
+            <h1 className="headline-xl text-[clamp(2.75rem,7.4vw,5.25rem)]">
               <span className="text-sheen">Stop deciding</span>
               <br />
               <span className="text-accent-sheen">what to study.</span>
@@ -123,7 +109,7 @@ export function NeonLanding() {
           </Reveal>
 
           <Reveal delay={300}>
-            <dl className="mt-14 grid max-w-2xl grid-cols-2 gap-6 sm:grid-cols-3">
+            <dl className="mt-12 grid max-w-2xl grid-cols-2 gap-6 sm:grid-cols-3">
               {[
                 ["~20s", "Notes to first question"],
                 ["Every miss", "Explained, then retested"],
@@ -146,6 +132,12 @@ export function NeonLanding() {
               ))}
             </dl>
           </Reveal>
+            </div>
+
+            <Reveal delay={200} className="flex justify-center lg:justify-end">
+              <HeroPanel />
+            </Reveal>
+          </div>
         </div>
 
         <hr className="hairline" />
