@@ -131,11 +131,24 @@
      stays quiet, because a student mid-question should not be competing
      with a glow. Laser green reads as mastery, cyber blue as knowledge,
      magenta as decay. --- */
-  --neon-green: #00ff66;
-  --neon-blue: #00c8ff;
-  --neon-decay: #ff0055;
-  --void: #000000;
-  --void-raised: #07080a;
+  /* Magenta is the brand accent: primary actions, active states, focus.
+     Green is demoted to a status colour (a concept that is holding), and
+     the deeper crimson marks decay. One accent leads; the rest report. */
+  --accent: #ff2d92;
+  --accent-bright: #ff5fae;
+  --accent-dim: #c81f70;
+  --accent-soft: rgb(255 45 146 / 0.12);
+  --accent-line: rgb(255 45 146 / 0.32);
+
+  --neon-green: #34e39b;
+  --neon-blue: #5b8cff;
+  --neon-decay: #ff2d92;
+
+  /* Obsidian, not pure black: a true #000 canvas makes every panel above it
+     look like a grey box floating in a void. */
+  --void: #0b0b0c;
+  --void-raised: #101013;
+  --void-panel: #141418;
 
   --accent-teal: #12b39b;
   --accent-teal-bright: #2fd3b8;
@@ -1309,4 +1322,236 @@ textarea:-webkit-autofill:focus {
   pointer-events: none;
   mix-blend-mode: overlay;
   opacity: 0.5;
+}
+
+/*
+ * ============================================================================
+ * Premium surface
+ * ============================================================================
+ * The Linear/Vercel-grade layer: uniform bento cards, restrained hover
+ * affordances, and depth from light rather than from borders.
+ */
+
+/* --- Section rhythm. One class so vertical spacing cannot drift between
+   sections, which is the single most common way a landing page stops
+   looking designed. --- */
+.section {
+  padding-top: clamp(5rem, 11vw, 9rem);
+  padding-bottom: clamp(5rem, 11vw, 9rem);
+}
+
+.shell {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .shell { padding-inline: 2rem; }
+}
+
+/* --- Eyebrow: tiny, uppercase, heavily tracked. --- */
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--accent-bright);
+}
+
+/* --- Display type. Geist, tight, with line length clamped so a headline
+   never stretches into a thin ribbon on a wide screen. --- */
+/* line-height below ~1.1 makes the element's box shorter than the glyphs it
+   renders, so descenders (p, g, y) spill past the bottom edge and whatever
+   follows overlaps them. These sit just above that threshold, and the small
+   bottom padding buys the descenders their own space. */
+/* No `text-wrap: balance` here, deliberately. With inline children (the
+   gradient spans) it reports a block height for a single line while
+   rendering two, so the next element overlaps the heading. Line length is
+   controlled by max-width instead, which is what balance was there for
+   anyway.
+
+   Each heading also puts its gradient spans on their own line with an
+   explicit <br />. `background-clip: text` on an inline span that wraps
+   across two line boxes makes the parent report the height of a single
+   line, so whatever follows overlaps the heading -- one line per span
+   avoids the whole class of bug.
+
+   line-height also stays above ~1.1: below that the box is shorter than the
+   glyphs and descenders spill past the bottom edge. */
+/* Named `headline-*`, NOT `h-display` / `h-section`. Tailwind parses
+   `h-<token>` as a height utility, and this file's @theme block defines
+   `--spacing-section`, so `.h-section` was silently compiled to
+   `height: 72px` and every section heading was clamped to one line's worth
+   of box while rendering two. Any custom class here has to avoid colliding
+   with a utility prefix. */
+.headline-xl {
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  padding-bottom: 0.06em;
+  max-width: 20ch;
+}
+
+.headline-lg {
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  padding-bottom: 0.06em;
+  max-width: 24ch;
+}
+
+.lede {
+  font-size: clamp(1rem, 1.4vw, 1.1875rem);
+  line-height: 1.6;
+  color: var(--text-2);
+  max-width: 46ch;
+  text-wrap: pretty;
+}
+
+/* --- Gradient text, kept to a single element per section. --- */
+.text-sheen {
+  background: linear-gradient(180deg, #ffffff 0%, #b9b9c4 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-accent-sheen {
+  background: linear-gradient(100deg, #ff5fae 0%, #ff2d92 50%, #a855f7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* --- Bento card. One treatment, used for every card on the page. Hover
+   lifts, brightens the hairline and sweeps a shimmer across it. --- */
+.bento {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 16px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.035), rgb(255 255 255 / 0.012));
+  overflow: hidden;
+  transition:
+    transform 400ms var(--ease-premium-out),
+    border-color 400ms var(--ease-premium-out),
+    box-shadow 400ms var(--ease-premium-out);
+}
+
+.bento::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 0%),
+    rgb(255 45 146 / 0.1),
+    transparent 64%
+  );
+  opacity: 0;
+  transition: opacity 450ms var(--ease-premium-out);
+}
+
+.bento:hover {
+  transform: translateY(-3px);
+  border-color: rgb(255 45 146 / 0.32);
+  box-shadow:
+    0 18px 50px -24px rgb(0 0 0 / 0.9),
+    0 0 40px -20px rgb(255 45 146 / 0.55);
+}
+
+.bento:hover::before { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .bento:hover { transform: none; }
+}
+
+/* --- Hairline that fades at both ends, used as a section divider. --- */
+.hairline {
+  height: 1px;
+  border: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.12) 22%,
+    rgb(255 255 255 / 0.12) 78%,
+    transparent
+  );
+}
+
+/* --- Background grid. Masked to a soft ellipse so it fades out rather than
+   stopping at a hard edge, which is what makes a grid look cheap. --- */
+.grid-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 74% 62% at 50% 32%, #000 30%, transparent 86%);
+  -webkit-mask-image: radial-gradient(ellipse 74% 62% at 50% 32%, #000 30%, transparent 86%);
+}
+
+/* --- Localised halo behind a heading. --- */
+.halo {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+  filter: blur(90px);
+}
+
+/* --- Primary button. Magenta, with a top inner highlight so it reads as a
+   lit surface rather than a flat swatch. --- */
+.btn-accent {
+  background: linear-gradient(180deg, #ff4fa3, #e01f7f);
+  color: #fff;
+  border: 0;
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.28),
+    0 10px 30px -12px rgb(255 45 146 / 0.8);
+  transition:
+    transform 200ms var(--ease-premium-out),
+    box-shadow 260ms var(--ease-premium-out),
+    filter 200ms var(--ease-premium-out);
+}
+
+.btn-accent:hover:not(:disabled) {
+  filter: brightness(1.07);
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.34),
+    0 16px 42px -14px rgb(255 45 146 / 0.95);
+}
+
+.btn-ghost {
+  background: rgb(255 255 255 / 0.04);
+  border: 1px solid rgb(255 255 255 / 0.1);
+  color: var(--text-1);
+  transition:
+    background-color 220ms var(--ease-premium-out),
+    border-color 220ms var(--ease-premium-out);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.07);
+  border-color: rgb(255 255 255 / 0.18);
+}
+
+/* --- Small stat pill used inside bento cards. --- */
+.stat-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  border-radius: 8px;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background: rgb(255 255 255 / 0.03);
+  padding: 0.375rem 0.625rem;
 }

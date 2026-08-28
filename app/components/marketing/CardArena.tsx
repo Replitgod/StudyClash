@@ -144,10 +144,10 @@ export function CardArena() {
 
   const borderColour =
     verdict === "right"
-      ? "rgb(0 255 102 / 0.55)"
+      ? "rgb(52 227 155 / 0.5)"
       : verdict === "wrong"
-        ? "rgb(255 0 85 / 0.55)"
-        : "rgb(0 200 255 / 0.24)";
+        ? "var(--accent-line)"
+        : "rgb(255 255 255 / 0.1)";
 
   return (
     <div
@@ -172,10 +172,10 @@ export function CardArena() {
               border: `1px solid ${borderColour}`,
               boxShadow:
                 verdict === "right"
-                  ? "0 0 90px -22px rgb(0 255 102 / 0.75)"
+                  ? "0 0 90px -26px rgb(52 227 155 / 0.6)"
                   : verdict === "wrong"
-                    ? "0 0 90px -22px rgb(255 0 85 / 0.65)"
-                    : "0 0 80px -30px rgb(0 200 255 / 0.6)",
+                    ? "0 0 90px -24px rgb(255 45 146 / 0.7)"
+                    : "0 22px 60px -30px rgb(0 0 0 / 0.9)",
               transition: "border-color 400ms, box-shadow 400ms",
             }}
           >
@@ -192,8 +192,8 @@ export function CardArena() {
                   top: p.y,
                   width: p.size,
                   height: p.size,
-                  background: "var(--neon-decay)",
-                  boxShadow: "0 0 8px rgb(255 0 85 / 0.9)",
+                  background: "var(--accent)",
+                  boxShadow: "0 0 8px rgb(255 45 146 / 0.9)",
                   ["--px" as string]: `${p.dx}px`,
                   ["--py" as string]: `${p.dy}px`,
                   animation: "particle-fly 850ms cubic-bezier(0.2,0.7,0.3,1) forwards",
@@ -207,7 +207,7 @@ export function CardArena() {
               <div className="flex items-center justify-between gap-3">
                 <span
                   className="text-[10px] font-semibold uppercase tracking-[0.2em]"
-                  style={{ color: "var(--neon-blue)" }}
+                  style={{ color: "var(--accent-bright)" }}
                 >
                   Chemistry · Periodic Trends
                 </span>
@@ -243,22 +243,22 @@ export function CardArena() {
                         className="w-full rounded-[var(--radius-md)] border px-4 py-3 text-left text-[15px] transition-all duration-300 disabled:cursor-default"
                         style={{
                           borderColor: showCorrect
-                            ? "rgb(0 255 102 / 0.65)"
+                            ? "rgb(52 227 155 / 0.6)"
                             : showWrong
-                              ? "rgb(255 0 85 / 0.65)"
+                              ? "var(--accent)"
                               : "rgb(255 255 255 / 0.12)",
                           background: showCorrect
-                            ? "rgb(0 255 102 / 0.12)"
+                            ? "rgb(52 227 155 / 0.1)"
                             : showWrong
-                              ? "rgb(255 0 85 / 0.14)"
+                              ? "var(--accent-soft)"
                               : "rgb(255 255 255 / 0.03)",
                           color: showCorrect
-                            ? "#b6ffd2"
+                            ? "#9ff0c8"
                             : showWrong
-                              ? "#ffa8c2"
+                              ? "#ffa3cd"
                               : "var(--text-1)",
                           boxShadow: showCorrect
-                            ? "0 0 26px -8px rgb(0 255 102 / 0.85)"
+                            ? "0 0 26px -8px rgb(52 227 155 / 0.7)"
                             : "none",
                         }}
                       >
@@ -277,9 +277,9 @@ export function CardArena() {
                   <span
                     className="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em]"
                     style={{
-                      background: "rgb(0 255 102 / 0.14)",
+                      background: "rgb(52 227 155 / 0.12)",
                       color: "var(--neon-green)",
-                      border: "1px solid rgb(0 255 102 / 0.45)",
+                      border: "1px solid rgb(52 227 155 / 0.4)",
                     }}
                   >
                     Recovered
@@ -299,17 +299,17 @@ export function CardArena() {
             <div
               className="rounded-[var(--radius-lg)] p-5 sm:p-6"
               style={{
-                border: "1px solid rgb(255 0 85 / 0.4)",
+                border: "1px solid var(--accent-line)",
                 background:
-                  "linear-gradient(160deg, rgb(255 0 85 / 0.08), rgb(0 0 0 / 0.6))",
+                  "linear-gradient(160deg, rgb(255 45 146 / 0.08), rgb(11 11 12 / 0.7))",
                 backdropFilter: "blur(14px)",
-                boxShadow: "0 0 70px -26px rgb(255 0 85 / 0.7)",
+                boxShadow: "0 0 70px -26px rgb(255 45 146 / 0.6)",
               }}
             >
               {[
-                ["What went wrong", EXPLANATION.wrong, "var(--neon-decay)"],
-                ["The idea", EXPLANATION.idea, "var(--neon-blue)"],
-                ["Next time", EXPLANATION.next, "var(--neon-green)"],
+                ["What went wrong", EXPLANATION.wrong, "var(--accent-bright)"],
+                ["The idea", EXPLANATION.idea, "#8aa8ff"],
+                ["Next time", EXPLANATION.next, "#34e39b"],
               ].map(([label, body, colour], i) => (
                 <div key={label} className={i > 0 ? "mt-4" : undefined}>
                   <p
@@ -332,7 +332,7 @@ export function CardArena() {
                 onClick={reset}
                 data-cursor="Try again"
                 className="mt-5 text-[11px] uppercase tracking-[0.16em] underline underline-offset-4"
-                style={{ color: "var(--neon-green)" }}
+                style={{ color: "var(--accent-bright)" }}
               >
                 Try one like this
               </button>

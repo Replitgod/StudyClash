@@ -70,7 +70,7 @@ export default function Navigation() {
 
         <div className="ml-auto flex items-center gap-2 sm:ml-0">
           {isLoading ? null : isLoggedIn ? (
-            <Link href="/home" className="btn btn-primary btn-sm">
+            <Link href="/home" className="btn btn-accent btn-sm">
               Open AceDecks
             </Link>
           ) : (
@@ -82,7 +82,7 @@ export default function Navigation() {
               >
                 Log in
               </Link>
-              <Link href="/signup" className="btn btn-gradient btn-sm">
+              <Link href="/signup" className="btn btn-accent btn-sm">
                 Start free
               </Link>
             </>

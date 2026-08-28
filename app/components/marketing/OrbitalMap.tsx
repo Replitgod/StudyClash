@@ -184,8 +184,8 @@ export function OrbitalMap() {
         const weak = na.decaying || nb.decaying;
         const depth = (pa.z + pb.z) / 2;
         ctx.strokeStyle = weak
-          ? `rgba(255, 0, 85, ${0.1 + depth * 0.14})`
-          : `rgba(0, 200, 255, ${0.12 + depth * 0.16})`;
+          ? `rgba(255, 45, 146, ${0.12 + depth * 0.16})`
+          : `rgba(255, 255, 255, ${0.06 + depth * 0.1})`;
         ctx.beginPath();
         ctx.moveTo(pa.x, pa.y);
         ctx.lineTo(pb.x, pb.y);
@@ -210,7 +210,7 @@ export function OrbitalMap() {
           : 1;
 
         const justFixed = node.fixedAt !== null && now - node.fixedAt < 900;
-        const colour = node.decaying ? "255, 0, 85" : "0, 255, 102";
+        const colour = node.decaying ? "255, 45, 146" : "52, 227, 155";
 
         // Glow
         const glowRadius = p.r * (isHover ? 7 : justFixed ? 9 : 5);
@@ -231,7 +231,7 @@ export function OrbitalMap() {
         // Snap ring
         if (justFixed) {
           const t = (now - node.fixedAt!) / 900;
-          ctx.strokeStyle = `rgba(0, 255, 102, ${(1 - t) * 0.8})`;
+          ctx.strokeStyle = `rgba(52, 227, 155, ${(1 - t) * 0.85})`;
           ctx.lineWidth = 2 * (1 - t) + 0.5;
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.r + t * 46, 0, Math.PI * 2);
@@ -242,8 +242,8 @@ export function OrbitalMap() {
         ctx.font = `600 ${Math.max(9, 11 * (0.8 + p.z * 0.3))}px Archivo, system-ui, sans-serif`;
         ctx.textAlign = "center";
         ctx.fillStyle = node.decaying
-          ? `rgba(255, 140, 175, ${0.55 + p.z * 0.35})`
-          : `rgba(200, 255, 220, ${0.6 + p.z * 0.35})`;
+          ? `rgba(255, 150, 200, ${0.6 + p.z * 0.35})`
+          : `rgba(200, 214, 230, ${0.5 + p.z * 0.35})`;
         ctx.fillText(node.label.toUpperCase(), p.x, p.y - p.r - 9);
 
         ctx.fillStyle = `rgba(255,255,255,${0.35 + p.z * 0.3})`;
@@ -309,11 +309,11 @@ export function OrbitalMap() {
               type="button"
               onClick={() => fix(id)}
               data-cursor="Click to fix the gap"
-              className="rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] transition-colors"
+              className="rounded-full px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] transition-all hover:brightness-125"
               style={{
-                border: "1px solid rgb(255 0 85 / 0.45)",
-                background: "rgb(255 0 85 / 0.1)",
-                color: "#ff90b0",
+                border: "1px solid var(--accent-line)",
+                background: "var(--accent-soft)",
+                color: "var(--accent-bright)",
               }}
             >
               Fix {label}

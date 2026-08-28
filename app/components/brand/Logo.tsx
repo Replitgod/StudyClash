@@ -125,14 +125,10 @@ type WordmarkProps = {
 export function Wordmark({ className, surface = "dark" }: WordmarkProps) {
   return (
     <span className={className} style={{ letterSpacing: "-0.03em", fontWeight: 700 }}>
-      <span style={{ color: surface === "light" ? "var(--brand-ink)" : "#9CC6FF" }}>
+      <span style={{ color: surface === "light" ? "var(--brand-ink)" : "var(--text-1)" }}>
         Ace
       </span>
-      <span
-        style={{
-          color: surface === "light" ? "#0E8C7A" : "var(--accent-teal-bright)",
-        }}
-      >
+      <span style={{ color: surface === "light" ? "#C81F70" : "var(--accent)" }}>
         Decks
       </span>
     </span>
