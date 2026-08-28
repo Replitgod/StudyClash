@@ -1,21 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { KineticHero } from "@/app/components/marketing/KineticHero";
-import { TelemetrySteps } from "@/app/components/marketing/TelemetrySteps";
-import { GapRadar } from "@/app/components/marketing/GapRadar";
-import { Flashcard3D } from "@/app/components/marketing/Flashcard3D";
-import { NeonCursor } from "@/app/components/marketing/NeonCursor";
+import { GlassOrb } from "@/app/components/marketing/GlassOrb";
+import { OrbitalMap } from "@/app/components/marketing/OrbitalMap";
+import { ServerRack } from "@/app/components/marketing/ServerRack";
+import { CardArena } from "@/app/components/marketing/CardArena";
+import { ScannerCursor } from "@/app/components/marketing/ScannerCursor";
+import { FilmGrain } from "@/app/components/marketing/FilmGrain";
+import { ReactiveHeading } from "@/app/components/marketing/ReactiveHeading";
 import { Reveal } from "@/app/components/marketing/Reveal";
 import { MagneticButton } from "@/app/components/motion/MagneticButton";
 import { LogoMark } from "@/app/components/brand/Logo";
 
 // The public landing experience.
 //
-// Ordered so the page argues rather than just lists: the hero resolves into
-// a knowledge map, the loop explains how the map gets built, the radar
-// shows what it catches, and the flashcard lets you feel the moment it
-// catches something.
+// Ordered so the page argues rather than lists: the hero states the
+// promise, the orbital map shows the problem happening live, the rack
+// explains the machine that fixes it, and the card lets you feel the fix.
 
 const FAQ_ITEMS = [
   {
@@ -43,69 +44,187 @@ const FAQ_ITEMS = [
 export function NeonLanding() {
   return (
     <div
-      className="grain-heavy relative overflow-x-clip"
+      className="relative overflow-x-clip"
       style={{ background: "var(--void)", color: "var(--text-1)" }}
     >
-      <NeonCursor />
+      <ScannerCursor />
+      <FilmGrain />
 
       {/* ============================ HERO ============================ */}
-      <KineticHero />
+      <header className="relative h-[130vh]">
+        <div className="sticky top-0 h-dvh overflow-hidden">
+          <GlassOrb />
 
-      {/* ============================ LOOP ============================ */}
-      <TelemetrySteps />
+          {/* Ambient light */}
+          <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+            <div className="tech-grid absolute inset-0 opacity-40" />
+            <div
+              className="absolute bottom-[-25%] left-[8%] h-[52vw] w-[52vw] rounded-full"
+              style={{
+                background:
+                  "radial-gradient(circle, rgb(0 255 102 / 0.13) 0%, transparent 65%)",
+                filter: "blur(80px)",
+              }}
+            />
+          </div>
 
-      {/* ======================== GAP LOCATOR ========================= */}
+          {/* Copy sits below the orb, out of its way */}
+          <div className="relative z-20 flex h-full flex-col justify-end pb-[12vh]">
+            <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
+              <h1 className="sr-only">Stop deciding what to study.</h1>
+
+              <div
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5"
+                style={{
+                  border: "1px solid rgb(0 255 102 / 0.35)",
+                  background: "rgb(0 255 102 / 0.07)",
+                }}
+              >
+                <span
+                  className="h-1.5 w-1.5 rounded-full"
+                  style={{ background: "var(--neon-green)" }}
+                  aria-hidden="true"
+                />
+                <span
+                  className="text-[11px] font-semibold uppercase tracking-[0.18em]"
+                  style={{ color: "var(--neon-green)" }}
+                >
+                  Free · unlimited · no card
+                </span>
+              </div>
+
+              <p
+                className="mt-6 max-w-xl text-[16px] leading-relaxed sm:text-[18px]"
+                style={{ color: "var(--text-2)" }}
+              >
+                AceDecks reads your notes, finds the concepts you are quietly
+                losing, and drills them back before an exam finds them first.
+              </p>
+
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <MagneticButton
+                  href="/signup"
+                  className="btn btn-lg box-glow-green"
+                  ariaLabel="Start studying free"
+                >
+                  <span
+                    className="font-semibold uppercase tracking-[0.1em]"
+                    style={{ color: "var(--neon-green)" }}
+                  >
+                    Start studying free
+                  </span>
+                </MagneticButton>
+                <Link
+                  href="/login"
+                  className="btn btn-lg"
+                  style={{
+                    border: "1px solid rgb(255 255 255 / 0.16)",
+                    color: "var(--text-1)",
+                  }}
+                >
+                  I have an account
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ====================== ORBITAL DECAY ========================= */}
       <section
-        aria-labelledby="gaps"
+        aria-labelledby="decay"
         className="relative border-y py-24 sm:py-32"
         style={{
           borderColor: "rgb(255 255 255 / 0.07)",
           background: "var(--void-raised)",
         }}
       >
-        <div className="mx-auto w-full max-w-6xl px-5 sm:px-8">
-          <Reveal>
-            <GapRadar />
-          </Reveal>
-        </div>
-      </section>
-
-      {/* ========================== FLASHCARD ========================= */}
-      <section
-        aria-labelledby="card"
-        className="relative py-24 sm:py-32"
-      >
-        <div className="mx-auto grid w-full max-w-6xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-2">
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-[0.95fr_1.05fr]">
           <Reveal>
             <p
-              className="text-[11px] font-semibold uppercase tracking-[0.24em]"
-              style={{ color: "var(--neon-green)" }}
+              className="text-[11px] font-semibold uppercase tracking-[0.26em]"
+              style={{ color: "var(--neon-decay)" }}
             >
-              Live card
+              Live knowledge map
             </p>
-            <h2
-              id="card"
-              className="brutal mt-4 text-[clamp(2.2rem,5.6vw,4.4rem)]"
-              style={{ color: "var(--text-1)", ["--wdth" as string]: 94 }}
+            <ReactiveHeading
+              id="decay"
+              className="mt-4 text-[clamp(2.2rem,5.6vw,4.4rem)]"
+              restWidth={96}
+              style={{ color: "var(--text-1)" }}
             >
-              Get it wrong.<br />
-              <span className="neon-blue glow-blue">On purpose.</span>
-            </h2>
+              Watch it
+              <br />
+              <span className="glow-decay" style={{ color: "var(--neon-decay)" }}>
+                drift away.
+              </span>
+            </ReactiveHeading>
+
             <p
               className="mt-6 max-w-md text-[16px] leading-relaxed"
               style={{ color: "var(--text-2)" }}
             >
-              This is the real card, wired to the real behaviour. Pick the
-              wrong answer and you get exactly what the app gives you: the
-              specific misconception, not “Incorrect. Answer: B.”
+              This is not a loop. The magenta nodes are genuinely decaying
+              while you read — dimming, flickering and orbiting further out
+              the longer they go untouched. Click one and watch the repair
+              snap it home.
             </p>
-            <p className="mt-5 text-[13px]" style={{ color: "var(--text-3)" }}>
-              Go on — pick the wrong one.
+            <p className="mt-4 text-[13px]" style={{ color: "var(--text-4)" }}>
+              That is the whole product, running on a page you have not signed
+              into.
             </p>
           </Reveal>
 
           <Reveal delay={140}>
-            <Flashcard3D />
+            <OrbitalMap />
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ========================= SERVER RACK ======================== */}
+      <ServerRack />
+
+      {/* ========================== FLASHCARD ========================= */}
+      <section
+        aria-labelledby="arena"
+        className="relative border-t py-24 sm:py-32"
+        style={{ borderColor: "rgb(255 255 255 / 0.07)" }}
+      >
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-2">
+          <Reveal>
+            <p
+              className="text-[11px] font-semibold uppercase tracking-[0.26em]"
+              style={{ color: "var(--neon-green)" }}
+            >
+              The arena
+            </p>
+            <ReactiveHeading
+              id="arena"
+              className="mt-4 text-[clamp(2.2rem,5.6vw,4.4rem)]"
+              restWidth={96}
+              style={{ color: "var(--text-1)" }}
+            >
+              Get it wrong.
+              <br />
+              <span className="glow-blue" style={{ color: "var(--neon-blue)" }}>
+                On purpose.
+              </span>
+            </ReactiveHeading>
+            <p
+              className="mt-6 max-w-md text-[16px] leading-relaxed"
+              style={{ color: "var(--text-2)" }}
+            >
+              Pick the wrong answer and the card takes the hit, then cracks
+              open into exactly what the app gives you: the misconception, the
+              idea underneath it, and how to spot it next time.
+            </p>
+            <p className="mt-5 text-[13px]" style={{ color: "var(--text-4)" }}>
+              Go on. Pick the wrong one.
+            </p>
+          </Reveal>
+
+          <Reveal delay={140}>
+            <CardArena />
           </Reveal>
         </div>
       </section>
@@ -118,13 +237,14 @@ export function NeonLanding() {
       >
         <div className="mx-auto w-full max-w-3xl px-5 sm:px-8">
           <Reveal>
-            <h2
+            <ReactiveHeading
               id="faq"
-              className="brutal text-[clamp(2rem,5vw,3.6rem)]"
-              style={{ color: "var(--text-1)", ["--wdth" as string]: 94 }}
+              className="text-[clamp(2rem,5vw,3.6rem)]"
+              restWidth={96}
+              style={{ color: "var(--text-1)" }}
             >
               Short answers.
-            </h2>
+            </ReactiveHeading>
           </Reveal>
 
           <div className="mt-10">
@@ -142,7 +262,7 @@ export function NeonLanding() {
                     {item.q}
                     <span
                       className="flex h-7 w-7 flex-none items-center justify-center rounded-full border transition-transform duration-300 group-open:rotate-45"
-                      style={{ borderColor: "rgb(180 255 57 / 0.4)" }}
+                      style={{ borderColor: "rgb(0 255 102 / 0.4)" }}
                       aria-hidden="true"
                     >
                       <svg
@@ -176,26 +296,30 @@ export function NeonLanding() {
         className="relative overflow-hidden border-t py-28 text-center sm:py-36"
         style={{ borderColor: "rgb(255 255 255 / 0.07)" }}
       >
-        <div className="tech-grid absolute inset-0 opacity-40" aria-hidden="true" />
+        <div className="tech-grid absolute inset-0 opacity-30" aria-hidden="true" />
         <div
-          className="absolute left-1/2 top-1/2 h-[60vw] w-[60vw] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          className="absolute left-1/2 top-1/2 h-[62vw] w-[62vw] -translate-x-1/2 -translate-y-1/2 rounded-full"
           aria-hidden="true"
           style={{
-            background: "radial-gradient(circle, rgb(180 255 57 / 0.12), transparent 62%)",
-            filter: "blur(70px)",
+            background: "radial-gradient(circle, rgb(0 255 102 / 0.12), transparent 62%)",
+            filter: "blur(80px)",
           }}
         />
 
         <div className="relative mx-auto w-full max-w-3xl px-5 sm:px-8">
           <Reveal>
             <LogoMark className="mx-auto h-14 w-14" idPrefix="neon-close" />
-            <h2
-              className="brutal mt-8 text-[clamp(2.4rem,7vw,5rem)]"
-              style={{ color: "var(--text-1)", ["--wdth" as string]: 96 }}
+            <ReactiveHeading
+              className="mt-8 text-[clamp(2.4rem,7vw,5rem)]"
+              restWidth={98}
+              style={{ color: "var(--text-1)" }}
             >
-              What are you<br />
-              <span className="neon-green glow-green">studying?</span>
-            </h2>
+              What are you
+              <br />
+              <span className="glow-green" style={{ color: "var(--neon-green)" }}>
+                studying?
+              </span>
+            </ReactiveHeading>
             <p
               className="mx-auto mt-6 max-w-lg text-[16px] leading-relaxed"
               style={{ color: "var(--text-2)" }}
@@ -210,7 +334,7 @@ export function NeonLanding() {
                 ariaLabel="Start studying free"
               >
                 <span
-                  className="font-semibold uppercase tracking-[0.08em]"
+                  className="font-semibold uppercase tracking-[0.1em]"
                   style={{ color: "var(--neon-green)" }}
                 >
                   Start studying free
