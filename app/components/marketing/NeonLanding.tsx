@@ -64,7 +64,7 @@ export function NeonLanding() {
         <div
           className="halo left-1/2 top-[-14%] h-[46rem] w-[46rem] -translate-x-1/2"
           aria-hidden="true"
-          style={{ background: "rgb(255 45 146 / 0.14)" }}
+          style={{ background: "rgb(255 0 122 / 0.14)" }}
         />
         <div
           className="halo left-[6%] top-[38%] h-[26rem] w-[26rem]"
@@ -156,7 +156,7 @@ export function NeonLanding() {
         <div
           className="halo right-[-6%] top-[16%] h-[32rem] w-[32rem]"
           aria-hidden="true"
-          style={{ background: "rgb(255 45 146 / 0.1)" }}
+          style={{ background: "rgb(255 0 122 / 0.1)" }}
         />
 
         <div className="shell relative">
@@ -252,7 +252,7 @@ export function NeonLanding() {
         <div
           className="halo left-[-4%] top-[24%] h-[30rem] w-[30rem]"
           aria-hidden="true"
-          style={{ background: "rgb(255 45 146 / 0.11)" }}
+          style={{ background: "rgb(255 0 122 / 0.11)" }}
         />
 
         <div className="shell relative">
@@ -359,7 +359,7 @@ export function NeonLanding() {
             <div
               className="halo left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2"
               aria-hidden="true"
-              style={{ background: "rgb(255 45 146 / 0.16)" }}
+              style={{ background: "rgb(255 0 122 / 0.16)" }}
             />
 
             <Reveal>

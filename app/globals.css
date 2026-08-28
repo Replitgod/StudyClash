@@ -101,10 +101,10 @@
 :root {
   /* Surfaces, lowest to highest. Tinted toward the brand blue rather than
      neutral grey, so the whole app reads as one material with the logo. */
-  --app-bg: #060a14;
-  --panel: #0c1322;
-  --panel-raised: #121b2d;
-  --panel-hover: #18243b;
+  --app-bg: #050506;
+  --panel: #0d0d10;
+  --panel-raised: #141417;
+  --panel-hover: #1b1b1f;
 
   /* Text, most to least prominent */
   --text-1: #eef4fb;
@@ -134,21 +134,21 @@
   /* Magenta is the brand accent: primary actions, active states, focus.
      Green is demoted to a status colour (a concept that is holding), and
      the deeper crimson marks decay. One accent leads; the rest report. */
-  --accent: #ff2d92;
-  --accent-bright: #ff5fae;
-  --accent-dim: #c81f70;
-  --accent-soft: rgb(255 45 146 / 0.12);
-  --accent-line: rgb(255 45 146 / 0.32);
+  --accent: #ff007a;
+  --accent-bright: #ff4d9e;
+  --accent-dim: #c2005d;
+  --accent-soft: rgb(255 0 122 / 0.12);
+  --accent-line: rgb(255 0 122 / 0.3);
 
   --neon-green: #34e39b;
   --neon-blue: #5b8cff;
-  --neon-decay: #ff2d92;
+  --neon-decay: #ff007a;
 
   /* Obsidian, not pure black: a true #000 canvas makes every panel above it
      look like a grey box floating in a void. */
-  --void: #0b0b0c;
-  --void-raised: #101013;
-  --void-panel: #141418;
+  --void: #050506;
+  --void-raised: #0a0a0c;
+  --void-panel: #101012;
 
   --accent-teal: #12b39b;
   --accent-teal-bright: #2fd3b8;
@@ -1420,7 +1420,7 @@ textarea:-webkit-autofill:focus {
 }
 
 .text-accent-sheen {
-  background: linear-gradient(100deg, #ff5fae 0%, #ff2d92 50%, #a855f7 100%);
+  background: linear-gradient(100deg, #ff6bab 0%, #ff007a 52%, #b14bff 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -1453,7 +1453,7 @@ textarea:-webkit-autofill:focus {
   border-radius: inherit;
   background: radial-gradient(
     420px circle at var(--mx, 50%) var(--my, 0%),
-    rgb(255 45 146 / 0.1),
+    rgb(255 0 122 / 0.1),
     transparent 64%
   );
   opacity: 0;
@@ -1462,10 +1462,10 @@ textarea:-webkit-autofill:focus {
 
 .bento:hover {
   transform: translateY(-3px);
-  border-color: rgb(255 45 146 / 0.32);
+  border-color: rgb(255 0 122 / 0.3);
   box-shadow:
     0 18px 50px -24px rgb(0 0 0 / 0.9),
-    0 0 40px -20px rgb(255 45 146 / 0.55);
+    0 0 40px -20px rgb(255 0 122 / 0.5);
 }
 
 .bento:hover::before { opacity: 1; }
@@ -1512,12 +1512,12 @@ textarea:-webkit-autofill:focus {
 /* --- Primary button. Magenta, with a top inner highlight so it reads as a
    lit surface rather than a flat swatch. --- */
 .btn-accent {
-  background: linear-gradient(180deg, #ff4fa3, #e01f7f);
+  background: linear-gradient(180deg, #ff3d95, #e00069);
   color: #fff;
   border: 0;
   box-shadow:
     inset 0 1px 0 0 rgb(255 255 255 / 0.28),
-    0 10px 30px -12px rgb(255 45 146 / 0.8);
+    0 10px 30px -12px rgb(255 0 122 / 0.75);
   transition:
     transform 200ms var(--ease-premium-out),
     box-shadow 260ms var(--ease-premium-out),
@@ -1528,7 +1528,7 @@ textarea:-webkit-autofill:focus {
   filter: brightness(1.07);
   box-shadow:
     inset 0 1px 0 0 rgb(255 255 255 / 0.34),
-    0 16px 42px -14px rgb(255 45 146 / 0.95);
+    0 16px 42px -14px rgb(255 0 122 / 0.9);
 }
 
 .btn-ghost {

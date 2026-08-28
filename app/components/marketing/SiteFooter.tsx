@@ -1,18 +1,28 @@
 import Link from "next/link";
+import { Mail } from "lucide-react";
 import { Logo } from "@/app/components/brand/Logo";
 
-// The public footer. Shared by every marketing page so the contact address
-// and the legal links live in exactly one place -- an email duplicated
-// across five files is an email that gets updated in four.
+// The public footer. Shared by every marketing page so the contact
+// addresses and the legal links live in exactly one place -- an email
+// duplicated across five files is an email that gets updated in four.
 
-export const CONTACT_EMAIL = "karthik.kt711@gmail.com";
+export const CONTACT_EMAILS = [
+  "karthik.kt711@gmail.com",
+  "siddharthdatla582@gmail.com",
+];
 
-const LINK_GROUPS: Array<{ title: string; links: Array<{ href: string; label: string }> }> = [
+/** Kept as a single-value export for callers that only need one address. */
+export const CONTACT_EMAIL = CONTACT_EMAILS[0];
+
+const LINK_GROUPS: Array<{
+  title: string;
+  links: Array<{ href: string; label: string }>;
+}> = [
   {
     title: "Product",
     links: [
-      { href: "/pricing", label: "Pricing" },
       { href: "/signup", label: "Start studying" },
+      { href: "/pricing", label: "Pricing" },
       { href: "/login", label: "Sign in" },
     ],
   },
@@ -29,30 +39,51 @@ const LINK_GROUPS: Array<{ title: string; links: Array<{ href: string; label: st
 export function SiteFooter() {
   return (
     <footer
-      className="border-t"
-      style={{ borderColor: "var(--line)", background: "var(--app-bg)" }}
+      className="relative border-t"
+      style={{
+        borderColor: "rgb(255 255 255 / 0.07)",
+        background: "var(--void)",
+      }}
     >
-      <div className="mx-auto w-full max-w-6xl px-5 py-14 sm:px-8 sm:py-16">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr]">
+      <div className="shell py-16 sm:py-20">
+        <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr]">
           <div>
             <Logo markClassName="h-9 w-9" idPrefix="footer" />
-            <p className="t-body mt-4 max-w-xs text-[14.5px]">
+            <p
+              className="mt-5 max-w-xs text-[14.5px] leading-relaxed"
+              style={{ color: "var(--text-2)" }}
+            >
               The study app that decides what you practise next, and tells you
               why.
             </p>
-            <a
-              href={`mailto:${CONTACT_EMAIL}`}
-              className="mt-5 inline-block text-[14px] underline underline-offset-4 transition-colors"
-              style={{ color: "var(--brand-text)" }}
-            >
-              {CONTACT_EMAIL}
-            </a>
+
+            <ul className="mt-6 flex flex-col gap-2.5">
+              {CONTACT_EMAILS.map((email) => (
+                <li key={email}>
+                  <a
+                    href={`mailto:${email}`}
+                    className="group inline-flex items-center gap-2 text-[14px] transition-colors"
+                    style={{ color: "var(--text-3)" }}
+                  >
+                    <Mail
+                      className="h-3.5 w-3.5 flex-none transition-colors group-hover:text-[var(--accent)]"
+                      aria-hidden="true"
+                    />
+                    <span className="break-all transition-colors group-hover:text-[var(--accent-bright)]">
+                      {email}
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
 
           {LINK_GROUPS.map((group) => (
             <nav key={group.title} aria-label={group.title}>
-              <p className="t-section">{group.title}</p>
-              <ul className="mt-4 flex flex-col gap-2.5">
+              <p className="eyebrow" style={{ color: "var(--text-4)" }}>
+                {group.title}
+              </p>
+              <ul className="mt-5 flex flex-col gap-3">
                 {group.links.map((link) => (
                   <li key={link.href}>
                     <Link
@@ -70,13 +101,15 @@ export function SiteFooter() {
         </div>
 
         <div
-          className="mt-12 flex flex-col gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between"
-          style={{ borderColor: "var(--line)" }}
+          className="mt-14 flex flex-col gap-3 border-t pt-7 sm:flex-row sm:items-center sm:justify-between"
+          style={{ borderColor: "rgb(255 255 255 / 0.06)" }}
         >
-          <p className="t-meta">
-            © {new Date().getFullYear()} AceDecks · acedecks.org
+          <p className="text-[13px]" style={{ color: "var(--text-4)" }}>
+            © 2026 AceDecks · acedecks.org
           </p>
-          <p className="t-meta">Built for students who would rather be studying.</p>
+          <p className="text-[13px]" style={{ color: "var(--text-4)" }}>
+            Built for students who would rather be studying.
+          </p>
         </div>
       </div>
     </footer>

@@ -174,7 +174,7 @@ export function CardArena() {
                 verdict === "right"
                   ? "0 0 90px -26px rgb(52 227 155 / 0.6)"
                   : verdict === "wrong"
-                    ? "0 0 90px -24px rgb(255 45 146 / 0.7)"
+                    ? "0 0 90px -24px rgb(255 0 122 / 0.7)"
                     : "0 22px 60px -30px rgb(0 0 0 / 0.9)",
               transition: "border-color 400ms, box-shadow 400ms",
             }}
@@ -193,7 +193,7 @@ export function CardArena() {
                   width: p.size,
                   height: p.size,
                   background: "var(--accent)",
-                  boxShadow: "0 0 8px rgb(255 45 146 / 0.9)",
+                  boxShadow: "0 0 8px rgb(255 0 122 / 0.9)",
                   ["--px" as string]: `${p.dx}px`,
                   ["--py" as string]: `${p.dy}px`,
                   animation: "particle-fly 850ms cubic-bezier(0.2,0.7,0.3,1) forwards",
@@ -301,9 +301,9 @@ export function CardArena() {
               style={{
                 border: "1px solid var(--accent-line)",
                 background:
-                  "linear-gradient(160deg, rgb(255 45 146 / 0.08), rgb(11 11 12 / 0.7))",
+                  "linear-gradient(160deg, rgb(255 0 122 / 0.08), rgb(11 11 12 / 0.7))",
                 backdropFilter: "blur(14px)",
-                boxShadow: "0 0 70px -26px rgb(255 45 146 / 0.6)",
+                boxShadow: "0 0 70px -26px rgb(255 0 122 / 0.6)",
               }}
             >
               {[

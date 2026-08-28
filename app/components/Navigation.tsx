@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
 import { LogoMark, Wordmark } from "@/app/components/brand/Logo";
+import { Sparkles } from "lucide-react";
 
 // Public / marketing header only.
 //
@@ -54,6 +55,24 @@ export default function Navigation() {
           <LogoMark className="h-8 w-8" idPrefix="nav" />
           <Wordmark className="text-[17px]" />
         </Link>
+
+        {/* Offer pill. Hidden below lg: on a narrow bar it crowds out the
+            links it is meant to sit beside. */}
+        <span
+          className="ml-6 hidden items-center gap-2 rounded-full px-3 py-1.5 lg:inline-flex"
+          style={{
+            border: "1px solid var(--accent-line)",
+            background: "var(--accent-soft)",
+          }}
+        >
+          <Sparkles className="h-3 w-3" style={{ color: "var(--accent)" }} aria-hidden="true" />
+          <span
+            className="text-[11px] font-semibold uppercase tracking-[0.14em]"
+            style={{ color: "var(--accent-bright)" }}
+          >
+            Free · Unlimited · No card
+          </span>
+        </span>
 
         <nav aria-label="Site" className="ml-auto hidden items-center gap-1 sm:flex">
           {LINKS.map((link) => (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback } from "react";
+import { FileInput, Sparkles, Radar, Wrench, type LucideIcon } from "lucide-react";
 
 // The four-step grid.
 //
@@ -15,10 +16,21 @@ import { useCallback } from "react";
 // and the CSS radial gradient in `.bento::before` reads them. Doing it in
 // CSS rather than React keeps it off the render path entirely.
 
-const STEPS = [
+type Step = {
+  n: string;
+  title: string;
+  Icon: LucideIcon;
+  badge: string;
+  body: string;
+  stats: Array<{ value: string; label: string }>;
+};
+
+const STEPS: Step[] = [
   {
     n: "01",
     title: "Ingest",
+    Icon: FileInput,
+    badge: "Anything you have",
     body: "Drop a topic, your notes, a PDF, or a photo of the page. Everything gets parsed into concepts.",
     stats: [
       { value: "Any", label: "file type" },
@@ -28,6 +40,8 @@ const STEPS = [
   {
     n: "02",
     title: "Generate",
+    Icon: Sparkles,
+    badge: "Written from your material",
     body: "Notes, questions and flashcards written from your material — every answer validated before it reaches you.",
     stats: [
       { value: "100%", label: "answers verified" },
@@ -37,6 +51,8 @@ const STEPS = [
   {
     n: "03",
     title: "Detect",
+    Icon: Radar,
+    badge: "The mastery model",
     body: "Each answer updates a real mastery model: recency, difficulty, hesitation and decay.",
     stats: [
       { value: "6", label: "signals tracked" },
@@ -46,6 +62,8 @@ const STEPS = [
   {
     n: "04",
     title: "Repair",
+    Icon: Wrench,
+    badge: "Where the gain is",
     body: "Miss something and it names the exact misconception, then re-tests the same idea until it holds.",
     stats: [
       { value: "+30", label: "recovery XP" },
@@ -66,25 +84,34 @@ export function StepGrid() {
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {STEPS.map((step) => (
         <article key={step.n} className="bento p-6" onPointerMove={track}>
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between gap-3">
+            <span
+              aria-hidden="true"
+              className="flex h-9 w-9 flex-none items-center justify-center rounded-[10px]"
+              style={{
+                border: "1px solid var(--accent-line)",
+                background: "var(--accent-soft)",
+              }}
+            >
+              <step.Icon className="h-4 w-4" style={{ color: "var(--accent-bright)" }} />
+            </span>
             <span
               className="font-mono text-[11px] tabular-nums tracking-[0.18em]"
-              style={{ color: "var(--accent)" }}
+              style={{ color: "var(--text-4)" }}
             >
               {step.n}
             </span>
-            <span
-              aria-hidden="true"
-              className="h-1.5 w-1.5 rounded-full"
-              style={{
-                background: "var(--accent)",
-                boxShadow: "0 0 12px var(--accent)",
-              }}
-            />
           </div>
 
+          <p
+            className="mt-5 text-[10.5px] font-semibold uppercase tracking-[0.16em]"
+            style={{ color: "var(--accent-bright)" }}
+          >
+            {step.badge}
+          </p>
+
           <h3
-            className="mt-5 text-[19px] font-semibold tracking-[-0.02em]"
+            className="mt-2 text-[19px] font-semibold tracking-[-0.02em]"
             style={{ color: "var(--text-1)" }}
           >
             {step.title}

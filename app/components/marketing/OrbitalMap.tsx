@@ -184,7 +184,7 @@ export function OrbitalMap() {
         const weak = na.decaying || nb.decaying;
         const depth = (pa.z + pb.z) / 2;
         ctx.strokeStyle = weak
-          ? `rgba(255, 45, 146, ${0.12 + depth * 0.16})`
+          ? `rgba(255, 0, 122, ${0.12 + depth * 0.16})`
           : `rgba(255, 255, 255, ${0.06 + depth * 0.1})`;
         ctx.beginPath();
         ctx.moveTo(pa.x, pa.y);
@@ -210,7 +210,7 @@ export function OrbitalMap() {
           : 1;
 
         const justFixed = node.fixedAt !== null && now - node.fixedAt < 900;
-        const colour = node.decaying ? "255, 45, 146" : "52, 227, 155";
+        const colour = node.decaying ? "255, 0, 122" : "52, 227, 155";
 
         // Glow
         const glowRadius = p.r * (isHover ? 7 : justFixed ? 9 : 5);
@@ -242,7 +242,7 @@ export function OrbitalMap() {
         ctx.font = `600 ${Math.max(9, 11 * (0.8 + p.z * 0.3))}px Archivo, system-ui, sans-serif`;
         ctx.textAlign = "center";
         ctx.fillStyle = node.decaying
-          ? `rgba(255, 150, 200, ${0.6 + p.z * 0.35})`
+          ? `rgba(255, 130, 190, ${0.6 + p.z * 0.35})`
           : `rgba(200, 214, 230, ${0.5 + p.z * 0.35})`;
         ctx.fillText(node.label.toUpperCase(), p.x, p.y - p.r - 9);
 
