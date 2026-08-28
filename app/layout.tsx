@@ -6,7 +6,7 @@ import { PageTransition } from "./components/PageTransition";
 import { AuthProvider } from "@/lib/useAuth";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Archivo } from "next/font/google";
 import { MotionConfig } from "framer-motion";
 import "./globals.css";
 
@@ -18,6 +18,18 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// The display face. Archivo is loaded with its width axis as well as
+// weight, which is what lets headlines actually *warp* on scroll --
+// interpolating `font-variation-settings: "wdth"` re-shapes the letterforms
+// rather than just stretching a bitmap, which is the difference between a
+// variable-font effect and a `transform: scaleX` that smears the strokes.
+const archivo = Archivo({
+  variable: "--font-display",
+  subsets: ["latin"],
+  axes: ["wdth"],
+  display: "swap",
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acedecks.org";
@@ -132,7 +144,7 @@ export default function RootLayout({
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${archivo.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>

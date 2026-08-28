@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageViewTracker } from "./components/PageViewTracker";
-import { Landing } from "./components/marketing/Landing";
+import { NeonLanding } from "./components/marketing/NeonLanding";
 import { SiteFooter } from "./components/marketing/SiteFooter";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acedecks.org";
@@ -151,7 +151,7 @@ export default function Home() {
 
       <PageViewTracker page="home" funnelEvent="homepage_viewed" />
 
-      <Landing />
+      <NeonLanding />
       <SiteFooter />
     </>
   );

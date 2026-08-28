@@ -127,6 +127,16 @@
   --brand-line: rgb(46 125 240 / 0.34);
   --on-brand: #ffffff;
 
+  /* --- Neon layer. Used by the marketing site only: the signed-in app
+     stays quiet, because a student mid-question should not be competing
+     with a glow. Laser green reads as mastery, cyber blue as knowledge,
+     magenta as decay. --- */
+  --neon-green: #b4ff39;
+  --neon-blue: #2bd9ff;
+  --neon-decay: #ff3d6e;
+  --void: #050506;
+  --void-raised: #0b0d10;
+
   --accent-teal: #12b39b;
   --accent-teal-bright: #2fd3b8;
   --accent-teal-soft: rgb(18 179 155 / 0.14);
@@ -994,4 +1004,188 @@ textarea:-webkit-autofill:focus {
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+/*
+ * ============================================================================
+ * Neon marketing layer
+ * ============================================================================
+ * The high-contrast, motion-heavy treatment for the public site. Everything
+ * here is scoped to marketing components -- the app shell keeps the quiet
+ * palette above.
+ *
+ * Perf rule throughout: only `transform`, `opacity` and `filter` are
+ * animated. Nothing here animates a property that triggers layout, because
+ * these run continuously rather than once.
+ */
+
+.font-display {
+  font-family: var(--font-display), var(--font-geist-sans), system-ui, sans-serif;
+}
+
+/* Brutalist display type: oversized, tight, and set at a narrow width axis
+   so it reads as compressed rather than merely bold. */
+.brutal {
+  font-family: var(--font-display), var(--font-geist-sans), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.055em;
+  line-height: 0.86;
+  text-transform: uppercase;
+  font-variation-settings: "wdth" var(--wdth, 100);
+}
+
+.neon-green { color: var(--neon-green); }
+.neon-blue { color: var(--neon-blue); }
+
+/* Micro-glow. Two shadows: a tight core for legibility and a wide bloom for
+   the light spill. A single large shadow just looks blurry. */
+.glow-green {
+  text-shadow:
+    0 0 12px rgb(180 255 57 / 0.55),
+    0 0 46px rgb(180 255 57 / 0.28);
+}
+
+.glow-blue {
+  text-shadow:
+    0 0 12px rgb(43 217 255 / 0.55),
+    0 0 46px rgb(43 217 255 / 0.28);
+}
+
+.box-glow-green {
+  box-shadow:
+    0 0 0 1px rgb(180 255 57 / 0.35),
+    0 0 24px -4px rgb(180 255 57 / 0.45),
+    0 0 70px -12px rgb(180 255 57 / 0.3);
+}
+
+.box-glow-blue {
+  box-shadow:
+    0 0 0 1px rgb(43 217 255 / 0.32),
+    0 0 24px -4px rgb(43 217 255 / 0.4),
+    0 0 70px -12px rgb(43 217 255 / 0.28);
+}
+
+/* Organic grain, animated so it reads as film rather than a static screen
+   door. steps() keeps it from smoothly sliding, which would look like a
+   moving texture instead of grain. */
+.grain-heavy::before {
+  content: "";
+  position: absolute;
+  inset: -120%;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain-shift 0.7s steps(4) infinite;
+}
+
+@keyframes grain-shift {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-2%, 1%); }
+  50% { transform: translate(1%, -2%); }
+  75% { transform: translate(-1%, -1%); }
+  100% { transform: translate(0, 0); }
+}
+
+/* Scanline sheen over dark panels. */
+.scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.028) 0px,
+    rgb(255 255 255 / 0.028) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* 3D stage. `perspective` on the parent and `preserve-3d` on the child is
+   what makes rotateX/Y read as real depth instead of a flat skew. */
+.stage {
+  perspective: 1400px;
+  perspective-origin: 50% 50%;
+}
+
+.stage-3d {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Hairline tech grid, used behind telemetry panels. */
+.tech-grid {
+  background-image:
+    linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* Shockwave emitted on a correct answer. */
+@keyframes shockwave {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.85;
+    border-width: 3px;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+    border-width: 0.5px;
+  }
+}
+
+.shockwave {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 3px solid var(--neon-green);
+  animation: shockwave 900ms var(--ease-premium-out) forwards;
+  pointer-events: none;
+}
+
+/* A node that is being forgotten. The pulse is slow on purpose -- fast
+   blinking reads as an error, and decay is not an error. */
+@keyframes decay-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.9; }
+}
+
+.decaying {
+  animation: decay-pulse 2.4s ease-in-out infinite;
+}
+
+/* Custom cursor. Hidden entirely on touch, where there is no cursor to
+   replace and a fixed dot would just be litter. */
+@media (hover: hover) and (pointer: fine) {
+  .cursor-none-desktop,
+  .cursor-none-desktop * {
+    cursor: none;
+  }
+}
+
+/* Marquee variant for the kinetic hero: bigger, tighter, no mask. */
+.kinetic-track {
+  display: flex;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  animation: marquee 22s linear infinite;
+  will-change: transform;
+}
+
+.kinetic-track-reverse {
+  animation-direction: reverse;
+}
+
+/* Radar rotation. Kept on a wrapper so the SVG inside stays untouched and
+   the labels can counter-rotate independently. */
+@keyframes radar-spin {
+  from { transform: rotateX(58deg) rotateZ(0deg); }
+  to { transform: rotateX(58deg) rotateZ(360deg); }
 }
