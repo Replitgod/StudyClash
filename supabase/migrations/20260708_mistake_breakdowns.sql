@@ -52,6 +52,10 @@ $$;
 
 drop trigger if exists trg_mistake_breakdowns_updated_at on public.mistake_breakdowns;
 
+-- Dropped first: Postgres has no `create trigger if not exists`, so
+-- re-running this file would otherwise fail on an existing trigger.
+drop trigger if exists trg_mistake_breakdowns_updated_at on public.mistake_breakdowns;
+
 create trigger trg_mistake_breakdowns_updated_at
 before update on public.mistake_breakdowns
 for each row
@@ -62,7 +66,13 @@ alter table public.mistake_breakdowns enable row level security;
 -- Read and write can be done from server-side service-role routes.
 -- Optionally allow authenticated users to read their own deck-related rows
 -- if your app exposes direct client reads in the future.
-create policy if not exists "authenticated_read_mistake_breakdowns"
+-- `create policy if not exists` is not valid Postgres -- there is no IF NOT
+-- EXISTS clause for policies, and this file failed to apply because of it.
+-- drop-then-create is the pattern every other migration here uses and is
+-- what makes the file genuinely re-runnable.
+drop policy if exists "authenticated_read_mistake_breakdowns" on public.mistake_breakdowns;
+
+create policy "authenticated_read_mistake_breakdowns"
   on public.mistake_breakdowns
   for select
   to authenticated
