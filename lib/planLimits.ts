@@ -1,13 +1,15 @@
-// Single source of truth for what the free plan is allowed to do.
+// Daily generation caps, and the one line of copy describing the free plan.
 //
-// AceDecks is now run as a single-user / open-access app: there is no daily
-// generation cap, no PDF cap, and no beta access code gate. Everything is
-// unlimited on every plan.
+// Two different axes exist and it is worth keeping them straight:
 //
-// These constants are kept (rather than deleted) because several surfaces
-// import them for copy, and `null` is the app-wide convention for "no
-// limit" (it matches `membership_plans.daily_limit`, which is nullable and
-// means unlimited there too).
+//   here          per-DAY generation caps. Still uncapped -- rate limiting
+//                 handles abuse, and a daily cap on top of a monthly one
+//                 just makes the product feel broken on a cram night.
+//   lib/tiers.ts  per-MONTH knowledge map caps, Card Crack, ingestion and
+//                 themes. That is where the free/Pro line actually sits.
+//
+// `null` is the app-wide convention for "no limit" (it matches
+// `membership_plans.daily_limit`, which is nullable and means the same).
 
 /** Deck generations allowed per day. `null` = unlimited. */
 export const FREE_DAILY_GENERATION_CAP: number | null = null;
@@ -23,7 +25,7 @@ export const IS_UNLIMITED =
 // upgrade prompts) should use to describe the generation limit, so wording
 // never drifts from what's actually enforced.
 export const FREE_PLAN_LIMIT_SUMMARY =
-  "Everything is unlimited: unlimited decks, unlimited uploads, unlimited practice, unlimited AI.";
+  "Free covers 3 knowledge maps a month with 5 cards per concept. Ace Pro removes every cap.";
 
 // Short form for tight spaces (badges, plan cards).
-export const FREE_PLAN_LIMIT_SHORT = "Unlimited everything";
+export const FREE_PLAN_LIMIT_SHORT = "3 maps a month";

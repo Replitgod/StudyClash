@@ -6,6 +6,7 @@ import { FREE_PLAN_IDS, PRIORITY_PLAN_IDS } from "@/lib/plans";
 import { hasUnbalancedMathDelimiters } from "@/lib/server/mathValidation";
 import { shuffleAnswerChoices } from "@/lib/server/questionShuffle";
 import { TERRA_TASK, LUNA_TASK, type ReasoningEffort } from "@/lib/server/aiModels";
+import { evaluateRequest } from "@/lib/tiers";
 
 // Reasoning-effort models spend part of max_completion_tokens on hidden
 // reasoning before writing visible output, unlike the flat-rate gpt-4o-mini
@@ -1892,20 +1893,59 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Beta access codes and free-plan generation caps were removed when
-    // AceDecks became open/unlimited. See lib/planLimits.ts -- the caps there
-    // are `null`, meaning "no limit", so there is nothing to enforce here.
-
     // Today's generation count is shared by the free-plan cap here and the
     // plan daily-limit check below -- it used to be fetched twice.
     const { count: generationCountToday, error: generationCountError } =
       todayCountResult;
 
-    // 5. Daily generation limits are disabled -- AceDecks is unlimited on
-    // every plan (lib/planLimits.ts). `dailyLimit` from membership_plans and
-    // today's generation count are still read above because generation_logs
-    // rows are written for history/analytics, but neither can block a
-    // request any more.
+    // --- Monthly map cap (lib/tiers.ts) --------------------------------
+    //
+    // Enforced here rather than only in the UI. A cap that exists only on
+    // the client is not a cap: the same request from curl bypasses it, and
+    // this is the expensive path (a full generation) that the free tier is
+    // meant to bound.
+    //
+    // Counted from decks created since the first of the month, which is
+    // what a student means by "3 maps a month" -- a rolling 30-day window
+    // reads as arbitrary when the reset never lands on a date they can
+    // predict.
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const { count: mapsThisMonth } = await supabase
+      .from("decks")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .gte("created_at", monthStart.toISOString());
+
+    const governor = evaluateRequest({
+      tier: activePlanId === "pro_individual" || activePlanId === "pro" ? "pro" : "free",
+      action: "create_map",
+      usage: { mapsThisMonth: mapsThisMonth ?? 0 },
+    });
+
+    if (!governor.actionAllowed) {
+      return NextResponse.json(
+        {
+          error: governor.reason,
+          api_billing_governor: {
+            limit_enforced: governor.limitEnforced,
+            current_tier: governor.currentTier,
+            calculated_token_weight: governor.calculatedTokenWeight,
+            action_allowed: false,
+          },
+          upgradeUrl: "/pricing",
+        },
+        { status: 402 }
+      );
+    }
+
+    // 5. Per-DAY generation limits stay disabled (lib/planLimits.ts caps are
+    // null). The free tier is bounded per month instead, above -- stacking a
+    // daily cap on top of a monthly one just makes the product feel broken
+    // on a cram night. `dailyLimit` and today's count are still read because
+    // generation_logs rows are written for history and analytics.
     void dailyLimit;
     void generationCountToday;
     void generationCountError;

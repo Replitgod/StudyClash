@@ -26,7 +26,7 @@ import { HeroPanel } from "@/app/components/marketing/HeroPanel";
 const FAQ_ITEMS = [
   {
     q: "What does it cost?",
-    a: "Nothing. Every feature is free and unlimited — no daily caps, no locked modes, no card required.",
+    a: "Free covers 3 knowledge maps a month with 5 cards per concept — enough to prove it on your own material, no card required. Ace Pro is $9.99 a month and removes every cap, adds handwriting and large-PDF ingestion, custom themes, and the full Card Crack breakdown.",
   },
   {
     q: "Do I need to have notes?",
@@ -113,7 +113,7 @@ export function NeonLanding() {
               {[
                 ["~20s", "Notes to first question"],
                 ["Every miss", "Explained, then retested"],
-                ["Unlimited", "On every feature"],
+                ["Free", "3 maps a month, no card"],
               ].map(([value, label]) => (
                 <div key={label}>
                   <dt

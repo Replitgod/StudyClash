@@ -6,13 +6,8 @@ import { Logo } from "@/app/components/brand/Logo";
 // addresses and the legal links live in exactly one place -- an email
 // duplicated across five files is an email that gets updated in four.
 
-export const CONTACT_EMAILS = [
-  "karthik.kt711@gmail.com",
-  "siddharthdatla582@gmail.com",
-];
-
-/** Kept as a single-value export for callers that only need one address. */
-export const CONTACT_EMAIL = CONTACT_EMAILS[0];
+/** The one support address. Defined here and imported everywhere else. */
+export const CONTACT_EMAIL = "acedecks14@gmail.com";
 
 const LINK_GROUPS: Array<{
   title: string;
@@ -57,25 +52,19 @@ export function SiteFooter() {
               why.
             </p>
 
-            <ul className="mt-6 flex flex-col gap-2.5">
-              {CONTACT_EMAILS.map((email) => (
-                <li key={email}>
-                  <a
-                    href={`mailto:${email}`}
-                    className="group inline-flex items-center gap-2 text-[14px] transition-colors"
-                    style={{ color: "var(--text-3)" }}
-                  >
-                    <Mail
-                      className="h-3.5 w-3.5 flex-none transition-colors group-hover:text-[var(--accent)]"
-                      aria-hidden="true"
-                    />
-                    <span className="break-all transition-colors group-hover:text-[var(--accent-bright)]">
-                      {email}
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <a
+              href={`mailto:${CONTACT_EMAIL}`}
+              className="group mt-6 inline-flex items-center gap-2 text-[14px] transition-colors"
+              style={{ color: "var(--text-3)" }}
+            >
+              <Mail
+                className="h-3.5 w-3.5 flex-none transition-colors group-hover:text-[var(--accent)]"
+                aria-hidden="true"
+              />
+              <span className="break-all transition-colors group-hover:text-[var(--accent-bright)]">
+                {CONTACT_EMAIL}
+              </span>
+            </a>
           </div>
 
           {LINK_GROUPS.map((group) => (

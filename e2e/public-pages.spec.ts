@@ -10,7 +10,7 @@ test.describe("public pages load without console errors", () => {
     { path: "/", heading: "Stop deciding what to study." },
     { path: "/login", heading: /Log in/i },
     { path: "/signup", heading: /Create your account/i },
-    { path: "/pricing", heading: "Membership Plans" },
+    { path: "/pricing", heading: /Free to prove it/i },
     { path: "/exams", heading: /AI-generated practice/i },
     { path: "/privacy", heading: /Privacy/i },
     { path: "/classroom", heading: /Live Study Rooms/i },

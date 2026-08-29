@@ -26,15 +26,18 @@ describe("plan limits", () => {
   });
 
   it("summary copy describes everything as unlimited", () => {
-    expect(FREE_PLAN_LIMIT_SUMMARY.toLowerCase()).toContain("unlimited");
+    // The free tier is capped now, so the copy has to say so.
+    expect(FREE_PLAN_LIMIT_SUMMARY.toLowerCase()).toContain("3 knowledge maps");
   });
 
   it("short copy describes everything as unlimited", () => {
-    expect(FREE_PLAN_LIMIT_SHORT.toLowerCase()).toContain("unlimited");
+    expect(FREE_PLAN_LIMIT_SHORT.toLowerCase()).toContain("3 maps");
   });
 
   it("no copy mentions a numeric daily cap", () => {
-    expect(FREE_PLAN_LIMIT_SUMMARY).not.toMatch(/\d+\s*(deck|pdf|per day)/i);
-    expect(FREE_PLAN_LIMIT_SHORT).not.toMatch(/\d/);
+    // It must describe the monthly map cap, never a per-day deck/PDF cap,
+    // because no per-day cap is actually enforced.
+    expect(FREE_PLAN_LIMIT_SUMMARY).not.toMatch(/per day|daily/i);
+    expect(FREE_PLAN_LIMIT_SHORT).not.toMatch(/per day|daily/i);
   });
 });

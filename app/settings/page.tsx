@@ -8,6 +8,8 @@ import { useAuth } from "@/lib/useAuth";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { OPEN_FEEDBACK_EVENT } from "@/lib/uiLayout";
 import { FREE_PLAN_LIMIT_SUMMARY } from "@/lib/planLimits";
+import { useTheme } from "@/lib/useTheme";
+import { resolveTier } from "@/lib/tiers";
 
 // Settings is deliberately boring. Nothing a student needs in order to
 // study lives here -- it is name, account, data, and the way out.
@@ -37,6 +39,13 @@ function Row({
 export default function SettingsPage() {
   const router = useRouter();
   const { user, profile, isLoading, refreshProfile } = useAuth();
+
+  // `profile.plan` carries legacy plan ids; resolveTier maps anything it
+  // does not recognise to free rather than throwing.
+  const currentTier = resolveTier(
+    profile?.plan === "pro_individual" || profile?.plan === "pro" ? "pro" : profile?.plan
+  );
+  const { themeId, themes, setTheme, canUseThemes } = useTheme(currentTier.id);
   const { isReady } = useRequireAuth();
 
   const [name, setName] = useState("");
@@ -127,7 +136,61 @@ export default function SettingsPage() {
           <Row label="Email" description={user?.email || "—"} />
 
           <Row label="Plan" description={FREE_PLAN_LIMIT_SUMMARY}>
-            <span className="chip chip-ok">Everything unlocked</span>
+            <div className="flex items-center gap-2">
+              <span className="chip">{currentTier.label}</span>
+              {currentTier.id === "free" && (
+                <Link href="/pricing" className="btn btn-sm btn-secondary">
+                  Upgrade
+                </Link>
+              )}
+            </div>
+          </Row>
+
+          <Row
+            label="Theme"
+            description={
+              canUseThemes
+                ? "Applies everywhere, instantly."
+                : "Custom themes are part of Ace Pro."
+            }
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              {themes.map((theme) => {
+                const active = theme.id === themeId;
+                const locked = !canUseThemes && theme.id !== "acedecks";
+                return (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => setTheme(theme.id)}
+                    aria-pressed={active}
+                    title={locked ? `${theme.label} — Ace Pro` : theme.description}
+                    className="flex items-center gap-2 rounded-full border px-2.5 py-1.5 text-[12px] transition-colors"
+                    style={{
+                      borderColor: active ? "var(--accent-line)" : "var(--line)",
+                      background: active ? "var(--accent-soft)" : "transparent",
+                      color: active ? "var(--accent-bright)" : "var(--text-2)",
+                      opacity: locked ? 0.55 : 1,
+                    }}
+                  >
+                    <span aria-hidden="true" className="flex">
+                      {theme.swatches.map((swatch) => (
+                        <span
+                          key={swatch}
+                          className="h-3 w-3 rounded-full"
+                          style={{
+                            background: swatch,
+                            marginLeft: swatch === theme.swatches[0] ? 0 : -5,
+                            border: "1px solid rgb(0 0 0 / 0.4)",
+                          }}
+                        />
+                      ))}
+                    </span>
+                    {theme.label}
+                  </button>
+                );
+              })}
+            </div>
           </Row>
         </div>
       </section>
