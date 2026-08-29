@@ -11,6 +11,7 @@ import { getQuestionStatus, getReviewIntervalDays, getTopicStatus } from "@/lib/
 import { recordSessionProgress } from "@/lib/server/progression";
 import { recordRatedResult, type RatedOpponent } from "@/lib/server/ratings";
 import { computeMastery } from "@/lib/mastery";
+import { gradeFromAnswer, INITIAL_SM2, reviewSm2 } from "@/lib/sm2";
 import { MASTERY_TIER_ORDER as TIER_ORDER } from "@/lib/masteryTiers";
 
 const CHALLENGE_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -824,10 +825,19 @@ async function updateQuestionReviewSchedule(args: {
   const nowMs = Date.now();
   const nowIso = new Date(nowMs).toISOString();
 
+  // This student's own pace this session, used to turn "correct" into an
+  // SM-2 grade. A global constant would mark a deliberate thinker down on
+  // every card.
+  const timed = answers.map((a) => a.responseTimeMs).filter((ms) => ms > 0);
+  const baselineResponseMs =
+    timed.length >= 3 ? timed.reduce((sum, ms) => sum + ms, 0) / timed.length : null;
+
   for (const answer of answers) {
     let existingQuery = supabase
       .from("question_review_schedule")
-      .select("id, correct_streak, correct_count, total_count, recoveries")
+      .select(
+        "id, correct_streak, correct_count, total_count, recoveries, ease_factor, interval_days, repetitions"
+      )
       .eq("deck_id", deckId)
       .eq("question_id", answer.questionId);
 
@@ -846,8 +856,37 @@ async function updateQuestionReviewSchedule(args: {
       (existing?.recoveries || 0) +
       (!answer.isCorrect && recoveredQuestionIds.has(answer.questionId) ? 1 : 0);
     const status = getQuestionStatus(correctStreak);
-    const intervalDays = getReviewIntervalDays(status, totalCount);
-    const nextReviewAt = new Date(nowMs + intervalDays * 24 * 60 * 60 * 1000).toISOString();
+
+    // SM-2 now sets the schedule (lib/sm2.ts). The grade is derived from
+    // correctness and how long the answer took relative to this student's
+    // own pace, because SM-2 assumes a 0-5 self-rating the app cannot ask
+    // for on every card without wrecking the session.
+    //
+    // A recovered question is graded as a pass, not a lapse: the student
+    // did fix it, and scheduling it as if they had not would bury the
+    // recovery loop's whole benefit.
+    const wasRecovered = recoveredQuestionIds.has(answer.questionId);
+    const grade = gradeFromAnswer({
+      isCorrect: answer.isCorrect || wasRecovered,
+      responseMs: answer.responseTimeMs,
+      baselineMs: baselineResponseMs,
+      usedHelp: wasRecovered,
+    });
+
+    const sm2 = reviewSm2(
+      {
+        intervalDays: existing?.interval_days ?? INITIAL_SM2.intervalDays,
+        easeFactor: existing?.ease_factor ?? INITIAL_SM2.easeFactor,
+        repetitions: existing?.repetitions ?? INITIAL_SM2.repetitions,
+        lastReviewedMs: nowMs,
+      },
+      grade,
+      nowMs
+    );
+
+    const nextReviewAt = new Date(
+      nowMs + sm2.intervalDays * 24 * 60 * 60 * 1000
+    ).toISOString();
 
     const row = {
       user_id: userId,
@@ -859,6 +898,9 @@ async function updateQuestionReviewSchedule(args: {
       correct_count: correctCount,
       total_count: totalCount,
       recoveries,
+      ease_factor: sm2.easeFactor,
+      interval_days: sm2.intervalDays,
+      repetitions: sm2.repetitions,
       last_practiced_at: nowIso,
       next_review_at: nextReviewAt,
       updated_at: nowIso,

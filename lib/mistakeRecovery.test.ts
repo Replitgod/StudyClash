@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildExplanation,
   recoveryCredit,
   similarity,
   validateFollowUp,
   MAX_FOLLOW_UP_SIMILARITY,
 } from "@/lib/mistakeRecovery";
+import { RECOVERY_XP } from "@/lib/cardCrack";
 
 const ORIGINAL = {
   questionText: "Which reagent reduces a ketone to a secondary alcohol?",
@@ -139,48 +139,12 @@ describe("validateFollowUp", () => {
   });
 });
 
-describe("buildExplanation", () => {
-  const fallback = {
-    topic: "Reduction reactions",
-    correctAnswer: "NaBH4",
-    explanation: "NaBH4 donates hydride to the carbonyl carbon.",
-  };
-
-  it("uses the model's text when it is present", () => {
-    const result = buildExplanation(
-      {
-        whatWentWrong: "You picked an oxidising agent.",
-        theIdea: "Reduction adds hydride.",
-        howToRecognize: "Look for a hydride source.",
-      },
-      fallback
-    );
-    expect(result.whatWentWrong).toBe("You picked an oxidising agent.");
-    expect(result.theIdea).toBe("Reduction adds hydride.");
-  });
-
-  it("always produces all three sections, even from nothing", () => {
-    for (const junk of [null, undefined, {}, "broken", 7]) {
-      const result = buildExplanation(junk, fallback);
-      expect(result.whatWentWrong.length).toBeGreaterThan(10);
-      expect(result.theIdea.length).toBeGreaterThan(10);
-      expect(result.howToRecognize.length).toBeGreaterThan(10);
-    }
-  });
-
-  it("falls back to the question's own explanation before inventing one", () => {
-    const result = buildExplanation({ whatWentWrong: "Nope." }, fallback);
-    expect(result.theIdea).toBe(fallback.explanation);
-  });
-
-  it("survives a topic that is missing entirely", () => {
-    const result = buildExplanation({}, { ...fallback, topic: "", explanation: null });
-    expect(result.theIdea).toContain("this topic");
-    expect(result.theIdea).not.toMatch(/undefined|null/);
-  });
-});
-
 describe("recoveryCredit", () => {
+  it("pays the brief's +30 for a recovery, from one constant", () => {
+    expect(recoveryCredit("recovered").xp).toBe(RECOVERY_XP);
+    expect(RECOVERY_XP).toBe(30);
+  });
+
   it("pays most for an actual recovery", () => {
     expect(recoveryCredit("recovered").recoveries).toBe(1);
     expect(recoveryCredit("recovered").xp).toBeGreaterThan(

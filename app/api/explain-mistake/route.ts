@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import {
+  getBearerToken,
   getClientIpAddress,
   getServiceSupabaseClient,
   hashIdentifier,
 } from "@/lib/server/apiUtils";
 import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 import { TERRA_TASK } from "@/lib/server/aiModels";
-import {
-  buildExplanation,
-  validateFollowUp,
-  type RecoveryPayload,
-} from "@/lib/mistakeRecovery";
+import { validateFollowUp } from "@/lib/mistakeRecovery";
+import { buildCardCrack, RECOVERY_XP, type CardCrack } from "@/lib/cardCrack";
+import { evaluateRequest, resolveTier } from "@/lib/tiers";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -85,6 +84,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Question not found." }, { status: 404 });
     }
 
+    // Which tier is asking. This route stays open to guests (a challenge
+    // link should teach its recipient something before asking them to sign
+    // up), so an absent or invalid token resolves to free rather than 401.
+    let tierId = "free";
+    const token = getBearerToken(req);
+    if (token) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser(token);
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("plan")
+          .eq("id", user.id)
+          .maybeSingle();
+        const plan = String(profile?.plan || "");
+        if (plan === "pro" || plan === "pro_individual") tierId = "pro";
+        else if (plan === "classroom" || plan === "team_pass") tierId = "classroom";
+      }
+    }
+
     const topic = (question.topic || "").trim();
     const choices: string[] = Array.isArray(question.answer_choices)
       ? question.answer_choices.filter((c: unknown): c is string => typeof c === "string")
@@ -102,13 +122,14 @@ CORRECT ANSWER: ${question.correct_answer}
 ${question.explanation ? `EXISTING EXPLANATION: ${question.explanation}` : ""}
 
 Write, addressed directly to the student as "you":
-- "whatWentWrong": 1-2 sentences naming the *specific* misconception behind the option they picked, and why it is tempting. Do not restate the question or simply say the answer is wrong.
-- "theIdea": 1-3 sentences explaining the underlying concept plainly, as if to someone meeting it for the first time. No jargon they have not already seen in the question.
-- "howToRecognize": one concrete, reusable heuristic for spotting this kind of question next time. Something they can actually apply, not "read carefully".
-- "followUp": a NEW multiple-choice question testing the SAME idea. It must be genuinely different from the original question -- different numbers, scenario or framing -- not a reworded copy. Give 4 options with plausible distractors, exactly one defensible correct answer, and a one-sentence explanation. "correctAnswer" must be character-for-character one of the strings in "choices".
+- "misconception": 1-2 sentences naming the *specific* false assumption behind the option they picked, and why it is tempting. Deduce it from THAT option. Never restate the question or simply say the answer is wrong.
+- "underlying_idea": the foundational truth, in AT MOST 2 sentences, plain enough for someone meeting it for the first time. No jargon they have not already seen in the question.
+- "how_to_spot": one concrete, high-yield exam heuristic for recognising this trap next time. Something applicable under time pressure, never "read carefully".
+- "socratic_loop": a single targeted micro-question that makes them state the idea back in their own words. Not multiple choice, and not the follow-up question below.
+- "followUp": a NEW multiple-choice question testing the SAME idea. Genuinely different -- different numbers, scenario or framing -- not a reworded copy. 4 options with plausible distractors that mirror real academic errors, exactly one defensible correct answer, and a one-sentence explanation. "correctAnswer" must be character-for-character one of the strings in "choices".
 
 Return ONLY valid JSON, no markdown:
-{"whatWentWrong":"...","theIdea":"...","howToRecognize":"...","followUp":{"questionText":"...","choices":["...","...","...","..."],"correctAnswer":"...","explanation":"..."}}`;
+{"misconception":"...","underlying_idea":"...","how_to_spot":"...","socratic_loop":"...","followUp":{"questionText":"...","choices":["...","...","...","..."],"correctAnswer":"...","explanation":"..."}}`;
 
     const completion = await openai.chat.completions.create({
       model: TERRA_TASK.model,
@@ -131,19 +152,52 @@ Return ONLY valid JSON, no markdown:
 
     const record = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>) : {};
 
-    // buildExplanation always returns all three sections, so a partial or
+    // buildCardCrack always returns all four fields, so a partial or
     // unparseable model response still leaves the student with something
     // useful rather than an error toast on top of a wrong answer.
-    const payload: RecoveryPayload = {
-      ...buildExplanation(record, {
-        topic,
-        correctAnswer: String(question.correct_answer ?? ""),
-        explanation: question.explanation ?? null,
-      }),
-      followUp: validateFollowUp(record.followUp, {
-        questionText: String(question.question_text ?? ""),
-        correctAnswer: String(question.correct_answer ?? ""),
-      }),
+    const crack: CardCrack = buildCardCrack(record, {
+      topic,
+      correctAnswer: String(question.correct_answer ?? ""),
+      selectedAnswer: selectedAnswer || "that option",
+    });
+
+    // Free tier gets the correction; Pro gets the full breakdown. The
+    // misconception is deliberately included either way -- naming what went
+    // wrong is the product, and withholding it entirely would make the free
+    // tier worse than a flashcard app rather than a smaller version of this
+    // one. What Pro adds is the depth: the idea, the exam heuristic, and the
+    // Socratic repair.
+    const full = evaluateRequest({
+      tier: tierId,
+      action: "card_crack",
+      usage: { mapsThisMonth: 0 },
+    }).actionAllowed;
+
+    const payload = {
+      api_billing_governor: {
+        limit_enforced: !full,
+        current_tier: resolveTier(tierId).id,
+        calculated_token_weight: "medium" as const,
+        action_allowed: true,
+      },
+      card_crack_payload: full
+        ? crack
+        : {
+            misconception: crack.misconception,
+            underlying_idea: crack.underlying_idea,
+            how_to_spot: null,
+            socratic_loop: null,
+          },
+      recovery_xp: RECOVERY_XP,
+      upgrade_unlocks: full
+        ? null
+        : "Ace Pro adds the exam heuristic and the Socratic repair question.",
+      followUp: full
+        ? validateFollowUp(record.followUp, {
+            questionText: String(question.question_text ?? ""),
+            correctAnswer: String(question.correct_answer ?? ""),
+          })
+        : null,
     };
 
     return NextResponse.json(payload);

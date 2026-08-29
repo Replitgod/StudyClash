@@ -1,40 +1,22 @@
-// "Explain my mistake", and the follow-up question that proves it stuck.
+// The follow-up question that proves a correction stuck.
 //
-// Wrong-answer feedback is the single highest-value moment in the product:
-// it is the only point where a student is already curious about a specific
-// gap in their own knowledge. Telling them "Incorrect. Answer: B." wastes
-// it. This models the four things worth saying instead --
+// The four-part explanation itself lives in lib/cardCrack.ts, which
+// implements the brief's Card Crack contract. What is left here is the
+// thing that contract does not cover: validating a *generated question*
+// before a student ever sees it.
 //
-//   what went wrong      the exact misconception, not a restatement
-//   the idea             the concept, simply
-//   how to spot it       a heuristic they can use next time
-//   try one like this    a new question on the same idea
-//
-// -- and, critically, validates the follow-up before a student ever sees
-// it. A generated question with the answer missing from its own choices, or
-// one that is just the original question again, teaches nothing and
-// destroys trust in every other question in the deck. Everything here is
-// pure so those checks can be tested directly.
+// That validation is the point. A generated question with the answer
+// missing from its own choices, or one that is just the original question
+// again, teaches nothing and destroys trust in every other question in the
+// deck. Everything here is pure so those checks can be tested directly.
 
-export type RecoveryExplanation = {
-  /** Why the answer they picked was tempting, and why it is wrong. */
-  whatWentWrong: string;
-  /** The underlying concept, in plain language. */
-  theIdea: string;
-  /** A reusable heuristic for spotting this next time. */
-  howToRecognize: string;
-};
+import { RECOVERY_XP } from "@/lib/cardCrack";
 
 export type FollowUpQuestion = {
   questionText: string;
   choices: string[];
   correctAnswer: string;
   explanation: string;
-};
-
-export type RecoveryPayload = RecoveryExplanation & {
-  /** Null when nothing usable could be generated. Never a broken question. */
-  followUp: FollowUpQuestion | null;
 };
 
 /* ------------------------------------------------------------ normalising */
@@ -146,38 +128,6 @@ export function validateFollowUp(
   };
 }
 
-/**
- * Validates the explanation half. Unlike the follow-up this degrades rather
- * than fails: a student who just got something wrong should always be told
- * something useful, even if the model returned only part of it.
- */
-export function buildExplanation(
-  raw: unknown,
-  fallback: { topic: string; correctAnswer: string; explanation: string | null }
-): RecoveryExplanation {
-  const candidate =
-    raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
-
-  const whatWentWrong = cleanText(candidate.whatWentWrong, MAX_EXPLANATION_CHARS);
-  const theIdea = cleanText(candidate.theIdea, MAX_EXPLANATION_CHARS);
-  const howToRecognize = cleanText(candidate.howToRecognize, MAX_EXPLANATION_CHARS);
-
-  const topic = fallback.topic.trim() || "this topic";
-
-  return {
-    whatWentWrong:
-      whatWentWrong ||
-      `The answer is "${fallback.correctAnswer}". The option you picked looks close but does not satisfy the condition the question asks about.`,
-    theIdea:
-      theIdea ||
-      cleanText(fallback.explanation, MAX_EXPLANATION_CHARS) ||
-      `Go back to the core rule behind ${topic} and check each option against it directly.`,
-    howToRecognize:
-      howToRecognize ||
-      `Next time, name the one condition ${topic} turns on before you look at the options. If you cannot name it, the question is testing that gap.`,
-  };
-}
-
 /* ----------------------------------------------------------- recovery math */
 
 export type RecoveryOutcome = "recovered" | "still_wrong" | "skipped";
@@ -194,7 +144,9 @@ export function recoveryCredit(outcome: RecoveryOutcome): {
   recoveries: number;
   xp: number;
 } {
-  if (outcome === "recovered") return { recoveries: 1, xp: 30 };
+  // Reads RECOVERY_XP rather than repeating 30: the brief fixes the reward
+  // at +30 and two copies of a number is one that eventually disagrees.
+  if (outcome === "recovered") return { recoveries: 1, xp: RECOVERY_XP };
   // Attempting and missing still beats skipping: they engaged with it.
   if (outcome === "still_wrong") return { recoveries: 0, xp: 5 };
   return { recoveries: 0, xp: 0 };

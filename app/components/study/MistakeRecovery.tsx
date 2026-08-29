@@ -1,25 +1,24 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { MathText } from "@/app/components/ui/MathText";
 import { CheckIcon } from "@/app/components/app/Icons";
-import type {
-  FollowUpQuestion,
-  RecoveryExplanation,
-  RecoveryOutcome,
-} from "@/lib/mistakeRecovery";
+import type { FollowUpQuestion, RecoveryOutcome } from "@/lib/mistakeRecovery";
+import type { CardCrack } from "@/lib/cardCrack";
 
 // What a student sees the moment they get something wrong.
 //
-// Three short sections and one button. The sections are deliberately
-// unlabelled with jargon -- "What went wrong", "The idea", "Next time" --
+// The Card Crack payload, rendered: the misconception, the idea under it,
+// the exam heuristic, and a Socratic prompt to say it back. Section labels
+// are deliberately plain -- "What went wrong", "The idea", "Next time" --
 // and the button does the only thing worth doing next: another question on
 // the same idea, right now, while they still care about it.
 //
-// Everything degrades. If the explanation call fails the student still has
-// the deck's own explanation above this component; if only the follow-up
-// fails they still get the three sections. Nothing here can leave them
-// stuck or staring at an error where feedback should be.
+// Everything degrades. Free tier gets the correction with the deeper
+// sections omitted; a failed call falls back to the deck's own explanation
+// already on screen above this. Nothing here can leave a student stuck or
+// staring at an error where feedback should be.
 
 type Props = {
   questionId: string;
@@ -28,9 +27,21 @@ type Props = {
   onOutcome?: (outcome: RecoveryOutcome) => void;
 };
 
+// `how_to_spot` and `socratic_loop` come back null on the free tier -- the
+// server sends the correction to everyone and gates the depth.
+type PartialCrack = Omit<CardCrack, "how_to_spot" | "socratic_loop"> & {
+  how_to_spot: string | null;
+  socratic_loop: string | null;
+};
+
 type LoadState =
   | { status: "loading" }
-  | { status: "ready"; explanation: RecoveryExplanation; followUp: FollowUpQuestion | null }
+  | {
+      status: "ready";
+      crack: PartialCrack;
+      followUp: FollowUpQuestion | null;
+      upgradeUnlocks: string | null;
+    }
   | { status: "failed" };
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
@@ -75,14 +86,21 @@ export function MistakeRecovery({ questionId, selectedAnswer, onOutcome }: Props
       })
       .then((data) => {
         if (cancelled) return;
+        const crack = data?.card_crack_payload;
+        if (!crack || typeof crack.misconception !== "string") {
+          setState({ status: "failed" });
+          return;
+        }
         setState({
           status: "ready",
-          explanation: {
-            whatWentWrong: data.whatWentWrong,
-            theIdea: data.theIdea,
-            howToRecognize: data.howToRecognize,
+          crack: {
+            misconception: crack.misconception,
+            underlying_idea: crack.underlying_idea ?? "",
+            how_to_spot: crack.how_to_spot ?? null,
+            socratic_loop: crack.socratic_loop ?? null,
           },
           followUp: data.followUp ?? null,
+          upgradeUnlocks: data.upgrade_unlocks ?? null,
         });
       })
       .catch(() => {
@@ -119,7 +137,7 @@ export function MistakeRecovery({ questionId, selectedAnswer, onOutcome }: Props
   // answer, and there is nothing the student could do about it.
   if (state.status === "failed") return null;
 
-  const { explanation, followUp } = state;
+  const { crack, followUp, upgradeUnlocks } = state;
   const isRight = checked && picked === followUp?.correctAnswer;
 
   return (
@@ -129,15 +147,37 @@ export function MistakeRecovery({ questionId, selectedAnswer, onOutcome }: Props
     >
       <div className="space-y-4">
         <Section label="What went wrong">
-          <MathText text={explanation.whatWentWrong} />
+          <MathText text={crack.misconception} />
         </Section>
-        <Section label="The idea">
-          <MathText text={explanation.theIdea} />
-        </Section>
-        <Section label="Next time">
-          <MathText text={explanation.howToRecognize} />
-        </Section>
+        {crack.underlying_idea && (
+          <Section label="The idea">
+            <MathText text={crack.underlying_idea} />
+          </Section>
+        )}
+        {crack.how_to_spot && (
+          <Section label="Next time">
+            <MathText text={crack.how_to_spot} />
+          </Section>
+        )}
+        {crack.socratic_loop && (
+          <Section label="Say it back">
+            <MathText text={crack.socratic_loop} />
+          </Section>
+        )}
       </div>
+
+      {upgradeUnlocks && (
+        <p className="t-meta mt-4">
+          {upgradeUnlocks}{" "}
+          <Link
+            href="/pricing"
+            className="underline underline-offset-2"
+            style={{ color: "var(--accent-bright)" }}
+          >
+            See Ace Pro
+          </Link>
+        </p>
+      )}
 
       {followUp && !showFollowUp && (
         <button
