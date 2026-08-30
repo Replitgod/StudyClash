@@ -163,7 +163,7 @@ export default function StudyPlanDetailPage() {
 
   if (isLoading || isAuthLoading) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-[#05050a] text-white">
+      <main className="flex min-h-dvh items-center justify-center bg-[var(--app-bg)] text-white">
         <p className="text-sm text-white/50">Loading your plan...</p>
       </main>
     );
@@ -171,7 +171,7 @@ export default function StudyPlanDetailPage() {
 
   if (error || !plan) {
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[#05050a] px-4 text-center text-white">
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-3 bg-[var(--app-bg)] px-4 text-center text-white">
         <p className="text-sm text-red-300">{error || "Plan not found."}</p>
         <Link href="/home" className="text-sm font-semibold text-indigo-300">
           &larr; Back to dashboard
@@ -186,7 +186,7 @@ export default function StudyPlanDetailPage() {
   );
 
   return (
-    <main className="min-h-dvh bg-[#05050a] px-4 py-10 text-white sm:px-6">
+    <main className="min-h-dvh bg-[var(--app-bg)] px-4 py-10 text-white sm:px-6">
       <div className="mx-auto max-w-3xl">
         <Link href="/home" className="text-sm font-semibold text-indigo-300">
           &larr; Back to dashboard
@@ -259,7 +259,7 @@ export default function StudyPlanDetailPage() {
             return (
               <div key={weekStart}>
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold uppercase tracking-wider text-white/40">
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">
                     Week of {new Date(`${weekStart}T00:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </p>
                   <p className="text-xs font-bold text-white/50">{completionPercent}% complete</p>
@@ -319,7 +319,7 @@ function TaskRow({
         </button>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-white/35">
+          <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
             <span>{phaseLabel(task.task_type)}</span>
             <span>&middot;</span>
             <span>{task.estimated_minutes} min</span>

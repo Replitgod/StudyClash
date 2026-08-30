@@ -1,45 +1,37 @@
 import Link from "next/link";
-import { FLOATING_ACTION } from "@/lib/uiLayout";
 
+// 404.
+//
+// On the app's own canvas rather than a hand-rolled one, and down to two
+// actions from three -- "Go Home", "Dashboard" and "Try Demo" side by side
+// made the reader choose between options they had no way to tell apart. A
+// visitor who hit a bad link wants the way back; that is the primary, and the
+// dashboard is the quiet second for anyone already signed in.
 export default function NotFound() {
   return (
-    <main className={`relative min-h-screen w-full overflow-x-hidden bg-[#05050a] px-4 py-14 text-white sm:px-6 sm:py-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-indigo-600/20 blur-[130px]" />
-      </div>
-
-      <div className="relative z-10 mx-auto flex max-w-xl flex-col items-center text-center">
-        <div className="rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.22em] text-indigo-200">
+    <div className="app-page" style={{ maxWidth: "34rem" }}>
+      <div className="card mt-10 px-6 py-14 text-center">
+        <p
+          className="text-[11px] font-semibold uppercase tracking-[0.22em]"
+          style={{ color: "var(--text-4)" }}
+        >
           404
-        </div>
-        <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">Page not found</h1>
-        <p className="mt-3 text-sm text-white/60 sm:text-base">
-          This page does not exist or the link may be outdated. You can go back to the home page, open your dashboard, or try the demo battle.
+        </p>
+        <h1 className="t-page mt-3">Page not found</h1>
+        <p className="t-body mx-auto mt-3 max-w-sm">
+          This page doesn&rsquo;t exist, or the link has gone stale. Nothing you
+          saved is affected.
         </p>
 
-        <div className="mt-6 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
-          <Link
-            href="/"
-            className="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-6 py-3 text-sm font-bold text-white"
-          >
-            Go Home
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5">
+          <Link href="/home" className="btn btn-primary">
+            Back to studying
           </Link>
-          <Link
-            href="/home"
-            className="rounded-xl border border-white/10 bg-white/5 px-6 py-3 text-sm font-bold text-white/85"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/demo/battle"
-            className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-6 py-3 text-sm font-bold text-indigo-200"
-          >
-            Try Demo
+          <Link href="/" className="btn btn-secondary">
+            Home page
           </Link>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

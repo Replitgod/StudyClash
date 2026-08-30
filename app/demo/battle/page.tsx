@@ -250,7 +250,7 @@ function calculatePointsForStreak(streak: number): number {
 
 function Background({ children }: { children: React.ReactNode }) {
 	return (
-		<main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+		<main className="relative min-h-screen w-full overflow-x-hidden bg-[var(--app-bg)] text-white">
 			<div className="pointer-events-none absolute inset-0 overflow-hidden">
 				<div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
 				<div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
@@ -760,21 +760,21 @@ export default function DemoBattlePage() {
 							<div className="grid grid-cols-3 gap-2 sm:min-w-[260px]">
 								<div className="rounded-xl border border-white/10 bg-black/20 p-3 text-center">
 									<p className="text-lg font-black text-indigo-300">{totalScore}</p>
-									<p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Score</p>
+									<p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Score</p>
 								</div>
 								<div className="rounded-xl border border-white/10 bg-black/20 p-3 text-center">
 									<p className="text-lg font-black text-indigo-300">{formatTime(elapsedSeconds)}</p>
-									<p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Timer</p>
+									<p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Timer</p>
 								</div>
 								<div className="rounded-xl border border-white/10 bg-black/20 p-3 text-center">
 									<p className="text-lg font-black text-green-300">{bestStreak}</p>
-									<p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Best Streak</p>
+									<p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Best Streak</p>
 								</div>
 							</div>
 						</div>
 
 						<div className="mt-6">
-							<div className="mb-4 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-white/40">
+							<div className="mb-4 flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-[var(--text-3)]">
 								<span>{currentQuestion.topic}</span>
 								<span>{currentQuestion.difficulty}</span>
 							</div>
@@ -839,7 +839,7 @@ export default function DemoBattlePage() {
 										{selectedChoice === currentQuestion.correct_answer ? "Correct. Nice work." : "Not quite, but that is exactly what the demo should reveal."}
 									</p>
 									<p className="mt-2 text-sm text-white/55">{currentQuestion.explanation}</p>
-									<div className="mt-4 flex flex-wrap gap-2 text-xs text-white/45">
+									<div className="mt-4 flex flex-wrap gap-2 text-xs text-[var(--text-3)]">
 										<span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
 											+{lastPointsEarned} points
 										</span>
@@ -881,7 +881,7 @@ export default function DemoBattlePage() {
 											)}
 
 											{!isLoadingResource && !wrongAnswerResource && resourceDisclaimer && (
-												<p className="text-xs text-white/40">{resourceDisclaimer}</p>
+												<p className="text-xs text-[var(--text-3)]">{resourceDisclaimer}</p>
 											)}
 										</div>
 									)}
@@ -931,19 +931,19 @@ export default function DemoBattlePage() {
 								<p className="text-4xl font-black bg-gradient-to-r from-indigo-400 to-indigo-400 bg-clip-text text-transparent">
 									{totalScore}
 								</p>
-								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-white/40">Score</p>
+								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">Score</p>
 							</div>
 							<div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
 								<p className="text-4xl font-black text-green-300">{accuracyPercent}%</p>
-								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-white/40">Accuracy</p>
+								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">Accuracy</p>
 							</div>
 							<div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
 								<p className="text-4xl font-black text-indigo-300">{correctAnswers}/{totalQuestions}</p>
-								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-white/40">Correct</p>
+								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">Correct</p>
 							</div>
 							<div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
 								<p className="text-4xl font-black text-indigo-300">{formatTime(elapsedSeconds)}</p>
-								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-white/40">Time</p>
+								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">Time</p>
 							</div>
 						</div>
 
@@ -959,7 +959,7 @@ export default function DemoBattlePage() {
 						</button>
 
 						<div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4">
-							<p className="text-xs font-bold uppercase tracking-wider text-white/45">Demo summary</p>
+							<p className="text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">Demo summary</p>
 							<div className="mt-4 grid gap-3 sm:grid-cols-3">
 								<div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
 									<p className="text-sm font-semibold text-white/90">Best streak</p>
@@ -1022,7 +1022,7 @@ export default function DemoBattlePage() {
 											<div className="flex items-start justify-between gap-2">
 												<div>
 													<p className="text-sm font-bold text-white/90">{topic.topic}</p>
-													<p className="mt-1 text-xs text-white/45">{topic.accuracy}% accuracy in the demo run</p>
+													<p className="mt-1 text-xs text-[var(--text-3)]">{topic.accuracy}% accuracy in the demo run</p>
 												</div>
 												<span className="rounded-full bg-white/5 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/50">
 													Study

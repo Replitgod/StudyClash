@@ -74,7 +74,7 @@ export default function CampaignsListPage() {
 
       <div className="mt-4 overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full text-left text-sm">
-          <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-white/40">
+          <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-[var(--text-3)]">
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Goal</th>
@@ -104,12 +104,12 @@ export default function CampaignsListPage() {
           </tbody>
         </table>
         {campaigns && campaigns.length === 0 && (
-          <div className="p-8 text-center text-sm text-white/40">
+          <div className="p-8 text-center text-sm text-[var(--text-3)]">
             No campaigns yet. Create your first one to get started.
           </div>
         )}
         {!campaigns && !error && (
-          <div className="p-8 text-center text-sm text-white/40">Loading...</div>
+          <div className="p-8 text-center text-sm text-[var(--text-3)]">Loading...</div>
         )}
       </div>
     </div>

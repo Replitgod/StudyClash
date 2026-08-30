@@ -67,7 +67,7 @@ export default function MarketingAdminLayout({ children }: { children: React.Rea
 
   if (accessState !== "allowed") {
     return (
-      <main className="flex min-h-dvh w-full items-center justify-center bg-[#05050a] px-4 text-white">
+      <main className="flex min-h-dvh w-full items-center justify-center bg-[var(--app-bg)] px-4 text-white">
         <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
           {accessState === "checking" ? (
             <>
@@ -95,7 +95,7 @@ export default function MarketingAdminLayout({ children }: { children: React.Rea
   }
 
   return (
-    <div className="flex min-h-dvh w-full bg-[#05050a] text-white">
+    <div className="flex min-h-dvh w-full bg-[var(--app-bg)] text-white">
       <aside className="hidden w-56 flex-shrink-0 border-r border-white/10 bg-black/30 md:block">
         <div className="p-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-300">Private</p>

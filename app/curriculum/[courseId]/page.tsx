@@ -85,7 +85,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function Background({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[var(--app-bg)] text-white">
       <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-4xl flex-col px-4 pt-14 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {children}
       </div>
@@ -295,21 +295,21 @@ export default function CourseProgressPage() {
             Upload
           </Button>
         </form>
-        <p className="mt-2 text-[11px] text-white/35">PDF, image, or plain text. Up to 25MB. Word/PowerPoint: export to PDF for now.</p>
+        <p className="mt-2 text-[11px] text-[var(--text-3)]">PDF, image, or plain text. Up to 25MB. Word/PowerPoint: export to PDF for now.</p>
         {uploadError && <p className="mt-2 text-xs text-red-300">{uploadError}</p>}
       </Card>
 
       <div className="mt-6">
         <p className="text-xs font-bold uppercase tracking-wider text-white/50">Documents</p>
         {data.documents.length === 0 ? (
-          <p className="mt-3 text-sm text-white/40">No documents uploaded yet.</p>
+          <p className="mt-3 text-sm text-[var(--text-3)]">No documents uploaded yet.</p>
         ) : (
           <div className="mt-3 flex flex-col gap-2">
             {data.documents.map((doc) => (
               <Card key={doc.id} padding="sm" className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-white">{doc.title}</p>
-                  <p className="mt-0.5 text-[11px] text-white/40">
+                  <p className="mt-0.5 text-[11px] text-[var(--text-3)]">
                     {doc.source_type} {doc.page_count ? `· ${doc.page_count} pages` : ""}
                   </p>
                 </div>
@@ -323,7 +323,7 @@ export default function CourseProgressPage() {
       <div className="mt-8">
         <p className="text-xs font-bold uppercase tracking-wider text-white/50">Concept map</p>
         {data.concepts.length === 0 ? (
-          <p className="mt-3 text-sm text-white/40">
+          <p className="mt-3 text-sm text-[var(--text-3)]">
             No concepts mapped yet -- this fills in automatically once your documents finish processing.
           </p>
         ) : (
@@ -343,7 +343,7 @@ export default function CourseProgressPage() {
                         <div className="min-w-0">
                           <p className="truncate text-sm font-semibold text-white">{concept.name}</p>
                           {concept.parent_concept_id && conceptNameById.get(concept.parent_concept_id) && (
-                            <p className="mt-0.5 truncate text-[11px] text-white/35">
+                            <p className="mt-0.5 truncate text-[11px] text-[var(--text-3)]">
                               under {conceptNameById.get(concept.parent_concept_id)}
                             </p>
                           )}
@@ -354,21 +354,21 @@ export default function CourseProgressPage() {
                               {concept.importance}
                             </span>
                           )}
-                          <span className="text-white/30">{expandedConceptId === concept.id ? "−" : "+"}</span>
+                          <span className="text-[var(--text-3)]">{expandedConceptId === concept.id ? "−" : "+"}</span>
                         </div>
                       </button>
 
                       {expandedConceptId === concept.id && (
                         <div className="mt-2 ml-2 flex flex-col gap-2 border-l border-white/10 pl-4">
                           {conceptQuestions[concept.id] === "loading" && (
-                            <p className="text-xs text-white/40">Loading questions...</p>
+                            <p className="text-xs text-[var(--text-3)]">Loading questions...</p>
                           )}
                           {conceptQuestions[concept.id] === "error" && (
                             <p className="text-xs text-red-300">Could not load questions for this concept.</p>
                           )}
                           {Array.isArray(conceptQuestions[concept.id]) &&
                             (conceptQuestions[concept.id] as QuestionRow[]).length === 0 && (
-                              <p className="text-xs text-white/40">No questions generated for this concept yet.</p>
+                              <p className="text-xs text-[var(--text-3)]">No questions generated for this concept yet.</p>
                             )}
                           {Array.isArray(conceptQuestions[concept.id]) &&
                             (conceptQuestions[concept.id] as QuestionRow[]).map((q) => (
@@ -383,7 +383,7 @@ export default function CourseProgressPage() {
                                   </p>
                                 )}
                                 {q.status === "approved" && (
-                                  <p className="mt-1 text-xs text-white/40">{q.explanation}</p>
+                                  <p className="mt-1 text-xs text-[var(--text-3)]">{q.explanation}</p>
                                 )}
                               </div>
                             ))}

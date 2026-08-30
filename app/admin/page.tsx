@@ -183,7 +183,7 @@ type EnterpriseLead = {
 // re-renders, preventing the whole subtree from remounting on state changes.
 function Background({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-screen w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-screen w-full overflow-x-hidden bg-[var(--app-bg)] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
         <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
@@ -262,10 +262,10 @@ function EmptyPanelState({
 }) {
   return (
     <div className="mt-4 flex flex-col items-center rounded-xl border border-white/5 bg-black/20 px-4 py-8 text-center">
-      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-white/30">
+      <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 text-[var(--text-3)]">
         {icon}
       </div>
-      <p className="mt-3 text-xs text-white/40">{message}</p>
+      <p className="mt-3 text-xs text-[var(--text-3)]">{message}</p>
     </div>
   );
 }
@@ -692,7 +692,7 @@ export default function AdminPage() {
             <p className={`text-2xl font-black sm:text-3xl ${card.color}`}>
               {card.value}
             </p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40 sm:text-xs">
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)] sm:text-xs">
               {card.label}
             </p>
           </div>
@@ -722,7 +722,7 @@ export default function AdminPage() {
 
         {!hasAnalyticsToday ? (
           <div className="mt-4 flex flex-col items-center rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-10 text-center backdrop-blur-sm">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5 text-white/30">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5 text-[var(--text-3)]">
               <svg
                 className="h-5 w-5"
                 fill="none"
@@ -740,7 +740,7 @@ export default function AdminPage() {
             <p className="mt-3 text-sm font-semibold text-white/70">
               No analytics data yet today
             </p>
-            <p className="mt-1 max-w-sm text-xs text-white/40">
+            <p className="mt-1 max-w-sm text-xs text-[var(--text-3)]">
               Events will appear here as users browse, generate decks, and
               play battles today. Check back once traffic comes in.
             </p>
@@ -755,7 +755,7 @@ export default function AdminPage() {
                 <p className={`text-2xl font-black sm:text-3xl ${card.color}`}>
                   {card.value}
                 </p>
-                <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40 sm:text-xs">
+                <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)] sm:text-xs">
                   {card.label}
                 </p>
               </div>
@@ -773,7 +773,7 @@ export default function AdminPage() {
         <h2 className="text-lg font-black text-indigo-100">Growth Loop Health</h2>
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
               Challenge open rate (today)
             </p>
             <p className="mt-2 text-2xl font-black text-indigo-300">
@@ -781,19 +781,19 @@ export default function AdminPage() {
                 ? "-"
                 : `${Math.round((analytics.challengeLinkOpenedToday / analytics.challengeLinkCopiedToday) * 100)}%`}
             </p>
-            <p className="mt-1 text-[11px] text-white/35">
+            <p className="mt-1 text-[11px] text-[var(--text-3)]">
               {analytics.challengeLinkOpenedToday} opened / {analytics.challengeLinkCopiedToday} copied
             </p>
           </div>
 
           <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
               Day-7 retention (rolling cohort)
             </p>
             <p className="mt-2 text-2xl font-black text-green-300">
               {retention?.day7RetentionRatePercent == null ? "-" : `${retention.day7RetentionRatePercent}%`}
             </p>
-            <p className="mt-1 text-[11px] text-white/35">
+            <p className="mt-1 text-[11px] text-[var(--text-3)]">
               {retention
                 ? `${retention.day7RetainedSize} / ${retention.day7CohortSize} returned`
                 : "Not enough data yet"}
@@ -801,9 +801,9 @@ export default function AdminPage() {
           </div>
 
           <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Target</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Target</p>
             <p className="mt-2 text-sm font-bold text-white/80">20%+ return within 7 days</p>
-            <p className="mt-1 text-[11px] text-white/35">25%+ of finishers send a challenge</p>
+            <p className="mt-1 text-[11px] text-[var(--text-3)]">25%+ of finishers send a challenge</p>
           </div>
         </div>
       </div>
@@ -813,17 +813,17 @@ export default function AdminPage() {
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
             <p className="text-2xl font-black text-white">{analytics.diagnosticStartedToday}</p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Diagnostics Started Today</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Diagnostics Started Today</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
             <p className="text-2xl font-black text-green-300">{analytics.diagnosticCompletedToday}</p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Diagnostics Completed Today</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Diagnostics Completed Today</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
             <p className="text-2xl font-black text-indigo-300">
               {diagnostics.completionRatePercent == null ? "-" : `${diagnostics.completionRatePercent}%`}
             </p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
               All-Time Completion Rate ({diagnostics.completedAttempts}/{diagnostics.totalAttempts})
             </p>
           </div>
@@ -833,35 +833,35 @@ export default function AdminPage() {
                 ? "-"
                 : `${diagnostics.averageEstimatedLow}–${diagnostics.averageEstimatedHigh}`}
             </p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
               Average Estimated Range (last 200)
             </p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
             <p className="text-2xl font-black text-white">{diagnostics.plansCreated}</p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Study Plans Created</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Study Plans Created</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
             <p className="text-2xl font-black text-green-300">
               {diagnostics.taskCompletionRatePercent == null ? "-" : `${diagnostics.taskCompletionRatePercent}%`}
             </p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Task Completion Rate</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Task Completion Rate</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
             <p className="text-2xl font-black text-indigo-300">
               {diagnostics.resourceClickRatePercent == null ? "-" : `${diagnostics.resourceClickRatePercent}%`}
             </p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Resource Click Rate (today)</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Resource Click Rate (today)</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
             <p className="text-2xl font-black text-amber-300">{analytics.resourceClickedToday}</p>
-            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40">Resource Clicks Today</p>
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Resource Clicks Today</p>
           </div>
         </div>
 
         {diagnostics.mostCommonWeakSkills.length > 0 && (
           <div className="mt-5">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
               Most Common Weak Skills (last 200 results)
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -914,10 +914,10 @@ export default function AdminPage() {
                   <p className="break-words text-sm font-bold text-white/90">
                     {deck.title}
                   </p>
-                  <p className="mt-1 truncate text-xs text-white/40">
+                  <p className="mt-1 truncate text-xs text-[var(--text-3)]">
                     {deck.course_name} -+ {deck.student_name}
                   </p>
-                  <p className="mt-1 text-[10px] text-white/30">
+                  <p className="mt-1 text-[10px] text-[var(--text-3)]">
                     {formatDateTime(deck.created_at)}
                   </p>
                 </div>
@@ -960,10 +960,10 @@ export default function AdminPage() {
                   <p className="break-words text-sm text-white/80">
                     {item.message}
                   </p>
-                  <p className="mt-1.5 truncate text-[10px] text-white/30">
+                  <p className="mt-1.5 truncate text-[10px] text-[var(--text-3)]">
                     {item.page_url || "Unknown page"}
                   </p>
-                  <p className="mt-0.5 text-[10px] text-white/30">
+                  <p className="mt-0.5 text-[10px] text-[var(--text-3)]">
                     {formatDateTime(item.created_at)}
                   </p>
                 </div>
@@ -1006,13 +1006,13 @@ export default function AdminPage() {
                   <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-300">
                     {report.reason}
                   </span>
-                  <p className="mt-2 truncate text-[10px] text-white/40">
+                  <p className="mt-2 truncate text-[10px] text-[var(--text-3)]">
                     Question: {report.question_id}
                   </p>
-                  <p className="truncate text-[10px] text-white/40">
+                  <p className="truncate text-[10px] text-[var(--text-3)]">
                     Deck: {report.deck_id}
                   </p>
-                  <p className="mt-1 text-[10px] text-white/30">
+                  <p className="mt-1 text-[10px] text-[var(--text-3)]">
                     {formatDateTime(report.created_at)}
                   </p>
                 </div>
@@ -1042,7 +1042,7 @@ export default function AdminPage() {
           </p>
         </div>
 
-        <p className="mt-2 max-w-2xl text-sm text-white/45">
+        <p className="mt-2 max-w-2xl text-sm text-[var(--text-3)]">
           B2B pilot leads captured from classroom and pricing flows. Move each lead through the funnel to track conversion progress.
         </p>
 
@@ -1053,11 +1053,11 @@ export default function AdminPage() {
         )}
 
         {isLoadingLeads ? (
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-sm text-white/45 backdrop-blur-sm">
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-sm text-[var(--text-3)] backdrop-blur-sm">
             Loading enterprise leads...
           </div>
         ) : enterpriseLeads.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-sm text-white/45 backdrop-blur-sm">
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-sm text-[var(--text-3)] backdrop-blur-sm">
             No enterprise leads yet.
           </div>
         ) : (
@@ -1071,7 +1071,7 @@ export default function AdminPage() {
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold text-white/90">{lead.organization}</p>
                     <p className="mt-1 truncate text-xs text-white/50">{lead.email}</p>
-                    <p className="mt-1 text-[11px] text-white/35">
+                    <p className="mt-1 text-[11px] text-[var(--text-3)]">
                       {lead.role || "Role unknown"}
                       {lead.seats ? ` · ${lead.seats} seats` : ""}
                     </p>
@@ -1087,7 +1087,7 @@ export default function AdminPage() {
                   </p>
                 )}
 
-                <p className="mt-3 text-[11px] text-white/35">
+                <p className="mt-3 text-[11px] text-[var(--text-3)]">
                   Captured: {formatDateTime(lead.created_at)}
                 </p>
 
@@ -1135,7 +1135,7 @@ export default function AdminPage() {
           </p>
         </div>
 
-        <p className="mt-2 max-w-2xl text-sm text-white/45">
+        <p className="mt-2 max-w-2xl text-sm text-[var(--text-3)]">
           Built for tutoring centers and parent updates: student activity, weak topics, improvement trends, and a clean report layout you can screenshot or share.
         </p>
 
@@ -1146,7 +1146,7 @@ export default function AdminPage() {
         )}
 
         {isLoadingTutorDashboard ? (
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-sm text-sm text-white/45">
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-sm text-sm text-[var(--text-3)]">
             Loading student progress...
           </div>
         ) : tutorError ? (
@@ -1154,7 +1154,7 @@ export default function AdminPage() {
             {tutorError}
           </div>
         ) : !tutorDashboard || tutorDashboard.students.length === 0 ? (
-          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm text-sm text-white/45">
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm text-sm text-[var(--text-3)]">
             {tutorDashboard?.emptyMessage || "Once students start battling, their progress will appear here."}
           </div>
         ) : (
@@ -1178,7 +1178,7 @@ export default function AdminPage() {
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
                 <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Class Weakness Clusters</p>
                 {tutorDashboard.classWeaknessClusters.length === 0 ? (
-                  <p className="mt-3 text-sm text-white/45">No class weakness patterns yet.</p>
+                  <p className="mt-3 text-sm text-[var(--text-3)]">No class weakness patterns yet.</p>
                 ) : (
                   <div className="mt-4 flex flex-col gap-2.5">
                     {tutorDashboard.classWeaknessClusters.slice(0, 6).map((cluster) => (
@@ -1187,8 +1187,8 @@ export default function AdminPage() {
                           <p className="text-sm font-bold text-white/90">{cluster.topic}</p>
                           <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-bold text-red-300">{cluster.totalMisses} misses</span>
                         </div>
-                        <p className="mt-1 text-[11px] text-white/45">{cluster.studentCount} students affected</p>
-                        <p className="mt-1 truncate text-[10px] text-white/35">{cluster.affectedStudents.join(", ")}</p>
+                        <p className="mt-1 text-[11px] text-[var(--text-3)]">{cluster.studentCount} students affected</p>
+                        <p className="mt-1 truncate text-[10px] text-[var(--text-3)]">{cluster.affectedStudents.join(", ")}</p>
                       </div>
                     ))}
                   </div>
@@ -1198,7 +1198,7 @@ export default function AdminPage() {
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
                 <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Reteach Recommendations</p>
                 {tutorDashboard.reteachRecommendations.length === 0 ? (
-                  <p className="mt-3 text-sm text-white/45">No reteach recommendations available yet.</p>
+                  <p className="mt-3 text-sm text-[var(--text-3)]">No reteach recommendations available yet.</p>
                 ) : (
                   <div className="mt-4 flex flex-col gap-2.5">
                     {tutorDashboard.reteachRecommendations.map((recommendation) => (
@@ -1231,10 +1231,10 @@ export default function AdminPage() {
                     className={`rounded-xl border px-4 py-3 text-left transition-colors duration-150 ${student.id === selectedTutorStudent?.id ? "border-indigo-400/30 bg-indigo-500/10" : "border-white/10 bg-black/20 hover:border-indigo-400/30 hover:bg-white/[0.04]"}`}
                   >
                     <p className="text-sm font-bold text-white/90">{student.name}</p>
-                    <p className="mt-1 text-[11px] text-white/40">
+                    <p className="mt-1 text-[11px] text-[var(--text-3)]">
                       {student.latestScore} pts · {student.latestAccuracy}% accuracy · {formatRelativeTime(student.lastActiveAt)}
                     </p>
-                    <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-white/45">
+                    <p className="mt-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
                       {student.trendLabel}
                     </p>
                   </button>
@@ -1248,7 +1248,7 @@ export default function AdminPage() {
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Parent-Friendly Report</p>
                     <h2 className="mt-1 text-2xl font-black tracking-tight text-white">{selectedTutorStudent.name}</h2>
-                    <p className="mt-1 text-sm text-white/45">Screenshot-ready summary for parents and tutors.</p>
+                    <p className="mt-1 text-sm text-[var(--text-3)]">Screenshot-ready summary for parents and tutors.</p>
                   </div>
                   <button
                     type="button"
@@ -1260,35 +1260,35 @@ export default function AdminPage() {
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Latest Score</p><p className="mt-2 text-2xl font-black text-indigo-300">{selectedTutorStudent.latestScore} pts</p></div>
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Accuracy</p><p className="mt-2 text-2xl font-black text-green-300">{selectedTutorStudent.latestAccuracy}%</p></div>
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Best Score</p><p className="mt-2 text-2xl font-black text-indigo-300">{selectedTutorStudent.bestScore} pts</p></div>
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Trend</p><p className="mt-2 text-lg font-bold text-indigo-300">{selectedTutorStudent.trendLabel}</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Latest Score</p><p className="mt-2 text-2xl font-black text-indigo-300">{selectedTutorStudent.latestScore} pts</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Accuracy</p><p className="mt-2 text-2xl font-black text-green-300">{selectedTutorStudent.latestAccuracy}%</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Best Score</p><p className="mt-2 text-2xl font-black text-indigo-300">{selectedTutorStudent.bestScore} pts</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Trend</p><p className="mt-2 text-lg font-bold text-indigo-300">{selectedTutorStudent.trendLabel}</p></div>
                 </div>
 
                 <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
-                  <p className="text-xs font-bold uppercase tracking-wider text-white/45">What the student practiced</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">What the student practiced</p>
                   <p className="mt-2 text-sm leading-relaxed text-white/70">{selectedTutorStudent.parentSummary}</p>
-                  <p className="mt-3 text-xs text-white/40">Recent decks: {selectedTutorStudent.practicedDecks.join(", ") || "No recent decks yet"}</p>
+                  <p className="mt-3 text-xs text-[var(--text-3)]">Recent decks: {selectedTutorStudent.practicedDecks.join(", ") || "No recent decks yet"}</p>
                 </div>
 
                 <div className="mt-5 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
                   <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <p className="text-xs font-bold uppercase tracking-wider text-white/45">Recent Battles</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">Recent Battles</p>
                     <div className="mt-4 flex flex-col gap-2.5">
                       {selectedTutorStudent.recentBattles.map((battle) => (
                         <div key={battle.id} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <p className="truncate text-sm font-bold text-white/90">{battle.deckTitle}</p>
-                              <p className="mt-1 truncate text-[11px] text-white/40">{battle.courseName}</p>
+                              <p className="mt-1 truncate text-[11px] text-[var(--text-3)]">{battle.courseName}</p>
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-bold text-indigo-300">{battle.score} pts</p>
-                              <p className="text-[11px] text-white/40">{battle.accuracy}% accuracy</p>
+                              <p className="text-[11px] text-[var(--text-3)]">{battle.accuracy}% accuracy</p>
                             </div>
                           </div>
-                          <div className="mt-2 flex items-center justify-between text-[10px] text-white/30">
+                          <div className="mt-2 flex items-center justify-between text-[10px] text-[var(--text-3)]">
                             <span>{formatRelativeTime(battle.createdAt)}</span>
                             <span>{formatTime(battle.timeTakenSeconds)}</span>
                           </div>
@@ -1298,7 +1298,7 @@ export default function AdminPage() {
                   </div>
 
                   <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <p className="text-xs font-bold uppercase tracking-wider text-white/45">Weak Topics</p>
+                    <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">Weak Topics</p>
                     <div className="mt-4 flex flex-col gap-3">
                       {selectedTutorStudent.weakTopics.map((topic) => (
                         <div key={topic.topic} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
@@ -1317,7 +1317,7 @@ export default function AdminPage() {
                       ))}
                     </div>
                     <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                      <p className="text-xs font-bold uppercase tracking-wider text-white/45">Recommended Next Steps</p>
+                      <p className="text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">Recommended Next Steps</p>
                       <ul className="mt-2 flex flex-col gap-1.5 text-sm text-white/70">
                         {selectedTutorStudent.recommendedNextSteps.map((step) => (
                           <li key={step} className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-indigo-300" /><span>{step}</span></li>
@@ -1368,7 +1368,7 @@ export default function AdminPage() {
             <div className="mt-4 overflow-x-auto">
               <div className="flex min-w-[640px] flex-col gap-2">
                 {/* Header row (hidden on very small screens to save space) */}
-                <div className="hidden grid-cols-12 gap-3 px-3 text-[10px] font-bold uppercase tracking-wider text-white/30 sm:grid">
+                <div className="hidden grid-cols-12 gap-3 px-3 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)] sm:grid">
                   <span className="col-span-3">Event</span>
                   <span className="col-span-4">Page</span>
                   <span className="col-span-3">Metadata</span>
@@ -1388,12 +1388,12 @@ export default function AdminPage() {
                     <p className="col-span-4 truncate text-[11px] text-white/50">
                       {event.page_url || "--"}
                     </p>
-                    <p className="col-span-3 truncate text-[11px] text-white/40">
+                    <p className="col-span-3 truncate text-[11px] text-[var(--text-3)]">
                       {event.metadata
                         ? JSON.stringify(event.metadata)
                         : "--"}
                     </p>
-                    <p className="col-span-2 text-[10px] text-white/30">
+                    <p className="col-span-2 text-[10px] text-[var(--text-3)]">
                       {formatDateTime(event.created_at)}
                     </p>
                   </div>

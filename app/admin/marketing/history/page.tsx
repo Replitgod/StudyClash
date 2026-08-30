@@ -112,7 +112,7 @@ export default function PostingHistoryPage() {
 
       <div className="mt-4 overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full text-left text-sm">
-          <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-white/40">
+          <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-[var(--text-3)]">
             <tr>
               <th className="px-3 py-3">Campaign</th>
               <th className="px-3 py-3">Destination</th>
@@ -171,7 +171,7 @@ export default function PostingHistoryPage() {
           </tbody>
         </table>
         {publications && publications.length === 0 && (
-          <div className="p-8 text-center text-sm text-white/40">No posting history yet.</div>
+          <div className="p-8 text-center text-sm text-[var(--text-3)]">No posting history yet.</div>
         )}
       </div>
     </div>

@@ -615,7 +615,7 @@ function buildStudyPlan(weakTopics: WeakTopic[]): StudyDay[] {
 
 function Background({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[var(--app-bg)] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
         <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
@@ -1940,19 +1940,19 @@ export default function ResultsPage() {
 
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Score</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Score</p>
                 <p className="mt-1 text-sm font-bold text-white">{match.score}</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Accuracy</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Accuracy</p>
                 <p className="mt-1 text-sm font-bold text-white">{currentAccuracyPercent}%</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Time</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Time</p>
                 <p className="mt-1 text-sm font-bold text-white">{formatTime(match.time_taken_seconds)}</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Mastery Gained</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Mastery Gained</p>
                 <p className="mt-1 text-sm font-bold text-indigo-200">+{bossMasteryGained}%</p>
               </div>
             </div>
@@ -2033,19 +2033,19 @@ export default function ResultsPage() {
 
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Student Score</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Student Score</p>
                 <p className="mt-1 text-sm font-bold text-white">{match.score}</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">AI Rival Score</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">AI Rival Score</p>
                 <p className="mt-1 text-sm font-bold text-white">{rivalScore}</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Score Gap</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Score Gap</p>
                 <p className="mt-1 text-sm font-bold text-white">{rivalGap >= 0 ? "+" : ""}{rivalGap}</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-black/25 px-3 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Rival Accuracy</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Rival Accuracy</p>
                 <p className="mt-1 text-sm font-bold text-white">{rivalAccuracy}%</p>
               </div>
             </div>
@@ -2100,7 +2100,7 @@ export default function ResultsPage() {
                   ? `You finished ${Math.abs(challengeGap)}% behind the original score.`
                   : "You matched the original score exactly."}
             </p>
-            <p className="mt-1 text-xs text-white/45">
+            <p className="mt-1 text-xs text-[var(--text-3)]">
               Original score: {challengeBaseScore}% · Your score: {currentAccuracyPercent}%
             </p>
           </div>
@@ -2127,7 +2127,7 @@ export default function ResultsPage() {
                 <p className="mt-2 text-sm font-medium leading-relaxed text-white/80 sm:text-base">
                   {battleProgress.progressMessage}
                 </p>
-                <p className="mt-2 text-xs text-white/45">
+                <p className="mt-2 text-xs text-[var(--text-3)]">
                   Personal best on this deck: {battleProgress.previousBestScore == null ? "none yet" : `${battleProgress.previousBestScore} pts`}
                   {battleProgress.newPersonalBest ? " · New record!" : ""}
                 </p>
@@ -2213,7 +2213,7 @@ export default function ResultsPage() {
               <p className="mt-3 text-sm text-white/70">
                 {clashPathReport.improvementSummary}
               </p>
-              <p className="mt-1 text-xs text-white/45">
+              <p className="mt-1 text-xs text-[var(--text-3)]">
                 Arena state: {clashPathReport.masteryMapLabel}
               </p>
 
@@ -2671,7 +2671,7 @@ export default function ResultsPage() {
             <span className="text-5xl font-black bg-gradient-to-r from-indigo-400 to-indigo-400 bg-clip-text text-transparent sm:text-6xl md:text-7xl">
               <AnimatedNumber value={match.score} />
             </span>
-            <p className="mt-1 text-xs font-bold uppercase tracking-wider text-white/40">
+            <p className="mt-1 text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">
               Points
             </p>
           </div>
@@ -2694,7 +2694,7 @@ export default function ResultsPage() {
               <p className="text-base font-bold text-green-300 sm:text-lg md:text-xl">
                 {match.correct_answers}
               </p>
-              <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40 sm:text-xs">
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)] sm:text-xs">
                 Correct
               </p>
             </div>
@@ -2702,7 +2702,7 @@ export default function ResultsPage() {
               <p className="text-base font-bold text-red-300 sm:text-lg md:text-xl">
                 {wrongAnswers}
               </p>
-              <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40 sm:text-xs">
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)] sm:text-xs">
                 Wrong
               </p>
             </div>
@@ -2710,7 +2710,7 @@ export default function ResultsPage() {
               <p className="text-base font-bold text-indigo-300 sm:text-lg md:text-xl">
                 {accuracyPercent}%
               </p>
-              <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40 sm:text-xs">
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)] sm:text-xs">
                 Accuracy
               </p>
             </div>
@@ -2718,7 +2718,7 @@ export default function ResultsPage() {
               <p className="text-base font-bold text-indigo-300 sm:text-lg md:text-xl">
                 {formatTime(match.time_taken_seconds)}
               </p>
-              <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-white/40 sm:text-xs">
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)] sm:text-xs">
                 Time
               </p>
             </div>
@@ -2775,7 +2775,7 @@ export default function ResultsPage() {
             </p>
           </div>
 
-          <p className="mt-3 text-center text-xs text-white/35">
+          <p className="mt-3 text-center text-xs text-[var(--text-3)]">
             {shareToken
               ? `Challenge link: /challenge/${shareToken}`
               : "A fresh challenge link is created when you copy the message."}
@@ -2804,9 +2804,9 @@ export default function ResultsPage() {
           </div>
 
           {isLeaderboardLoading ? (
-            <p className="mt-4 text-sm text-white/45">Loading leaderboard...</p>
+            <p className="mt-4 text-sm text-[var(--text-3)]">Loading leaderboard...</p>
           ) : deckLeaderboard.length === 0 ? (
-            <p className="mt-4 text-sm text-white/45">
+            <p className="mt-4 text-sm text-[var(--text-3)]">
               No scores yet. You can be the first entry.
             </p>
           ) : (
@@ -2851,7 +2851,7 @@ export default function ResultsPage() {
                       </span>
                     </div>
 
-                    <p className="mt-2 text-[10px] text-white/40">
+                    <p className="mt-2 text-[10px] text-[var(--text-3)]">
                       {accuracy}% accuracy · {formatTime(entry.time_taken_seconds)}
                     </p>
                   </div>
@@ -2910,7 +2910,7 @@ export default function ResultsPage() {
                     {/* Header row: number, topic, difficulty, result badge */}
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-xs font-bold text-white/40">
+                        <span className="text-xs font-bold text-[var(--text-3)]">
                           Q{index + 1}
                         </span>
                         <span className="rounded-full bg-indigo-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-indigo-300">
@@ -3162,7 +3162,7 @@ export default function ResultsPage() {
                         <button
                           type="button"
                           onClick={() => handleOpenReportForm(item.question.id)}
-                          className="flex items-center gap-1.5 py-1 text-xs font-semibold text-white/40 transition-colors duration-150 hover:text-red-300"
+                          className="flex items-center gap-1.5 py-1 text-xs font-semibold text-[var(--text-3)] transition-colors duration-150 hover:text-red-300"
                         >
                           <svg
                             className="h-3.5 w-3.5 flex-shrink-0"
@@ -3195,7 +3195,7 @@ export default function ResultsPage() {
         </div>
 
         {isSavingMistakes && mistakeBreakdowns.length > 0 && (
-          <p className="mt-3 text-center text-xs text-white/35">
+          <p className="mt-3 text-center text-xs text-[var(--text-3)]">
             Saving mistake pattern data for future battles...
           </p>
         )}

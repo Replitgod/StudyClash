@@ -117,7 +117,7 @@ export default function CampaignDetailPage() {
     return <p className="text-sm text-red-300">{error}</p>;
   }
   if (!campaign) {
-    return <p className="text-sm text-white/40">Loading...</p>;
+    return <p className="text-sm text-[var(--text-3)]">Loading...</p>;
   }
 
   return (
@@ -138,9 +138,9 @@ export default function CampaignDetailPage() {
       </p>
 
       <div className="mt-4 flex flex-col gap-3">
-        {recommendations === null && <p className="text-sm text-white/40">Loading recommendations...</p>}
+        {recommendations === null && <p className="text-sm text-[var(--text-3)]">Loading recommendations...</p>}
         {recommendations?.length === 0 && (
-          <p className="text-sm text-white/40">No destinations found. Add some on the Destinations page first.</p>
+          <p className="text-sm text-[var(--text-3)]">No destinations found. Add some on the Destinations page first.</p>
         )}
         {recommendations?.map((rec) => {
           const isLinked = linkedIds.has(rec.destination.id);
@@ -151,7 +151,7 @@ export default function CampaignDetailPage() {
                 <div>
                   <p className="font-bold text-white">
                     {rec.destination.name}{" "}
-                    <span className="text-xs font-normal text-white/40">
+                    <span className="text-xs font-normal text-[var(--text-3)]">
                       ({DESTINATION_PLATFORM_LABELS[rec.destination.platform] || rec.destination.platform})
                     </span>
                   </p>

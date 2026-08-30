@@ -1,15 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { authFetch } from "@/lib/authFetch";
-import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/trackEvent";
-import { Card } from "@/app/components/ui/Card";
-import { Button } from "@/app/components/ui/Button";
 import { useLoadingTimeout } from "@/lib/useLoadingTimeout";
-import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { useRequireAuth } from "@/lib/useRequireAuth";
+import { ArrowRightIcon } from "@/app/components/app/Icons";
+
+// Past diagnostic results.
+//
+// Rebuilt on the design system alongside /diagnostics, which links here as
+// "Past results". Two things beyond the styling:
+//
+// - The tier badges used a fifth colour language (green/indigo/amber/red)
+//   for the same words the rest of the app already had chips for. They now
+//   use the shared four-tone chip scale.
+// - Auth is handled by useRequireAuth rather than a hand-rolled effect, so a
+//   signed-out visitor keeps their destination through the login bounce like
+//   they do everywhere else.
 
 type AttemptHistoryRow = {
   id: string;
@@ -44,201 +53,275 @@ type HistoryPayload = {
   masteryByExam: ExamMastery[];
 };
 
-// Same tier→color mapping as app/mastery-map/page.tsx's getStatusStyle, so
-// "Strong"/"Mastered" etc. read the same way across the whole app rather
-// than diagnostics inventing its own color language for the same words.
-function masteryTierBadgeStyle(tier: string): string {
-  if (tier === "mastered") return "border-green-400/30 bg-green-500/[0.08] text-green-100";
-  if (tier === "strong") return "border-indigo-400/30 bg-indigo-500/[0.08] text-indigo-100";
-  if (tier === "developing") return "border-amber-400/30 bg-amber-500/[0.08] text-amber-100";
-  return "border-red-400/30 bg-red-500/[0.08] text-red-100";
-}
-
 const MODE_LABELS: Record<AttemptHistoryRow["mode"], string> = {
   quick: "Quick",
-  full: "Full",
-  weak_area: "Weak-Area Retest",
+  full: "Full length",
+  weak_area: "Weak-area retest",
 };
 
-const READINESS_TONE: Record<string, string> = {
-  needs_review: "text-red-300",
-  developing: "text-amber-300",
-  strong: "text-green-300",
-  mastered: "text-emerald-300",
-};
+/** The same four tones the mastery map and the rest of the app use. */
+function tierChipClass(tier: string): string {
+  if (tier === "mastered" || tier === "strong") return "chip chip-ok";
+  if (tier === "developing") return "chip chip-warn";
+  return "chip chip-bad";
+}
 
-function Background({ children }: { children: React.ReactNode }) {
+function tierColor(tier: string | null): string {
+  if (tier === "mastered" || tier === "strong") return "var(--ok)";
+  if (tier === "developing") return "var(--warn)";
+  if (tier === "needs_review") return "var(--bad)";
+  return "var(--text-1)";
+}
+
+function Skeletons() {
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
-      <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-4xl flex-col px-4 pt-14 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
-        {children}
-      </div>
-    </main>
+    <div className="app-page">
+      <div className="skeleton h-9 w-52" />
+      <div className="skeleton mt-8 h-[220px] w-full" />
+      <div className="skeleton mt-6 h-[160px] w-full" />
+    </div>
   );
 }
 
 export default function DiagnosticHistoryPage() {
-  const router = useRouter();
-  const { isLoggedIn, isLoading: isAuthLoading } = useAuth();
+  const { isReady } = useRequireAuth();
   const [data, setData] = useState<HistoryPayload | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const loadTimedOut = useLoadingTimeout(isLoading);
 
-  const fetchHistory = () => {
+  const fetchHistory = useCallback(() => {
     setIsLoading(true);
     setLoadError(null);
     authFetch("/api/diagnostics/history", { method: "GET" })
       .then(async (response) => {
-        const json = await response.json();
+        const json = await response.json().catch(() => null);
         if (!response.ok) {
-          setLoadError(json.error || "Could not load your history.");
+          setLoadError(json?.error || "We could not load your history.");
           return;
         }
         setData(json);
       })
-      .catch((err) => setLoadError(err instanceof Error ? err.message : "Could not load your history."))
+      .catch((err) =>
+        setLoadError(
+          err instanceof Error ? err.message : "We could not load your history."
+        )
+      )
       .finally(() => setIsLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
-    if (isAuthLoading) return;
-    if (!isLoggedIn) {
-      router.push("/login?redirect=/diagnostics/history");
-      return;
-    }
+    if (!isReady) return;
     void trackEvent("page_view", { page: "diagnostic_history" });
     fetchHistory();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthLoading, isLoggedIn]);
+  }, [isReady, fetchHistory]);
 
-  if (isAuthLoading || (isLoading && !data)) {
-    return (
-      <Background>
-        {loadError ? (
-          <p className="text-sm text-red-300">{loadError}</p>
-        ) : loadTimedOut ? (
-          <div className="text-center">
-            <p className="text-sm text-white/50">This is taking longer than expected.</p>
-            <Button onClick={fetchHistory} className="mt-3">Retry</Button>
-          </div>
-        ) : (
-          <p className="text-sm text-white/50">Loading your history...</p>
-        )}
-      </Background>
-    );
+  if (!isReady || (isLoading && !data && !loadError && !loadTimedOut)) {
+    return <Skeletons />;
   }
 
-  if (loadError && !data) {
+  if ((loadError || loadTimedOut) && !data) {
     return (
-      <Background>
-        <p className="text-sm text-red-300">{loadError}</p>
-        <Button onClick={fetchHistory} className="mt-3 w-fit">Retry</Button>
-      </Background>
+      <div className="app-page">
+        <h1 className="t-page">Past results</h1>
+        <div className="card mt-8 px-6 py-12 text-center">
+          <p className="text-[17px] font-medium" style={{ color: "var(--text-1)" }}>
+            {loadError || "This is taking longer than it should."}
+          </p>
+          <p className="t-body mx-auto mt-2 max-w-sm">
+            This is usually a connection blip rather than anything you did.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
+            <button type="button" onClick={fetchHistory} className="btn btn-primary">
+              Try again
+            </button>
+            <Link href="/diagnostics" className="btn btn-secondary">
+              Back to diagnostics
+            </Link>
+          </div>
+        </div>
+      </div>
     );
   }
 
   if (!data) return null;
 
+  const hasNothing =
+    data.attempts.length === 0 && data.masteryByExam.length === 0;
+
   return (
-    <Background>
-      <Link href="/diagnostics" className="w-fit text-sm font-semibold text-indigo-300">
-        &larr; Back to diagnostics
+    <div className="app-page">
+      <Link
+        href="/diagnostics"
+        className="inline-flex w-fit items-center gap-1.5 text-[13px] font-medium"
+        style={{ color: "var(--text-3)" }}
+      >
+        <span aria-hidden="true">←</span> Diagnostics
       </Link>
 
-      <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
-        <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
-          Your diagnostic history
-        </span>
-      </h1>
-      <p className="mt-2 text-sm text-white/60">
-        Every completed diagnostic and retest, plus how your mastery has moved over time.
+      <h1 className="t-page mt-4">Past results</h1>
+      <p className="t-body mt-2 max-w-2xl">
+        Every diagnostic you have finished, and how your skills have moved since.
       </p>
 
-      {data.masteryByExam.length > 0 && (
-        <div className="mt-8">
-          <p className="text-xs font-bold uppercase tracking-wider text-white/50">Mastery by skill</p>
-          <div className="mt-3 flex flex-col gap-4">
-            {data.masteryByExam.map((exam) => (
-              <Card key={exam.examSlug} padding="md">
-                <p className="text-sm font-bold text-white">{exam.examName}</p>
-                <div className="mt-3 flex flex-col gap-1.5">
-                  {exam.skills.slice(0, 12).map((s) => (
-                    <div key={s.skill} className="flex items-center gap-3">
-                      <span className="w-40 flex-shrink-0 truncate text-xs text-white/70">{s.skill}</span>
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-400"
-                          style={{ width: `${s.masteryScore}%` }}
-                        />
-                      </div>
-                      <span className="w-14 flex-shrink-0 text-right text-xs font-bold text-white/60">
-                        {s.masteryScore}%{s.isEstimate ? "*" : ""}
-                      </span>
-                      <span
-                        className={`w-[88px] flex-shrink-0 rounded-full border px-2 py-0.5 text-center text-[10px] font-bold uppercase tracking-wide ${masteryTierBadgeStyle(s.masteryTier)}`}
-                      >
-                        {s.masteryTierLabel}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                {exam.skills.some((s) => s.isEstimate) && (
-                  <p className="mt-2 text-[11px] text-white/35">
-                    * Early estimate -- fewer than 3 questions answered on this skill so far.
-                  </p>
-                )}
-              </Card>
-            ))}
-          </div>
+      {hasNothing ? (
+        <div className="card mt-8 px-6 py-12 text-center">
+          <p className="text-[17px] font-medium" style={{ color: "var(--text-1)" }}>
+            Nothing here yet
+          </p>
+          <p className="t-body mx-auto mt-2 max-w-sm">
+            Take a diagnostic and this fills in with your score, your weakest
+            skills, and how they change each time you retake it.
+          </p>
+          <Link href="/diagnostics" className="btn btn-primary mt-6">
+            Take a diagnostic
+          </Link>
         </div>
-      )}
+      ) : (
+        <>
+          {data.masteryByExam.length > 0 && (
+            <section className="mt-10">
+              <h2 className="t-section">Skill by skill</h2>
+              <div className="mt-3 flex flex-col gap-4">
+                {data.masteryByExam.map((exam) => (
+                  <div key={exam.examSlug} className="card p-5">
+                    <p
+                      className="text-[16px] font-medium"
+                      style={{ color: "var(--text-1)" }}
+                    >
+                      {exam.examName}
+                    </p>
+                    <ul className="mt-4 flex flex-col gap-3">
+                      {exam.skills.slice(0, 12).map((s) => (
+                        <li key={s.skill}>
+                          <div className="flex items-baseline justify-between gap-3">
+                            <span
+                              className="min-w-0 truncate text-[13.5px]"
+                              style={{ color: "var(--text-2)" }}
+                            >
+                              {s.skill}
+                            </span>
+                            <span className="flex shrink-0 items-center gap-2">
+                              <span
+                                className="text-[12px] font-medium tabular-nums"
+                                style={{ color: "var(--text-2)" }}
+                              >
+                                {s.masteryScore}%{s.isEstimate ? "*" : ""}
+                              </span>
+                              <span className={tierChipClass(s.masteryTier)}>
+                                {s.masteryTierLabel}
+                              </span>
+                            </span>
+                          </div>
+                          <div className="meter mt-1.5">
+                            <span
+                              style={{
+                                width: `${Math.min(100, Math.max(2, s.masteryScore))}%`,
+                                background: tierColor(s.masteryTier),
+                              }}
+                            />
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                    {exam.skills.some((s) => s.isEstimate) && (
+                      <p className="t-meta mt-3">
+                        * Early estimate — fewer than three questions answered on
+                        that skill so far.
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
-      <div className="mt-8">
-        <p className="text-xs font-bold uppercase tracking-wider text-white/50">Attempts</p>
-        {data.attempts.length === 0 ? (
-          <p className="mt-3 text-sm text-white/40">No completed diagnostics yet.</p>
-        ) : (
-          <div className="mt-3 flex flex-col gap-2">
-            {data.attempts.map((attempt) => (
-              <Link key={attempt.id} href={`/diagnostics/results/${attempt.id}`}>
-                <Card padding="sm" className="flex flex-wrap items-center justify-between gap-3 transition-colors hover:border-indigo-300/40">
-                  <div>
-                    <p className="text-sm font-semibold text-white">
-                      {attempt.examName} &middot; {MODE_LABELS[attempt.mode]}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-white/40">
-                      {new Date(attempt.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4 text-right">
-                    {attempt.estimatedScoreLow !== null && (
-                      <div>
-                        <p className="text-sm font-bold text-white">
-                          {attempt.estimatedScoreLow}&ndash;{attempt.estimatedScoreHigh}
+          <section className="mt-10">
+            <h2 className="t-section">Attempts</h2>
+            {data.attempts.length === 0 ? (
+              <div className="card mt-3 px-6 py-10 text-center">
+                <p className="t-body">
+                  No finished diagnostics yet.{" "}
+                  <Link
+                    href="/diagnostics"
+                    className="underline underline-offset-2"
+                    style={{ color: "var(--brand-text)" }}
+                  >
+                    Take one
+                  </Link>
+                  .
+                </p>
+              </div>
+            ) : (
+              <ul
+                className="card mt-3 divide-y overflow-hidden"
+                style={{ borderColor: "var(--line)" }}
+              >
+                {data.attempts.map((attempt) => (
+                  <li key={attempt.id}>
+                    <Link
+                      href={`/diagnostics/results/${attempt.id}`}
+                      className="flex flex-wrap items-center gap-4 px-4 py-3.5 transition-colors hover:bg-[var(--panel-raised)]"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="truncate text-[15px] font-medium"
+                          style={{ color: "var(--text-1)" }}
+                        >
+                          {attempt.examName}
                         </p>
-                        <p className="text-[10px] text-white/40">score range</p>
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-sm font-bold text-white">{attempt.overallAccuracy}%</p>
-                      <p className="text-[10px] text-white/40">accuracy</p>
-                    </div>
-                    {attempt.readinessTier && (
-                      <div>
-                        <p className={`text-sm font-bold ${READINESS_TONE[attempt.readinessTier] || "text-white"}`}>
-                          {attempt.readinessScore}
+                        <p className="t-meta truncate">
+                          {MODE_LABELS[attempt.mode]} ·{" "}
+                          {new Date(attempt.completedAt).toLocaleDateString(
+                            "en-US",
+                            { month: "short", day: "numeric", year: "numeric" }
+                          )}
                         </p>
-                        <p className="text-[10px] text-white/40">readiness</p>
                       </div>
-                    )}
-                  </div>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-    </Background>
+
+                      <div className="flex shrink-0 items-center gap-5 text-right">
+                        {attempt.estimatedScoreLow !== null && (
+                          <div>
+                            <p
+                              className="text-[15px] font-medium tabular-nums"
+                              style={{ color: "var(--text-1)" }}
+                            >
+                              {attempt.estimatedScoreLow}–
+                              {attempt.estimatedScoreHigh}
+                            </p>
+                            <p className="t-meta">score</p>
+                          </div>
+                        )}
+                        <div>
+                          <p
+                            className="text-[15px] font-medium tabular-nums"
+                            style={{ color: "var(--text-1)" }}
+                          >
+                            {attempt.overallAccuracy}%
+                          </p>
+                          <p className="t-meta">correct</p>
+                        </div>
+                        {attempt.readinessTier && (
+                          <div>
+                            <p
+                              className="text-[15px] font-medium tabular-nums"
+                              style={{ color: tierColor(attempt.readinessTier) }}
+                            >
+                              {attempt.readinessScore}
+                            </p>
+                            <p className="t-meta">ready</p>
+                          </div>
+                        )}
+                        <ArrowRightIcon className="h-4 w-4 opacity-40" />
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </>
+      )}
+    </div>
   );
 }

@@ -547,7 +547,7 @@ const RANK_BADGES: Record<number, { label: string; color: string }> = {
 // re-renders, preventing the whole subtree from remounting on state changes.
 function Background({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[var(--app-bg)] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
         <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
@@ -2139,19 +2139,19 @@ export default function BattlePage() {
 
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div className="rounded-lg border border-white/10 bg-black/25 px-2.5 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Rival Acc</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Rival Acc</p>
                 <p className="mt-1 text-xs font-bold text-white">{rivalReadiness.targetAccuracy}%</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-black/25 px-2.5 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Rival Speed</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Rival Speed</p>
                 <p className="mt-1 text-xs font-bold text-white">~{Math.round(rivalReadiness.expectedResponseMs / 1000)}s</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-black/25 px-2.5 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Your Avg</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Your Avg</p>
                 <p className="mt-1 text-xs font-bold text-white">{rivalReadiness.playerAverageAccuracy}%</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-black/25 px-2.5 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Battles</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Battles</p>
                 <p className="mt-1 text-xs font-bold text-white">{rivalReadiness.attempts}</p>
               </div>
             </div>
@@ -2188,19 +2188,19 @@ export default function BattlePage() {
           <div className="mt-4 w-full max-w-xl rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Level</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Level</p>
                 <p className="mt-1 text-base font-black text-indigo-200">{engagementPreview.level}</p>
               </div>
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Day Streak</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Day Streak</p>
                 <p className="mt-1 text-base font-black text-amber-200">{engagementPreview.currentStreakDays}</p>
               </div>
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Daily Goal</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Daily Goal</p>
                 <p className="mt-1 text-base font-black text-green-200">{engagementPreview.dailyBattles}/2</p>
               </div>
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Rank</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Rank</p>
                 <p className="mt-1 text-base font-black text-indigo-200">{engagementPreview.rankLabel}</p>
               </div>
             </div>
@@ -2225,7 +2225,7 @@ export default function BattlePage() {
 
             {engagementPreview.recentHistory.length > 0 && (
               <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2.5">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-white/45">Recent Battles</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Recent Battles</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   {engagementPreview.recentHistory.map((entry) => (
                     <span
@@ -2249,7 +2249,7 @@ export default function BattlePage() {
                   <p className="text-sm font-semibold text-white/90">
                     Playing as {accountDisplayName}
                   </p>
-                  <p className="mt-1 text-[11px] text-white/40">
+                  <p className="mt-1 text-[11px] text-[var(--text-3)]">
                     You&apos;re already logged in, so you don&apos;t need to enter your name again.
                   </p>
                 </div>
@@ -2282,7 +2282,7 @@ export default function BattlePage() {
                 }}
                 className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
               />
-              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-white/30">
+              <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-3)]">
                 <span>
                   {accountDisplayName
                     ? "Change it only if you want a different name on this battle result."
@@ -2337,7 +2337,7 @@ export default function BattlePage() {
 
         {/* Scoring rules reminder */}
         <div className="mt-4 w-full max-w-sm rounded-xl border border-white/5 bg-black/20 px-4 py-3 text-center">
-          <p className="text-[11px] text-white/40">
+          <p className="text-[11px] text-[var(--text-3)]">
             🔥 100 pts per correct · +25 bonus at a 3-streak · +50 bonus at a
             5-streak
           </p>
@@ -2365,11 +2365,11 @@ export default function BattlePage() {
           </div>
 
           {isLeaderboardLoading && (
-            <p className="mt-3 text-sm text-white/40">Loading leaderboard...</p>
+            <p className="mt-3 text-sm text-[var(--text-3)]">Loading leaderboard...</p>
           )}
 
           {!isLeaderboardLoading && leaderboard.length === 0 && (
-            <p className="mt-3 text-sm text-white/40">
+            <p className="mt-3 text-sm text-[var(--text-3)]">
               No scores yet. Be the first to play.
             </p>
           )}
@@ -2417,7 +2417,7 @@ export default function BattlePage() {
                     </div>
 
                     <div className="mt-2 flex flex-wrap items-center justify-between gap-1.5">
-                      <p className="text-[10px] text-white/40">
+                      <p className="text-[10px] text-[var(--text-3)]">
                         {entryAccuracy}% accuracy ·{" "}
                         {formatTime(entry.time_taken_seconds)}
                       </p>
@@ -2467,21 +2467,21 @@ export default function BattlePage() {
                   <p className="text-xl font-bold text-white">
                     {finishedSummary.correctCount}/{finishedSummary.totalQuestions}
                   </p>
-                  <p className="mt-1 text-[11px] uppercase tracking-wider text-white/45">Correct</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-wider text-[var(--text-3)]">Correct</p>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
                   <p className="text-xl font-bold text-white">{accuracyPercent}%</p>
-                  <p className="mt-1 text-[11px] uppercase tracking-wider text-white/45">Accuracy</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-wider text-[var(--text-3)]">Accuracy</p>
                 </div>
                 <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
                   <p className="text-xl font-bold text-white">{finishedSummary.bestStreak}</p>
-                  <p className="mt-1 text-[11px] uppercase tracking-wider text-white/45">Best streak</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-wider text-[var(--text-3)]">Best streak</p>
                 </div>
               </div>
 
               {finishedSummary.topicBreakdown.some((entry) => entry.missed > 0) && (
                 <div className="mt-6 rounded-xl border border-white/10 bg-white/5 p-4 text-left">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-white/45">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-3)]">
                     Topics to review
                   </p>
                   <div className="mt-2 flex flex-col gap-1.5">
@@ -2490,7 +2490,7 @@ export default function BattlePage() {
                       .map((entry) => (
                         <div key={entry.topic} className="flex items-center justify-between text-sm">
                           <span className="text-white/80">{entry.topic}</span>
-                          <span className="text-white/45">
+                          <span className="text-[var(--text-3)]">
                             {entry.missed}/{entry.total} missed
                           </span>
                         </div>
@@ -2712,19 +2712,19 @@ export default function BattlePage() {
 
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div className="rounded-lg border border-white/10 bg-black/20 px-2.5 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Student Score</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Student Score</p>
                 <p className="mt-1 text-sm font-bold text-white">{totalScore}</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-black/20 px-2.5 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Rival Score</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Rival Score</p>
                 <p className="mt-1 text-sm font-bold text-white">{rivalScore}</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-black/20 px-2.5 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Live Progress</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Live Progress</p>
                 <p className="mt-1 text-sm font-bold text-white">{progressPercent.toFixed(0)}% / {rivalProgressPercent}%</p>
               </div>
               <div className="rounded-lg border border-white/10 bg-black/20 px-2.5 py-2">
-                <p className="text-[10px] uppercase tracking-wider text-white/45">Win/Loss</p>
+                <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Win/Loss</p>
                 <p className="mt-1 text-sm font-bold text-white">{liveRivalOutcome}</p>
               </div>
             </div>
@@ -2787,7 +2787,7 @@ export default function BattlePage() {
 
           <div className="flex items-center gap-2">
             {bestStreak > 0 && (
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-white/30">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-3)]">
                 Best: {bestStreak}
               </span>
             )}
@@ -2819,7 +2819,7 @@ export default function BattlePage() {
                 {currentStreak} streak
               </span>
               {bonusForCurrentStreak > 0 && (
-                <span className="text-[10px] font-bold text-white/40">
+                <span className="text-[10px] font-bold text-[var(--text-3)]">
                   (+{bonusForCurrentStreak})
                 </span>
               )}
@@ -2918,7 +2918,7 @@ export default function BattlePage() {
                         ? "Show your work step by step, then state your final answer..."
                         : "Take a position and back it up with evidence from your notes..."
                     }
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white/90 placeholder:text-white/30 focus:border-indigo-400/50 focus:outline-none disabled:opacity-60 sm:text-base"
+                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white/90 placeholder:text-[var(--text-3)] focus:border-indigo-400/50 focus:outline-none disabled:opacity-60 sm:text-base"
                   />
                   {openResponseError && (
                     <p className="mt-2 text-xs text-red-300">{openResponseError}</p>
@@ -2933,7 +2933,7 @@ export default function BattlePage() {
                 </>
               ) : (
                 <div className="rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-sm text-white/80 sm:text-base">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
                     Your answer
                   </p>
                   <p className="mt-1.5 whitespace-pre-wrap break-words">{selectedChoice}</p>

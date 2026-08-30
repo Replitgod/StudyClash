@@ -195,7 +195,7 @@ export default function LoginPage() {
           {/* Divider */}
           <div className="my-5 flex items-center gap-3">
             <div className="h-px flex-1 bg-white/10" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-white/30">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--text-3)]">
               or
             </span>
             <div className="h-px flex-1 bg-white/10" />
@@ -206,7 +206,7 @@ export default function LoginPage() {
             <div className="flex flex-col gap-2">
               <label
                 htmlFor="email"
-                className="text-xs font-bold uppercase tracking-wider text-white/60"
+                className="text-xs font-bold uppercase tracking-wider text-[var(--text-2)]"
               >
                 Email
               </label>
@@ -227,7 +227,7 @@ export default function LoginPage() {
             <div className="flex flex-col gap-2">
               <label
                 htmlFor="password"
-                className="text-xs font-bold uppercase tracking-wider text-white/60"
+                className="text-xs font-bold uppercase tracking-wider text-[var(--text-2)]"
               >
                 Password
               </label>
@@ -246,7 +246,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-white/55 transition-colors duration-150 hover:bg-white/10 hover:text-white/80"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-2 py-1 text-xs font-semibold text-[var(--text-2)] transition-colors duration-150 hover:bg-white/10 hover:text-[var(--text-1)]"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? "Hide" : "Show"}
@@ -297,7 +297,7 @@ export default function LoginPage() {
           </form>
         </motion.div>
 
-        <p className="mt-6 text-center text-sm text-white/40">
+        <p className="mt-6 text-center text-sm text-[var(--text-3)]">
           Don&apos;t have an account?{" "}
           <Link
             href="/signup"
@@ -311,13 +311,13 @@ export default function LoginPage() {
           <Link href="/demo/battle" className="text-indigo-200/90 hover:text-indigo-100">
             Try Demo First
           </Link>
-          <span className="text-white/20">•</span>
+          <span className="text-[var(--text-4)]">•</span>
           <Link href="/pricing" className="text-indigo-200/90 hover:text-indigo-100">
             View Plans
           </Link>
         </div>
 
-        <p className="mt-3 text-center text-xs text-white/35">
+        <p className="mt-3 text-center text-xs text-[var(--text-3)]">
           By continuing, you agree to our{" "}
           <Link href="/terms" className="text-indigo-200 hover:text-indigo-100">Terms</Link>
           {" "}and{" "}

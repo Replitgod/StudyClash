@@ -19,7 +19,7 @@ type CourseSummary = {
 
 function Background({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[var(--app-bg)] text-white">
       <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 pt-14 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {children}
       </div>
@@ -125,13 +125,13 @@ export default function CurriculumCoursesPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Course name (e.g. AP Chemistry)"
-            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-indigo-400/50 focus:outline-none"
+            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-[var(--text-3)] focus:border-indigo-400/50 focus:outline-none"
           />
           <input
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="Subject (optional)"
-            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/30 focus:border-indigo-400/50 focus:outline-none"
+            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-[var(--text-3)] focus:border-indigo-400/50 focus:outline-none"
           />
           <Button type="submit" isLoading={isCreating} className="sm:w-auto">
             Create

@@ -42,7 +42,7 @@ const POLL_INTERVAL_MS = 20_000;
 
 function Background({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[var(--app-bg)] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
         <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
@@ -110,10 +110,10 @@ function MatchCard({
       })}
 
       {match.status === "bye" && (
-        <p className="mt-1.5 text-[11px] text-white/40">Bye — advances automatically</p>
+        <p className="mt-1.5 text-[11px] text-[var(--text-3)]">Bye — advances automatically</p>
       )}
       {match.status === "pending" && (
-        <p className="mt-1.5 text-[11px] text-white/40">Waiting for both players to battle</p>
+        <p className="mt-1.5 text-[11px] text-[var(--text-3)]">Waiting for both players to battle</p>
       )}
       {isInvolved && match.status === "pending" && deckId && (
         <Link

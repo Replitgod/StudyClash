@@ -119,7 +119,7 @@ export default function UpcomingAssessmentPrompt({ matchId, deckTitle }: Props) 
             <button
               type="button"
               onClick={handleNotNow}
-              className="rounded-xl border border-transparent px-3.5 py-2 text-sm font-semibold text-white/40 hover:text-white/60"
+              className="rounded-xl border border-transparent px-3.5 py-2 text-sm font-semibold text-[var(--text-3)] hover:text-white/60"
             >
               Not now
             </button>
@@ -193,7 +193,7 @@ export default function UpcomingAssessmentPrompt({ matchId, deckTitle }: Props) 
               Open Study Plan
             </Link>
           )}
-          <p className="mt-2 text-xs text-white/40">Built from &quot;{deckTitle}&quot; and your recent answers.</p>
+          <p className="mt-2 text-xs text-[var(--text-3)]">Built from &quot;{deckTitle}&quot; and your recent answers.</p>
         </>
       )}
     </div>

@@ -61,7 +61,7 @@ export default function MarketingAnalyticsPage() {
   }, []);
 
   if (error) return <p className="text-sm text-red-300">{error}</p>;
-  if (!data) return <p className="text-sm text-white/40">Loading...</p>;
+  if (!data) return <p className="text-sm text-[var(--text-3)]">Loading...</p>;
 
   const maxVisitors = Math.max(1, ...data.byPlatform.map((p) => p.visitors));
 
@@ -72,7 +72,7 @@ export default function MarketingAnalyticsPage() {
       <h2 className="mt-8 text-lg font-bold">Funnel</h2>
       <div className="mt-3 overflow-x-auto rounded-xl border border-white/10">
         <table className="w-full text-left text-sm">
-          <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-white/40">
+          <thead className="bg-white/[0.03] text-xs uppercase tracking-wide text-[var(--text-3)]">
             <tr>
               <th className="px-4 py-3">Step</th>
               <th className="px-4 py-3">Count</th>
@@ -94,7 +94,7 @@ export default function MarketingAnalyticsPage() {
           </tbody>
         </table>
       </div>
-      <p className="mt-2 text-xs text-white/40">
+      <p className="mt-2 text-xs text-[var(--text-3)]">
         Overall visitors → paid: {data.funnel.rates.overallVisitorsToPaid !== null ? `${data.funnel.rates.overallVisitorsToPaid}%` : "—"}
       </p>
 
@@ -113,7 +113,7 @@ export default function MarketingAnalyticsPage() {
             </div>
           </div>
         ))}
-        {data.byPlatform.length === 0 && <p className="text-sm text-white/40">No attributed events yet.</p>}
+        {data.byPlatform.length === 0 && <p className="text-sm text-[var(--text-3)]">No attributed events yet.</p>}
       </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
@@ -138,7 +138,7 @@ export default function MarketingAnalyticsPage() {
               <li key={d.destinationId}>{d.destinationName} — {d.visitors} visitors, 0 sign-ups</li>
             ))}
             {data.destinationsWithNoConversions.length === 0 && (
-              <li className="text-white/40">None -- every destination with traffic has at least one sign-up.</li>
+              <li className="text-[var(--text-3)]">None -- every destination with traffic has at least one sign-up.</li>
             )}
           </ul>
         </div>

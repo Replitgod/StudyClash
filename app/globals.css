@@ -27,6 +27,27 @@
   --color-brand-accent: #b9a8ff;
   --color-brand-accent-emphasis: #d0c4ff;
 
+  /* --- Tailwind's `indigo` scale, retuned to the AceDecks violet.
+     729 utilities across the app (bg-indigo-500, border-indigo-400/30,
+     text-indigo-200 …) were written against Tailwind's stock indigo, which is
+     a blue-violet and visibly a different colour from --accent. Rather than
+     rewrite every one of those class names -- a large, purely mechanical, and
+     easy-to-get-wrong edit across ~44 files -- the scale itself is redefined
+     here, so every existing utility resolves to the brand ramp. New code
+     should still use --accent directly; this is what makes the not-yet-
+     converted screens agree with the converted ones in the meantime. --- */
+  --color-indigo-50: #f2effd;
+  --color-indigo-100: #e5e0fb;
+  --color-indigo-200: #cfc6f7;
+  --color-indigo-300: #b0a2f2;
+  --color-indigo-400: #8b7bf0;
+  --color-indigo-500: #6e56cf;
+  --color-indigo-600: #5842ab;
+  --color-indigo-700: #46348a;
+  --color-indigo-800: #372a6b;
+  --color-indigo-900: #2a2054;
+  --color-indigo-950: #1a1436;
+
   /* --- Semantic. Deliberately desaturated so they read as information,
      not decoration. --- */
   --color-success: #34d399;

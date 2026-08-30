@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 
 export default function PrivacyPage() {
   return (
-    <main className={`relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] px-4 pt-12 text-white sm:px-6 sm:pt-16 ${FLOATING_ACTION.mobileBottomPadding}`}>
+    <main className={`relative min-h-dvh w-full overflow-x-hidden bg-[var(--app-bg)] px-4 pt-12 text-white sm:px-6 sm:pt-16 ${FLOATING_ACTION.mobileBottomPadding}`}>
       <Reveal className="mx-auto w-full max-w-3xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-8">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">AceDecks Public Beta</p>
         <h1 className="mt-2 text-3xl font-black tracking-tight">Privacy Policy</h1>

@@ -43,7 +43,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           {error}
         </p>
       ) : hint ? (
-        <p id={`${fieldId}-hint`} className="text-[11px] text-white/30">
+        <p id={`${fieldId}-hint`} className="text-[11px] text-[var(--text-3)]">
           {hint}
         </p>
       ) : null}

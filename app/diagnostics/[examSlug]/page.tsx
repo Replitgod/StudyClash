@@ -34,7 +34,7 @@ type ExamDetail = {
 
 function Background({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[var(--app-bg)] text-white">
       <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 pt-14 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
         {children}
       </div>
@@ -210,7 +210,7 @@ export default function ExamDiagnosticPage() {
         </Card>
       </div>
 
-      <p className="mt-8 text-center text-[11px] leading-relaxed text-white/35">{exam.disclaimer}</p>
+      <p className="mt-8 text-center text-[11px] leading-relaxed text-[var(--text-3)]">{exam.disclaimer}</p>
     </Background>
   );
 }

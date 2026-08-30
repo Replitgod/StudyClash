@@ -57,7 +57,7 @@ export function BentoDeckCard({
       >
         <span className="min-w-0">
           <span className="block truncate text-sm font-semibold text-white">{title}</span>
-          <span className="block truncate text-xs text-white/40">{courseN}</span>
+          <span className="block truncate text-xs text-[var(--text-3)]">{courseN}</span>
           {headlineStat ? <span className={`mt-0.5 block text-xs ${a.text}`}>{headlineStat}</span> : null}
         </span>
         <motion.svg
@@ -85,15 +85,15 @@ export function BentoDeckCard({
             <div className="border-t border-white/10 px-3 py-3">
               <dl className="grid grid-cols-3 gap-2 text-center">
                 <div className="rounded-lg bg-white/[0.03] py-2">
-                  <dt className="text-[10px] uppercase tracking-wider text-white/40">Matches</dt>
+                  <dt className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Matches</dt>
                   <dd className="mt-0.5 font-mono text-sm font-bold tabular-nums text-white">{matchesPlayed ?? "—"}</dd>
                 </div>
                 <div className="rounded-lg bg-white/[0.03] py-2">
-                  <dt className="text-[10px] uppercase tracking-wider text-white/40">Best</dt>
+                  <dt className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Best</dt>
                   <dd className="mt-0.5 font-mono text-sm font-bold tabular-nums text-white">{bestScore ?? "—"}</dd>
                 </div>
                 <div className="rounded-lg bg-white/[0.03] py-2">
-                  <dt className="text-[10px] uppercase tracking-wider text-white/40">Last</dt>
+                  <dt className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Last</dt>
                   <dd className="mt-0.5 text-xs font-semibold text-white/80">{lastPlayedLabel ?? "—"}</dd>
                 </div>
               </dl>

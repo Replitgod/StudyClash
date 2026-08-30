@@ -56,7 +56,7 @@ export function RoastCard({
               setGuestDisabled(true);
             }
           }}
-          className="text-xs font-medium text-white/40 underline-offset-2 hover:text-white/70 hover:underline"
+          className="text-xs font-medium text-[var(--text-3)] underline-offset-2 hover:text-white/70 hover:underline"
         >
           Turn off roasts
         </button>
@@ -83,7 +83,7 @@ export function RoastCard({
       )}
 
       {!isLoggedIn && (
-        <p className="mt-3 text-xs text-white/35">Log in to save this preference across devices.</p>
+        <p className="mt-3 text-xs text-[var(--text-3)]">Log in to save this preference across devices.</p>
       )}
     </Card>
   );

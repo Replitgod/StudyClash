@@ -81,7 +81,7 @@ function coerceDeck(value: unknown): Deck | null {
 
 function Background({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[var(--app-bg)] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
         <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
@@ -200,7 +200,7 @@ export default function ChallengeLandingPage() {
       <Background>
         <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm sm:p-8">
           <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-indigo-300/40 border-t-cyan-300" />
-          <p className="mt-4 text-sm text-white/45">Loading challenge...</p>
+          <p className="mt-4 text-sm text-[var(--text-3)]">Loading challenge...</p>
         </div>
       </Background>
     );
@@ -273,11 +273,11 @@ export default function ChallengeLandingPage() {
           </p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Accuracy</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Accuracy</p>
               <p className="mt-2 text-2xl font-black text-indigo-300">{challengerAccuracy}%</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-white/40">Battle Score</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Battle Score</p>
               <p className="mt-2 text-2xl font-black text-indigo-300">{match.score} pts</p>
             </div>
           </div>
@@ -312,7 +312,7 @@ export default function ChallengeLandingPage() {
             Ghost mode replays the challenger&apos;s recorded answers and pacing from their original run.
           </p>
 
-          <p className="mt-3 text-center text-xs text-white/35">
+          <p className="mt-3 text-center text-xs text-[var(--text-3)]">
             {challengeMessage}
           </p>
         </div>

@@ -36,7 +36,7 @@ const STATUS_TABS: QuestionStatus[] = ["draft", "in_review", "published", "rejec
 
 function Background({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[var(--app-bg)] text-white">
       <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-4 py-10 pb-24 sm:px-6">
         {children}
       </div>
@@ -333,7 +333,7 @@ export default function AdminDiagnosticsPage() {
         ) : (
           questions.map((q) => (
             <Card key={q.id} padding="md">
-              <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-white/40">
+              <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
                 <span>{q.section}</span>
                 <span>&middot;</span>
                 <span>{q.domain}</span>

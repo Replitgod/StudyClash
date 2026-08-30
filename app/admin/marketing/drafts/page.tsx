@@ -40,7 +40,7 @@ const STATUS_COLORS: Record<string, string> = {
   failed: "border-red-400/30 bg-red-500/10 text-red-300",
   removed: "border-red-400/30 bg-red-500/10 text-red-300",
   rejected: "border-red-400/20 bg-red-500/5 text-red-300/70",
-  skipped: "border-white/15 bg-white/5 text-white/40",
+  skipped: "border-white/15 bg-white/5 text-[var(--text-3)]",
 };
 
 export default function DraftsReviewQueue() {
@@ -95,8 +95,8 @@ export default function DraftsReviewQueue() {
       {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
 
       <div className="mt-4 flex flex-col gap-3">
-        {drafts === null && <p className="text-sm text-white/40">Loading...</p>}
-        {drafts?.length === 0 && <p className="text-sm text-white/40">No drafts match these filters.</p>}
+        {drafts === null && <p className="text-sm text-[var(--text-3)]">Loading...</p>}
+        {drafts?.length === 0 && <p className="text-sm text-[var(--text-3)]">No drafts match these filters.</p>}
         {drafts?.map((draft) => (
           <DraftCard
             key={draft.id}
@@ -185,7 +185,7 @@ function DraftCard({
     <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-[var(--text-3)]">
             {draft.campaign?.name} · {DESTINATION_PLATFORM_LABELS[draft.platform as keyof typeof DESTINATION_PLATFORM_LABELS] || draft.platform} ·{" "}
             {draft.destination?.name}
           </p>

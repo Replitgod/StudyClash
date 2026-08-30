@@ -141,7 +141,7 @@ export default function MarketingSettingsPage() {
     }
   };
 
-  if (!profile) return <p className="text-sm text-white/40">Loading...</p>;
+  if (!profile) return <p className="text-sm text-[var(--text-3)]">Loading...</p>;
 
   const inputClass = "mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white";
 

@@ -50,7 +50,7 @@ export function StudyModeReview({ deckTitle, questions, onExit }: StudyModeRevie
         </Button>
       </div>
 
-      <p className="mt-2 text-xs text-white/40">
+      <p className="mt-2 text-xs text-[var(--text-3)]">
         Card {index + 1} of {questions.length} · tap the card to flip it
       </p>
 
@@ -73,7 +73,7 @@ export function StudyModeReview({ deckTitle, questions, onExit }: StudyModeRevie
             <p className="mt-3 text-base font-bold leading-snug text-white sm:text-lg">
               {question.question_text}
             </p>
-            <p className="mt-auto pt-4 text-xs text-white/35">Tap to reveal the answer</p>
+            <p className="mt-auto pt-4 text-xs text-[var(--text-3)]">Tap to reveal the answer</p>
           </div>
         }
         back={

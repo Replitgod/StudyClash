@@ -26,7 +26,7 @@ type JoinResponse = {
 
 function Background({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
+    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[var(--app-bg)] text-white">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
         <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-500/20 blur-[120px]" />
@@ -112,7 +112,7 @@ export default function ClassroomJoinPage() {
         <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">Enter Room Code</h1>
         <p className="mt-2 text-sm text-white/65">Use the code shared by your teacher to join the live deck battle.</p>
 
-        <label htmlFor="roomCode" className="mt-5 block text-xs font-bold uppercase tracking-wider text-white/45">
+        <label htmlFor="roomCode" className="mt-5 block text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">
           Room Code
         </label>
         <input

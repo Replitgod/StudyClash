@@ -308,7 +308,7 @@ export default function DiagnosticAttemptPage() {
 
   if (state.status === "loading" || isAuthLoading) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-[#05050a] text-white">
+      <main className="flex min-h-dvh items-center justify-center bg-[var(--app-bg)] text-white">
         <p className="text-sm text-white/50">Loading your diagnostic...</p>
       </main>
     );
@@ -316,7 +316,7 @@ export default function DiagnosticAttemptPage() {
 
   if (state.status === "error") {
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#05050a] px-4 text-center text-white">
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[var(--app-bg)] px-4 text-center text-white">
         <p className="text-sm text-red-300">{loadError || "Something went wrong."}</p>
         <Button variant="secondary" onClick={() => loadCurrentState()}>
           Try again
@@ -327,7 +327,7 @@ export default function DiagnosticAttemptPage() {
 
   if (state.status === "module_break") {
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#05050a] px-4 text-center text-white">
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[var(--app-bg)] px-4 text-center text-white">
         <p className="text-xs font-bold uppercase tracking-[0.25em] text-indigo-300">Break</p>
         <h1 className="text-2xl font-black">Take a {state.breakMinutes || 10}-minute break</h1>
         <p className="max-w-md text-sm text-white/60">
@@ -343,15 +343,15 @@ export default function DiagnosticAttemptPage() {
 
   if (!currentItem) {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-[#05050a] text-white">
+      <main className="flex min-h-dvh items-center justify-center bg-[var(--app-bg)] text-white">
         <p className="text-sm text-white/50">No questions are available for this module right now.</p>
       </main>
     );
   }
 
   return (
-    <main className="min-h-dvh bg-[#05050a] text-white">
-      <div className="sticky top-0 z-20 border-b border-white/10 bg-[#05050a]/95 backdrop-blur-sm">
+    <main className="min-h-dvh bg-[var(--app-bg)] text-white">
+      <div className="sticky top-0 z-20 border-b border-white/10 bg-[var(--app-bg)]/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">
@@ -434,7 +434,7 @@ export default function DiagnosticAttemptPage() {
           </div>
         ) : (
           <div className="mt-6">
-            <label className="text-xs font-bold uppercase tracking-wider text-white/40">
+            <label className="text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">
               Enter your answer
             </label>
             <input

@@ -800,7 +800,7 @@ function ChatPanel(props: {
         </div>
       </div>
 
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-white/45">
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-3)]">
         {contextLabel || deckTitle || "Study Context"}
         {courseName ? ` · ${courseName}` : ""}
         {` · ${selectedMode}`}
@@ -941,7 +941,7 @@ function ChatPanel(props: {
                 )}
 
                 {message.resourcesDisclaimer && (
-                  <p className="max-w-[96%] self-start text-[11px] text-white/40">{message.resourcesDisclaimer}</p>
+                  <p className="max-w-[96%] self-start text-[11px] text-[var(--text-3)]">{message.resourcesDisclaimer}</p>
                 )}
 
                 {message.blindspotDecks && message.blindspotDecks.length > 0 && (
@@ -1023,7 +1023,7 @@ function ChatPanel(props: {
               ? "Ask VYRA anything, or try \"I have an AP Bio exam Friday on cellular respiration\"..."
               : "Choose a deck, topic, or missed question to begin..."
           }
-          className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-white/35 focus:border-indigo-400/40"
+          className="flex-1 rounded-xl border border-white/10 bg-black/40 px-3.5 py-2.5 text-sm text-white outline-none placeholder:text-[var(--text-3)] focus:border-indigo-400/40"
         />
         <motion.button
           type="submit"

@@ -101,13 +101,13 @@ export default function MarketingDashboardHome() {
 
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-xs font-bold uppercase tracking-wide text-white/40">Best-performing platform</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-3)]">Best-performing platform</p>
               <p className="mt-1 text-lg font-bold text-indigo-200">
                 {summary.bestPerformingPlatform || "Not enough data yet"}
               </p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-              <p className="text-xs font-bold uppercase tracking-wide text-white/40">Best-performing campaign</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-[var(--text-3)]">Best-performing campaign</p>
               <p className="mt-1 text-lg font-bold text-indigo-200">
                 {summary.bestPerformingCampaign || "Not enough data yet"}
               </p>

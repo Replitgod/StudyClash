@@ -116,7 +116,7 @@ export function ProgressRing({
           {label ?? `${displayPercent}%`}
         </span>
         {sublabel ? (
-          <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-white/45">
+          <span className="mt-0.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-3)]">
             {sublabel}
           </span>
         ) : null}
