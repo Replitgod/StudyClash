@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getServiceSupabaseClient, requireAuthenticatedUser } from "@/lib/server/apiUtils";
 import { TERRA_TASK } from "@/lib/server/aiModels";
+import {
+  buildAceSystemPrompt,
+  type AceCapability,
+} from "@/lib/server/aceIntelligence";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -19,12 +23,22 @@ type GeneratedQuestion = {
   explanation: string;
 };
 
-async function callTutor<T>(prompt: string, fallbackMessage: string): Promise<T> {
+async function callTutor<T>(
+  capability: AceCapability,
+  prompt: string,
+  fallbackMessage: string
+): Promise<T> {
   const completion = await openai.chat.completions.create({
     model: TERRA_TASK.model,
     reasoning_effort: TERRA_TASK.reasoning_effort,
     response_format: { type: "json_object" },
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      {
+        role: "developer",
+        content: buildAceSystemPrompt({ capability, knowledgeMode: "topic" }),
+      },
+      { role: "user", content: prompt },
+    ],
   });
   const raw = completion.choices[0]?.message?.content;
   if (!raw) throw new Error(fallbackMessage);
@@ -118,6 +132,7 @@ Skill: ${question.skill} (${question.domain}), difficulty: ${question.difficulty
   try {
     if (action === "explain") {
       const result = await callTutor<{ explanation: string }>(
+        "card_crack",
         `You are a patient tutor. A student missed this question. Re-explain it step by step, more clearly than the existing explanation, in a way a struggling student can follow. Ground everything in the question data below, never invent outside facts.\n\n${context}\n\nReturn ONLY valid JSON: {"explanation": string}`,
         "Empty tutor response."
       );
@@ -126,6 +141,7 @@ Skill: ${question.skill} (${question.domain}), difficulty: ${question.difficulty
 
     if (action === "teach") {
       const result = await callTutor<{ lesson: string }>(
+        "teach",
         `You are a tutor. Teach the underlying concept behind this missed question as a short, clear mini-lesson (not just re-explaining the one question) -- the general skill/rule a student needs to answer questions like this correctly.\n\n${context}\n\nReturn ONLY valid JSON: {"lesson": string}`,
         "Empty tutor response."
       );
@@ -134,6 +150,7 @@ Skill: ${question.skill} (${question.domain}), difficulty: ${question.difficulty
 
     if (action === "easier" || action === "harder") {
       const result = await callTutor<{ question: GeneratedQuestion }>(
+        "question",
         `You are writing one ${action === "easier" ? "EASIER" : "HARDER"} practice question testing the exact same skill ("${question.skill}") as the question below, grounded in the same topic -- never invent unrelated content.\n\n${context}\n\nReturn ONLY valid JSON: {"question": {"questionText": string, "answerChoices": [{"id": string, "text": string}]|null, "correctAnswer": string, "explanation": string}}`,
         "Empty tutor response."
       );
@@ -142,6 +159,7 @@ Skill: ${question.skill} (${question.domain}), difficulty: ${question.difficulty
 
     // similar
     const result = await callTutor<{ questions: GeneratedQuestion[] }>(
+      "question",
       `You are writing exactly 5 practice questions testing the same skill ("${question.skill}") and similar difficulty as the question below -- vary the specifics, never invent unrelated content.\n\n${context}\n\nReturn ONLY valid JSON: {"questions": [{"questionText": string, "answerChoices": [{"id": string, "text": string}]|null, "correctAnswer": string, "explanation": string}, ...5 total]}`,
       "Empty tutor response."
     );

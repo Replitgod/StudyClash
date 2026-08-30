@@ -7,6 +7,7 @@ import {
 } from "@/lib/server/apiUtils";
 import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 import { TERRA_TASK } from "@/lib/server/aiModels";
+import { buildAceSystemPrompt } from "@/lib/server/aceIntelligence";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -137,7 +138,16 @@ Return ONLY valid JSON, no markdown:
     const completion = await openai.chat.completions.create({
       model: TERRA_TASK.model,
       reasoning_effort: TERRA_TASK.reasoning_effort,
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        {
+          role: "developer",
+          content: buildAceSystemPrompt({
+            capability: "grade",
+            knowledgeMode: "source_locked",
+          }),
+        },
+        { role: "user", content: prompt },
+      ],
       response_format: { type: "json_object" },
       // 800 was sized for gpt-4o-mini's visible-only output; TERRA's hidden
       // reasoning tokens share this same budget, so leave real headroom.

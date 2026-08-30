@@ -7,6 +7,7 @@ import {
 } from "@/lib/server/apiUtils";
 import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 import { LUNA_TASK } from "@/lib/server/aiModels";
+import { buildAceSystemPrompt } from "@/lib/server/aceIntelligence";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -113,6 +114,13 @@ export async function POST(req: NextRequest) {
       model: LUNA_TASK.model,
       reasoning_effort: LUNA_TASK.reasoning_effort,
       messages: [
+        {
+          role: "developer",
+          content: buildAceSystemPrompt({
+            capability: "source_extraction",
+            knowledgeMode: "source_locked",
+          }),
+        },
         {
           role: "user",
           content: [

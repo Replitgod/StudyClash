@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { extractText, getDocumentProxy, renderPageAsImage } from "unpdf";
 import { LUNA_TASK } from "@/lib/server/aiModels";
+import { buildAceSystemPrompt } from "@/lib/server/aceIntelligence";
 import { detectPageStructure, type PageStructure } from "./structureDetection";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -29,6 +30,13 @@ async function ocrPageImage(pngBytes: Uint8Array): Promise<{ text: string; confi
     model: LUNA_TASK.model,
     reasoning_effort: LUNA_TASK.reasoning_effort,
     messages: [
+      {
+        role: "developer",
+        content: buildAceSystemPrompt({
+          capability: "source_extraction",
+          knowledgeMode: "source_locked",
+        }),
+      },
       {
         role: "user",
         content: [
@@ -173,6 +181,13 @@ export async function extractImagePage(fileBuffer: Buffer, mimeType: string): Pr
     model: LUNA_TASK.model,
     reasoning_effort: LUNA_TASK.reasoning_effort,
     messages: [
+      {
+        role: "developer",
+        content: buildAceSystemPrompt({
+          capability: "source_extraction",
+          knowledgeMode: "source_locked",
+        }),
+      },
       {
         role: "user",
         content: [

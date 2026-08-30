@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getServiceSupabaseClient, requireAuthenticatedUser } from "@/lib/server/apiUtils";
 import { TERRA_TASK } from "@/lib/server/aiModels";
+import { buildAceSystemPrompt } from "@/lib/server/aceIntelligence";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -162,7 +163,16 @@ Return ONLY valid JSON: {"summary": string, "whyStruggled": string, "downstreamC
       model: TERRA_TASK.model,
       reasoning_effort: TERRA_TASK.reasoning_effort,
       response_format: { type: "json_object" },
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        {
+          role: "developer",
+          content: buildAceSystemPrompt({
+            capability: "diagnose",
+            knowledgeMode: "source_locked",
+          }),
+        },
+        { role: "user", content: prompt },
+      ],
     });
     const raw = completion.choices[0]?.message?.content;
     if (!raw) throw new Error("empty response");

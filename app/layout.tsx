@@ -127,7 +127,7 @@ const organizationSchema = {
     {
       "@type": "ContactPoint",
       contactType: "customer support",
-      email: "acedecks14@gmail.com",
+      email: "acedecks15@gmail.com",
       areaServed: "Worldwide",
       availableLanguage: ["English"],
       url: `${siteUrl}/contact`,

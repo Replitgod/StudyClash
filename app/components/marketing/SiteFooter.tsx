@@ -7,7 +7,7 @@ import { Logo } from "@/app/components/brand/Logo";
 // duplicated across five files is an email that gets updated in four.
 
 /** The one support address. Defined here and imported everywhere else. */
-export const CONTACT_EMAIL = "acedecks14@gmail.com";
+export const CONTACT_EMAIL = "acedecks15@gmail.com";
 
 const LINK_GROUPS: Array<{
   title: string;

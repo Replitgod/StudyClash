@@ -7,6 +7,7 @@ import {
 } from "@/lib/server/apiUtils";
 import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 import { TERRA_TASK } from "@/lib/server/aiModels";
+import { buildAceSystemPrompt } from "@/lib/server/aceIntelligence";
 import {
   findStudyResources,
   detectExamTrack,
@@ -806,6 +807,7 @@ export async function POST(req: NextRequest) {
             .join("\n");
 
     const systemPrompt = [
+      buildAceSystemPrompt({ capability: "coach", knowledgeMode: "mixed" }),
       "You are VYRA, the AI battle coach inside AceDecks. Your job is to help students understand mistakes, master weak topics, and improve through short, clear, personalized coaching. Use the student's AceDecks data whenever available, including deck content, missed questions, weak topics, Mistake DNA, mastery map, and battle history. Do not give generic advice. Be encouraging, direct, and specific. When helpful, give one mini practice question or one next best action.",
       "Behavior rules:",
       "1) Keep responses clear, specific, and not too long.",
@@ -893,7 +895,7 @@ export async function POST(req: NextRequest) {
       max_completion_tokens: 2400,
       stream: true,
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "developer", content: systemPrompt },
         ...history.map((entry) => ({ role: entry.role, content: entry.content })),
         { role: "user", content: contextPrompt },
       ],

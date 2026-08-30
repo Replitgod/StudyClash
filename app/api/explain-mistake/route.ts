@@ -8,6 +8,7 @@ import {
 } from "@/lib/server/apiUtils";
 import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 import { TERRA_TASK } from "@/lib/server/aiModels";
+import { buildAceSystemPrompt } from "@/lib/server/aceIntelligence";
 import { validateFollowUp } from "@/lib/mistakeRecovery";
 import { buildCardCrack, RECOVERY_XP, type CardCrack } from "@/lib/cardCrack";
 import { evaluateRequest, resolveTier } from "@/lib/tiers";
@@ -134,7 +135,16 @@ Return ONLY valid JSON, no markdown:
     const completion = await openai.chat.completions.create({
       model: TERRA_TASK.model,
       reasoning_effort: TERRA_TASK.reasoning_effort,
-      messages: [{ role: "user", content: prompt }],
+      messages: [
+        {
+          role: "developer",
+          content: buildAceSystemPrompt({
+            capability: "card_crack",
+            knowledgeMode: "source_locked",
+          }),
+        },
+        { role: "user", content: prompt },
+      ],
       response_format: { type: "json_object" },
       max_completion_tokens: 2200,
     });

@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { LUNA_TASK, TERRA_TASK } from "@/lib/server/aiModels";
+import { buildAceSystemPrompt } from "@/lib/server/aceIntelligence";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
@@ -88,7 +89,16 @@ ${chunks.map((c) => `--- Excerpt (chunkId: ${c.id}) ---\n${c.content}`).join("\n
     model: LUNA_TASK.model,
     reasoning_effort: LUNA_TASK.reasoning_effort,
     response_format: { type: "json_object" },
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      {
+        role: "developer",
+        content: buildAceSystemPrompt({
+          capability: "source_synthesis",
+          knowledgeMode: "source_locked",
+        }),
+      },
+      { role: "user", content: prompt },
+    ],
   });
 
   const raw = completion.choices[0]?.message?.content;
@@ -151,7 +161,16 @@ Return ONLY valid JSON: {"title": string, "summary": string, "keyFacts": [], "de
     model: TERRA_TASK.model,
     reasoning_effort: TERRA_TASK.reasoning_effort,
     response_format: { type: "json_object" },
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      {
+        role: "developer",
+        content: buildAceSystemPrompt({
+          capability: "source_synthesis",
+          knowledgeMode: "source_locked",
+        }),
+      },
+      { role: "user", content: prompt },
+    ],
   });
 
   const raw = completion.choices[0]?.message?.content;

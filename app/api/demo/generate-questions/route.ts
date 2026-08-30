@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { TERRA_TASK, type ReasoningEffort } from "@/lib/server/aiModels";
 import { hasUnbalancedMathDelimiters } from "@/lib/server/mathValidation";
 import { shuffleAnswerChoices } from "@/lib/server/questionShuffle";
+import { buildAceSystemPrompt } from "@/lib/server/aceIntelligence";
 
 // A one-word explanation like "Correct." passes an empty-string check but
 // doesn't actually explain anything.
@@ -245,6 +246,13 @@ async function generateOnce(args: {
     model: TERRA_TASK.model,
     reasoning_effort: TERRA_TASK.reasoning_effort,
     messages: [
+      {
+        role: "developer",
+        content: buildAceSystemPrompt({
+          capability: "question",
+          knowledgeMode: "topic",
+        }),
+      },
       { role: "user", content: buildPrompt({ totalQuestions, mediumCount, hardCount, avoidQuestionTexts, subjectMix }) },
     ],
     response_format: { type: "json_object" },

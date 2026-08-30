@@ -6,6 +6,7 @@ import { FREE_PLAN_IDS, PRIORITY_PLAN_IDS } from "@/lib/plans";
 import { hasUnbalancedMathDelimiters } from "@/lib/server/mathValidation";
 import { shuffleAnswerChoices } from "@/lib/server/questionShuffle";
 import { TERRA_TASK, LUNA_TASK, type ReasoningEffort } from "@/lib/server/aiModels";
+import { buildAceSystemPrompt } from "@/lib/server/aceIntelligence";
 import { evaluateRequest } from "@/lib/tiers";
 
 // Reasoning-effort models spend part of max_completion_tokens on hidden
@@ -377,9 +378,11 @@ async function expandTopicIntoStudyMaterial(topic: string): Promise<string> {
     max_completion_tokens: 4000,
     messages: [
       {
-        role: "system",
-        content:
-          "You write concise, accurate study notes for students. Output plain prose with short paragraphs and clear topic sentences. No markdown, no headings with #, no bullet characters, no preamble, no meta-commentary. Only the study material itself.",
+        role: "developer",
+        content: `${buildAceSystemPrompt({
+          capability: "source_synthesis",
+          knowledgeMode: "topic",
+        })}\n\nOutput plain prose with short paragraphs and clear topic sentences. No markdown, headings, bullet characters, preamble, or meta-commentary. Only the model-generated study material itself.`,
       },
       {
         role: "user",
@@ -853,6 +856,13 @@ async function runGroundingCheck(
       reasoning_effort: GROUNDING_CHECK_TASK.reasoning_effort,
       messages: [
         {
+          role: "developer",
+          content: buildAceSystemPrompt({
+            capability: "verify_question",
+            knowledgeMode: "source_locked",
+          }),
+        },
+        {
           role: "user",
           content: `You are a strict fact-checker for a study app. Below are SOURCE NOTES and a list of quiz questions generated from them, each with its stated correct answer and explanation.
 
@@ -1094,6 +1104,13 @@ async function runGenerationCall(
     model: TERRA_TASK.model,
     reasoning_effort: effort,
     messages: [
+      {
+        role: "developer",
+        content: buildAceSystemPrompt({
+          capability: "question",
+          knowledgeMode: "source_locked",
+        }),
+      },
       {
         role: "user",
         content: buildPrompt({
@@ -1459,6 +1476,13 @@ async function generateAndValidateOpenResponse(
     model: TERRA_TASK.model,
     reasoning_effort: effort,
     messages: [
+      {
+        role: "developer",
+        content: buildAceSystemPrompt({
+          capability: "question",
+          knowledgeMode: "source_locked",
+        }),
+      },
       {
         role: "user",
         content: buildOpenResponsePrompt({ notes, ...genParams }),

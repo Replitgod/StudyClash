@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getServiceSupabaseClient, requireAdminUser } from "@/lib/server/apiUtils";
 import { TERRA_TASK } from "@/lib/server/aiModels";
+import { buildAceSystemPrompt } from "@/lib/server/aceIntelligence";
 import { hasUnbalancedMathDelimiters } from "@/lib/server/mathValidation";
 
 export const runtime = "nodejs";
@@ -171,7 +172,16 @@ Return strict JSON: {"stimulus": string|null, "questionText": string, "answerCho
   const completion = await openai.chat.completions.create({
     model: TERRA_TASK.model,
     reasoning_effort: TERRA_TASK.reasoning_effort,
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      {
+        role: "developer",
+        content: buildAceSystemPrompt({
+          capability: "question",
+          knowledgeMode: "topic",
+        }),
+      },
+      { role: "user", content: prompt },
+    ],
     response_format: { type: "json_object" },
     max_completion_tokens: 1200,
   });

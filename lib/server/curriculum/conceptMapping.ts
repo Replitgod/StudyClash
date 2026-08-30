@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { TERRA_TASK } from "@/lib/server/aiModels";
+import { buildAceSystemPrompt } from "@/lib/server/aceIntelligence";
 import type { SummaryContent } from "./summarization";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -61,7 +62,16 @@ Return ONLY valid JSON: {"chapterDescription": string, "chapterImportance": stri
     model: TERRA_TASK.model,
     reasoning_effort: TERRA_TASK.reasoning_effort,
     response_format: { type: "json_object" },
-    messages: [{ role: "user", content: prompt }],
+    messages: [
+      {
+        role: "developer",
+        content: buildAceSystemPrompt({
+          capability: "concept_map",
+          knowledgeMode: "source_locked",
+        }),
+      },
+      { role: "user", content: prompt },
+    ],
   });
 
   const raw = completion.choices[0]?.message?.content;
