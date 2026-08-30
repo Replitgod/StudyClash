@@ -9,16 +9,24 @@ import { Reveal } from "@/app/components/marketing/Reveal";
 import { MagneticButton } from "@/app/components/motion/MagneticButton";
 import { LogoMark } from "@/app/components/brand/Logo";
 import { HeroPanel } from "@/app/components/marketing/HeroPanel";
+import { ProductDemo } from "@/app/components/marketing/ProductDemo";
+import { FeatureGrid } from "@/app/components/marketing/FeatureGrid";
 import { FAQ_ITEMS } from "@/app/components/marketing/faq";
 
 // The landing page.
 //
-// Built to the restraint of Linear/Vercel rather than to a showreel: one
-// accent colour, one card treatment, one section rhythm, and depth that
-// comes from light rather than from borders. The two interactive pieces --
-// the decaying knowledge map and the arena card -- are the only places the
-// page raises its voice, because they are the only places it has something
-// to demonstrate rather than describe.
+// One accent colour, one card treatment, one section rhythm, and depth that
+// comes from light rather than from borders. The interactive pieces -- the
+// product demo, the decaying knowledge map and the arena card -- are the only
+// places the page raises its voice, because they are the only places it has
+// something to demonstrate rather than describe.
+//
+// The order is deliberate and answers, in sequence: what is this, show me,
+// what do I get, why is it different, and what happens when I get something
+// wrong. The headline used to open on "Stop deciding what to study." -- a good
+// line about the differentiator, but it never said what the product actually
+// IS, so a first-time visitor had to read three more paragraphs to find out.
+// The differentiator now lands in the subhead, where it belongs.
 //
 // Every heading is line-length clamped (`.headline-xl` / `.headline-lg` cap at
 // 18-22ch) so nothing stretches into a thin ribbon on a wide monitor, which
@@ -57,17 +65,21 @@ export function NeonLanding() {
           {/* The offer pill lives in the header now; repeating it here made
               the same seven words appear twice above the fold. */}
           <Reveal delay={80}>
-            <h1 className="headline-xl text-[clamp(2.75rem,7.4vw,5.25rem)]">
-              <span className="text-sheen">Stop deciding</span>
+            {/* Two lines, each short enough to hold one line in the hero
+                column at the display size -- a headline that wraps to three
+                lines pushes the product panel below the fold. */}
+            <h1 className="headline-xl text-[clamp(2.5rem,6.2vw,4.1rem)]">
+              <span className="text-sheen">Give it anything.</span>
               <br />
-              <span className="text-accent-sheen">what to study.</span>
+              <span className="text-accent-sheen">Learn everything.</span>
             </h1>
           </Reveal>
 
           <Reveal delay={150}>
             <p className="lede mt-7">
-              AceDecks reads your notes, finds the concepts you are quietly
-              losing, and drills them back before an exam finds them first.
+              Your notes, a PDF, a photo of the page, or just a topic.
+              AceDecks writes the study guide, the flashcards and the practice
+              questions — then decides what you study next, and tells you why.
             </p>
           </Reveal>
 
@@ -78,11 +90,14 @@ export function NeonLanding() {
                 className="btn btn-lg btn-accent"
                 ariaLabel="Start studying free"
               >
-                <span className="font-semibold">Start studying free</span>
+                <span className="font-semibold">Start studying</span>
               </MagneticButton>
-              <Link href="/login" className="btn btn-lg btn-ghost">
-                I have an account
-              </Link>
+              {/* Anchors to the demo rather than to another page: the fastest
+                  way to answer "what is this" is to show it, and the demo is
+                  the very next thing on the page. */}
+              <a href="#demo" className="btn btn-lg btn-ghost">
+                See how it works
+              </a>
             </div>
           </Reveal>
 
@@ -120,6 +135,76 @@ export function NeonLanding() {
 
         <hr className="hairline" />
       </header>
+
+      {/* ======================== PRODUCT DEMO ========================== */}
+      <section
+        id="demo"
+        aria-labelledby="demo-heading"
+        className="section relative overflow-hidden"
+      >
+        <div
+          className="halo left-1/2 top-[6%] h-[34rem] w-[34rem] -translate-x-1/2"
+          aria-hidden="true"
+          style={{ background: "rgb(124 106 240 / 0.11)" }}
+        />
+
+        <div className="shell relative">
+          <div className="mx-auto max-w-2xl text-center">
+            <Reveal>
+              <p className="eyebrow">One file in</p>
+              <h2
+                id="demo-heading"
+                className="headline-lg mx-auto mt-5 text-[clamp(2rem,4.6vw,3.25rem)]"
+              >
+                <span className="text-sheen">Four things out.</span>
+              </h2>
+            </Reveal>
+            <Reveal delay={90}>
+              <p className="lede mx-auto mt-6 text-center">
+                This is the real thing, not a picture of it. Click through what
+                AceDecks made from one chemistry handout.
+              </p>
+            </Reveal>
+          </div>
+
+          <Reveal delay={140}>
+            <div className="mx-auto mt-12 max-w-3xl">
+              <ProductDemo />
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <hr className="hairline" />
+
+      {/* ==================== EVERYTHING YOU NEED ====================== */}
+      <section aria-labelledby="everything" className="section relative">
+        <div className="shell relative">
+          <Reveal>
+            <p className="eyebrow">The whole thing</p>
+            <h2
+              id="everything"
+              className="headline-lg mt-5 text-[clamp(2rem,4.6vw,3.25rem)]"
+            >
+              <span className="text-sheen">Everything you need</span>
+              <br />
+              <span className="text-accent-sheen">to study.</span>
+            </h2>
+            <p className="lede mt-7">
+              Not six apps stitched together. One that knows what you have
+              read, what you have missed, and what you are about to forget.
+            </p>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <div className="mt-14">
+              <FeatureGrid />
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <hr className="hairline" />
 
       {/* ====================== LIVE KNOWLEDGE MAP ====================== */}
       <section aria-labelledby="map" className="section relative overflow-hidden">

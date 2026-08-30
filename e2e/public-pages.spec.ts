@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("public pages load without console errors", () => {
   const pages = [
-    { path: "/", heading: "Stop deciding what to study." },
+    { path: "/", heading: "Give it anything. Learn everything." },
     { path: "/login", heading: /Log in/i },
     { path: "/signup", heading: /Create your account/i },
     { path: "/pricing", heading: /Free to prove it/i },

@@ -14,7 +14,7 @@ import { test, expect } from "@playwright/test";
 // too, because "bounced to the landing page" and "correctly sent to /login"
 // look identical to a user and very different to the app.
 
-const LANDING_HEADING = "Stop deciding what to study.";
+const LANDING_HEADING = "Give it anything. Learn everything.";
 
 test.describe("routes resolve to their own page, not the homepage", () => {
   // Public routes that must render themselves.
