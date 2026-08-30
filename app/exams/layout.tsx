@@ -3,7 +3,7 @@
 export const metadata: Metadata = {
   title: "Exam Prep Study App | SAT, AP, MCAT, LSAT, NCLEX",
   description:
-    "Practice AP, MCAT, LSAT, and NCLEX battle drills with AI-guided remediation, timed pressure practice, and weak-topic recovery. SAT prep links straight to College Board's official practice tests.",
+    "Practice AP, MCAT, LSAT and NCLEX questions written in each exam's format, with timing to match and targeted review of whatever you keep getting wrong. SAT prep links straight to College Board's official practice tests.",
   alternates: {
     canonical: "/exams",
   },
@@ -16,17 +16,17 @@ export const metadata: Metadata = {
     "AP study app",
   ],
   openGraph: {
-    title: "Exam Prep Study Tunnels | AceDecks",
+    title: "Exam practice | AceDecks",
     description:
-      "High-stakes exam prep through battle-style practice and weak-topic loops.",
+      "Questions in your exam's format, and targeted review of what you keep missing.",
     url: "/exams",
     images: ["/opengraph-image"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "AceDecks Exams | SAT/AP/MCAT/LSAT/NCLEX Battle Prep",
+    title: "AceDecks Exams | SAT, AP, MCAT, LSAT, NCLEX",
     description:
-      "Train with exam-style AI battles and targeted remediation loops.",
+      "Exam-format practice questions, and review aimed at your weak topics.",
     images: ["/twitter-image"],
   },
 };

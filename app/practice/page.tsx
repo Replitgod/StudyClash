@@ -258,7 +258,9 @@ export default function PracticePage() {
             {
               href: "/study-plans/new",
               label: "Plan for a test date",
-              detail: "A day-by-day schedule",
+              // Says where a plan comes from, because it is built from a
+              // diagnostic and there is nothing to schedule without one.
+              detail: "A day-by-day schedule, built from a diagnostic",
             },
             {
               href: "/exams",

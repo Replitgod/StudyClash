@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   cardsAllowed,
   evaluateRequest,
+  includedInProLabel,
   PUBLIC_TIERS,
   resolveTier,
   TIERS,
@@ -150,5 +151,21 @@ describe("cardsAllowed", () => {
     for (const n of [0, -5, Number.NaN]) {
       expect(cardsAllowed("pro", n)).toBeGreaterThanOrEqual(1);
     }
+  });
+});
+
+describe("includedInProLabel", () => {
+  it("quotes the price the billing governor actually enforces", () => {
+    // Guards the failure this replaced: nine exam cards hardcoded "$3/mo"
+    // while TIERS.pro.amountCents was 999.
+    const label = includedInProLabel();
+    expect(label).toContain(TIERS.pro.price);
+    expect(label).toContain(TIERS.pro.label);
+    expect(label).not.toContain("$3");
+  });
+
+  it("stays consistent with the amount charged in cents", () => {
+    const dollars = Number(TIERS.pro.price.replace(/[^0-9.]/g, ""));
+    expect(Math.round(dollars * 100)).toBe(TIERS.pro.amountCents);
   });
 });

@@ -238,3 +238,17 @@ export function cardsAllowed(tierId: TierId | string | null | undefined, request
   if (tier.cardsPerConceptCap === null) return want;
   return Math.min(want, tier.cardsPerConceptCap);
 }
+
+/**
+ * "Included in Ace Pro ($9.99 per month)".
+ *
+ * Built from the tier rather than written out, for the same reason every price
+ * on /pricing reads from this module: the exam pages carried a hardcoded
+ * "Included in AceDecks Pro ($3/mo)" on nine cards long after Pro moved to
+ * $9.99, so the app was quoting a price it does not charge. A literal cannot
+ * be kept in step with Stripe; this can.
+ */
+export function includedInProLabel(): string {
+  const pro = TIERS.pro;
+  return `Included in ${pro.label} (${pro.price} ${pro.period})`;
+}

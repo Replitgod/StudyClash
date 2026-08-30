@@ -9,6 +9,7 @@ import { Reveal } from "@/app/components/marketing/Reveal";
 import { MagneticButton } from "@/app/components/motion/MagneticButton";
 import { LogoMark } from "@/app/components/brand/Logo";
 import { HeroPanel } from "@/app/components/marketing/HeroPanel";
+import { FAQ_ITEMS } from "@/app/components/marketing/faq";
 
 // The landing page.
 //
@@ -22,34 +23,6 @@ import { HeroPanel } from "@/app/components/marketing/HeroPanel";
 // Every heading is line-length clamped (`.headline-xl` / `.headline-lg` cap at
 // 18-22ch) so nothing stretches into a thin ribbon on a wide monitor, which
 // is the fastest way a landing page stops looking designed.
-
-// Exported so app/page.tsx can build the FAQPage structured data from the
-// SAME copy the page renders. They used to be two separate arrays, and they
-// had drifted: the visible FAQ described the tiers correctly while the JSON-LD
-// Google indexes still said "free and unlimited -- no daily caps, no locked
-// modes", which stopped being true when tiers landed.
-export const FAQ_ITEMS = [
-  {
-    q: "What does it cost?",
-    a: "Free covers 3 knowledge maps a month with 5 cards per concept — enough to prove it on your own material, no card required. Ace Pro is $9.99 a month and removes every cap, adds handwriting and large-PDF ingestion, custom themes, and the full Card Crack breakdown.",
-  },
-  {
-    q: "Do I need to have notes?",
-    a: "No. Type what you are studying — a topic like “photosynthesis” or “AP World Unit 3” — and AceDecks writes the material for you.",
-  },
-  {
-    q: "What can I upload?",
-    a: "PDFs, photos of a textbook or your own handwriting, and plain text. You can also import a Quizlet set, an Anki deck, or a Google Doc.",
-  },
-  {
-    q: "How does it know what I am bad at?",
-    a: "Every answer feeds a mastery model weighing how recently you answered, how hard the question was, how long you took, and how much has decayed since. Miss something and it returns sooner; prove it and it returns much later.",
-  },
-  {
-    q: "How is it different from Quizlet?",
-    a: "Quizlet holds your flashcards. AceDecks decides what you practise next, and tells you why. You never build a study plan or pick a mode.",
-  },
-];
 
 export function NeonLanding() {
   const track = useCallback((event: React.PointerEvent<HTMLElement>) => {

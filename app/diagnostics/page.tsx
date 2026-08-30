@@ -1,11 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
 import { useLoadingTimeout } from "@/lib/useLoadingTimeout";
-import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { ArrowRightIcon } from "@/app/components/app/Icons";
+
+// The diagnostic centre.
+//
+// Rebuilt on the app's design system. It used to paint its own full-bleed
+// background (#05050a), its own indigo blur halos and its own type scale,
+// which meant a student clicking through from Practice landed on a screen
+// that looked like a different product -- and the halos sat underneath the
+// app sidebar rather than beside it.
+//
+// It now sits in `.app-page` like every other app screen: same canvas, same
+// heading scale, same card. The page has one job -- pick an exam -- so the
+// available ones lead and everything else is subordinate.
 
 type ExamCard = {
   id: string;
@@ -16,39 +28,51 @@ type ExamCard = {
   disclaimer: string;
 };
 
-function RecoveryPanel({ message, onRetry }: { message: string; onRetry: () => void }) {
+/** Shown when the list cannot be loaded, or is taking too long. */
+function RecoveryPanel({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   return (
-    <div className="mx-auto mt-10 flex max-w-md flex-col items-center rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-8 text-center backdrop-blur-sm">
-      <p className="text-sm font-semibold text-white/80">{message}</p>
-      <div className="mt-4 flex items-center gap-2.5">
-        <button
-          onClick={onRetry}
-          className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-bold text-white transition-colors duration-150 hover:bg-indigo-500"
-        >
-          Retry
+    <div className="card mt-8 px-6 py-12 text-center">
+      <p className="text-[17px] font-medium" style={{ color: "var(--text-1)" }}>
+        {message}
+      </p>
+      <p className="t-body mx-auto mt-2 max-w-sm">
+        This is usually a connection blip rather than anything you did.
+      </p>
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
+        <button type="button" onClick={onRetry} className="btn btn-primary">
+          Try again
         </button>
-        <Link
-          href="/"
-          className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-bold text-white/80 transition-colors duration-150 hover:bg-white/10"
-        >
-          Return Home
+        {/* Back to the dashboard, not to the marketing landing page: anyone
+            on this screen already has an account. */}
+        <Link href="/practice" className="btn btn-secondary">
+          Back to Practice
         </Link>
       </div>
     </div>
   );
 }
 
-function Background({ children }: { children: React.ReactNode }) {
+function Skeletons() {
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[540px] w-[540px] -translate-x-1/2 rounded-full bg-indigo-500/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[420px] w-[420px] rounded-full bg-indigo-600/20 blur-[120px]" />
+    <>
+      <div className="skeleton mt-8 h-4 w-28" />
+      <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <div className="skeleton h-[132px]" />
+        <div className="skeleton h-[132px]" />
       </div>
-      <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-4 pt-14 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
-        {children}
+      <div className="skeleton mt-10 h-4 w-24" />
+      <div className="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+        <div className="skeleton h-[76px]" />
+        <div className="skeleton h-[76px]" />
+        <div className="skeleton h-[76px]" />
       </div>
-    </main>
+    </>
   );
 }
 
@@ -58,7 +82,7 @@ export default function DiagnosticsLandingPage() {
   const [loadError, setLoadError] = useState(false);
   const loadTimedOut = useLoadingTimeout(isLoading);
 
-  const fetchExams = () => {
+  const fetchExams = useCallback(() => {
     setIsLoading(true);
     setLoadError(false);
 
@@ -78,98 +102,137 @@ export default function DiagnosticsLandingPage() {
           setIsLoading(false);
         },
         (err: unknown) => {
-          console.error("Failed to load diagnostics:", err instanceof Error ? err.message : err);
+          console.error(
+            "Failed to load diagnostics:",
+            err instanceof Error ? err.message : err
+          );
           setLoadError(true);
           setIsLoading(false);
         }
       );
-  };
+  }, []);
 
   useEffect(() => {
     void trackEvent("page_view", { page: "diagnostics_landing" });
     fetchExams();
-  }, []);
+  }, [fetchExams]);
 
   const available = exams.filter((e) => e.status === "available");
   const comingSoon = exams.filter((e) => e.status === "coming_soon");
 
   return (
-    <Background>
-      <div className="flex items-center justify-between">
-        <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-4 py-1.5 text-xs font-semibold tracking-[0.22em] text-indigo-200">
-          DIAGNOSTIC CENTER
-        </div>
-        <Link href="/diagnostics/history" className="text-xs font-semibold text-white/50 hover:text-white/80">
-          History &rarr;
+    <div className="app-page">
+      <div className="flex flex-wrap items-baseline justify-between gap-3">
+        <h1 className="t-page">Diagnostics</h1>
+        <Link
+          href="/diagnostics/history"
+          className="text-[13px] font-medium"
+          style={{ color: "var(--text-3)" }}
+        >
+          Past results
         </Link>
       </div>
-
-      <h1 className="mx-auto max-w-3xl text-center text-3xl font-black tracking-tight sm:text-5xl">
-        <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
-          Real diagnostics for the exams that actually matter.
-        </span>
-      </h1>
-
-      <p className="mx-auto mt-4 max-w-2xl text-center text-sm text-white/60 sm:text-base">
-        Take a timed, adaptive diagnostic built from an original question bank, get a skill-by-skill
-        breakdown, and turn it into a study plan that runs all the way to test day.
+      <p className="t-body mt-2 max-w-2xl">
+        A timed, adaptive test that finds every gap, then turns the result into a
+        study plan that runs to test day.
       </p>
 
       {loadError ? (
-        <RecoveryPanel message="Something went wrong loading diagnostics." onRetry={fetchExams} />
+        <RecoveryPanel
+          message="We could not load your diagnostics."
+          onRetry={fetchExams}
+        />
       ) : isLoading ? (
         loadTimedOut ? (
-          <RecoveryPanel message="This is taking longer than expected." onRetry={fetchExams} />
+          <RecoveryPanel
+            message="This is taking longer than it should."
+            onRetry={fetchExams}
+          />
         ) : (
-          <p className="mt-10 text-center text-sm text-white/50">Loading diagnostics...</p>
+          <Skeletons />
         )
       ) : (
         <>
-          <h2 className="mt-10 text-xs font-bold uppercase tracking-[0.25em] text-green-300">Available now</h2>
-          <div className="mt-3 grid gap-4 md:grid-cols-2">
-            {available.length === 0 && (
-              <p className="text-sm text-white/50">No diagnostics are published yet.</p>
-            )}
-            {available.map((exam) => (
-              <Link
-                key={exam.id}
-                href={`/diagnostics/${exam.slug}`}
-                className="rounded-2xl border border-green-400/25 bg-green-500/[0.06] p-5 backdrop-blur-sm transition-colors hover:border-green-300/40"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-lg font-bold text-white">{exam.name}</p>
-                  <span className="rounded-full border border-green-300/40 bg-green-400/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-green-200">
-                    Available
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-white/50">{exam.provider}</p>
-                <p className="mt-3 text-sm text-white/70">
-                  Quick or full-length diagnostic, adaptive modules, and a AceDecks score estimate.
+          <section className="mt-8">
+            <h2 className="t-section">Ready to take</h2>
+            {available.length === 0 ? (
+              // An empty state that says what to do instead, rather than
+              // reporting a zero and stopping.
+              <div className="card mt-3 px-6 py-10 text-center">
+                <p
+                  className="text-[16px] font-medium"
+                  style={{ color: "var(--text-1)" }}
+                >
+                  No diagnostics are published yet
                 </p>
-              </Link>
-            ))}
-          </div>
-
-          <h2 className="mt-10 text-xs font-bold uppercase tracking-[0.25em] text-white/40">Coming soon</h2>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-            {comingSoon.map((exam) => (
-              <div
-                key={exam.id}
-                className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center backdrop-blur-sm opacity-70"
-              >
-                <p className="text-sm font-bold text-white">{exam.name}</p>
-                <p className="mt-1 text-[11px] text-white/40">{exam.provider}</p>
+                <p className="t-body mx-auto mt-2 max-w-sm">
+                  In the meantime, AceDecks can build practice from your own
+                  material and find your weak topics that way.
+                </p>
+                <Link href="/home" className="btn btn-primary mt-6">
+                  Add material
+                </Link>
               </div>
-            ))}
-          </div>
+            ) : (
+              <div className="mt-3 grid gap-3 md:grid-cols-2">
+                {available.map((exam) => (
+                  <Link
+                    key={exam.id}
+                    href={`/diagnostics/${exam.slug}`}
+                    className="card-link group p-5"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="truncate text-[17px] font-medium"
+                          style={{ color: "var(--text-1)" }}
+                        >
+                          {exam.name}
+                        </p>
+                        <p className="t-meta mt-0.5 truncate">{exam.provider}</p>
+                      </div>
+                      <ArrowRightIcon className="mt-1 h-[18px] w-[18px] shrink-0 opacity-50" />
+                    </div>
+                    <p className="t-body mt-3">
+                      Quick or full-length, adaptive modules, and a score
+                      estimate.
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
 
-          {exams[0] && (
-            <p className="mt-10 max-w-2xl text-center text-[11px] leading-relaxed text-white/35 mx-auto">
-              {exams[0].disclaimer}
-            </p>
+          {comingSoon.length > 0 && (
+            <section className="mt-10">
+              <h2 className="t-section">Not ready yet</h2>
+              <ul className="mt-3 grid gap-2 sm:grid-cols-2 md:grid-cols-3">
+                {comingSoon.map((exam) => (
+                  <li
+                    key={exam.id}
+                    className="card px-4 py-3"
+                    // Not a link, and styled so it does not look like one:
+                    // a card a student can click that goes nowhere is worse
+                    // than a card that reads as unavailable.
+                  >
+                    <p
+                      className="truncate text-[14px] font-medium"
+                      style={{ color: "var(--text-2)" }}
+                    >
+                      {exam.name}
+                    </p>
+                    <p className="t-meta truncate">{exam.provider}</p>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {exams[0]?.disclaimer && (
+            <p className="t-meta mt-10 max-w-2xl">{exams[0].disclaimer}</p>
           )}
         </>
       )}
-    </Background>
+    </div>
   );
 }

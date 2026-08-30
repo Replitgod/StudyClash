@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageViewTracker } from "./components/PageViewTracker";
-import { FAQ_ITEMS, NeonLanding } from "./components/marketing/NeonLanding";
+import { NeonLanding } from "./components/marketing/NeonLanding";
+import { FAQ_ITEMS } from "./components/marketing/faq";
 import { SiteFooter } from "./components/marketing/SiteFooter";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acedecks.org";

@@ -1,39 +1,52 @@
-﻿import Link from "next/link";
-import { FLOATING_ACTION } from "@/lib/uiLayout";
+import Link from "next/link";
+import { includedInProLabel, TIERS } from "@/lib/tiers";
+import { ArrowRightIcon } from "@/app/components/app/Icons";
 
-const TRACK_DETAILS: Record<
-  string,
-  {
-    title: string;
-    monthly: string;
-    cue: string;
-    depth: string;
-  }
-> = {
+// One exam track.
+//
+// Rebuilt on the app's design system alongside /exams. Three things changed
+// besides the styling:
+//
+// - The price is read from lib/tiers.ts. Every one of these cards hardcoded
+//   "($3/mo)" long after Pro moved to $9.99.
+// - "Tunnel" is gone. Practice calls this "Exam practice" and so does /exams;
+//   a third name for the same thing is just something else to learn.
+// - "VYRA" is written "Vyra", which is what the coach is called everywhere
+//   else in the product.
+
+type TrackDetail = {
+  title: string;
+  cue: string;
+  depth: string;
+};
+
+const TRACK_DETAILS: Record<string, TrackDetail> = {
   mcat: {
-    title: "MCAT Tunnel",
-    monthly: "Included in AceDecks Pro ($3/mo)",
-    cue: "Passage-first scientific reasoning under timed pressure.",
-    depth: "VYRA focuses on weak biochemical and conceptual chains over time.",
+    title: "MCAT",
+    cue: "Passage-first scientific reasoning, under timed pressure.",
+    depth: "Vyra follows the biochemical chains you keep losing, over time.",
   },
   lsat: {
-    title: "LSAT Tunnel",
-    monthly: "Included in AceDecks Pro ($3/mo)",
-    cue: "Logical flaw detection and argument structure speed loops.",
-    depth: "VYRA targets recurring reasoning traps and pacing mistakes.",
+    title: "LSAT",
+    cue: "Logical flaw detection and argument structure, at speed.",
+    depth: "Vyra targets the reasoning traps and pacing mistakes you repeat.",
   },
   nclex: {
-    title: "NCLEX Tunnel",
-    monthly: "Included in AceDecks Pro ($3/mo)",
-    cue: "Clinical priority and safety judgment battle sequences.",
-    depth: "VYRA highlights decision pathways and risk-based rematches.",
+    title: "NCLEX",
+    cue: "Clinical priority and safety judgment.",
+    depth: "Vyra highlights the decision pathways you get wrong, and retests them.",
   },
   ap: {
-    title: "AP Exams Tunnel",
-    monthly: "Included in AceDecks Pro ($3/mo)",
-    cue: "AP-style stem structures with classroom pacing and depth control.",
-    depth: "VYRA converts weak standards into targeted rematch sets.",
+    title: "AP Exams",
+    cue: "AP-style question stems, at classroom pacing and depth.",
+    depth: "Vyra turns the standards you are weak on into targeted practice sets.",
   },
+};
+
+const FALLBACK: TrackDetail = {
+  title: "Exam practice",
+  cue: "Practice questions tuned to your exam's format.",
+  depth: "Vyra keeps bringing back whatever you keep getting wrong.",
 };
 
 export default async function ExamTrackPage({
@@ -42,69 +55,74 @@ export default async function ExamTrackPage({
   params: Promise<{ track: string }>;
 }) {
   const { track } = await params;
-  const detail = TRACK_DETAILS[track] || {
-    title: "AceDecks Pro",
-    monthly: "Included in AceDecks Pro ($3/mo)",
-    cue: "AI-generated practice tuned to your exam's format.",
-    depth: "VYRA keeps your weak-topic recovery loop active over time.",
-  };
-  const isUnreviewedTrack = track === "mcat" || track === "lsat" || track === "nclex";
+  const detail = TRACK_DETAILS[track] || FALLBACK;
+  const isUnreviewed = track === "mcat" || track === "lsat" || track === "nclex";
 
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-indigo-600/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[420px] w-[420px] rounded-full bg-indigo-500/20 blur-[120px]" />
+    <div className="app-page">
+      <Link
+        href="/exams"
+        className="inline-flex w-fit items-center gap-1.5 text-[13px] font-medium"
+        style={{ color: "var(--text-3)" }}
+      >
+        <span aria-hidden="true">←</span> All exams
+      </Link>
+
+      <h1 className="t-page mt-4">{detail.title}</h1>
+      <p className="t-body mt-2 max-w-2xl">{detail.cue}</p>
+      <p className="t-body mt-1 max-w-2xl">{detail.depth}</p>
+
+      <div
+        className="card mt-6 max-w-2xl px-4 py-3"
+        style={{
+          borderColor: "rgb(255 176 32 / 0.28)",
+          background: "var(--warn-soft)",
+        }}
+      >
+        <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+          <span className="font-medium" style={{ color: "var(--warn)" }}>
+            In beta.
+          </span>{" "}
+          These questions are AI-generated. They are not official, and they have
+          not been professionally validated.
+          {isUnreviewed &&
+            " Nobody with credentials in this field has checked them yet."}
+        </p>
       </div>
 
-      <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-4xl flex-col px-4 pt-14 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
-        <Link href="/exams" className="w-fit text-sm font-semibold text-indigo-300">
-          &larr; Back to exam tunnels
-        </Link>
-
-        <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-5xl">
-          <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
-            {detail.title}
-          </span>
-        </h1>
-
-        <p className="mt-4 max-w-2xl text-sm leading-relaxed text-white/70 sm:text-base">
-          {detail.cue}
-        </p>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/60 sm:text-base">
-          {detail.depth}
-        </p>
-
-        <div className="mt-6 max-w-2xl rounded-xl border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm font-semibold text-amber-200">
-          Experimental exam practice — currently in beta. Generated questions are not official or professionally validated.
-          {isUnreviewedTrack && " This track has not yet been reviewed by anyone with subject-matter credentials in this field."}
-        </div>
-
-        <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-5 sm:p-6">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-300">
-            Recommended Tier
+      <section className="mt-8">
+        <div
+          className="card p-5 sm:p-6"
+          style={{ borderColor: "var(--brand-line)", background: "var(--brand-soft)" }}
+        >
+          <h2 className="t-section">What it costs</h2>
+          <p
+            className="mt-2 text-[22px] font-medium tracking-tight"
+            style={{ color: "var(--text-1)" }}
+          >
+            {includedInProLabel()}
           </p>
-          <p className="mt-2 text-3xl font-black text-white">{detail.monthly}</p>
-          <p className="mt-2 text-sm text-white/60">
-            Includes higher daily generation limits and access to this exam track.
+          {/* Stated from the tier's own feature list rather than the old
+              "higher daily generation limits", which described caps Pro does
+              not have. */}
+          <p className="t-body mt-2">
+            {TIERS.pro.tagline} Cancel any time from Settings.
           </p>
 
           <div className="mt-5 flex flex-col gap-2 sm:flex-row">
             <Link
               href={`/home?track=${encodeURIComponent(track)}`}
-              className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-500 px-4 py-3 text-center text-sm font-bold text-white"
+              className="btn btn-primary btn-lg"
             >
-              Start {track.toUpperCase()} Drill
+              Start practising
+              <ArrowRightIcon className="h-[18px] w-[18px]" />
             </Link>
-            <Link
-              href="/pricing"
-              className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-bold text-white/85"
-            >
-              View Pricing
+            <Link href="/pricing" className="btn btn-secondary btn-lg">
+              See all plans
             </Link>
           </div>
         </div>
-      </div>
-    </main>
+      </section>
+    </div>
   );
 }

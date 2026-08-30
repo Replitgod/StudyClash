@@ -1,30 +1,49 @@
-﻿import { FLOATING_ACTION } from "@/lib/uiLayout";
-import { Button } from "@/app/components/ui/Button";
-import { HoverLiftArticle } from "@/app/components/ui/HoverLift";
-import { Reveal } from "@/app/components/ui/Reveal";
+import Link from "next/link";
+import { includedInProLabel } from "@/lib/tiers";
+import { ArrowRightIcon } from "@/app/components/app/Icons";
 
-// AP is the one track aimed at this app's actual audience (high schoolers)
-// and carries lower real-world stakes than a licensing/admissions exam, so
-// it's shown as the primary track. MCAT/LSAT/NCLEX questions are AI-generated
-// and have NOT been reviewed by anyone with subject-matter credentials in
-// those fields -- getting one of those wrong is a materially bigger deal
-// than an AP question, so they're deliberately shown secondary and labeled
-// as unreviewed rather than presented as equally validated.
-const PRIMARY_EXAM_TRACK = {
+// Exam practice.
+//
+// Rebuilt on the app's design system: it used to paint its own #05050a
+// canvas with indigo/green/amber blur halos and its own type scale, so a
+// student arriving from Practice landed somewhere that looked like a
+// different product.
+//
+// Two editorial decisions are load-bearing here and are kept exactly as they
+// were:
+//
+// 1. AP leads. It is the track aimed at this app's actual audience and it
+//    carries lower real-world stakes than a licensing or admissions exam.
+// 2. MCAT / LSAT / NCLEX are shown second and labelled unreviewed, because
+//    their questions are AI-generated and have NOT been checked by anyone
+//    with subject-matter credentials in medicine, law, or nursing. Getting
+//    one of those wrong matters more than an AP question does.
+//
+// The price comes from lib/tiers.ts. These cards previously hardcoded
+// "($3/mo)" on every one of them, which had not been the price for some time.
+
+type Track = {
+  slug: string;
+  name: string;
+  promise: string;
+  officialLabel: string;
+  officialUrl: string;
+};
+
+const PRIMARY_TRACK: Track = {
   slug: "ap",
   name: "AP Exams",
-  monthly: "Included in AceDecks Pro ($3/mo)",
-  promise: "AI-generated practice questions styled after AP exam formats and scoring bands.",
-  officialLabel: "Free-response questions from past AP exams",
+  promise:
+    "Practice questions written in the AP format, marked against AP scoring bands.",
+  officialLabel: "Past free-response questions, from College Board",
   officialUrl: "https://apcentral.collegeboard.org/courses/past-exam-questions",
 };
 
-const UNREVIEWED_EXAM_TRACKS = [
+const UNREVIEWED_TRACKS: Track[] = [
   {
     slug: "mcat",
     name: "MCAT",
-    monthly: "Included in AceDecks Pro ($3/mo)",
-    promise: "AI-generated multi-step reasoning questions with passage-heavy science prompts.",
+    promise: "Passage-heavy science prompts with multi-step reasoning.",
     officialLabel: "AAMC free practice exam",
     officialUrl:
       "https://students-residents.aamc.org/prepare-mcat-exam/practice-mcat-exam-official-low-cost-products",
@@ -32,176 +51,171 @@ const UNREVIEWED_EXAM_TRACKS = [
   {
     slug: "lsat",
     name: "LSAT",
-    monthly: "Included in AceDecks Pro ($3/mo)",
-    promise: "AI-generated argument structure, logical flaws, and timed pressure drills.",
+    promise: "Argument structure, logical flaws, and timed pressure drills.",
     officialLabel: "LSAC free PrepTests (LawHub)",
     officialUrl: "https://www.lsac.org/lsat/prepare/official-lsat-practice-tests",
   },
   {
     slug: "nclex",
     name: "NCLEX",
-    monthly: "Included in AceDecks Pro ($3/mo)",
-    promise: "AI-generated clinical judgment drills with safety-first prioritization patterns.",
+    promise: "Clinical judgment drills with safety-first prioritisation.",
     officialLabel: "Official NCLEX prep resources",
     officialUrl: "https://www.nclex.com/prepare.page",
   },
 ];
 
-// SAT has no generated drill track (College Board's own released practice
-// tests are already the best-in-class prep material for it) -- this card
-// only ever points to College Board's official free practice, never to a
-// AceDecks-generated substitute.
-const SAT_OFFICIAL_PRACTICE = {
-  label: "Full-length official SAT practice tests",
+// No generated SAT track: College Board's own released tests are already the
+// best prep for it, so this points there instead of offering a substitute.
+const SAT_OFFICIAL = {
+  label: "Official full-length SAT practice tests",
   url: "https://satsuite.collegeboard.org/practice",
 };
 
+/** Links out to the exam board's own free material. Never a copy of it. */
+function OfficialLink({ label, url }: { label: string; url: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-4 inline-flex items-center gap-1.5 text-[13px] underline underline-offset-2"
+      style={{ color: "var(--text-3)" }}
+    >
+      {label}
+      <span aria-hidden="true">↗</span>
+      <span className="sr-only">(opens in a new tab)</span>
+    </a>
+  );
+}
+
 export default function ExamsLandingPage() {
   return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[540px] w-[540px] -translate-x-1/2 rounded-full bg-indigo-500/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[420px] w-[420px] rounded-full bg-indigo-600/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[460px] w-[460px] rounded-full bg-green-500/20 blur-[130px]" />
-      </div>
+    <div className="app-page">
+      <h1 className="t-page">Exam practice</h1>
+      <p className="t-body mt-2 max-w-2xl">
+        Questions written in your exam&rsquo;s format, with the timing and the
+        marking to match.
+      </p>
 
-      <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-6xl flex-col px-4 pt-14 sm:px-6 sm:pt-20 ${FLOATING_ACTION.mobileBottomPadding}`}>
-        <div className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-4 py-1.5 text-xs font-semibold tracking-[0.22em] text-indigo-200">
-          EXAM TUNNELS
-        </div>
-
-        <h1 className="mx-auto max-w-4xl text-center text-3xl font-black tracking-tight sm:text-5xl md:text-6xl">
-          <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
-            AI-generated practice, tuned to your exam&rsquo;s format.
-          </span>
-        </h1>
-
-        <p className="mx-auto mt-4 max-w-2xl text-center text-sm text-white/60 sm:text-base">
-          Pick an exam tunnel and get question formats tuned for the real test style,
-          timing pressure, and remediation loops through VYRA AI Coach.
+      {/* Stated once, up front, rather than repeated on every card. */}
+      <div
+        className="card mt-6 px-4 py-3"
+        style={{
+          borderColor: "rgb(255 176 32 / 0.28)",
+          background: "var(--warn-soft)",
+        }}
+      >
+        <p className="text-[13px] leading-relaxed" style={{ color: "var(--text-2)" }}>
+          <span className="font-medium" style={{ color: "var(--warn)" }}>
+            In beta.
+          </span>{" "}
+          These questions are AI-generated. They are not official, and they have
+          not been professionally validated.
         </p>
-
-        <div className="mx-auto mt-6 max-w-2xl rounded-xl border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-center text-xs font-semibold text-amber-200 sm:text-sm">
-          Experimental exam practice — currently in beta. Generated questions are not official or professionally validated.
-        </div>
-
-        {/* AP is the primary, prominently-marketed track -- see the comment
-            on PRIMARY_EXAM_TRACK above for why. */}
-        <div className="mt-10">
-          <HoverLiftArticle className="mx-auto max-w-2xl rounded-2xl border border-indigo-400/25 bg-gradient-to-b from-indigo-500/10 to-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-300">
-                  {PRIMARY_EXAM_TRACK.name}
-                </p>
-                <h2 className="mt-1 text-2xl font-black text-white">{PRIMARY_EXAM_TRACK.monthly}</h2>
-              </div>
-              <span className="rounded-full border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-200">
-                Pro Tunnel
-              </span>
-            </div>
-
-            <p className="mt-3 text-sm leading-relaxed text-white/70">{PRIMARY_EXAM_TRACK.promise}</p>
-
-            <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-              <Button href={`/home?track=${PRIMARY_EXAM_TRACK.slug}`} variant="primary" className="flex-1">
-                Start {PRIMARY_EXAM_TRACK.name} Drill
-              </Button>
-              <Button href="/pricing" variant="ghost" className="flex-1">
-                Compare Plans
-              </Button>
-            </div>
-
-            <a
-              href={PRIMARY_EXAM_TRACK.officialUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-white/50 underline underline-offset-2 hover:text-white/80"
-            >
-              {PRIMARY_EXAM_TRACK.officialLabel} ↗
-            </a>
-          </HoverLiftArticle>
-        </div>
-
-        {/* MCAT/LSAT/NCLEX are shown secondary and clearly labeled unreviewed
-            -- these are licensing/admissions exams where a wrong AI-generated
-            question is a materially bigger deal than for AP, and none of
-            these question sets have been checked by anyone with actual
-            subject-matter credentials in medicine, law, or nursing. */}
-        <div className="mt-12">
-          <p className="text-center text-xs font-bold uppercase tracking-[0.22em] text-white/40">
-            Also available — not yet reviewed by subject-matter experts
-          </p>
-          <div className="mt-4 grid gap-4 md:grid-cols-3">
-            {UNREVIEWED_EXAM_TRACKS.map((track) => (
-              <HoverLiftArticle
-                key={track.slug}
-                className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 opacity-80 backdrop-blur-sm"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/50">
-                      {track.name}
-                    </p>
-                    <h2 className="mt-1 text-lg font-black text-white/80">{track.monthly}</h2>
-                  </div>
-                  <span className="rounded-full border border-amber-400/25 bg-amber-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-200">
-                    Unreviewed
-                  </span>
-                </div>
-
-                <p className="mt-3 text-sm leading-relaxed text-white/60">{track.promise}</p>
-
-                <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-                  <Button href={`/home?track=${track.slug}`} variant="ghost" className="flex-1">
-                    Start {track.name} Drill
-                  </Button>
-                </div>
-
-                {/* Real retired/official exams are copyrighted by their issuing
-                    org (AAMC, LSAC, NCSBN, College Board) -- AceDecks never
-                    hosts or reproduces them. This links straight to each org's
-                    own free official practice instead. */}
-                <a
-                  href={track.officialUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-white/50 underline underline-offset-2 hover:text-white/80"
-                >
-                  {track.officialLabel} ↗
-                </a>
-              </HoverLiftArticle>
-            ))}
-          </div>
-        </div>
-
-        <Reveal className="mt-10 rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-300">SAT</p>
-              <p className="mt-1 text-sm text-white/70">
-                We don&rsquo;t generate SAT drills -- College Board&rsquo;s own free, official
-                practice tests are the most accurate prep available, so we send you straight there.
-              </p>
-            </div>
-            <a
-              href={SAT_OFFICIAL_PRACTICE.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-bold text-white/85 hover:bg-white/10"
-            >
-              {SAT_OFFICIAL_PRACTICE.label} ↗
-            </a>
-          </div>
-        </Reveal>
-
-        <Reveal className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-center sm:p-6" delay={0.08}>
-          <p className="text-sm text-white/70">
-            Main AceDecks flow still applies: create or try a deck, battle, review weak topics,
-            rematch, improve. Exam tunnels add stricter format and higher coaching depth.
-          </p>
-        </Reveal>
       </div>
-    </main>
+
+      {/* ---- AP: the primary track ---- */}
+      <section className="mt-8">
+        <h2 className="t-section">Start here</h2>
+        <div
+          className="card mt-3 p-5 sm:p-6"
+          style={{ borderColor: "var(--brand-line)", background: "var(--brand-soft)" }}
+        >
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p
+                className="text-[19px] font-medium"
+                style={{ color: "var(--text-1)" }}
+              >
+                {PRIMARY_TRACK.name}
+              </p>
+              <p className="t-meta mt-1">{includedInProLabel()}</p>
+            </div>
+            <span className="chip chip-brand shrink-0">Pro</span>
+          </div>
+
+          <p className="t-body mt-3">{PRIMARY_TRACK.promise}</p>
+
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+            <Link
+              href={`/home?track=${PRIMARY_TRACK.slug}`}
+              className="btn btn-primary btn-lg"
+            >
+              Practice AP questions
+              <ArrowRightIcon className="h-[18px] w-[18px]" />
+            </Link>
+            <Link href="/pricing" className="btn btn-secondary btn-lg">
+              See what Pro costs
+            </Link>
+          </div>
+
+          <OfficialLink
+            label={PRIMARY_TRACK.officialLabel}
+            url={PRIMARY_TRACK.officialUrl}
+          />
+        </div>
+      </section>
+
+      {/* ---- The higher-stakes tracks, deliberately subordinate ---- */}
+      <section className="mt-10">
+        <h2 className="t-section">Also available</h2>
+        <p className="t-meta mt-1">
+          Nobody with credentials in these fields has checked these questions
+          yet. Use them alongside the official material, not instead of it.
+        </p>
+        <div className="mt-3 grid gap-3 md:grid-cols-3">
+          {UNREVIEWED_TRACKS.map((track) => (
+            <article key={track.slug} className="card flex flex-col p-5">
+              <div className="flex items-start justify-between gap-3">
+                <p
+                  className="text-[16px] font-medium"
+                  style={{ color: "var(--text-1)" }}
+                >
+                  {track.name}
+                </p>
+                <span className="chip chip-warn shrink-0">Unreviewed</span>
+              </div>
+              <p className="t-body mt-2">{track.promise}</p>
+              <p className="t-meta mt-2">{includedInProLabel()}</p>
+
+              <div className="mt-auto pt-5">
+                <Link
+                  href={`/home?track=${track.slug}`}
+                  className="btn btn-secondary w-full"
+                >
+                  Practice {track.name}
+                </Link>
+                <OfficialLink
+                  label={track.officialLabel}
+                  url={track.officialUrl}
+                />
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* ---- SAT: honest about not having a track ---- */}
+      <section className="mt-10">
+        <h2 className="t-section">SAT</h2>
+        <div className="card mt-3 flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+          <p className="t-body min-w-0 flex-1">
+            We don&rsquo;t write SAT questions. College Board&rsquo;s own free
+            practice tests are the most accurate prep there is, so we send you
+            straight there.
+          </p>
+          <a
+            href={SAT_OFFICIAL.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-secondary shrink-0"
+          >
+            {SAT_OFFICIAL.label}
+            <span aria-hidden="true">↗</span>
+            <span className="sr-only">(opens in a new tab)</span>
+          </a>
+        </div>
+      </section>
+    </div>
   );
 }
