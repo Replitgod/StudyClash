@@ -1,15 +1,13 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { authFetch } from "@/lib/authFetch";
 import { useAuth } from "@/lib/useAuth";
 import dynamic from "next/dynamic";
-import { Button } from "@/app/components/ui/Button";
-import { FLOATING_ACTION } from "@/lib/uiLayout";
+import { ArrowRightIcon } from "@/app/components/app/Icons";
 import { computeMastery, type AttemptSignal } from "@/lib/mastery";
 import { difficultyValue } from "@/lib/adaptiveSession";
 import {
@@ -112,29 +110,6 @@ type SubjectMastery = {
   dueReviewHref: string | null;
 };
 
-function Background({ children }: { children: React.ReactNode }) {
-  return (
-    <main className="relative min-h-dvh w-full overflow-x-hidden bg-[#05050a] text-white">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-indigo-500/20 blur-[120px]" />
-        <div className="absolute top-1/3 -left-40 h-[400px] w-[400px] rounded-full bg-indigo-600/20 blur-[120px]" />
-        <div className="absolute bottom-0 right-0 h-[450px] w-[450px] rounded-full bg-green-500/20 blur-[130px]" />
-      </div>
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.06]"
-        style={{
-          backgroundImage:
-            "linear-gradient(to right, #ffffff 1px, transparent 1px), linear-gradient(to bottom, #ffffff 1px, transparent 1px)",
-          backgroundSize: "52px 52px",
-        }}
-      />
-      <div className={`relative z-10 mx-auto flex min-h-dvh w-full max-w-7xl flex-col px-4 pt-10 sm:px-6 sm:pt-16 ${FLOATING_ACTION.mobileBottomPadding}`}>
-        {children}
-      </div>
-    </main>
-  );
-}
-
 function normalizeTopic(topic: string): string {
   const trimmed = (topic || "General").trim();
   return trimmed || "General";
@@ -189,11 +164,16 @@ function getRecommendedAction(status: TopicStatus, missedCount: number): string 
   return "Revisit concept explanations, then rematch weakness.";
 }
 
-function getReviewBadgeStyle(urgency: ReviewUrgency): string {
-  if (urgency === "overdue") return "border-red-400/40 bg-red-500/15 text-red-200";
-  if (urgency === "due_soon") return "border-amber-400/40 bg-amber-500/15 text-amber-200";
-  if (urgency === "unscheduled") return "border-white/15 bg-white/5 text-white/50";
-  return "border-indigo-400/30 bg-indigo-500/10 text-indigo-200";
+// Review urgency and mastery tier both map onto the SAME three-step chip
+// vocabulary the rest of the app uses (neutral / ok / warn / bad), rather than
+// each inventing its own colour. Previously this screen used red, amber,
+// indigo, green and white chips side by side, which made every badge read as
+// decoration rather than as a status.
+function reviewChipClass(urgency: ReviewUrgency): string {
+  if (urgency === "overdue") return "chip chip-bad";
+  if (urgency === "due_soon") return "chip chip-warn";
+  if (urgency === "unscheduled") return "chip";
+  return "chip chip-ok";
 }
 
 function getMistakeLabel(raw: string | undefined): string {
@@ -207,20 +187,17 @@ function getMistakeLabel(raw: string | undefined): string {
   return "Mixed errors";
 }
 
-function getStatusStyle(tier: MasteryTier): string {
-  if (tier === "mastered") {
-    return "border-green-400/30 bg-green-500/[0.08] text-green-100";
-  }
+function tierChipClass(tier: MasteryTier): string {
+  if (tier === "mastered" || tier === "strong") return "chip chip-ok";
+  if (tier === "developing") return "chip chip-warn";
+  return "chip chip-bad";
+}
 
-  if (tier === "strong") {
-    return "border-indigo-400/30 bg-indigo-500/[0.08] text-indigo-100";
-  }
-
-  if (tier === "developing") {
-    return "border-amber-400/30 bg-amber-500/[0.08] text-amber-100";
-  }
-
-  return "border-red-400/30 bg-red-500/[0.08] text-red-100";
+/** Bar colour for a topic's mastery meter, on the same three-step scale. */
+function tierMeterColor(tier: MasteryTier): string {
+  if (tier === "mastered" || tier === "strong") return "var(--ok)";
+  if (tier === "developing") return "var(--warn)";
+  return "var(--bad)";
 }
 
 function toTopicPrompt(topic: string, subject: string): string {
@@ -686,295 +663,295 @@ function MasteryMapPageContent() {
   }
 
   if (isLoading || isLoadingMap) {
-    // Skeleton shaped like the real subject-card stack below (title bar +
-    // stat row + topic grid) instead of a bare spinner, so the layout
-    // doesn't jump/reflow once the real cards mount -- see the "What can
-    // affect streaming" / CLS guidance in Next's streaming docs.
+    // Shaped like the real stack (header + subject cards) so the layout does
+    // not jump once the data lands.
     return (
-      <Background>
-        <div className="flex w-full flex-col gap-6">
-          <div className="h-24 w-full animate-pulse rounded-2xl border border-white/10 bg-white/[0.03]" />
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-20 animate-pulse rounded-2xl border border-white/10 bg-white/[0.03]" />
-            ))}
-          </div>
-          {[0, 1].map((i) => (
-            <div key={i} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
-              <div className="h-5 w-1/3 animate-pulse rounded bg-white/10" />
-              <div className="mt-3 h-3 w-1/2 animate-pulse rounded bg-white/5" />
-              <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {[0, 1, 2].map((j) => (
-                  <div key={j} className="h-16 animate-pulse rounded-xl border border-white/10 bg-white/[0.04]" />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Background>
+      <div className="app-page">
+        <div className="skeleton h-9 w-44" />
+        <div className="skeleton mt-8 h-[104px] w-full" />
+        <div className="skeleton mt-6 h-[280px] w-full" />
+        <div className="skeleton mt-4 h-[280px] w-full" />
+      </div>
     );
   }
 
   if (!isLoggedIn) {
     return (
-      <Background>
-        <div className="mx-auto flex min-h-[65vh] w-full max-w-md items-center justify-center">
-          <div className="w-full rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center backdrop-blur-sm sm:p-8">
-            <h1 className="text-xl font-bold text-white">Sign in to view Mastery Map</h1>
-            <p className="mt-2 text-sm text-white/55">
-              Track topic mastery, weak lanes, and boss unlock progress across every subject.
-            </p>
-            <div className="mt-5 flex flex-col gap-3">
-              <Button href="/login?redirect=/mastery-map" variant="secondary">
-                Log In
-              </Button>
-              <Button href="/signup?redirect=/mastery-map" variant="ghost">
-                Sign Up
-              </Button>
-            </div>
+      <div className="app-page" style={{ maxWidth: "34rem" }}>
+        <h1 className="t-page">Mastery map</h1>
+        <div className="card mt-8 px-6 py-12 text-center">
+          <p className="text-[17px] font-medium" style={{ color: "var(--text-1)" }}>
+            Sign in to see your map
+          </p>
+          <p className="t-body mx-auto mt-2 max-w-sm">
+            Every topic you have practised, scored, and ordered by what needs
+            work.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
+            <Link href="/login?redirect=/mastery-map" className="btn btn-primary">
+              Log in
+            </Link>
+            <Link href="/signup?redirect=/mastery-map" className="btn btn-secondary">
+              Create an account
+            </Link>
           </div>
         </div>
-      </Background>
+      </div>
     );
   }
 
   return (
-    <Background>
-      <div className="flex flex-col gap-6">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-indigo-200">
-                <span className="h-1.5 w-1.5 rounded-full bg-indigo-300" />
-                MASTERY MAP
-              </div>
-              <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
-                <span className="bg-gradient-to-r from-indigo-300 via-indigo-300 to-green-300 bg-clip-text text-transparent">
-                  Skill Tree Command Center
-                </span>
-              </h1>
-              <p className="mt-2 max-w-3xl text-sm text-white/60 sm:text-base">
-                Visualize mastered topics, weak lanes, improving skills, boss locks, and the exact next battles to climb faster.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link href="/home" className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-bold text-white/85">
-                Dashboard
-              </Link>
-              <Link href="/library" className="rounded-xl border border-indigo-400/25 bg-indigo-500/10 px-4 py-2.5 text-sm font-bold text-indigo-100">
-                Choose Deck
-              </Link>
-            </div>
-          </div>
+    <div className="app-page app-page-wide">
+      <h1 className="t-page">Mastery map</h1>
+      <p className="t-body mt-2 max-w-2xl">
+        Every topic you have practised, scored. Open one to see why it scored
+        that way and what to do about it.
+      </p>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/45">Subject mastery</p>
-              <p className="mt-1 text-2xl font-black text-white">{globalSummary.masteryAverage}%</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/45">Tracked topics</p>
-              <p className="mt-1 text-2xl font-black text-white">{globalSummary.topicCount}</p>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-black/25 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/45">Locked boss battles</p>
-              <p className="mt-1 text-2xl font-black text-white">{globalSummary.lockedBossCount}</p>
-            </div>
+      {/* One headline number, not three. "Tracked topics" and "locked boss
+          battles" were counts a student could read and act on in no way. */}
+      {globalSummary.topicCount > 0 && (
+        <div className="card mt-6 p-5 sm:p-6">
+          <p
+            className="text-[28px] font-semibold leading-none tracking-tight sm:text-[32px]"
+            style={{ color: "var(--text-1)" }}
+          >
+            {globalSummary.masteryAverage}% mastered
+          </p>
+          <div className="meter mt-4">
+            <span
+              style={{
+                width: `${Math.min(100, Math.max(2, globalSummary.masteryAverage))}%`,
+              }}
+            />
           </div>
+          <p className="t-meta mt-3">
+            Across {globalSummary.topicCount}{" "}
+            {globalSummary.topicCount === 1 ? "topic" : "topics"} in{" "}
+            {subjects.length} {subjects.length === 1 ? "subject" : "subjects"}.
+          </p>
         </div>
+      )}
 
-        {loadError && (
-          <div className="rounded-2xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
+      {loadError && (
+        <div
+          role="alert"
+          className="card mt-6 px-4 py-3"
+          style={{
+            borderColor: "rgb(255 107 107 / 0.3)",
+            background: "var(--bad-soft)",
+          }}
+        >
+          <p className="text-[14px]" style={{ color: "var(--text-1)" }}>
             {loadError}
-          </div>
-        )}
+          </p>
+        </div>
+      )}
 
-        {subjects.length === 0 && !loadError ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center text-white/60">
-            No study data yet. Play a few battles to generate your Mastery Map.
-          </div>
-        ) : (
-          <div className="flex flex-col gap-6">
-            {subjects.map((subject, index) => (
-              <motion.section
-                key={subject.deckId}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.32, delay: Math.min(index * 0.06, 0.3), ease: "easeOut" }}
-                className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:p-5"
-              >
-                <div className="flex flex-col gap-3 border-b border-white/10 pb-4 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-[0.23em] text-indigo-200/90">{subject.subjectName}</p>
-                    <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">{subject.title}</h2>
-                    <p className="mt-2 text-sm text-white/60">
-                      Mastery {subject.masteryPercent}% · Mastered {subject.masteredTopics.length} · Improving {subject.improvingTopics.length} · Weak {subject.weakTopics.length}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="rounded-full border border-green-400/30 bg-green-500/10 px-3 py-1 text-xs font-bold text-green-200">
-                      Mastered {subject.masteredTopics.length}
-                    </span>
-                    <span className="rounded-full border border-indigo-400/30 bg-indigo-500/10 px-3 py-1 text-xs font-bold text-indigo-200">
-                      Improving {subject.improvingTopics.length}
-                    </span>
-                    <span className="rounded-full border border-amber-400/30 bg-amber-500/10 px-3 py-1 text-xs font-bold text-amber-200">
-                      Weak {subject.weakTopics.length}
-                    </span>
-                    <span
-                      className={`rounded-full border px-3 py-1 text-xs font-bold ${
-                        subject.bossLocked
-                          ? "border-red-400/30 bg-red-500/10 text-red-200"
-                          : "border-indigo-400/30 bg-indigo-500/10 text-indigo-200"
-                      }`}
-                    >
-                      {subject.bossLocked ? "Boss Locked" : "Boss Ready"}
-                    </span>
-                  </div>
+      {subjects.length === 0 ? (
+        <div className="card mt-8 px-6 py-12 text-center">
+          <p className="text-[17px] font-medium" style={{ color: "var(--text-1)" }}>
+            Nothing mapped yet
+          </p>
+          <p className="t-body mx-auto mt-2 max-w-sm">
+            Add something you are studying and answer a few questions. The map
+            fills itself in from there.
+          </p>
+          <Link href="/home" className="btn btn-primary mt-6">
+            Add material
+          </Link>
+        </div>
+      ) : (
+        <div className="mt-8 flex flex-col gap-6">
+          {subjects.map((subject) => (
+            <section key={subject.deckId} className="card p-5 sm:p-6">
+              {/* ---- Subject header ---- */}
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="t-section">{subject.subjectName}</p>
+                  <h2
+                    className="mt-1 truncate text-[19px] font-medium"
+                    style={{ color: "var(--text-1)" }}
+                  >
+                    {subject.title}
+                  </h2>
+                  <p className="t-meta mt-1">
+                    {subject.masteryPercent}% mastered ·{" "}
+                    {subject.weakTopics.length} needing work
+                  </p>
                 </div>
 
-                <div className="mt-4 grid gap-4 xl:grid-cols-[2fr,1fr]">
-                  <div className="relative overflow-hidden rounded-xl border border-white/10 bg-black/25 p-4">
-                    <div className="pointer-events-none absolute left-6 right-6 top-16 hidden h-[2px] bg-gradient-to-r from-indigo-400/50 via-indigo-400/40 to-green-400/50 lg:block" />
-                    <div className="mb-3 flex items-center justify-between">
-                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/50">Topic Skill Tree</p>
-                      <p className="text-xs text-white/45">Node color = mastery lane</p>
-                    </div>
+                {/* The one action worth taking on this subject right now. */}
+                {subject.dueQuestionCount > 0 && subject.dueReviewHref && (
+                  <Link href={subject.dueReviewHref} className="btn btn-primary shrink-0">
+                    Review {subject.dueQuestionCount} due
+                    <ArrowRightIcon className="h-[18px] w-[18px]" />
+                  </Link>
+                )}
+              </div>
 
-                    <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                      {subject.allTopics.map((topic) => (
-                        <article
-                          key={`${subject.deckId}-${topic.topic}`}
-                          className={`relative rounded-xl border p-3 ${getStatusStyle(topic.masteryTier)}`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <h3 className="text-sm font-bold leading-tight text-white">{topic.topic}</h3>
-                            <span className="flex-shrink-0 rounded-full border border-white/15 bg-black/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white/80">
-                              {MASTERY_TIER_LABELS[topic.masteryTier]}
-                            </span>
-                          </div>
+              <div className="meter mt-4">
+                <span
+                  style={{
+                    width: `${Math.min(100, Math.max(2, subject.masteryPercent))}%`,
+                  }}
+                />
+              </div>
 
+              {/* ---- Topics ----
+                  One row each, collapsed. Every topic used to show four stat
+                  tiles and FOUR buttons at once -- with a dozen topics that is
+                  fifty controls on one screen, and no way to tell "Practice
+                  this topic" from "Rematch weakness" from "Start Boss Battle".
+                  Collapsed, a row answers "how am I doing"; opened, it answers
+                  "why, and what do I do". */}
+              <ul
+                className="mt-5 divide-y"
+                style={{ borderColor: "var(--line)" }}
+              >
+                {subject.allTopics.map((topic) => (
+                  <li key={`${subject.deckId}-${topic.topic}`}>
+                    <details className="group">
+                      <summary className="flex cursor-pointer list-none items-center gap-3 py-3">
+                        <span className="min-w-0 flex-1">
                           <span
-                            className={`mt-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getReviewBadgeStyle(topic.reviewUrgency)}`}
+                            className="block truncate text-[15px]"
+                            style={{ color: "var(--text-1)" }}
                           >
-                            {(topic.reviewUrgency === "overdue" || topic.reviewUrgency === "due_soon") && (
-                              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-current" />
-                            )}
+                            {topic.topic}
+                          </span>
+                          <span className="mt-1.5 flex items-center gap-2">
+                            <span
+                              className="meter"
+                              style={{ maxWidth: "120px" }}
+                              role="progressbar"
+                              aria-valuenow={topic.accuracy}
+                              aria-valuemin={0}
+                              aria-valuemax={100}
+                              aria-label={`${topic.topic}: ${topic.accuracy}% correct`}
+                            >
+                              <span
+                                style={{
+                                  width: `${Math.min(100, Math.max(2, topic.accuracy))}%`,
+                                  background: tierMeterColor(topic.masteryTier),
+                                }}
+                              />
+                            </span>
+                            <span className="t-meta tabular-nums">
+                              {topic.accuracy}%
+                            </span>
+                          </span>
+                        </span>
+
+                        <span className={`${tierChipClass(topic.masteryTier)} hidden shrink-0 sm:inline-flex`}>
+                          {MASTERY_TIER_LABELS[topic.masteryTier]}
+                        </span>
+                        {(topic.reviewUrgency === "overdue" ||
+                          topic.reviewUrgency === "due_soon") && (
+                          <span className={`${reviewChipClass(topic.reviewUrgency)} shrink-0`}>
                             {topic.nextReviewLabel}
                           </span>
-
-                          <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                            <div className="rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
-                              <p className="text-white/45">Accuracy</p>
-                              <p className="mt-0.5 font-bold text-white">{topic.accuracy}%</p>
-                            </div>
-                            <div className="rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
-                              <p className="text-white/45">Avg speed</p>
-                              <p className="mt-0.5 font-bold text-white">{topic.averageSpeedLabel}</p>
-                            </div>
-                            <div className="rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
-                              <p className="text-white/45">Mistake type</p>
-                              <p className="mt-0.5 font-semibold text-white/90">{topic.mistakeType}</p>
-                            </div>
-                            <div className="rounded-lg border border-white/10 bg-black/20 px-2 py-1.5">
-                              <p className="text-white/45">Last practiced</p>
-                              <p className="mt-0.5 font-semibold text-white/90">{topic.lastPracticedDate}</p>
-                            </div>
-                          </div>
-
-                          <p className="mt-2 text-xs text-white/70">{topic.recommendedAction}</p>
-
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            <Link
-                              href={topic.practiceHref}
-                              className="rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-2.5 py-2 text-center text-[11px] font-bold text-indigo-100"
-                            >
-                              Practice this topic
-                            </Link>
-                            <Link
-                              href={topic.rematchHref}
-                              className="rounded-lg border border-amber-400/30 bg-amber-500/10 px-2.5 py-2 text-center text-[11px] font-bold text-amber-100"
-                            >
-                              Rematch weakness
-                            </Link>
-                            <button
-                              type="button"
-                              onClick={() => handleAskVyra(subject, topic)}
-                              className="rounded-lg border border-indigo-400/30 bg-indigo-500/10 px-2.5 py-2 text-[11px] font-bold text-indigo-100"
-                            >
-                              Ask VYRA
-                            </button>
-                            <Link
-                              href={topic.bossHref}
-                              className="rounded-lg border border-green-400/30 bg-green-500/10 px-2.5 py-2 text-center text-[11px] font-bold text-green-100"
-                            >
-                              Start Boss Battle
-                            </Link>
-                          </div>
-                        </article>
-                      ))}
-                    </div>
-                  </div>
-
-                  <aside className="flex flex-col gap-3 rounded-xl border border-white/10 bg-black/25 p-4">
-                    <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-white/50">Battle guidance</h3>
-
-                    {subject.dueQuestionCount > 0 && subject.dueReviewHref && (
-                      <div className="rounded-lg border border-amber-400/30 bg-amber-500/10 p-3">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-amber-200">Due for review</p>
-                        <p className="mt-1 text-xs text-white/75">
-                          {subject.dueQuestionCount} question{subject.dueQuestionCount === 1 ? "" : "s"} you missed or haven&apos;t locked in yet -- a short rematch keeps them from slipping.
-                        </p>
-                        <Link
-                          href={subject.dueReviewHref}
-                          className="mt-2 inline-flex items-center justify-center rounded-lg border border-amber-400/40 bg-amber-500/15 px-3 py-2 text-xs font-bold text-amber-100"
+                        )}
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 12 12"
+                          className="h-3 w-3 shrink-0 transition-transform duration-200 group-open:rotate-90"
+                          fill="none"
+                          stroke="var(--text-4)"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         >
-                          Review {subject.dueQuestionCount} Now
-                        </Link>
-                      </div>
-                    )}
+                          <path d="M4 2l4 4-4 4" />
+                        </svg>
+                      </summary>
 
-                    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-200">Locked boss battles</p>
-                      <p className="mt-1 text-xs text-white/75">{subject.lockedBossReason}</p>
-                    </div>
+                      <div className="pb-4">
+                        <p className="t-body">{topic.recommendedAction}</p>
 
-                    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-indigo-200">Recommended next battles</p>
-                      <div className="mt-2 flex flex-col gap-2">
-                        {subject.recommendedNextBattles.map((battle) => (
-                          <Link
-                            key={`${subject.deckId}-${battle.label}`}
-                            href={battle.href}
-                            className="rounded-lg border border-white/10 bg-black/25 px-3 py-2"
-                          >
-                            <p className="text-xs font-bold text-white">{battle.label}</p>
-                            <p className="mt-1 text-[11px] text-white/60">{battle.reason}</p>
+                        <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1.5">
+                          {[
+                            ["Typical mistake", topic.mistakeType],
+                            ["Average speed", topic.averageSpeedLabel],
+                            ["Last practised", topic.lastPracticedDate],
+                            ["Next review", topic.nextReviewLabel],
+                          ].map(([label, value]) => (
+                            <div key={label} className="flex items-baseline gap-1.5">
+                              <dt className="t-meta">{label}</dt>
+                              <dd
+                                className="text-[13px]"
+                                style={{ color: "var(--text-2)" }}
+                              >
+                                {value}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {/* One primary action. The other two are quiet. */}
+                          <Link href={topic.practiceHref} className="btn btn-primary btn-sm">
+                            Practise this
                           </Link>
-                        ))}
+                          <Link href={topic.rematchHref} className="btn btn-secondary btn-sm">
+                            Just my mistakes
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleAskVyra(subject, topic)}
+                            className="btn btn-quiet btn-sm"
+                          >
+                            Ask Vyra
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    </details>
+                  </li>
+                ))}
+              </ul>
 
-                    <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-green-200">Mastery percentage</p>
-                      <p className="mt-1 text-2xl font-black text-white">{subject.masteryPercent}%</p>
-                      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          whileInView={{ width: `${subject.masteryPercent}%` }}
-                          viewport={{ once: true }}
-                          transition={{ duration: 0.9, ease: "easeOut", delay: 0.15 }}
-                          className="h-full rounded-full bg-gradient-to-r from-indigo-400 via-indigo-400 to-green-400"
-                        />
-                      </div>
-                    </div>
-                  </aside>
+              {/* Kept because each one carries a REASON, which is the only
+                  thing that made the old "Battle guidance" aside worth its
+                  space. Capped at two. */}
+              {subject.recommendedNextBattles.length > 0 && (
+                <div
+                  className="mt-5 border-t pt-4"
+                  style={{ borderColor: "var(--line)" }}
+                >
+                  <h3 className="t-section">Worth doing next</h3>
+                  <ul className="mt-2 flex flex-col gap-2">
+                    {subject.recommendedNextBattles.slice(0, 2).map((battle) => (
+                      <li key={`${subject.deckId}-${battle.label}`}>
+                        <Link
+                          href={battle.href}
+                          className="card-link flex items-center gap-3 px-4 py-3"
+                        >
+                          <span className="min-w-0 flex-1">
+                            <span
+                              className="block truncate text-[14px] font-medium"
+                              style={{ color: "var(--text-1)" }}
+                            >
+                              {battle.label}
+                            </span>
+                            <span className="t-meta block truncate">
+                              {battle.reason}
+                            </span>
+                          </span>
+                          <ArrowRightIcon className="h-4 w-4 shrink-0 opacity-40" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </motion.section>
-            ))}
-          </div>
-        )}
-      </div>
+              )}
+
+              {subject.bossLocked && subject.lockedBossReason && (
+                <p className="t-meta mt-4">{subject.lockedBossReason}</p>
+              )}
+            </section>
+          ))}
+        </div>
+      )}
 
       {coachContext && (
         <VyraCoach
@@ -1004,21 +981,17 @@ function MasteryMapPageContent() {
           openByDefault
         />
       )}
-    </Background>
+    </div>
   );
 }
 
 function MasteryMapFallback() {
   return (
-    <Background>
-      <div className="flex min-h-[60vh] flex-col items-center justify-center">
-        <svg className="h-10 w-10 animate-spin text-indigo-400" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-        </svg>
-        <p className="mt-4 text-sm text-white/50">Loading Mastery Map...</p>
-      </div>
-    </Background>
+    <div className="app-page">
+      <div className="skeleton h-9 w-44" />
+      <div className="skeleton mt-8 h-[104px] w-full" />
+      <div className="skeleton mt-6 h-[280px] w-full" />
+    </div>
   );
 }
 

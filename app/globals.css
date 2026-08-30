@@ -223,6 +223,19 @@ body {
   overflow-x: clip;
 }
 
+/* Every <details> in the app draws its own chevron. `list-style: none` is
+   enough for Chrome and Firefox, but WebKit needs its pseudo-element hidden
+   explicitly -- without this, Safari and iOS render their default triangle
+   NEXT TO the custom one, on the homepage FAQ and on every topic row in the
+   mastery map. */
+summary {
+  list-style: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
 *:focus-visible {
   outline: 2px solid var(--brand);
   outline-offset: 2px;
@@ -676,6 +689,15 @@ textarea:-webkit-autofill:focus {
   border-color: rgb(251 191 36 / 0.3);
   background: var(--warn-soft);
   color: var(--warn);
+}
+
+/* The fourth and last chip tone. Completes the neutral / ok / warn / bad
+   scale so a status never has to invent its own colour -- the mastery map
+   was using red, amber, indigo, green and white chips side by side. */
+.chip-bad {
+  border-color: rgb(255 107 107 / 0.3);
+  background: var(--bad-soft);
+  color: var(--bad);
 }
 
 /* --- Progress --- */
