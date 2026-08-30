@@ -191,8 +191,21 @@ export default function AppFrame({ children }: { children: React.ReactNode }) {
   const chrome = chromeFor(pathname);
 
   // A study session, a timed test, a live tournament: no chrome at all.
+  //
+  // Still inside StudyProvider, though. "No chrome" is a layout decision, not
+  // a data one: StudySession reads the shared snapshot to order questions by
+  // topic mastery, and calls refresh() when a session is saved so Home and
+  // Practice reflect the new numbers. Outside the provider both degrade
+  // silently -- useStudy() hands back an empty snapshot and a no-op refresh --
+  // so sessions lost their weak-topic ordering and finished work did not show
+  // up until a hard reload. The provider is auth-aware and no-ops for signed-
+  // out visitors, so mounting it here costs nothing.
   if (chrome === "focus") {
-    return <div id="main-content">{children}</div>;
+    return (
+      <StudyProvider>
+        <div id="main-content">{children}</div>
+      </StudyProvider>
+    );
   }
 
   // Public pages keep the marketing header.

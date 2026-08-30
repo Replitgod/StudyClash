@@ -8,6 +8,5 @@
       "path": "/api/curriculum/process",
       "schedule": "0 14 * * *"
     }
-  ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }]
+  ]
 }
