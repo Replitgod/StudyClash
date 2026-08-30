@@ -37,7 +37,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acedecks.org";
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#060a14",
+  themeColor: "#050506",
   colorScheme: "dark",
 };
 

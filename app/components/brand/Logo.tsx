@@ -3,9 +3,10 @@
 // Drawn as SVG rather than shipped as a PNG: it has to stay crisp on a
 // retina tab favicon and on a 400px hero, it sits on both the light
 // marketing surface and the dark app shell, and an inline vector costs no
-// extra request. The gradients are the brand -- deep blue into teal for the
-// tile, amber for the bulb -- and every other colour in the product is
-// derived from these three.
+// extra request. The gradients are the brand -- violet for the tile, amber
+// for the bulb -- and every other colour in the product is derived from
+// those two. Violet is THE accent (see --accent in globals.css); amber is
+// the only secondary, and it is reserved for the bulb and for streaks.
 //
 // `idPrefix` exists because SVG gradient ids are document-global: two marks
 // on one page with the same ids means the second one silently steals the
@@ -36,13 +37,13 @@ export function LogoMark({ className, idPrefix = "adm", title }: MarkProps) {
       {title ? <title>{title}</title> : null}
       <defs>
         <linearGradient id={tile} x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#4FA3F7" />
-          <stop offset="0.52" stopColor="#2E7DF0" />
-          <stop offset="1" stopColor="#12B39B" />
+          <stop stopColor="#9B8AFF" />
+          <stop offset="0.52" stopColor="#6E56CF" />
+          <stop offset="1" stopColor="#4A3596" />
         </linearGradient>
         <linearGradient id={cardTop} x1="16" y1="26" x2="48" y2="44" gradientUnits="userSpaceOnUse">
           <stop stopColor="#FFFFFF" />
-          <stop offset="1" stopColor="#E4F2FF" />
+          <stop offset="1" stopColor="#F1EDFF" />
         </linearGradient>
         <linearGradient id={bulb} x1="26" y1="10" x2="38" y2="30" gradientUnits="userSpaceOnUse">
           <stop stopColor="#FFD166" />
@@ -65,7 +66,7 @@ export function LogoMark({ className, idPrefix = "adm", title }: MarkProps) {
           width="44"
           height="14"
           rx="3.5"
-          fill="#1B57BC"
+          fill="#3D2A80"
           transform="rotate(-3.5 32 44)"
         />
         <rect
@@ -74,7 +75,7 @@ export function LogoMark({ className, idPrefix = "adm", title }: MarkProps) {
           width="40"
           height="14"
           rx="3.5"
-          fill="#39D0B6"
+          fill="#A896FF"
           transform="rotate(-1.75 32 39)"
         />
         <rect
@@ -107,7 +108,7 @@ export function LogoMark({ className, idPrefix = "adm", title }: MarkProps) {
       {/* Filament highlight */}
       <circle cx="32" cy="15.8" r="3.1" fill="#FFF8E4" />
       {/* Screw base */}
-      <rect x="27.8" y="30.2" width="8.4" height="2.2" rx="1.1" fill="#66708A" />
+      <rect x="27.8" y="30.2" width="8.4" height="2.2" rx="1.1" fill="#6E6A8A" />
     </svg>
   );
 }
@@ -118,10 +119,9 @@ type WordmarkProps = {
   surface?: "dark" | "light";
 };
 
-// The logo artwork puts "Ace" in a deep navy, which only works on the white
-// tile. On the app's dark chrome that navy is nearly invisible, so the dark
-// surface gets a light blue at the same hue instead -- same identity,
-// readable contrast.
+// "Ace" takes the neutral ink and "Decks" takes the accent. On a light
+// surface the accent has to go darker to stay readable, which is why the two
+// surfaces use different values of the same colour rather than the same one.
 export function Wordmark({ className, surface = "dark" }: WordmarkProps) {
   return (
     <span className={className} style={{ letterSpacing: "-0.03em", fontWeight: 700 }}>

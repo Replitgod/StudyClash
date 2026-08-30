@@ -27,7 +27,7 @@ export default function Image() {
           justifyContent: "space-between",
           padding: "64px",
           background:
-            "radial-gradient(900px circle at 12% 8%, rgba(46,125,240,0.55) 0%, rgba(6,10,20,0) 60%), radial-gradient(760px circle at 88% 30%, rgba(18,179,155,0.45) 0%, rgba(6,10,20,0) 62%), radial-gradient(600px circle at 60% 110%, rgba(255,176,32,0.28) 0%, rgba(6,10,20,0) 60%), #060a14",
+            "radial-gradient(900px circle at 12% 8%, rgba(124,106,240,0.55) 0%, rgba(5,5,6,0) 60%), radial-gradient(760px circle at 88% 30%, rgba(88,66,171,0.45) 0%, rgba(5,5,6,0) 62%), radial-gradient(600px circle at 60% 110%, rgba(255,176,32,0.28) 0%, rgba(5,5,6,0) 60%), #050506",
           color: "#eef4fb",
           fontFamily: "sans-serif",
         }}
@@ -40,7 +40,7 @@ export default function Image() {
               width: "64px",
               height: "64px",
               borderRadius: "18px",
-              background: "linear-gradient(135deg, #4FA3F7 0%, #2E7DF0 52%, #12B39B 100%)",
+              background: "linear-gradient(135deg, #9B8AFF 0%, #6E56CF 52%, #4A3596 100%)",
               alignItems: "center",
               justifyContent: "center",
             }}
@@ -89,7 +89,7 @@ export default function Image() {
           }}
         >
           <div style={{ display: "flex", gap: "12px" }}>
-            {["Free & unlimited", "Any notes, PDF or photo", "Knows what you forgot"].map(
+            {["Free to start, no card", "Any notes, PDF or photo", "Knows what you forgot"].map(
               (label) => (
                 <div
                   key={label}

@@ -70,7 +70,13 @@ export default function Navigation() {
             className="text-[11px] font-semibold uppercase tracking-[0.14em]"
             style={{ color: "var(--accent-bright)" }}
           >
-            Free · Unlimited · No card
+            {/* Not "Unlimited" -- that was true before tiers landed and is
+                not now: the free plan caps at 3 knowledge maps a month and 5
+                cards per concept (lib/tiers.ts). Promising unlimited in the
+                header while the pricing page and the hero both say "3 maps a
+                month" is the kind of contradiction a student notices at
+                exactly the wrong moment. */}
+            Free to start · No card
           </span>
         </span>
 

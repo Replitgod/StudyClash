@@ -23,7 +23,12 @@ import { HeroPanel } from "@/app/components/marketing/HeroPanel";
 // 18-22ch) so nothing stretches into a thin ribbon on a wide monitor, which
 // is the fastest way a landing page stops looking designed.
 
-const FAQ_ITEMS = [
+// Exported so app/page.tsx can build the FAQPage structured data from the
+// SAME copy the page renders. They used to be two separate arrays, and they
+// had drifted: the visible FAQ described the tiers correctly while the JSON-LD
+// Google indexes still said "free and unlimited -- no daily caps, no locked
+// modes", which stopped being true when tiers landed.
+export const FAQ_ITEMS = [
   {
     q: "What does it cost?",
     a: "Free covers 3 knowledge maps a month with 5 cards per concept — enough to prove it on your own material, no card required. Ace Pro is $9.99 a month and removes every cap, adds handwriting and large-PDF ingestion, custom themes, and the full Card Crack breakdown.",

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageViewTracker } from "./components/PageViewTracker";
-import { NeonLanding } from "./components/marketing/NeonLanding";
+import { FAQ_ITEMS, NeonLanding } from "./components/marketing/NeonLanding";
 import { SiteFooter } from "./components/marketing/SiteFooter";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acedecks.org";
@@ -58,24 +58,6 @@ const STEPS = [
   },
 ];
 
-const FAQ_ITEMS = [
-  {
-    q: "What does it cost?",
-    a: "Nothing. Every feature is free and unlimited — no daily caps, no locked modes, no card required.",
-  },
-  {
-    q: "Do I need to have notes?",
-    a: "No. Type what you are studying — a topic like “photosynthesis” or “AP World Unit 3” — and AceDecks writes the study material for you.",
-  },
-  {
-    q: "What can I upload?",
-    a: "PDFs, photos of a textbook or your handwriting, and plain text files. You can also import a Quizlet set, an Anki deck, or a Google Doc.",
-  },
-  {
-    q: "How does it know what I am bad at?",
-    a: "Every question you answer updates a per-topic score. Topics you miss come back sooner; topics you have proven you know come back much later.",
-  },
-];
 
 export default function Home() {
   const faqSchema = {

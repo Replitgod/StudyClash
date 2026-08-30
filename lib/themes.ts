@@ -52,6 +52,11 @@ const ACEDECKS: Theme = {
     "--accent-dim": "#5842ab",
     "--accent-soft": "rgb(124 106 240 / 0.14)",
     "--accent-line": "rgb(124 106 240 / 0.34)",
+    "--accent-text": "#b9a8ff",
+    "--brand-ink": "#2a1d59",
+    // White clears AA on this violet (5.39:1). A lighter accent would not --
+    // see Dark Academia and Tokyo Midnight, which need dark ink instead.
+    "--on-brand": "#ffffff",
     "--ok": "#34e39b",
     "--warn": "#ffb020",
     "--bad": "#f43f5e",
@@ -84,6 +89,11 @@ const DARK_ACADEMIA: Theme = {
     "--accent-dim": "#9a7c1c",
     "--accent-soft": "rgb(201 162 39 / 0.14)",
     "--accent-line": "rgb(201 162 39 / 0.36)",
+    "--accent-text": "#e8cd72",
+    "--brand-ink": "#4a3a10",
+    // Gold is a LIGHT fill: a white button label sat at 2.42:1 on it, far
+    // under the 4.5:1 AA floor. Dark warm ink reads at 6.5:1.
+    "--on-brand": "#2b2207",
     "--ok": "#8fae6b",
     "--warn": "#d9963f",
     "--bad": "#bf5b4b",
@@ -114,6 +124,10 @@ const TOKYO_MIDNIGHT: Theme = {
     "--accent-dim": "#00a88c",
     "--accent-soft": "rgb(0 229 192 / 0.12)",
     "--accent-line": "rgb(0 229 192 / 0.34)",
+    "--accent-text": "#6ffbe2",
+    "--brand-ink": "#00443a",
+    // Same problem, worse: white on this teal was 1.62:1. 8.6:1 with dark ink.
+    "--on-brand": "#00332b",
     "--ok": "#00e5c0",
     "--warn": "#ffc857",
     "--bad": "#ff2d92",
@@ -142,11 +156,20 @@ const MINIMALIST_MATCHA: Theme = {
     "--text-4": "#93a397",
     "--line": "rgb(27 36 29 / 0.09)",
     "--line-strong": "rgb(27 36 29 / 0.16)",
-    "--accent": "#6b9071",
-    "--accent-bright": "#548057",
-    "--accent-dim": "#3f6b48",
-    "--accent-soft": "rgb(107 144 113 / 0.13)",
-    "--accent-line": "rgb(107 144 113 / 0.34)",
+    // Darkened from #6b9071: white button labels sat at 3.6:1 on the old
+    // value, under the 4.5:1 AA floor. #4f7a58 clears it at 4.9:1 without
+    // changing the theme's character.
+    "--accent": "#4f7a58",
+    "--accent-bright": "#3f6b48",
+    "--accent-dim": "#35603e",
+    "--accent-soft": "rgb(79 122 88 / 0.13)",
+    "--accent-line": "rgb(79 122 88 / 0.34)",
+    // On a white panel the accent has to go DARKER to be readable as text,
+    // not lighter. Reusing a dark theme's pale accent here is what produces
+    // unreadable text; 7.2:1 on #ffffff.
+    "--accent-text": "#35603e",
+    "--brand-ink": "#1b241d",
+    "--on-brand": "#ffffff",
     "--ok": "#4f8a5c",
     "--warn": "#b7791f",
     "--bad": "#b4453f",

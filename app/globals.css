@@ -11,17 +11,21 @@
  * is the only saturated thing in view. Anything that needs to shout uses
  * --color-brand-primary; everything else is a neutral.
  *
- * Token names are unchanged from the previous palette so every existing page
- * keeps compiling -- only the values moved (from a violet/fuchsia "cyber"
- * palette to this one).
+ * ONE accent leads the whole product -- violet -- and it is the same colour
+ * on the marketing site and inside the app. The `--brand*` tokens in :root are
+ * aliases of `--accent`, not a second palette, so there is exactly one place to
+ * change the product's colour.
  */
 @theme {
-  /* --- Brand: a single calm indigo. Used for the primary action, the active
-     nav item, focus rings, and progress. Nothing else. --- */
-  --color-brand-primary: #2e7df0;
-  --color-brand-primary-emphasis: #58a0ff;
-  --color-brand-accent: #12b39b;
-  --color-brand-accent-emphasis: #2fd3b8;
+  /* --- Brand: one violet. Used for the primary action, the active nav
+     item, focus rings, and progress. Nothing else.
+     These drive the Tailwind utilities (bg-brand-primary, text-brand-accent)
+     that the screens still on the pre-redesign styling reference, so they
+     have to stay in step with the --accent ramp in :root below. --- */
+  --color-brand-primary: #6e56cf;
+  --color-brand-primary-emphasis: #8b7bf0;
+  --color-brand-accent: #b9a8ff;
+  --color-brand-accent-emphasis: #d0c4ff;
 
   /* --- Semantic. Deliberately desaturated so they read as information,
      not decoration. --- */
@@ -32,10 +36,12 @@
   --color-danger: #f87171;
   --color-danger-emphasis: #fca5a5;
 
-  /* --- Surfaces (dark). A 4-step elevation ramp, each ~1 step of lightness
-     apart, all tinted very slightly blue so they feel like one material. --- */
-  --color-surface: #060a14;
-  --color-surface-raised: #0e1524;
+  /* --- Surfaces (dark). These back the Tailwind bg-surface utilities used by
+     the screens still on the pre-redesign styling, so they track the --app-bg
+     / --panel-raised ramp in :root; when they drifted, those screens sat on a
+     visibly different black to the shell around them. --- */
+  --color-surface: #050506;
+  --color-surface-raised: #141417;
   --color-border-subtle: rgb(255 255 255 / 0.07);
   --color-border: rgb(255 255 255 / 0.12);
 
@@ -68,7 +74,7 @@
   /* Glows are near-flat now -- kept only so existing pages that reference
      them keep compiling, and so the primary button gets a faint lift. */
   --shadow-glow-primary-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow-glow-primary-md: 0 8px 24px -14px rgb(91 108 255 / 0.75);
+  --shadow-glow-primary-md: 0 8px 24px -14px rgb(124 106 240 / 0.75);
   --shadow-glow-accent-sm: var(--shadow-glow-primary-sm);
   --shadow-glow-accent-md: var(--shadow-glow-primary-md);
   --shadow-glow-indigo-sm: var(--shadow-glow-primary-sm);
@@ -99,8 +105,8 @@
  * screen needs a fifth, the screen is too complicated.
  */
 :root {
-  /* Surfaces, lowest to highest. Tinted toward the brand blue rather than
-     neutral grey, so the whole app reads as one material with the logo. */
+  /* Surfaces, lowest to highest. Near-neutral obsidian, so the one
+     saturated thing on any screen is the primary action. */
   --app-bg: #050506;
   --panel: #0d0d10;
   --panel-raised: #141417;
@@ -116,30 +122,40 @@
   --line: rgb(255 255 255 / 0.07);
   --line-strong: rgb(255 255 255 / 0.14);
 
-  /* --- Brand. Blue is the action colour, teal is the "you are improving"
-     colour, amber is reserved for streaks and highlights. All three come
-     straight off the logo. --- */
-  --brand: #2e7df0;
-  --brand-hover: #4a92f7;
-  --brand-text: #a9cdff;
-  --brand-ink: #123a75;
-  --brand-soft: rgb(46 125 240 / 0.14);
-  --brand-line: rgb(46 125 240 / 0.34);
-  --on-brand: #ffffff;
-
-  /* --- Neon layer. Used by the marketing site only: the signed-in app
-     stays quiet, because a student mid-question should not be competing
-     with a glow. Laser green reads as mastery, cyber blue as knowledge,
-     magenta as decay. --- */
-  /* Magenta is the brand accent: primary actions, active states, focus.
-     Green is demoted to a status colour (a concept that is holding), and
-     the deeper crimson marks decay. One accent leads; the rest report. */
+  /* --- THE accent. One colour leads the entire product: primary actions,
+     active nav, focus rings, progress. Violet rather than blue, which is
+     what every other study product in the category already uses.
+     Everything else on this screen is a neutral or a status colour. --- */
   --accent: #6e56cf;
   --accent-bright: #8b7bf0;
   --accent-dim: #5842ab;
   --accent-soft: rgb(124 106 240 / 0.14);
   --accent-line: rgb(124 106 240 / 0.34);
+  /* Light enough to clear AA against every panel in the ramp (9.3:1 on
+     --panel), for violet used as *text* rather than as a fill. */
+  --accent-text: #b9a8ff;
 
+  /* --- Brand aliases.
+     These are what the signed-in app's components actually reference
+     (`bg-[var(--brand)]`, `.btn-primary`, `.chip-brand`, focus rings...).
+     They are aliases, NOT a second palette: the app used to define its own
+     blue here while the marketing site ran on violet, so the same product
+     changed colour the moment you signed in.
+
+     Pointing them at --accent also means a workspace theme (lib/themes.ts)
+     retints the whole app rather than half of it -- themes set --accent, so
+     before this the buttons stayed blue under every theme. --- */
+  --brand: var(--accent);
+  --brand-hover: var(--accent-bright);
+  --brand-text: var(--accent-text);
+  --brand-ink: #2a1d59;
+  --brand-soft: var(--accent-soft);
+  --brand-line: var(--accent-line);
+  --on-brand: #ffffff;
+
+  /* --- Status layer. These report state, they never brand anything:
+     green a concept that is holding, amber one that is due, crimson one
+     that is decaying. --- */
   --neon-green: #34e39b;
   --neon-blue: #5b8cff;
   --neon-decay: #f43f5e;
@@ -150,19 +166,22 @@
   --void-raised: #0a0a0c;
   --void-panel: #101012;
 
-  --accent-teal: #12b39b;
-  --accent-teal-bright: #2fd3b8;
-  --accent-teal-soft: rgb(18 179 155 / 0.14);
+  /* Amber: the one secondary accent, reserved for the logo bulb and for
+     streaks. Everything else is the violet accent or a neutral. */
   --accent-amber: #ffb020;
   --accent-amber-soft: rgb(255 176 32 / 0.14);
 
   /* The signature gradient. Used for the primary CTA, the logo tile, and
-     nothing else -- a gradient everywhere is a gradient nowhere. */
-  --brand-gradient: linear-gradient(115deg, #2e7df0 0%, #1f9fd0 52%, #12b39b 100%);
+     nothing else -- a gradient everywhere is a gradient nowhere.
+     Violet through indigo: it travels far enough to read as a gradient
+     without leaving the accent's own hue family, which is what the old
+     blue-to-teal ramp did (it introduced two more colours the palette
+     never used anywhere else). */
+  --brand-gradient: linear-gradient(115deg, #8b7bf0 0%, #6e56cf 52%, #5842ab 100%);
   --brand-gradient-soft: linear-gradient(
     115deg,
-    rgb(46 125 240 / 0.16) 0%,
-    rgb(18 179 155 / 0.16) 100%
+    rgb(139 123 240 / 0.16) 0%,
+    rgb(88 66 171 / 0.16) 100%
   );
 
   --ok: #2fd3b8;
@@ -211,12 +230,12 @@ body {
 }
 
 ::selection {
-  background: rgb(46 125 240 / 0.38);
+  background: rgb(124 106 240 / 0.38);
   color: #ffffff;
 }
 
 ::-moz-selection {
-  background: rgb(46 125 240 / 0.38);
+  background: rgb(124 106 240 / 0.38);
   color: #ffffff;
 }
 
@@ -765,7 +784,7 @@ textarea:-webkit-autofill:focus {
   height: 46vw;
   min-width: 320px;
   min-height: 320px;
-  background: radial-gradient(circle, rgb(46 125 240 / 0.55), transparent 68%);
+  background: radial-gradient(circle, rgb(124 106 240 / 0.55), transparent 68%);
   top: -14vw;
   left: -8vw;
   animation: aurora-a 29s ease-in-out infinite;
@@ -843,7 +862,7 @@ textarea:-webkit-autofill:focus {
   border: 0;
   box-shadow:
     0 1px 0 0 rgb(255 255 255 / 0.22) inset,
-    0 10px 30px -10px rgb(46 125 240 / 0.7);
+    0 10px 30px -10px rgb(124 106 240 / 0.7);
   overflow: hidden;
 }
 
@@ -863,7 +882,7 @@ textarea:-webkit-autofill:focus {
 .btn-gradient:hover:not(:disabled) {
   box-shadow:
     0 1px 0 0 rgb(255 255 255 / 0.28) inset,
-    0 16px 40px -12px rgb(46 125 240 / 0.85);
+    0 16px 40px -12px rgb(124 106 240 / 0.85);
 }
 
 /* --- Glass panel --- */
@@ -890,7 +909,7 @@ textarea:-webkit-autofill:focus {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(140deg, rgb(46 125 240 / 0.55), rgb(18 179 155 / 0.4), transparent 65%);
+  background: linear-gradient(140deg, rgb(139 123 240 / 0.55), rgb(88 66 171 / 0.4), transparent 65%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -963,7 +982,7 @@ textarea:-webkit-autofill:focus {
   border-radius: inherit;
   background: radial-gradient(
     260px circle at var(--mx, 50%) var(--my, 50%),
-    rgb(46 125 240 / 0.16),
+    rgb(124 106 240 / 0.16),
     transparent 62%
   );
   opacity: 0;
@@ -1509,10 +1528,13 @@ textarea:-webkit-autofill:focus {
   filter: blur(90px);
 }
 
-/* --- Primary button. Magenta, with a top inner highlight so it reads as a
-   lit surface rather than a flat swatch. --- */
+/* --- Primary button. Violet, with a top inner highlight so it reads as a
+   lit surface rather than a flat swatch.
+   The top stop is #7669cc, not the brighter #8b7bf0 it used to be: white
+   label text sat at 3.39:1 on that, under the 4.5:1 AA floor. Both stops now
+   clear it (4.50:1 and 8.31:1) and the surface still reads as lit. --- */
 .btn-accent {
-  background: linear-gradient(180deg, #8b7bf0, #6244c4);
+  background: linear-gradient(180deg, #7669cc, #5238ad);
   color: #fff;
   border: 0;
   box-shadow:
