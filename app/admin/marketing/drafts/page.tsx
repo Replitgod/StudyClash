@@ -74,7 +74,7 @@ export default function DraftsReviewQueue() {
 
   return (
     <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-black">Draft Review Queue</h1>
+      <h1 className="text-2xl font-semibold">Draft Review Queue</h1>
       <p className="mt-1 text-sm text-white/50">Every draft requires your explicit approval before it&apos;s ever published.</p>
 
       <div className="mt-4 flex flex-wrap gap-2">

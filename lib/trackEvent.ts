@@ -57,6 +57,11 @@ export type AnalyticsEventName =
   | "recommended_resource_clicked"
   | "homepage_viewed"
   | "pricing_viewed"
+  | "shared_set_viewed"
+  | "shared_set_save_started"
+  | "shared_set_saved"
+  | "deck_shared"
+  | "deck_unshared"
   | "instant_demo_started"
   | "checkout_started"
   // Written directly via the service-role client from app/api/stripe/webhook

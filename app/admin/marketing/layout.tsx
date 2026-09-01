@@ -99,7 +99,7 @@ export default function MarketingAdminLayout({ children }: { children: React.Rea
       <aside className="hidden w-56 flex-shrink-0 border-r border-white/10 bg-black/30 md:block">
         <div className="p-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-300">Private</p>
-          <p className="mt-1 text-sm font-black">Marketing Dashboard</p>
+          <p className="mt-1 text-sm font-semibold">Marketing Dashboard</p>
         </div>
         <nav className="flex flex-col gap-1 px-3">
           {NAV_ITEMS.map((item) => {

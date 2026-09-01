@@ -6,6 +6,7 @@ import {
   getServiceSupabaseClient,
   hashIdentifier,
 } from "@/lib/server/apiUtils";
+import { CONTACT_EMAIL } from "@/lib/contact";
 
 type EnterpriseLeadPayload = {
   email?: string;
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
   }
 
   await supabase.from("email_notification_queue").insert({
-    recipient_email: "acedecks15@gmail.com",
+    recipient_email: CONTACT_EMAIL,
     event_type: "enterprise_lead",
     subject: `Enterprise pilot lead from ${organization}`,
     body: `Lead Email: ${email}\n${formattedBody}`,

@@ -265,7 +265,7 @@ export default function TournamentPage() {
         <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">
           Tournament Bracket
         </p>
-        <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
           {state.room.title}
         </h1>
         {state.deck && (
@@ -280,7 +280,7 @@ export default function TournamentPage() {
         {state.champion && (
           <div className="mt-5 rounded-xl border border-amber-400/30 bg-amber-500/10 p-4 text-center">
             <p className="text-xs font-bold uppercase tracking-wider text-amber-200">Champion</p>
-            <p className="mt-1 text-xl font-black text-white">🏆 {state.champion.name}</p>
+            <p className="mt-1 text-xl font-semibold text-white">🏆 {state.champion.name}</p>
           </div>
         )}
 

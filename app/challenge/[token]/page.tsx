@@ -210,7 +210,7 @@ export default function ChallengeLandingPage() {
     return (
       <Background>
         <div className="w-full max-w-md rounded-2xl border border-red-400/30 bg-red-500/10 p-6 text-center backdrop-blur-sm sm:p-8">
-          <h1 className="text-xl font-black text-red-300">Challenge unavailable</h1>
+          <h1 className="text-xl font-semibold text-red-300">Challenge unavailable</h1>
           <p className="mt-2 text-sm text-red-200/80">
             {loadError || "We could not load this challenge link."}
           </p>
@@ -252,7 +252,7 @@ export default function ChallengeLandingPage() {
           Challenge Mode
         </div>
 
-        <h1 className="break-words text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
+        <h1 className="break-words text-center text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
           <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
             {deck.title}
           </span>
@@ -274,11 +274,11 @@ export default function ChallengeLandingPage() {
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-white/10 bg-black/20 p-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Accuracy</p>
-              <p className="mt-2 text-2xl font-black text-indigo-300">{challengerAccuracy}%</p>
+              <p className="mt-2 text-2xl font-semibold text-indigo-300">{challengerAccuracy}%</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-black/20 p-4">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Battle Score</p>
-              <p className="mt-2 text-2xl font-black text-indigo-300">{match.score} pts</p>
+              <p className="mt-2 text-2xl font-semibold text-indigo-300">{match.score} pts</p>
             </div>
           </div>
 

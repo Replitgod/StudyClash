@@ -78,7 +78,7 @@ function buildClassName(args: {
     // Scale/press feedback is owned by framer-motion (whileHover/whileTap
     // below) so it isn't fought over by two systems at once -- this class
     // list only owns color/shadow transitions.
-    "inline-flex items-center justify-center gap-2 font-black transition-shadow duration-base disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex items-center justify-center gap-2 font-[550] transition-shadow duration-base disabled:cursor-not-allowed disabled:opacity-50",
     VARIANT_CLASSES[variant],
     SIZE_CLASSES[size],
     fullWidth ? "w-full" : "",

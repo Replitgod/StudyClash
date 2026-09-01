@@ -92,7 +92,21 @@ async function syncSubscription(
 
   if (!profile || !STRIPE_MANAGED_PLAN_IDS.has(profile.plan)) {
     // Leave manually-granted plans (founder, pro_preview, team_pass, the
-    // legacy exam_tunnel) alone.
+    // legacy exam_tunnel) alone -- that is the intended case and is silent.
+    //
+    // The unintended case looks identical from here and is much worse: a
+    // profile carrying a plan id nobody expected (or none at all) means a
+    // customer just paid and this returns without granting anything, with
+    // no error anywhere. Log that one loudly so it is findable, since the
+    // only other symptom is a support email saying "I paid and I'm still
+    // on Free".
+    if (PRO_GRANTING_STATUSES.has(subscription.status)) {
+      console.error(
+        `Stripe webhook: subscription ${subscription.id} is ${subscription.status} for user ${userId}, ` +
+          `but profiles.plan is "${profile?.plan ?? "missing"}" which this webhook does not manage. ` +
+          "No Pro access was granted -- check whether this is an intentional manual plan."
+      );
+    }
     return;
   }
 

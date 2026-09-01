@@ -220,7 +220,7 @@ export default function LoginPage() {
                 autoFocus
                 required
                 disabled={isAnyLoading}
-                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 sm:py-3 sm:text-sm"
+                className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 text-base text-white placeholder-[var(--text-3)] outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 sm:py-3 sm:text-sm"
               />
             </div>
 
@@ -241,7 +241,7 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   required
                   disabled={isAnyLoading}
-                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 pr-12 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 sm:py-3 sm:text-sm"
+                  className="w-full min-w-0 rounded-xl border border-white/10 bg-black/30 px-4 py-3.5 pr-12 text-base text-white placeholder-[var(--text-3)] outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-50 sm:py-3 sm:text-sm"
                 />
                 <button
                   type="button"

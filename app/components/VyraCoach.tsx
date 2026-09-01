@@ -632,7 +632,7 @@ export default function VyraCoach(props: VyraCoachProps) {
         style={{ zIndex: UI_Z_INDEX.floatingAction }}
       >
         <VYRAAvatar size={34} />
-        <span className="text-xs font-black uppercase tracking-[0.2em] md:[writing-mode:vertical-rl] md:[text-orientation:mixed]">
+        <span className="text-xs font-semibold uppercase tracking-[0.2em] md:[writing-mode:vertical-rl] md:[text-orientation:mixed]">
           VYRA
         </span>
       </button>

@@ -108,7 +108,7 @@ export default function CurriculumCoursesPage() {
       <div className="mx-auto mb-5 w-fit rounded-full border border-indigo-400/20 bg-indigo-500/10 px-4 py-1.5 text-xs font-semibold tracking-[0.22em] text-indigo-200">
         CURRICULUM ENGINE
       </div>
-      <h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl">
+      <h1 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl">
         <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
           Your courses
         </span>

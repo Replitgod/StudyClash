@@ -194,7 +194,7 @@ export default function StudyPlanDetailPage() {
 
         <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-black tracking-tight sm:text-3xl">{plan.title}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{plan.title}</h1>
             <p className="mt-1 text-sm text-white/60">
               {plan.assessment_name || plan.assessment_type} &middot; {daysRemaining} day{daysRemaining === 1 ? "" : "s"}{" "}
               remaining &middot; {plan.status}

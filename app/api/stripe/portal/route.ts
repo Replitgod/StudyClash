@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
     const stripe = getStripeClient();
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: profile.stripe_customer_id,
-      return_url: `${getSiteUrl()}/account`,
+      // /account no longer exists; billing lives in Settings.
+      return_url: `${getSiteUrl()}/settings?billing=updated`,
     });
 
     return NextResponse.json({ url: portalSession.url });

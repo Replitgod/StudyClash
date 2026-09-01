@@ -28,7 +28,7 @@ export default function TermsPage() {
     <main className={`relative min-h-dvh w-full overflow-x-hidden bg-[var(--app-bg)] px-4 pt-12 text-white sm:px-6 sm:pt-16 ${FLOATING_ACTION.mobileBottomPadding}`}>
       <Reveal className="mx-auto w-full max-w-3xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-8">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">AceDecks Public Beta</p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight">Terms of Use</h1>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Terms of Use</h1>
         <p className="mt-2 text-sm text-white/55">Last updated: July 9, 2026</p>
 
         <div className="mt-6 space-y-5 text-sm leading-relaxed text-white/80">

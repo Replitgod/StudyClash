@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { getServiceSupabaseClient, requireAuthenticatedUser } from "@/lib/server/apiUtils";
+import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 import { TERRA_TASK } from "@/lib/server/aiModels";
 import {
   buildAceSystemPrompt,
@@ -59,6 +60,24 @@ export async function POST(
   const { userId, errorResponse } = await requireAuthenticatedUser(request);
   if (!userId) {
     return NextResponse.json({ error: errorResponse || "Unauthorized" }, { status: 401 });
+  }
+
+  // Every other OpenAI-spending route in the app is rate limited; these two
+  // were not, so one signed-in account could hold the generation budget open
+  // by replaying a request. Per user, not per IP: the caller is always
+  // authenticated here, and a shared school network should not throttle a
+  // whole class.
+  const rateLimit = await checkDistributedRateLimit({
+    key: `diagnostics-tutor:${userId}`,
+    limit: 20,
+    windowSeconds: 60,
+  });
+
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: "You are asking for these faster than we can write them. Try again in a moment." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
+    );
   }
 
   const { attemptId, questionId } = await params;

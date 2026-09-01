@@ -1,18 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { authFetch } from "@/lib/authFetch";
 import { useAuth } from "@/lib/useAuth";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { OPEN_FEEDBACK_EVENT } from "@/lib/uiLayout";
 import { FREE_PLAN_LIMIT_SUMMARY } from "@/lib/planLimits";
 import { useTheme } from "@/lib/useTheme";
 import { resolveTier } from "@/lib/tiers";
+import {
+  describeSubscription,
+  isLiveSubscription,
+  type SubscriptionStatus,
+} from "@/lib/billing";
 
 // Settings is deliberately boring. Nothing a student needs in order to
-// study lives here -- it is name, account, data, and the way out.
+// study lives here -- it is name, billing, account, data, and the way out.
+
+// Billing used to live on /account, which the four-destinations redesign
+// removed without rehoming it. The API routes survived; nothing called
+// them. That left a paying customer with no way to see their renewal date,
+// change a card, or cancel -- and Stripe returning them to a 404 after
+// paying. Both halves are fixed here; the wording of the status line is
+// pure and tested in lib/billing.ts.
 
 function Row({
   label,
@@ -53,9 +66,111 @@ export default function SettingsPage() {
   const [nameStatus, setNameStatus] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
 
+  const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
+  const [isOpeningPortal, setIsOpeningPortal] = useState(false);
+  const [billingError, setBillingError] = useState<string | null>(null);
+  const [justPaid, setJustPaid] = useState(false);
+  const [billingUpdated, setBillingUpdated] = useState(false);
+
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const isPro = currentTier.id !== "free";
+  const hasLiveSubscription = isLiveSubscription(subscription);
+
   useEffect(() => {
     setName(profile?.display_name?.trim() || "");
   }, [profile?.display_name]);
+
+  // Stripe returns the customer here after checkout and after the billing
+  // portal. Read off window.location rather than useSearchParams so this
+  // page does not need a Suspense boundary just to show a banner -- same
+  // approach /pricing already uses for its cancelled banner.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setJustPaid(params.get("checkout") === "success");
+    setBillingUpdated(params.get("billing") === "updated");
+  }, []);
+
+  const loadSubscription = useCallback(async () => {
+    try {
+      const response = await authFetch("/api/stripe/subscription");
+      if (!response.ok) return;
+      const data = await response.json();
+      setSubscription((data?.subscription as SubscriptionStatus | null) ?? null);
+    } catch {
+      // Billing status is decoration on this page -- the plan chip below is
+      // driven by profiles.plan, which the webhook owns. Failing to load it
+      // must not take out Settings.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    void loadSubscription();
+  }, [user?.id, loadSubscription]);
+
+  // Stripe redirects the customer back the instant the payment clears,
+  // which is usually *before* the webhook that grants Pro has landed. With
+  // no poll the customer sees "Free" on the page they were sent to by a
+  // successful payment, which reads as "it didn't work". Re-check a few
+  // times, then stop -- the banner explains the wait either way.
+  useEffect(() => {
+    if (!justPaid || !user?.id) return;
+    if (profile?.plan === "pro_individual" || profile?.plan === "pro") return;
+
+    let attempts = 0;
+    const timer = setInterval(() => {
+      attempts += 1;
+      refreshProfile();
+      void loadSubscription();
+      if (attempts >= 5) clearInterval(timer);
+    }, 2000);
+
+    return () => clearInterval(timer);
+  }, [justPaid, user?.id, profile?.plan, refreshProfile, loadSubscription]);
+
+  const openBillingPortal = useCallback(async () => {
+    setBillingError(null);
+    setIsOpeningPortal(true);
+    try {
+      const response = await authFetch("/api/stripe/portal", { method: "POST" });
+      const data = await response.json();
+      if (!response.ok || !data.url) {
+        setBillingError(data.error || "Could not open the billing portal. Please try again.");
+        setIsOpeningPortal(false);
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      setBillingError("Could not open the billing portal. Please try again.");
+      setIsOpeningPortal(false);
+    }
+  }, []);
+
+  const deleteAccount = useCallback(async () => {
+    setDeleteError(null);
+    setIsDeleting(true);
+    try {
+      const response = await authFetch("/api/account", { method: "DELETE" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setDeleteError(data.error || "Could not delete your account. Please try again.");
+        setIsDeleting(false);
+        return;
+      }
+      // The account is gone; the session token is now worthless. Sign out
+      // locally so the app does not keep rendering as a user that no longer
+      // exists, then leave for the marketing site.
+      await supabase.auth.signOut();
+      window.location.href = "/";
+    } catch {
+      setDeleteError("Could not delete your account. Please try again.");
+      setIsDeleting(false);
+    }
+  }, []);
 
   const saveName = async () => {
     if (!user?.id) return;
@@ -96,6 +211,32 @@ export default function SettingsPage() {
     <div className="app-page">
       <h1 className="t-page">Settings</h1>
 
+      {justPaid && (
+        <div
+          className="card mt-6 px-4 py-4"
+          role="status"
+          style={{ borderColor: "var(--accent-line)", background: "var(--accent-soft)" }}
+        >
+          <p className="text-[15px] font-medium" style={{ color: "var(--text-1)" }}>
+            {isPro ? "You're on Ace Pro. Everything is unlocked." : "Payment received. Switching Pro on…"}
+          </p>
+          <p className="t-meta mt-1">
+            {isPro
+              ? "Thanks for supporting AceDecks. Your receipt is in your email."
+              : "This usually takes a few seconds. You can start studying now — Pro applies to your account, not to this tab."}
+          </p>
+        </div>
+      )}
+
+      {billingUpdated && !justPaid && (
+        <div className="card mt-6 px-4 py-4" role="status">
+          <p className="text-[15px] font-medium" style={{ color: "var(--text-1)" }}>
+            Billing updated.
+          </p>
+          <p className="t-meta mt-1">Any change you made in the billing portal is saved.</p>
+        </div>
+      )}
+
       {/* ---- Account ---- */}
       <section className="mt-8">
         <h2 className="t-section">Account</h2>
@@ -135,16 +276,52 @@ export default function SettingsPage() {
 
           <Row label="Email" description={user?.email || "—"} />
 
-          <Row label="Plan" description={FREE_PLAN_LIMIT_SUMMARY}>
-            <div className="flex items-center gap-2">
-              <span className="chip">{currentTier.label}</span>
-              {currentTier.id === "free" && (
+          {/* The description used to be the free-plan cap summary for
+              everyone, so a paying customer was told about limits they had
+              already paid to remove. It now describes the plan they are
+              actually on. */}
+          <Row
+            label="Plan"
+            description={
+              isPro
+                ? describeSubscription(subscription) || currentTier.tagline
+                : FREE_PLAN_LIMIT_SUMMARY
+            }
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={isPro ? "chip chip-brand" : "chip"}>{currentTier.label}</span>
+              {!isPro && (
                 <Link href="/pricing" className="btn btn-sm btn-secondary">
                   Upgrade
                 </Link>
               )}
+              {hasLiveSubscription && (
+                <button
+                  type="button"
+                  onClick={() => void openBillingPortal()}
+                  disabled={isOpeningPortal}
+                  className="btn btn-sm btn-secondary"
+                >
+                  {isOpeningPortal ? "Opening…" : "Manage billing"}
+                </button>
+              )}
             </div>
           </Row>
+
+          {(billingError || subscription?.status === "past_due") && (
+            <div className="px-4 py-3">
+              {subscription?.status === "past_due" && (
+                <p className="t-meta" style={{ color: "var(--warning)" }}>
+                  Your last payment failed. Update your card in the billing portal to keep Pro.
+                </p>
+              )}
+              {billingError && (
+                <p className="t-meta mt-1" style={{ color: "var(--danger)" }} role="alert">
+                  {billingError}
+                </p>
+              )}
+            </div>
+          )}
 
           <Row
             label="Theme"
@@ -262,6 +439,83 @@ export default function SettingsPage() {
         >
           {isSigningOut ? "Signing out…" : "Sign out"}
         </button>
+      </section>
+
+      {/* ---- Delete account ----
+          Deliberately last, quiet, and behind a typed confirmation. It is
+          the one irreversible thing on this page. */}
+      <section className="mt-12">
+        <h2 className="t-section">Delete account</h2>
+        {!isDeleteOpen ? (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <p className="t-meta flex-1 min-w-[16rem]">
+              Permanently deletes your account, your study material, and your progress.
+              This cannot be undone.
+            </p>
+            <button
+              type="button"
+              onClick={() => setIsDeleteOpen(true)}
+              className="btn btn-sm btn-quiet"
+              style={{ color: "var(--danger)" }}
+            >
+              Delete my account
+            </button>
+          </div>
+        ) : (
+          <div className="card mt-3 px-4 py-4" style={{ borderColor: "var(--danger)" }}>
+            <p className="text-[15px] font-medium" style={{ color: "var(--text-1)" }}>
+              This deletes everything, permanently.
+            </p>
+            <p className="t-meta mt-1">
+              Your decks, questions, mastery history and progress are removed and cannot be
+              recovered. If you have an Ace Pro subscription it is cancelled first, so you
+              are not billed again.
+            </p>
+            <label htmlFor="delete-confirm" className="t-meta mt-4 block">
+              Type <span style={{ color: "var(--text-1)" }}>DELETE</span> to confirm.
+            </label>
+            <input
+              id="delete-confirm"
+              value={deleteConfirmation}
+              onChange={(e) => setDeleteConfirmation(e.target.value)}
+              autoComplete="off"
+              className="field mt-2 max-w-[12rem]"
+              placeholder="DELETE"
+            />
+            {deleteError && (
+              <p className="t-meta mt-2" style={{ color: "var(--danger)" }} role="alert">
+                {deleteError}
+              </p>
+            )}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void deleteAccount()}
+                disabled={deleteConfirmation.trim() !== "DELETE" || isDeleting}
+                className="btn btn-sm"
+                style={{
+                  background: "var(--danger)",
+                  color: "#1a0708",
+                  fontWeight: 600,
+                }}
+              >
+                {isDeleting ? "Deleting…" : "Delete my account permanently"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDeleteOpen(false);
+                  setDeleteConfirmation("");
+                  setDeleteError(null);
+                }}
+                disabled={isDeleting}
+                className="btn btn-sm btn-secondary"
+              >
+                Keep my account
+              </button>
+            </div>
+          </div>
+        )}
       </section>
     </div>
   );

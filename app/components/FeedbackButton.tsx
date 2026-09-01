@@ -183,7 +183,7 @@ export default function FeedbackButton() {
                   placeholder="Bug reports, feature ideas, or anything else..."
                   required
                   rows={4}
-                  className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
+                  className="mt-2 w-full resize-none rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-[var(--text-3)] outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
                 />
                 <div className="mt-1 flex items-center justify-between text-[11px] text-[var(--text-3)]">
                   <span>Tip: include what you expected and what happened.</span>

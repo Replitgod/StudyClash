@@ -109,7 +109,7 @@ export default function ClassroomJoinPage() {
     <Background>
       <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-sm sm:p-8">
         <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">Classroom Join</p>
-        <h1 className="mt-2 text-2xl font-black tracking-tight text-white sm:text-3xl">Enter Room Code</h1>
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl">Enter Room Code</h1>
         <p className="mt-2 text-sm text-white/65">Use the code shared by your teacher to join the live deck battle.</p>
 
         <label htmlFor="roomCode" className="mt-5 block text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">
@@ -120,7 +120,7 @@ export default function ClassroomJoinPage() {
           value={roomCode}
           onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
           placeholder="AB12CD"
-          className="mt-2 w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-base font-bold tracking-[0.2em] text-white placeholder-white/30 outline-none focus:border-indigo-300/50"
+          className="mt-2 w-full rounded-xl border border-white/15 bg-black/30 px-4 py-3 text-base font-bold tracking-[0.2em] text-white placeholder-[var(--text-3)] outline-none focus:border-indigo-300/50"
           maxLength={8}
         />
 

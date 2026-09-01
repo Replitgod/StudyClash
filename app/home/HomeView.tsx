@@ -24,6 +24,15 @@ import { useProgress } from "@/lib/useProgress";
 // section with nothing real to say renders nothing at all rather than a
 // placeholder zero.
 
+// Offered to an account with nothing in it yet. Deliberately three, and
+// deliberately ordinary school subjects: the point is to remove the "what
+// do I even type?" pause, not to show off range.
+const STARTER_TOPICS = [
+  "Photosynthesis",
+  "The French Revolution",
+  "Quadratic equations",
+];
+
 function DeckCard({
   href,
   title,
@@ -111,6 +120,7 @@ export default function HomeView() {
         <Composer
           autoFocus={snapshot.isEmpty}
           examTrack={examTrack}
+          suggestions={snapshot.isEmpty ? STARTER_TOPICS : undefined}
           placeholder={
             snapshot.isEmpty
               ? "What are you studying? Type a topic, or attach your notes."
@@ -222,29 +232,47 @@ export default function HomeView() {
         </section>
       )}
 
-      {/* ---- Nothing yet ---- */}
+      {/* ---- Nothing yet ----
+          The three example topics used to be rendered here as plain
+          paragraphs that looked like cards, under copy telling the student
+          to type one of them into the box themselves. They are now chips on
+          the composer itself (one tap fills the box), so this section only
+          has to explain what happens next. */}
       {snapshot.isEmpty && (
         <section className="mt-10 rise">
-          <h2 className="t-section">Try one of these</h2>
-          <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <h2 className="t-section">How this works</h2>
+          <ol className="card mt-3 divide-y" style={{ borderColor: "var(--line)" }}>
             {[
-              "Photosynthesis",
-              "The French Revolution",
-              "Quadratic equations",
-            ].map((idea) => (
-              <p
-                key={idea}
-                className="card px-4 py-3 text-[14px]"
-                style={{ color: "var(--text-2)" }}
-              >
-                {idea}
-              </p>
+              {
+                title: "Give it your material",
+                detail: "A topic, your notes, a PDF, or a photo of the page.",
+              },
+              {
+                title: "It writes your study set",
+                detail: "Notes, questions and flashcards, in about 20 seconds.",
+              },
+              {
+                title: "Study, and it learns what you forget",
+                detail: "Weak topics come back until they stop being weak.",
+              },
+            ].map((step, index) => (
+              <li key={step.title} className="flex gap-3.5 px-4 py-3.5">
+                <span
+                  aria-hidden="true"
+                  className="mt-0.5 flex h-6 w-6 flex-none items-center justify-center rounded-full text-[12px] font-medium"
+                  style={{ background: "var(--brand-soft)", color: "var(--brand-text)" }}
+                >
+                  {index + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[15px] font-medium" style={{ color: "var(--text-1)" }}>
+                    {step.title}
+                  </p>
+                  <p className="t-meta mt-0.5">{step.detail}</p>
+                </div>
+              </li>
             ))}
-          </div>
-          <p className="t-meta mt-3">
-            Type one of those into the box above and press Start studying. AceDecks
-            writes the notes, the questions, and the flashcards for you.
-          </p>
+          </ol>
         </section>
       )}
     </div>

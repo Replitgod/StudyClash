@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServiceSupabaseClient } from "@/lib/server/apiUtils";
+import { getServiceSupabaseClient, isAuthorizedCronRequest } from "@/lib/server/apiUtils";
 
 // Runs daily (see vercel.json). Scans topic_review_schedule for rows whose
 // next_review_at has passed and that haven't been notified yet, and creates
@@ -10,20 +10,13 @@ import { getServiceSupabaseClient } from "@/lib/server/apiUtils";
 // the page, so this cron is what actually closes the loop.
 //
 // Vercel Cron Jobs automatically send `Authorization: Bearer $CRON_SECRET`
-// when the CRON_SECRET env var is set on the project -- set that env var to
-// enable this check. If it's unset, the route stays open (fine for local/
-// preview environments where cron never fires anyway).
+// when the CRON_SECRET env var is set on the project. Authorization lives in
+// isAuthorizedCronRequest (lib/server/apiUtils.ts), which stays open in
+// local/preview environments and closed in production.
 const MAX_ROWS_PER_RUN = 200;
 
-function isAuthorized(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true;
-
-  return req.headers.get("authorization") === `Bearer ${secret}`;
-}
-
 export async function GET(req: NextRequest) {
-  if (!isAuthorized(req)) {
+  if (!isAuthorizedCronRequest(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

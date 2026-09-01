@@ -125,7 +125,7 @@ export default function CampaignDetailPage() {
       <Link href="/admin/marketing/campaigns" className="text-sm font-semibold text-indigo-300">
         ← All campaigns
       </Link>
-      <h1 className="mt-2 text-2xl font-black">{campaign.name}</h1>
+      <h1 className="mt-2 text-2xl font-semibold">{campaign.name}</h1>
       <p className="mt-1 text-sm text-white/50">
         {CAMPAIGN_GOAL_LABELS[campaign.goal]} · {campaign.status.replace(/_/g, " ")}
       </p>

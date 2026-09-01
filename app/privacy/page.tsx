@@ -28,7 +28,7 @@ export default function PrivacyPage() {
     <main className={`relative min-h-dvh w-full overflow-x-hidden bg-[var(--app-bg)] px-4 pt-12 text-white sm:px-6 sm:pt-16 ${FLOATING_ACTION.mobileBottomPadding}`}>
       <Reveal className="mx-auto w-full max-w-3xl rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm sm:p-8">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">AceDecks Public Beta</p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight">Privacy Policy</h1>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Privacy Policy</h1>
         <p className="mt-2 text-sm text-white/55">Last updated: July 9, 2026</p>
 
         <div className="mt-6 space-y-5 text-sm leading-relaxed text-white/80">
@@ -49,7 +49,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-base font-bold text-white">Uploaded notes and study material</h2>
-            <p className="mt-1">Notes and PDFs you upload are stored so your decks stay available across sessions and devices, and so the app can regenerate or reference material you&apos;ve already added. They are not shared publicly or with other users. We don&apos;t currently run an automatic deletion schedule &mdash; uploaded material is kept until you delete the deck yourself or request account deletion (see below).</p>
+            <p className="mt-1">Notes and PDFs you upload are stored so your decks stay available across sessions and devices, and so the app can regenerate or reference material you&apos;ve already added. They are not shared publicly or with other users. We don&apos;t currently run an automatic deletion schedule &mdash; uploaded material is kept until you delete the deck yourself, or delete your account, which removes it (see below).</p>
           </section>
 
           <section>
@@ -59,7 +59,8 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-base font-bold text-white">Deleting your account and uploads</h2>
-            <p className="mt-1">To delete your account, your decks, and any notes or files you&apos;ve uploaded, <Link href="/contact" className="text-indigo-200 hover:text-indigo-100">contact us</Link> from the email on your account. We don&apos;t yet have a self-service delete option inside the app itself &mdash; deletion requests are handled manually.</p>
+            <p className="mt-1">You can delete your account yourself at any time from <Link href="/settings" className="text-indigo-200 hover:text-indigo-100">Settings</Link>, at the bottom of the page. It removes your account, your decks and questions, your uploaded notes, and your mastery and progress history, and it cannot be undone. If you have a paid subscription it is cancelled first, so you are not billed again.</p>
+            <p className="mt-2">Match results you have already played keep their score and time but are detached from your account, so a shared challenge link or a class leaderboard does not break for other people. If you would rather we handled the deletion for you, <Link href="/contact" className="text-indigo-200 hover:text-indigo-100">contact us</Link> from the email on your account.</p>
           </section>
 
           <section>

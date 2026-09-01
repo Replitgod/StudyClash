@@ -106,7 +106,7 @@ export default function ClassroomPage() {
           <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-indigo-300">Classroom Mode</p>
           <span className="rounded-full border border-amber-400/25 bg-amber-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-200">Beta</span>
         </div>
-        <h1 className="mt-2 text-3xl font-black tracking-tight text-white sm:text-4xl">
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
           Live Study Rooms
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-white/65 sm:text-base">
@@ -139,28 +139,28 @@ export default function ClassroomPage() {
               onChange={(event) => setWorkEmail(event.target.value)}
               aria-label="Work email"
               placeholder="Work email"
-              className="rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/35 outline-none focus:border-amber-300/45"
+              className="rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-[var(--text-3)] outline-none focus:border-amber-300/45"
             />
             <input
               value={organization}
               onChange={(event) => setOrganization(event.target.value)}
               aria-label="School or organization"
               placeholder="School or organization"
-              className="rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/35 outline-none focus:border-amber-300/45"
+              className="rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-[var(--text-3)] outline-none focus:border-amber-300/45"
             />
             <input
               value={role}
               onChange={(event) => setRole(event.target.value)}
               aria-label="Role"
               placeholder="Role"
-              className="rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/35 outline-none focus:border-amber-300/45"
+              className="rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-[var(--text-3)] outline-none focus:border-amber-300/45"
             />
             <input
               value={seats}
               onChange={(event) => setSeats(event.target.value)}
               aria-label="Estimated seats"
               placeholder="Estimated seats"
-              className="rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/35 outline-none focus:border-amber-300/45"
+              className="rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-[var(--text-3)] outline-none focus:border-amber-300/45"
             />
           </div>
 
@@ -170,7 +170,7 @@ export default function ClassroomPage() {
             aria-label="Cohort or curriculum notes"
             placeholder="Anything we should know about your cohort or curriculum goals"
             rows={3}
-            className="mt-2 w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/35 outline-none focus:border-amber-300/45"
+            className="mt-2 w-full rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-sm text-white placeholder-[var(--text-3)] outline-none focus:border-amber-300/45"
           />
 
           <div className="mt-3 flex flex-wrap items-center gap-2">

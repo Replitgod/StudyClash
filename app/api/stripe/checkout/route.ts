@@ -10,6 +10,7 @@ import {
   isStripeCheckoutAllowedForEmail,
   isStripeTestMode,
 } from "@/lib/server/stripe";
+import { getTierPrice, TIERS, type BillingInterval } from "@/lib/tiers";
 
 // Subscription statuses that mean "this user already has a AceDecks Pro
 // subscription in flight" -- checkout is blocked while one of these exists
@@ -54,8 +55,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Please log in to upgrade to Pro." }, { status: 401 });
   }
 
-  const priceId = process.env.STRIPE_PRO_PRICE_ID;
+  // Which interval the customer picked. Anything other than "year" is
+  // treated as monthly, so a malformed body cannot land someone on a plan
+  // they did not choose -- and never a price id supplied by the client,
+  // which would let a caller buy any price in the Stripe account.
+  const body = await request.json().catch(() => null);
+  const interval: BillingInterval =
+    body && typeof body === "object" && (body as { interval?: unknown }).interval === "year"
+      ? "year"
+      : "month";
+
+  const tierPrice = getTierPrice(TIERS.pro, interval);
+  if (!tierPrice) {
+    return NextResponse.json({ error: "That plan is not available." }, { status: 400 });
+  }
+
+  const priceId = process.env[tierPrice.stripePriceEnvVar];
   if (!priceId) {
+    // A missing annual price id must not silently fall back to the monthly
+    // one: the customer chose a yearly plan and would be charged $9.99 a
+    // month instead.
+    console.error(
+      `Stripe checkout: ${tierPrice.stripePriceEnvVar} is not set, so the ${interval}ly Ace Pro price cannot be sold.`
+    );
     return NextResponse.json({ error: "Checkout is not configured." }, { status: 500 });
   }
 
@@ -112,9 +134,13 @@ export async function POST(request: NextRequest) {
       client_reference_id: auth.userId,
       line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: {
-        metadata: { supabase_user_id: auth.userId },
+        metadata: { supabase_user_id: auth.userId, billing_interval: interval },
       },
-      success_url: `${siteUrl}/account?checkout=success`,
+      // Both of these must be routes that actually exist. They used to
+      // point at /account, a page removed in the four-destinations
+      // redesign, so every customer who completed a payment was handed a
+      // 404 as their receipt. Billing now lives in Settings.
+      success_url: `${siteUrl}/settings?checkout=success`,
       cancel_url: `${siteUrl}/pricing?checkout=cancelled`,
     });
 

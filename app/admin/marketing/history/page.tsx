@@ -103,7 +103,7 @@ export default function PostingHistoryPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="text-2xl font-black">Posting History</h1>
+      <h1 className="text-2xl font-semibold">Posting History</h1>
       <p className="mt-1 text-sm text-white/50">
         Metrics are hand-entered unless a connected platform API supplies them (Phase 2).
       </p>

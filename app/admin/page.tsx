@@ -666,7 +666,7 @@ export default function AdminPage() {
       </div>
 
       {/* Title */}
-      <h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
+      <h1 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
         <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
           Admin Dashboard
         </span>
@@ -689,7 +689,7 @@ export default function AdminPage() {
             key={card.label}
             className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center backdrop-blur-sm sm:p-5"
           >
-            <p className={`text-2xl font-black sm:text-3xl ${card.color}`}>
+            <p className={`text-2xl font-semibold sm:text-3xl ${card.color}`}>
               {card.value}
             </p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)] sm:text-xs">
@@ -752,7 +752,7 @@ export default function AdminPage() {
                 key={card.label}
                 className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 text-center backdrop-blur-sm sm:p-5"
               >
-                <p className={`text-2xl font-black sm:text-3xl ${card.color}`}>
+                <p className={`text-2xl font-semibold sm:text-3xl ${card.color}`}>
                   {card.value}
                 </p>
                 <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)] sm:text-xs">
@@ -770,13 +770,13 @@ export default function AdminPage() {
           whether the share loop works, not the individual event totals
           above. */}
       <div className="mt-10 w-full rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.04] p-5 backdrop-blur-sm sm:p-6">
-        <h2 className="text-lg font-black text-indigo-100">Growth Loop Health</h2>
+        <h2 className="text-lg font-semibold text-indigo-100">Growth Loop Health</h2>
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-xl border border-white/10 bg-black/20 p-4">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
               Challenge open rate (today)
             </p>
-            <p className="mt-2 text-2xl font-black text-indigo-300">
+            <p className="mt-2 text-2xl font-semibold text-indigo-300">
               {analytics.challengeLinkCopiedToday === 0
                 ? "-"
                 : `${Math.round((analytics.challengeLinkOpenedToday / analytics.challengeLinkCopiedToday) * 100)}%`}
@@ -790,7 +790,7 @@ export default function AdminPage() {
             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
               Day-7 retention (rolling cohort)
             </p>
-            <p className="mt-2 text-2xl font-black text-green-300">
+            <p className="mt-2 text-2xl font-semibold text-green-300">
               {retention?.day7RetentionRatePercent == null ? "-" : `${retention.day7RetentionRatePercent}%`}
             </p>
             <p className="mt-1 text-[11px] text-[var(--text-3)]">
@@ -809,18 +809,18 @@ export default function AdminPage() {
       </div>
 
       <div className="mt-10 w-full rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.04] p-5 backdrop-blur-sm sm:p-6">
-        <h2 className="text-lg font-black text-indigo-100">Diagnostics &amp; Study Plans</h2>
+        <h2 className="text-lg font-semibold text-indigo-100">Diagnostics &amp; Study Plans</h2>
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
-            <p className="text-2xl font-black text-white">{analytics.diagnosticStartedToday}</p>
+            <p className="text-2xl font-semibold text-white">{analytics.diagnosticStartedToday}</p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Diagnostics Started Today</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
-            <p className="text-2xl font-black text-green-300">{analytics.diagnosticCompletedToday}</p>
+            <p className="text-2xl font-semibold text-green-300">{analytics.diagnosticCompletedToday}</p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Diagnostics Completed Today</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
-            <p className="text-2xl font-black text-indigo-300">
+            <p className="text-2xl font-semibold text-indigo-300">
               {diagnostics.completionRatePercent == null ? "-" : `${diagnostics.completionRatePercent}%`}
             </p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
@@ -828,7 +828,7 @@ export default function AdminPage() {
             </p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
-            <p className="text-2xl font-black text-indigo-300">
+            <p className="text-2xl font-semibold text-indigo-300">
               {diagnostics.averageEstimatedLow == null
                 ? "-"
                 : `${diagnostics.averageEstimatedLow}–${diagnostics.averageEstimatedHigh}`}
@@ -838,23 +838,23 @@ export default function AdminPage() {
             </p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
-            <p className="text-2xl font-black text-white">{diagnostics.plansCreated}</p>
+            <p className="text-2xl font-semibold text-white">{diagnostics.plansCreated}</p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Study Plans Created</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
-            <p className="text-2xl font-black text-green-300">
+            <p className="text-2xl font-semibold text-green-300">
               {diagnostics.taskCompletionRatePercent == null ? "-" : `${diagnostics.taskCompletionRatePercent}%`}
             </p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Task Completion Rate</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
-            <p className="text-2xl font-black text-indigo-300">
+            <p className="text-2xl font-semibold text-indigo-300">
               {diagnostics.resourceClickRatePercent == null ? "-" : `${diagnostics.resourceClickRatePercent}%`}
             </p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Resource Click Rate (today)</p>
           </div>
           <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-center">
-            <p className="text-2xl font-black text-amber-300">{analytics.resourceClickedToday}</p>
+            <p className="text-2xl font-semibold text-amber-300">{analytics.resourceClickedToday}</p>
             <p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Resource Clicks Today</p>
           </div>
         </div>
@@ -1162,15 +1162,15 @@ export default function AdminPage() {
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-green-400/20 bg-green-500/[0.05] p-4">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-green-300">Improving Students</p>
-                <p className="mt-2 text-2xl font-black text-green-200">{tutorDashboard.proofOfImprovement.improvingStudents}</p>
+                <p className="mt-2 text-2xl font-semibold text-green-200">{tutorDashboard.proofOfImprovement.improvingStudents}</p>
               </div>
               <div className="rounded-2xl border border-indigo-400/20 bg-indigo-500/[0.05] p-4">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Holding Steady</p>
-                <p className="mt-2 text-2xl font-black text-indigo-200">{tutorDashboard.proofOfImprovement.holdingStudents}</p>
+                <p className="mt-2 text-2xl font-semibold text-indigo-200">{tutorDashboard.proofOfImprovement.holdingStudents}</p>
               </div>
               <div className="rounded-2xl border border-amber-400/20 bg-amber-500/[0.05] p-4">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-amber-300">Needs Intervention</p>
-                <p className="mt-2 text-2xl font-black text-amber-200">{tutorDashboard.proofOfImprovement.strugglingStudents}</p>
+                <p className="mt-2 text-2xl font-semibold text-amber-200">{tutorDashboard.proofOfImprovement.strugglingStudents}</p>
               </div>
             </div>
 
@@ -1247,7 +1247,7 @@ export default function AdminPage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="text-xs font-bold uppercase tracking-wider text-indigo-300">Parent-Friendly Report</p>
-                    <h2 className="mt-1 text-2xl font-black tracking-tight text-white">{selectedTutorStudent.name}</h2>
+                    <h2 className="mt-1 text-2xl font-semibold tracking-tight text-white">{selectedTutorStudent.name}</h2>
                     <p className="mt-1 text-sm text-[var(--text-3)]">Screenshot-ready summary for parents and tutors.</p>
                   </div>
                   <button
@@ -1260,9 +1260,9 @@ export default function AdminPage() {
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Latest Score</p><p className="mt-2 text-2xl font-black text-indigo-300">{selectedTutorStudent.latestScore} pts</p></div>
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Accuracy</p><p className="mt-2 text-2xl font-black text-green-300">{selectedTutorStudent.latestAccuracy}%</p></div>
-                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Best Score</p><p className="mt-2 text-2xl font-black text-indigo-300">{selectedTutorStudent.bestScore} pts</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Latest Score</p><p className="mt-2 text-2xl font-semibold text-indigo-300">{selectedTutorStudent.latestScore} pts</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Accuracy</p><p className="mt-2 text-2xl font-semibold text-green-300">{selectedTutorStudent.latestAccuracy}%</p></div>
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Best Score</p><p className="mt-2 text-2xl font-semibold text-indigo-300">{selectedTutorStudent.bestScore} pts</p></div>
                   <div className="rounded-xl border border-white/10 bg-black/20 p-4"><p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Trend</p><p className="mt-2 text-lg font-bold text-indigo-300">{selectedTutorStudent.trendLabel}</p></div>
                 </div>
 

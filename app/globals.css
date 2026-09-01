@@ -665,7 +665,11 @@ textarea:-webkit-autofill:focus {
 }
 
 .field::placeholder {
-  color: var(--text-4);
+  /* --text-3, not --text-4. A placeholder is text a sighted user has to
+     read to know what the field wants, so it is held to WCAG AA like any
+     other text: --text-4 is 2.61:1 on --panel and fails, --text-3 is
+     4.58:1 and passes. Enforced by lib/themeContrast.test.ts. */
+  color: var(--text-3);
 }
 
 .field:hover {

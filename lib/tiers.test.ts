@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  annualSaving,
   cardsAllowed,
   evaluateRequest,
+  formatCents,
+  getTierPrice,
+  hasIntervalChoice,
   includedInProLabel,
   PUBLIC_TIERS,
   resolveTier,
@@ -167,5 +171,86 @@ describe("includedInProLabel", () => {
   it("stays consistent with the amount charged in cents", () => {
     const dollars = Number(TIERS.pro.price.replace(/[^0-9.]/g, ""));
     expect(Math.round(dollars * 100)).toBe(TIERS.pro.amountCents);
+  });
+});
+
+describe("billing intervals", () => {
+  it("sells Ace Pro on both a monthly and a yearly price", () => {
+    expect(hasIntervalChoice(TIERS.pro)).toBe(true);
+    expect(getTierPrice(TIERS.pro, "month")?.amountCents).toBe(999);
+    expect(getTierPrice(TIERS.pro, "year")?.amountCents).toBe(9900);
+  });
+
+  it("offers no interval choice on tiers sold one way", () => {
+    expect(hasIntervalChoice(TIERS.free)).toBe(false);
+    expect(hasIntervalChoice(TIERS.classroom)).toBe(false);
+    expect(getTierPrice(TIERS.classroom, "month")).toBeNull();
+  });
+
+  it("keeps every price's display string in step with its cent amount", () => {
+    // The drift this catches is the one that already happened once: a
+    // displayed price that no longer matches what Stripe charges.
+    for (const tier of PUBLIC_TIERS) {
+      for (const price of tier.prices) {
+        expect(price.price, `${tier.id}/${price.interval}`).toBe(
+          formatCents(price.amountCents)
+        );
+      }
+    }
+  });
+
+  it("names an env var for every purchasable price", () => {
+    for (const tier of PUBLIC_TIERS) {
+      for (const price of tier.prices) {
+        expect(price.stripePriceEnvVar).toMatch(/^STRIPE_[A-Z_]+_PRICE_ID$/);
+      }
+    }
+  });
+
+  it("computes the annual saving from the amounts rather than a claim", () => {
+    const saving = annualSaving(TIERS.pro);
+    expect(saving).not.toBeNull();
+    // $9.99 x 12 = $119.88 against $99.
+    expect(saving?.amountCents).toBe(2088);
+    expect(saving?.percent).toBe(17);
+    expect(saving?.monthsFree).toBe(2);
+  });
+
+  it("rounds the saving down so the claim is never overstated", () => {
+    const saving = annualSaving({
+      ...TIERS.pro,
+      prices: [
+        { ...getTierPrice(TIERS.pro, "month")!, amountCents: 1000 },
+        { ...getTierPrice(TIERS.pro, "year")!, amountCents: 10999 },
+      ],
+    });
+    // 12000 - 10999 = 1001 -> 8.34%, and 1.001 months. Both floor.
+    expect(saving?.percent).toBe(8);
+    expect(saving?.monthsFree).toBe(1);
+  });
+
+  it("reports no saving when a yearly price is not actually cheaper", () => {
+    const noDiscount = annualSaving({
+      ...TIERS.pro,
+      prices: [
+        { ...getTierPrice(TIERS.pro, "month")!, amountCents: 999 },
+        { ...getTierPrice(TIERS.pro, "year")!, amountCents: 11988 },
+      ],
+    });
+    expect(noDiscount).toBeNull();
+  });
+
+  it("has no interval choice, so no saving, on a single-price tier", () => {
+    expect(annualSaving(TIERS.classroom)).toBeNull();
+    expect(annualSaving(TIERS.free)).toBeNull();
+  });
+});
+
+describe("formatCents", () => {
+  it("drops a trailing .00 and keeps real cents", () => {
+    expect(formatCents(9900)).toBe("$99");
+    expect(formatCents(999)).toBe("$9.99");
+    expect(formatCents(2088)).toBe("$20.88");
+    expect(formatCents(0)).toBe("$0");
   });
 });

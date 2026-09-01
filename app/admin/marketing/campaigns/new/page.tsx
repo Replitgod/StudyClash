@@ -67,11 +67,11 @@ export default function NewCampaignPage() {
   };
 
   const inputClass =
-    "mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white placeholder-white/30 outline-none focus:border-indigo-400/50";
+    "mt-1 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white placeholder-[var(--text-3)] outline-none focus:border-indigo-400/50";
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-black">Create AceDecks Campaign</h1>
+      <h1 className="text-2xl font-semibold">Create AceDecks Campaign</h1>
       <p className="mt-1 text-sm text-white/50">
         Every draft this campaign generates still requires your review and approval before anything goes out.
       </p>

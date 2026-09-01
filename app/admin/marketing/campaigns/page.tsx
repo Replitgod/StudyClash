@@ -46,7 +46,7 @@ export default function CampaignsListPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-black">Campaigns</h1>
+        <h1 className="text-2xl font-semibold">Campaigns</h1>
         <Link
           href="/admin/marketing/campaigns/new"
           className="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white"
