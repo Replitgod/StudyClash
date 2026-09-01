@@ -3,6 +3,9 @@ import { PageViewTracker } from "./components/PageViewTracker";
 import { NeonLanding } from "./components/marketing/NeonLanding";
 import { FAQ_ITEMS } from "./components/marketing/faq";
 import { SiteFooter } from "./components/marketing/SiteFooter";
+// The HowTo schema is built from the same array the page renders, so the two
+// cannot describe different products.
+import { STEPS } from "./components/marketing/steps";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acedecks.org";
 
@@ -39,25 +42,6 @@ export const metadata: Metadata = {
     images: ["/twitter-image"],
   },
 };
-
-// Three steps, because there are three steps. The old homepage had eight
-// sections, an autoplaying demo rail, an embedded playable battle, a product
-// story, a stat band, and a nine-item FAQ -- all before a visitor could work
-// out what the product does.
-const STEPS = [
-  {
-    title: "Give it anything",
-    body: "Type a topic, paste your notes, or attach a PDF or a photo of the page.",
-  },
-  {
-    title: "It builds everything",
-    body: "Notes, questions, and flashcards, written from your material in about twenty seconds.",
-  },
-  {
-    title: "It keeps you honest",
-    body: "It tracks what you keep getting wrong and brings it back until you know it.",
-  },
-];
 
 
 export default function Home() {

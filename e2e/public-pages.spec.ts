@@ -106,6 +106,46 @@ test("homepage FAQ structured data matches the visible FAQ and the real tiers", 
   }
 });
 
+// Same failure as the FAQ above, in the other schema block, and it had
+// already happened: app/page.tsx published a HowTo describing THREE steps
+// ("Give it anything" / "It builds everything" / "It keeps you honest")
+// while the page rendered four differently-named ones under a headline that
+// says "Four steps". Both now read app/components/marketing/steps.ts.
+test("homepage HowTo structured data matches the steps the page shows", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const blocks = await page.locator('script[type="application/ld+json"]').allTextContents();
+  const howTo = blocks
+    .map((raw) => {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return null;
+      }
+    })
+    .find((json) => json?.["@type"] === "HowTo");
+
+  expect(howTo, "the homepage should emit a HowTo block").toBeTruthy();
+
+  // Every step named in the schema has to be a step the reader can see.
+  for (const step of howTo.step) {
+    await expect(
+      page.getByText(step.name, { exact: false }).first(),
+      `HowTo step "${step.name}" is in the schema but not on the page`
+    ).toBeVisible();
+  }
+
+  // And the count has to match the claim the headline makes about it.
+  const shell = page.locator("section", { hasText: "Four steps" }).first();
+  await expect(shell).toBeVisible();
+  expect(
+    howTo.step.length,
+    "the page says four steps, so the schema must carry four"
+  ).toBe(4);
+});
+
 // The offer pill in the header is the first price claim a visitor reads.
 test("the header does not promise an unlimited free plan", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });

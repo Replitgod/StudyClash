@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { FileInput, Sparkles, Radar, Wrench, type LucideIcon } from "lucide-react";
+import { STEPS, type StepIconName } from "@/app/components/marketing/steps";
 
 // The four-step grid.
 //
@@ -16,61 +17,12 @@ import { FileInput, Sparkles, Radar, Wrench, type LucideIcon } from "lucide-reac
 // and the CSS radial gradient in `.bento::before` reads them. Doing it in
 // CSS rather than React keeps it off the render path entirely.
 
-type Step = {
-  n: string;
-  title: string;
-  Icon: LucideIcon;
-  badge: string;
-  body: string;
-  stats: Array<{ value: string; label: string }>;
+const ICONS: Record<StepIconName, LucideIcon> = {
+  ingest: FileInput,
+  generate: Sparkles,
+  detect: Radar,
+  repair: Wrench,
 };
-
-const STEPS: Step[] = [
-  {
-    n: "01",
-    title: "Ingest",
-    Icon: FileInput,
-    badge: "Anything you have",
-    body: "Drop a topic, your notes, a PDF, or a photo of the page. Everything gets parsed into concepts.",
-    stats: [
-      { value: "Any", label: "file type" },
-      { value: "~20s", label: "to first question" },
-    ],
-  },
-  {
-    n: "02",
-    title: "Generate",
-    Icon: Sparkles,
-    badge: "Written from your material",
-    body: "Notes, questions and flashcards written from your material — every answer validated before it reaches you.",
-    stats: [
-      { value: "100%", label: "answers verified" },
-      { value: "0", label: "broken questions" },
-    ],
-  },
-  {
-    n: "03",
-    title: "Detect",
-    Icon: Radar,
-    badge: "The mastery model",
-    body: "Each answer updates a real mastery model: recency, difficulty, hesitation and decay.",
-    stats: [
-      { value: "6", label: "signals tracked" },
-      { value: "Live", label: "decay modelling" },
-    ],
-  },
-  {
-    n: "04",
-    title: "Repair",
-    Icon: Wrench,
-    badge: "Where the gain is",
-    body: "Miss something and it names the exact misconception, then re-tests the same idea until it holds.",
-    stats: [
-      { value: "+30", label: "recovery XP" },
-      { value: "1 tap", label: "to fix a gap" },
-    ],
-  },
-];
 
 export function StepGrid() {
   const track = useCallback((event: React.PointerEvent<HTMLElement>) => {
@@ -82,7 +34,9 @@ export function StepGrid() {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {STEPS.map((step) => (
+      {STEPS.map((step) => {
+        const Icon = ICONS[step.icon];
+        return (
         <article key={step.n} className="bento p-6" onPointerMove={track}>
           <div className="flex items-start justify-between gap-3">
             <span
@@ -93,7 +47,7 @@ export function StepGrid() {
                 background: "var(--accent-soft)",
               }}
             >
-              <step.Icon className="h-4 w-4" style={{ color: "var(--accent-bright)" }} />
+              <Icon className="h-4 w-4" style={{ color: "var(--accent-bright)" }} />
             </span>
             <span
               className="font-mono text-[11px] tabular-nums tracking-[0.18em]"
@@ -145,7 +99,8 @@ export function StepGrid() {
             ))}
           </div>
         </article>
-      ))}
+        );
+      })}
     </div>
   );
 }
