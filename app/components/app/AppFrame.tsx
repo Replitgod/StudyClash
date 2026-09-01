@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { StudyProvider } from "@/lib/useStudy";
 import Navigation from "@/app/components/Navigation";
-import { LogoMark, Wordmark } from "@/app/components/brand/Logo";
+import { LogoMark } from "@/app/components/brand/Logo";
 import { CommandMenu, OPEN_COMMAND_MENU_EVENT } from "@/app/components/CommandMenu";
 import { activeNavId, chromeFor, NAV_ITEMS } from "./routes";
 import {
@@ -31,8 +31,26 @@ function openSearch() {
 // The app shell shows the real mark. `idPrefix` differs per call site
 // because the sidebar and the mobile bar can both be mounted at once and
 // SVG gradient ids are document-global.
-function Logo({ className = "", idPrefix }: { className?: string; idPrefix?: string }) {
-  return <LogoMark className={`h-8 w-8 flex-none ${className}`} idPrefix={idPrefix} />;
+// The mark alone, with no wordmark beside it.
+//
+// Asked for directly by the owner: the logo is the logo, and the product
+// name is not set in type next to it. Wordmark is still exported and still
+// used by the composite Logo() below for anywhere a lockup is wanted; the
+// nav, sidebar and mobile bar use the bare mark. An accessible name is
+// still attached, so a screen reader announces "AceDecks" where a sighted
+// reader sees the mark.
+function Logo({
+  className = "",
+  idPrefix,
+  title,
+}: {
+  className?: string;
+  idPrefix?: string;
+  title?: string;
+}) {
+  return (
+    <LogoMark className={`h-8 w-8 flex-none ${className}`} idPrefix={idPrefix} title={title} />
+  );
 }
 
 /* ---------------------------------------------------------------- sidebar */
@@ -50,8 +68,7 @@ function Sidebar({ pathname }: { pathname: string }) {
         href="/home"
         className="mb-6 flex items-center gap-2.5 rounded-lg px-2 py-1.5"
       >
-        <Logo idPrefix="side" />
-        <Wordmark className="text-[17px]" />
+        <Logo idPrefix="side" title="AceDecks" />
       </Link>
 
       <ul className="flex flex-col gap-0.5">
@@ -120,8 +137,7 @@ function MobileTopBar() {
       style={{ borderColor: "var(--line)", background: "color-mix(in srgb, var(--app-bg) 88%, transparent)", backdropFilter: "blur(12px)" }}
     >
       <Link href="/home" className="flex items-center gap-2">
-        <Logo idPrefix="mob" />
-        <Wordmark className="text-[17px]" />
+        <Logo idPrefix="mob" title="AceDecks" />
       </Link>
       <div className="flex items-center gap-1">
         <button

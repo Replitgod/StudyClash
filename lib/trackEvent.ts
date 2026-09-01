@@ -62,6 +62,8 @@ export type AnalyticsEventName =
   | "shared_set_saved"
   | "deck_shared"
   | "deck_unshared"
+  | "vyra_call_started"
+  | "vyra_call_ended"
   | "instant_demo_started"
   | "checkout_started"
   // Written directly via the service-role client from app/api/stripe/webhook

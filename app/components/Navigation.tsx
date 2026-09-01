@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/useAuth";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
-import { LogoMark, Wordmark } from "@/app/components/brand/Logo";
+import { LogoMark } from "@/app/components/brand/Logo";
 import { Sparkles } from "lucide-react";
 
 // Public / marketing header only.
@@ -52,8 +52,7 @@ export default function Navigation() {
           onClick={close}
           className="flex flex-shrink-0 items-center gap-2.5"
         >
-          <LogoMark className="h-8 w-8" idPrefix="nav" />
-          <Wordmark className="text-[17px]" />
+          <LogoMark className="h-8 w-8" idPrefix="nav" title="AceDecks" />
         </Link>
 
         {/* Offer pill. Hidden below lg: on a narrow bar it crowds out the

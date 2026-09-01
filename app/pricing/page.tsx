@@ -348,14 +348,6 @@ export default function PricingPage() {
                       </span>
                     </div>
 
-                    {/* Only on the plan whose price the toggle actually
-                        changes, and only when yearly is selected. */}
-                    {featured && interval === "year" && proSaving && (
-                      <p className="mt-2 text-[13px]" style={{ color: "var(--accent-bright)" }}>
-                        {formatCents(TIERS.pro.amountCents)}/month billed monthly &mdash;
-                        save {proSaving.percent}%.
-                      </p>
-                    )}
 
                     <p
                       className="mt-3 text-[14px] leading-relaxed"

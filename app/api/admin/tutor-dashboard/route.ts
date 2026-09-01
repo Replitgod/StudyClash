@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getAdminEmails } from "@/lib/server/apiUtils";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
   process.env.SUPABASE_SERVICE_ROLE_KEY as string
 );
 
-function getAdminEmails(): string[] {
-  const raw = process.env.ADMIN_EMAILS || "";
-  return raw
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter((email) => email.length > 0);
-}
 
 function normalizeKey(input: string): string {
   return input

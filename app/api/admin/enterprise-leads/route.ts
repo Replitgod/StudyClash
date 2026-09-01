@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getAdminEmails } from "@/lib/server/apiUtils";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -16,13 +17,6 @@ const ALLOWED_STATUSES: LeadStatus[] = [
   "lost",
 ];
 
-function getAdminEmails(): string[] {
-  const raw = process.env.ADMIN_EMAILS || "";
-  return raw
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter((email) => email.length > 0);
-}
 
 async function requireAdmin(request: NextRequest): Promise<{
   ok: boolean;

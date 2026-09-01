@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { authFetch } from "@/lib/authFetch";
+import { trackEvent } from "@/lib/trackEvent";
+import { VoiceCall } from "./VoiceCall";
 import { useAuth } from "@/lib/useAuth";
 import { useStudy } from "@/lib/useStudy";
 import { useRequireAuth } from "@/lib/useRequireAuth";
@@ -16,6 +18,7 @@ import { MathText } from "@/app/components/ui/MathText";
 import {
   ArrowRightIcon,
   CloseIcon,
+  MicIcon,
   PlusIcon,
   SendIcon,
   TrashIcon,
@@ -66,6 +69,7 @@ export default function VyraChat() {
   const [sessionId, setSessionId] = useState<string>(() => newId());
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const [isCalling, setIsCalling] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -169,9 +173,14 @@ export default function VyraChat() {
       text: string,
       action: "ask" | "quiz_me" | "mistake_mode" | "study_plan" = "ask",
       mode: "explain" | "quiz" | "mistake" | "plan" = "explain"
-    ) => {
+    ): Promise<string> => {
       const trimmed = text.trim();
-      if (!trimmed || isSending) return;
+      if (!trimmed || isSending) return "";
+
+      // Captured as the answer is assembled so voice mode can speak it.
+      // The chat transcript is still the source of truth on screen; this is
+      // the same text, handed back to the caller.
+      let finalReply = "";
 
       const outgoing: ChatMessage = {
         id: messageId("user"),
@@ -222,18 +231,15 @@ export default function VyraChat() {
 
         if (!isStreamed || !response.body) {
           const data = await response.json();
+          finalReply =
+            typeof data?.reply === "string" && data.reply.trim()
+              ? data.reply.trim()
+              : "I could not put a good answer together. Try asking another way.";
           setMessages((prev) => [
             ...prev,
-            {
-              id: assistantId,
-              role: "assistant",
-              content:
-                typeof data?.reply === "string" && data.reply.trim()
-                  ? data.reply.trim()
-                  : "I could not put a good answer together. Try asking another way.",
-            },
+            { id: assistantId, role: "assistant", content: finalReply },
           ]);
-          return;
+          return finalReply;
         }
 
         // Tokens stream as plain text, then a delimiter, then a JSON blob
@@ -253,6 +259,7 @@ export default function VyraChat() {
             raw += decoder.decode(value, { stream: true });
             const cut = raw.indexOf(VYRA_STREAM_META_DELIMITER);
             const visible = cut === -1 ? raw : raw.slice(0, cut);
+            finalReply = visible;
             setMessages((prev) =>
               prev.map((m) => (m.id === assistantId ? { ...m, content: visible } : m))
             );
@@ -266,6 +273,8 @@ export default function VyraChat() {
             const meta = JSON.parse(
               raw.slice(cut + VYRA_STREAM_META_DELIMITER.length)
             ) as VyraStreamMeta;
+
+            if (meta.finalReply?.trim()) finalReply = meta.finalReply.trim();
 
             setMessages((prev) =>
               prev.map((m) =>
@@ -294,6 +303,8 @@ export default function VyraChat() {
         setIsSending(false);
         void loadConversations();
       }
+
+      return finalReply;
     },
     [messages, isSending, sessionId, context, profile, user, loadConversations]
   );
@@ -332,7 +343,12 @@ export default function VyraChat() {
     );
   }
 
-  const composer = (
+  const composer = isCalling ? (
+    <VoiceCall
+      onAsk={(spoken) => send(spoken)}
+      onClose={() => setIsCalling(false)}
+    />
+  ) : (
     <div className="card flex items-end gap-2 p-2">
       <label htmlFor="vyra-input" className="visually-hidden">
         Ask Vyra anything
@@ -348,12 +364,27 @@ export default function VyraChat() {
         className="max-h-40 min-h-[44px] flex-1 resize-none bg-transparent px-3 py-2.5 text-[16px] leading-relaxed outline-none"
         style={{ color: "var(--text-1)" }}
       />
+      {/* Talking to Vyra rather than typing at her. Turn-based, on the
+          browser's own speech APIs -- see app/vyra/VoiceCall.tsx. */}
+      <button
+        type="button"
+        onClick={() => {
+          void trackEvent("vyra_call_started");
+          setIsCalling(true);
+        }}
+        disabled={isSending}
+        aria-label="Talk to Vyra"
+        title="Talk to Vyra"
+        className="btn btn-secondary h-11 w-11 shrink-0 px-0"
+      >
+        <MicIcon className="h-[18px] w-[18px]" />
+      </button>
       <button
         type="button"
         onClick={() => void send(input)}
         disabled={!input.trim() || isSending}
         aria-label="Send"
-        className="btn btn-primary h-11 w-11 shrink-0 !px-0"
+        className="btn btn-primary h-11 w-11 shrink-0 px-0"
       >
         <SendIcon className="h-[18px] w-[18px]" />
       </button>

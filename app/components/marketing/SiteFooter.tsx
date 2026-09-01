@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Mail } from "lucide-react";
-import { Logo } from "@/app/components/brand/Logo";
+import { LogoMark } from "@/app/components/brand/Logo";
 
 // The public footer. Shared by every marketing page so the contact
 // addresses and the legal links live in exactly one place -- an email
@@ -44,7 +44,7 @@ export function SiteFooter() {
       <div className="shell py-16 sm:py-20">
         <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr]">
           <div>
-            <Logo markClassName="h-9 w-9" idPrefix="footer" />
+            <LogoMark className="h-9 w-9" idPrefix="footer" title="AceDecks" />
             <p
               className="mt-5 max-w-xs text-[14.5px] leading-relaxed"
               style={{ color: "var(--text-2)" }}

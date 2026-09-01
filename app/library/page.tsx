@@ -145,10 +145,10 @@ export default function LibraryPage() {
         <>
           {snapshot.decks.length > 6 && (
             <div className="relative mt-6">
-              <SearchIcon
-                className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2"
-                // Decorative; the input below carries the label.
-              />
+              {/* Decorative; the input below carries the label. Explicitly
+                  --text-3 so it reads as a hint rather than as prominently
+                  as the text the student types next to it. */}
+              <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 h-[17px] w-[17px] -translate-y-1/2 text-[var(--text-3)]" />
               <input
                 type="search"
                 value={query}

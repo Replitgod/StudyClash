@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getAdminEmails } from "@/lib/server/apiUtils";
 
 // This client uses the SERVICE ROLE key, which is safe here because
 // this code only ever runs on the server (inside this API route).
@@ -9,16 +10,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY as string
 );
 
-// Parses the comma-separated ADMIN_EMAILS env var into a clean, lowercased
-// list for case-insensitive comparison. This env var is server-only —
-// it has no NEXT_PUBLIC_ prefix, so it's never exposed to the browser.
-function getAdminEmails(): string[] {
-  const raw = process.env.ADMIN_EMAILS || "";
-  return raw
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter((email) => email.length > 0);
-}
 
 // Counts rows in analytics_events matching a specific event_name, created
 // today. Returns 0 on error rather than throwing, so one bad event-name
