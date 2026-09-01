@@ -21,6 +21,22 @@ type TrackDetail = {
 };
 
 const TRACK_DETAILS: Record<string, TrackDetail> = {
+  // /exams/sat is in sitemap.ts and was falling through to FALLBACK, so a
+  // page Google is pointed at said nothing specific about the SAT.
+  //
+  // The practice here is written to College Board's *published* Digital SAT
+  // specification -- the four content domains, the adaptive two-module
+  // shape, and the question formats they document openly. It is not, and
+  // will not be, a copy of their question bank: those items are
+  // copyrighted, and reusing them would put the product and every school
+  // that bought it at risk. Real released tests are linked instead, which
+  // is what /exams already does for every other board.
+  sat: {
+    title: "Digital SAT",
+    cue: "Two-module adaptive sections, Reading and Writing then Math, timed like the real thing.",
+    depth:
+      "Vyra tracks which of the four domains keeps costing you points and rebuilds practice around it.",
+  },
   mcat: {
     title: "MCAT",
     cue: "Passage-first scientific reasoning, under timed pressure.",
