@@ -152,7 +152,10 @@ const MINIMALIST_MATCHA: Theme = {
     // grey-on-white.
     "--text-1": "#1b241d",
     "--text-2": "#47554a",
-    "--text-3": "#6d7d71",
+    // #6d7d71 was 4.35:1 on this theme's white panel -- under AA, and it is
+    // the colour every field placeholder and .t-meta line uses. Darkened
+    // one step to 4.74:1. Enforced by lib/themeContrast.test.ts.
+    "--text-3": "#67776b",
     "--text-4": "#93a397",
     "--line": "rgb(27 36 29 / 0.09)",
     "--line-strong": "rgb(27 36 29 / 0.16)",

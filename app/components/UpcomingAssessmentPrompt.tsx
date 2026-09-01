@@ -133,33 +133,48 @@ export default function UpcomingAssessmentPrompt({ matchId, deckTitle }: Props) 
             {ASSESSMENT_OPTIONS.find((o) => o.value === assessmentType)?.label} details
           </h3>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <input
-              placeholder="Name (optional)"
-              value={assessmentName}
-              onChange={(e) => setAssessmentName(e.target.value)}
-              className="rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm text-white placeholder-white/35"
-            />
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm text-white"
-            />
-            <input
-              placeholder="Goal (optional, e.g. B+ or higher)"
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              className="rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm text-white placeholder-white/35"
-            />
-            <input
-              type="number"
-              min={10}
-              max={180}
-              value={minutesPerDay}
-              onChange={(e) => setMinutesPerDay(Number(e.target.value))}
-              className="rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm text-white"
-              placeholder="Minutes available per day"
-            />
+            {/* Every field carries a real label. The date input in
+                particular had neither a label nor a placeholder, so it
+                announced as an unnamed date field and read, visually, as a
+                box with no question attached to it. */}
+            <label className="text-xs" style={{ color: "var(--text-2)" }}>
+              Name (optional)
+              <input
+                placeholder="e.g. Unit 4 test"
+                value={assessmentName}
+                onChange={(e) => setAssessmentName(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm text-white placeholder-[var(--text-3)]"
+              />
+            </label>
+            <label className="text-xs" style={{ color: "var(--text-2)" }}>
+              Date
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm text-white"
+              />
+            </label>
+            <label className="text-xs" style={{ color: "var(--text-2)" }}>
+              Goal (optional)
+              <input
+                placeholder="e.g. B+ or higher"
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm text-white placeholder-[var(--text-3)]"
+              />
+            </label>
+            <label className="text-xs" style={{ color: "var(--text-2)" }}>
+              Minutes a day
+              <input
+                type="number"
+                min={10}
+                max={180}
+                value={minutesPerDay}
+                onChange={(e) => setMinutesPerDay(Number(e.target.value))}
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/25 px-3 py-2.5 text-sm text-white"
+              />
+            </label>
           </div>
 
           {error && <p className="mt-2 text-xs text-red-300">{error}</p>}

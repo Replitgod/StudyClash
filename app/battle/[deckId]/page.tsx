@@ -2171,7 +2171,7 @@ export default function BattlePage() {
           </div>
         )}
 
-        <h1 className="max-w-full text-center text-3xl font-black tracking-tight break-words sm:text-4xl md:text-5xl">
+        <h1 className="max-w-full text-center text-3xl font-semibold tracking-tight break-words sm:text-4xl md:text-5xl">
           <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
             {deck.title}
           </span>
@@ -2189,19 +2189,19 @@ export default function BattlePage() {
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
                 <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Level</p>
-                <p className="mt-1 text-base font-black text-indigo-200">{engagementPreview.level}</p>
+                <p className="mt-1 text-base font-semibold text-indigo-200">{engagementPreview.level}</p>
               </div>
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
                 <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Day Streak</p>
-                <p className="mt-1 text-base font-black text-amber-200">{engagementPreview.currentStreakDays}</p>
+                <p className="mt-1 text-base font-semibold text-amber-200">{engagementPreview.currentStreakDays}</p>
               </div>
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
                 <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Daily Goal</p>
-                <p className="mt-1 text-base font-black text-green-200">{engagementPreview.dailyBattles}/2</p>
+                <p className="mt-1 text-base font-semibold text-green-200">{engagementPreview.dailyBattles}/2</p>
               </div>
               <div className="rounded-xl border border-white/10 bg-black/25 px-3 py-2.5">
                 <p className="text-[10px] uppercase tracking-wider text-[var(--text-3)]">Rank</p>
-                <p className="mt-1 text-base font-black text-indigo-200">{engagementPreview.rankLabel}</p>
+                <p className="mt-1 text-base font-semibold text-indigo-200">{engagementPreview.rankLabel}</p>
               </div>
             </div>
 
@@ -2280,7 +2280,7 @@ export default function BattlePage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleStart();
                 }}
-                className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-white/30 outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
+                className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-base text-white placeholder-[var(--text-3)] outline-none transition-colors duration-150 focus:border-indigo-400/50 focus:ring-2 focus:ring-indigo-500/20 sm:text-sm"
               />
               <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[11px] text-[var(--text-3)]">
                 <span>
@@ -2459,7 +2459,7 @@ export default function BattlePage() {
 
           {finishedSummary ? (
             <>
-              <p className="mt-3 text-5xl font-black text-white">{finishedSummary.totalScore}</p>
+              <p className="mt-3 text-5xl font-semibold text-white">{finishedSummary.totalScore}</p>
               <p className="mt-1 text-sm text-white/50">points</p>
 
               <div className="mt-6 grid grid-cols-3 gap-3">
@@ -2777,7 +2777,7 @@ export default function BattlePage() {
             transition={springBouncy}
             className="flex items-center gap-1.5 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1"
           >
-            <span className="text-sm font-black text-indigo-300 tabular-nums">
+            <span className="text-sm font-semibold text-indigo-300 tabular-nums">
               {displayedScore}
             </span>
             <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300/70">
@@ -2887,7 +2887,7 @@ export default function BattlePage() {
                 <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-indigo-200">
                   Battle Intro
                 </p>
-                <p className="mt-2 text-6xl font-black text-white sm:text-7xl">
+                <p className="mt-2 text-6xl font-semibold text-white sm:text-7xl">
                   {introCountdown === 0 ? "GO" : introCountdown}
                 </p>
                 <p className="mt-2 text-xs text-white/55">

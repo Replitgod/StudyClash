@@ -66,7 +66,7 @@ export default function DestinationsPage() {
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-black">Destinations</h1>
+        <h1 className="text-2xl font-semibold">Destinations</h1>
         <button
           onClick={() => setShowAddForm((prev) => !prev)}
           className="rounded-xl bg-gradient-to-r from-indigo-500 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white"
@@ -89,7 +89,7 @@ export default function DestinationsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name..."
-          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder-white/30"
+          className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white placeholder-[var(--text-3)]"
         />
         <select
           value={platformFilter}

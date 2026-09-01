@@ -105,7 +105,16 @@ describe("theme contrast", () => {
       });
 
       it("keeps body and secondary text readable on the panel", () => {
-        for (const name of ["--text-1", "--text-2"]) {
+        // --text-3 is in this list because it is not a decorative step: it
+        // is what .t-meta and every field placeholder are painted in, and a
+        // placeholder is text the reader has to read to know what the field
+        // wants. Adding it here caught Minimalist Matcha at 4.35:1.
+        //
+        // --text-4 is deliberately NOT here. It is the disabled/ornamental
+        // step (2.6-2.8:1 in every theme) and is never used for text a
+        // reader has to act on -- that is exactly why .field::placeholder
+        // was moved off it.
+        for (const name of ["--text-1", "--text-2", "--text-3"]) {
           const ratio = contrastRatio(token(name), token("--panel"));
           expect(
             ratio,

@@ -215,7 +215,7 @@ export default function AdminDiagnosticsPage() {
         &larr; Back to admin dashboard
       </Link>
 
-      <h1 className="mt-4 text-2xl font-black tracking-tight sm:text-3xl">
+      <h1 className="mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">
         <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
           Diagnostic Question Bank
         </span>
@@ -287,13 +287,13 @@ export default function AdminDiagnosticsPage() {
             placeholder="Domain (e.g. Algebra)"
             value={form.domain}
             onChange={(e) => setForm((f) => ({ ...f, domain: e.target.value }))}
-            className="rounded-xl border border-white/15 bg-black/25 px-3 py-2 text-sm text-white placeholder-white/35"
+            className="rounded-xl border border-white/15 bg-black/25 px-3 py-2 text-sm text-white placeholder-[var(--text-3)]"
           />
           <input
             placeholder="Skill (e.g. Linear equations)"
             value={form.skill}
             onChange={(e) => setForm((f) => ({ ...f, skill: e.target.value }))}
-            className="rounded-xl border border-white/15 bg-black/25 px-3 py-2 text-sm text-white placeholder-white/35"
+            className="rounded-xl border border-white/15 bg-black/25 px-3 py-2 text-sm text-white placeholder-[var(--text-3)]"
           />
           <select
             value={form.questionType}
@@ -307,7 +307,7 @@ export default function AdminDiagnosticsPage() {
             placeholder="AI topic hint (optional)"
             value={form.topicHint}
             onChange={(e) => setForm((f) => ({ ...f, topicHint: e.target.value }))}
-            className="rounded-xl border border-white/15 bg-black/25 px-3 py-2 text-sm text-white placeholder-white/35"
+            className="rounded-xl border border-white/15 bg-black/25 px-3 py-2 text-sm text-white placeholder-[var(--text-3)]"
           />
         </div>
 
