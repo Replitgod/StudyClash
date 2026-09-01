@@ -71,6 +71,15 @@ export type ComposerProps = {
    * match that exam's style; the server ignores anything it does not know.
    */
   examTrack?: string | null;
+  /**
+   * Example topics offered to a student with nothing to study yet. Tapping
+   * one fills the box and focuses it, so the first thing a new account is
+   * asked to do is press a button rather than think of a subject and type
+   * it out. They live here, not on the calling screen, because the input's
+   * text is this component's state -- a caller cannot fill it from outside
+   * without a ref or a remount.
+   */
+  suggestions?: string[];
 };
 
 export function Composer({
@@ -78,6 +87,7 @@ export function Composer({
   autoFocus = false,
   footer,
   examTrack = null,
+  suggestions,
 }: ComposerProps) {
   const router = useRouter();
   const { user, profile } = useAuth();
@@ -247,6 +257,15 @@ export function Composer({
       stageTimersRef.current.push(setTimeout(() => setStage("writing"), 3500));
     }
 
+    // The activation funnel needs the denominator, not just the wins.
+    // deck_generation_started/_failed were declared in lib/trackEvent.ts and
+    // never fired, so "first deck generated" could be counted but the rate
+    // it converts at -- and any spike in generation failures -- could not.
+    trackEvent("deck_generation_started", {
+      mode: isTopic ? "topic" : "notes",
+      hasAttachment: !!attachedText,
+    });
+
     try {
       const response = await authFetch("/api/generate-questions", {
         method: "POST",
@@ -296,13 +315,19 @@ export function Composer({
     } catch (err) {
       clearStageTimers();
       setStage("idle");
-      setError(
+      const message =
         err instanceof Error && err.message.includes("Failed to fetch")
           ? "Network error. Check your connection and try again."
           : err instanceof Error
             ? err.message
-            : "Something went wrong. Please try again."
-      );
+            : "Something went wrong. Please try again.";
+
+      trackEvent("deck_generation_failed", {
+        mode: isTopic ? "topic" : "notes",
+        reason: message.slice(0, 200),
+      });
+
+      setError(message);
     }
   }, [
     value,
@@ -447,6 +472,24 @@ export function Composer({
         >
           {error}
         </p>
+      )}
+
+      {suggestions && suggestions.length > 0 && !value.trim() && !fileName && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {suggestions.map((suggestion) => (
+            <button
+              key={suggestion}
+              type="button"
+              onClick={() => {
+                setValue(suggestion);
+                textareaRef.current?.focus();
+              }}
+              className="chip transition-colors hover:bg-[var(--panel-hover)]"
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
       )}
 
       {footer && <div className="mt-3">{footer}</div>}
