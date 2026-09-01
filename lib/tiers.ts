@@ -14,14 +14,43 @@
 
 export type TierId = "free" | "pro" | "classroom";
 
-export type Tier = {
-  id: TierId;
-  label: string;
+/**
+ * How often a tier bills. An annual Ace Pro is the SAME tier at a different
+ * interval, not a fourth tier -- every entitlement, the governor, and
+ * profiles.plan are identical. Modelling it as a tier id would have meant
+ * teaching resolveTier, evaluateRequest and the Stripe webhook about a
+ * "pro_annual" that behaves exactly like "pro".
+ */
+export type BillingInterval = "month" | "year";
+
+export type TierPrice = {
+  interval: BillingInterval;
   /** Display price, already formatted. */
   price: string;
   period: string;
   /** Price in cents, for Stripe and for any arithmetic. */
   amountCents: number;
+  /**
+   * Name of the env var holding this price's Stripe price id. The id itself
+   * is never in the repo, but which variable to read is, so checkout cannot
+   * pick the wrong one by string-building it at the call site.
+   */
+  stripePriceEnvVar: string;
+};
+
+export type Tier = {
+  id: TierId;
+  label: string;
+  /** Display price, already formatted. The default (monthly) option. */
+  price: string;
+  period: string;
+  /** Price in cents, for Stripe and for any arithmetic. */
+  amountCents: number;
+  /**
+   * Every way this tier can be bought, cheapest interval first. Always
+   * contains at least the one matching `price`/`period`/`amountCents`.
+   */
+  prices: TierPrice[];
   tagline: string;
   features: string[];
   /** Knowledge maps per calendar month. null = unlimited. */
@@ -47,6 +76,7 @@ export const TIERS: Record<TierId, Tier> = {
     price: "$0",
     period: "forever",
     amountCents: 0,
+    prices: [],
     tagline: "Enough to prove it works on your own material.",
     features: [
       "3 knowledge maps per month",
@@ -68,6 +98,26 @@ export const TIERS: Record<TierId, Tier> = {
     price: "$9.99",
     period: "per month",
     amountCents: 999,
+    prices: [
+      {
+        interval: "month",
+        price: "$9.99",
+        period: "per month",
+        amountCents: 999,
+        stripePriceEnvVar: "STRIPE_PRO_PRICE_ID",
+      },
+      {
+        // $99 a year against $9.99 x 12 = $119.88, so twelve months cost
+        // less than ten. The savings line on the pricing page is computed
+        // from these two numbers rather than written down, so it cannot
+        // claim a discount the amounts do not support.
+        interval: "year",
+        price: "$99",
+        period: "per year",
+        amountCents: 9900,
+        stripePriceEnvVar: "STRIPE_PRO_ANNUAL_PRICE_ID",
+      },
+    ],
     tagline: "Unlimited everything, and the full misconception breakdown.",
     features: [
       "Unlimited knowledge maps",
@@ -91,6 +141,15 @@ export const TIERS: Record<TierId, Tier> = {
     price: "$199",
     period: "per year",
     amountCents: 19900,
+    prices: [
+      {
+        interval: "year",
+        price: "$199",
+        period: "per year",
+        amountCents: 19900,
+        stripePriceEnvVar: "STRIPE_CLASSROOM_PRICE_ID",
+      },
+    ],
     tagline: "Everything in Pro, shared across a class.",
     features: [
       "Everything in Ace Pro",
@@ -109,6 +168,65 @@ export const TIERS: Record<TierId, Tier> = {
 };
 
 export const PUBLIC_TIERS: Tier[] = [TIERS.free, TIERS.pro, TIERS.classroom];
+
+/* ------------------------------------------------------- billing intervals */
+
+/** The price for one interval, or null if the tier is not sold that way. */
+export function getTierPrice(
+  tier: Tier,
+  interval: BillingInterval
+): TierPrice | null {
+  return tier.prices.find((price) => price.interval === interval) ?? null;
+}
+
+/** True when a tier can actually be bought on both intervals. */
+export function hasIntervalChoice(tier: Tier): boolean {
+  return (
+    getTierPrice(tier, "month") !== null && getTierPrice(tier, "year") !== null
+  );
+}
+
+export type AnnualSaving = {
+  /** Cents saved over a year versus paying monthly. */
+  amountCents: number;
+  /** Whole percent saved, rounded down so the claim is never overstated. */
+  percent: number;
+  /** Whole months of the monthly price the saving covers, rounded down. */
+  monthsFree: number;
+};
+
+/**
+ * What an annual plan actually saves, computed from the two amounts.
+ *
+ * Derived rather than written down on purpose: a "save 20%" badge sitting
+ * next to prices that only support 17% is the deceptive-anchor pattern the
+ * product brief rules out, and it is exactly what happens when the claim is
+ * a string someone forgot to update. Returns null unless both intervals
+ * exist and the annual one is genuinely cheaper.
+ */
+export function annualSaving(tier: Tier): AnnualSaving | null {
+  const monthly = getTierPrice(tier, "month");
+  const yearly = getTierPrice(tier, "year");
+  if (!monthly || !yearly) return null;
+
+  const payingMonthlyForAYear = monthly.amountCents * 12;
+  const amountCents = payingMonthlyForAYear - yearly.amountCents;
+  if (amountCents <= 0) return null;
+
+  return {
+    amountCents,
+    percent: Math.floor((amountCents / payingMonthlyForAYear) * 100),
+    monthsFree: Math.floor(amountCents / monthly.amountCents),
+  };
+}
+
+/** "$20.88" / "$99" -- trailing ".00" dropped, because prices read better. */
+export function formatCents(amountCents: number): string {
+  const dollars = amountCents / 100;
+  return Number.isInteger(dollars)
+    ? `$${dollars}`
+    : `$${dollars.toFixed(2)}`;
+}
 
 /** Unknown or missing tier ids resolve to free rather than throwing. */
 export function resolveTier(id: string | null | undefined): Tier {

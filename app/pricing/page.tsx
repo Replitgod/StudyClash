@@ -6,7 +6,16 @@ import { Check, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/useAuth";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
-import { PUBLIC_TIERS, TIERS, type Tier } from "@/lib/tiers";
+import {
+  annualSaving,
+  formatCents,
+  getTierPrice,
+  hasIntervalChoice,
+  PUBLIC_TIERS,
+  TIERS,
+  type BillingInterval,
+  type Tier,
+} from "@/lib/tiers";
 import { Reveal } from "@/app/components/marketing/Reveal";
 import { SiteFooter } from "@/app/components/marketing/SiteFooter";
 
@@ -32,6 +41,10 @@ const FAQ = [
     a: "When you get something wrong, it names the exact misconception behind the option you picked, the idea underneath it, how to spot the trap next time, and a follow-up question that repairs the gap.",
   },
   {
+    q: "Is yearly billing cheaper?",
+    a: "Yes. Ace Pro is $9.99 a month, or $99 for a year — twelve months for less than the price of ten. It is the same plan either way; you can switch between them, or cancel, from Settings.",
+  },
+  {
     q: "Is Classroom per teacher or per student?",
     a: "Per class. One price covers the roster, shared knowledge maps, and collective decay tracking so a teacher can see what the whole group is losing.",
   },
@@ -44,6 +57,16 @@ export default function PricingPage() {
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [isCheckoutAvailable, setIsCheckoutAvailable] = useState(false);
+  // Monthly is the default view. Showing the yearly price first makes the
+  // headline number look higher than the product costs to try.
+  const [interval, setInterval] = useState<BillingInterval>("month");
+
+  const proSaving = annualSaving(TIERS.pro);
+  // What the currently-selected interval costs, per tier. A tier that is
+  // only sold one way (Free, Classroom) ignores the toggle entirely rather
+  // than showing a blank price.
+  const priceFor = (tier: Tier) =>
+    getTierPrice(tier, interval) ?? tier.prices[0] ?? null;
 
   useEffect(() => {
     void trackEvent("pricing_viewed");
@@ -71,10 +94,13 @@ export default function PricingPage() {
   const startCheckout = useCallback(async () => {
     setCheckoutError(null);
     setIsStartingCheckout(true);
-    void trackEvent("checkout_started", { source: "pricing" });
+    void trackEvent("checkout_started", { source: "pricing", interval });
 
     try {
-      const response = await authFetch("/api/stripe/checkout", { method: "POST" });
+      const response = await authFetch("/api/stripe/checkout", {
+        method: "POST",
+        body: JSON.stringify({ interval }),
+      });
       const data = await response.json();
       if (!response.ok || !data.url) {
         setCheckoutError(data.error || "Could not start checkout. Please try again.");
@@ -86,7 +112,7 @@ export default function PricingPage() {
       setCheckoutError("Could not start checkout. Please try again.");
       setIsStartingCheckout(false);
     }
-  }, []);
+  }, [interval]);
 
   const track = useCallback((event: React.PointerEvent<HTMLElement>) => {
     const el = event.currentTarget;
@@ -132,7 +158,7 @@ export default function PricingPage() {
           href={`/signup?redirect=${encodeURIComponent("/pricing")}`}
           className="btn btn-lg btn-accent w-full"
         >
-          Get Ace Pro — {TIERS.pro.price}
+          Get Ace Pro — {getTierPrice(TIERS.pro, interval)?.price ?? TIERS.pro.price}
         </Link>
       );
     }
@@ -157,7 +183,9 @@ export default function PricingPage() {
         disabled={isStartingCheckout}
         className="btn btn-lg btn-accent w-full"
       >
-        {isStartingCheckout ? "Starting checkout…" : `Get Ace Pro — ${TIERS.pro.price}`}
+        {isStartingCheckout
+          ? "Starting checkout…"
+          : `Get Ace Pro — ${getTierPrice(TIERS.pro, interval)?.price ?? TIERS.pro.price}`}
       </button>
     );
   }
@@ -221,8 +249,55 @@ export default function PricingPage() {
             </Reveal>
           )}
 
+          {/* Monthly / Yearly. Rendered only when a tier is genuinely sold
+              both ways, so it never appears as a control with nothing to
+              switch. The saving beside it is computed from the two amounts
+              in lib/tiers.ts, not written down. */}
+          {hasIntervalChoice(TIERS.pro) && (
+            <Reveal delay={90}>
+              <div className="mt-12 flex flex-wrap items-center justify-center gap-3">
+                <div
+                  role="group"
+                  aria-label="Billing period"
+                  className="inline-flex rounded-full p-1"
+                  style={{ background: "var(--panel-raised)", border: "1px solid var(--line)" }}
+                >
+                  {(
+                    [
+                      { id: "month" as const, label: "Monthly" },
+                      { id: "year" as const, label: "Yearly" },
+                    ]
+                  ).map((option) => {
+                    const active = interval === option.id;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setInterval(option.id)}
+                        aria-pressed={active}
+                        className="rounded-full px-4 py-1.5 text-[13px] font-medium transition-colors"
+                        style={{
+                          background: active ? "var(--accent)" : "transparent",
+                          color: active ? "var(--on-brand)" : "var(--text-2)",
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                {proSaving && (
+                  <span className="text-[13px]" style={{ color: "var(--text-3)" }}>
+                    Yearly saves {formatCents(proSaving.amountCents)} &mdash;{" "}
+                    {proSaving.monthsFree} months free.
+                  </span>
+                )}
+              </div>
+            </Reveal>
+          )}
+
           <Reveal delay={120}>
-            <div className="mt-14 grid gap-4 lg:grid-cols-3">
+            <div className="mt-10 grid gap-4 lg:grid-cols-3">
               {PUBLIC_TIERS.map((tier) => {
                 const featured = tier.id === "pro";
                 return (
@@ -266,12 +341,21 @@ export default function PricingPage() {
                         className="text-[40px] font-semibold leading-none tracking-[-0.04em]"
                         style={{ color: "var(--text-1)" }}
                       >
-                        {tier.price}
+                        {priceFor(tier)?.price ?? tier.price}
                       </span>
                       <span className="text-[13px]" style={{ color: "var(--text-3)" }}>
-                        {tier.period}
+                        {priceFor(tier)?.period ?? tier.period}
                       </span>
                     </div>
+
+                    {/* Only on the plan whose price the toggle actually
+                        changes, and only when yearly is selected. */}
+                    {featured && interval === "year" && proSaving && (
+                      <p className="mt-2 text-[13px]" style={{ color: "var(--accent-bright)" }}>
+                        {formatCents(TIERS.pro.amountCents)}/month billed monthly &mdash;
+                        save {proSaving.percent}%.
+                      </p>
+                    )}
 
                     <p
                       className="mt-3 text-[14px] leading-relaxed"
