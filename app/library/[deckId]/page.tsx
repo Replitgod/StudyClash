@@ -97,9 +97,15 @@ export default function MaterialWorkspacePage() {
     setLoadError(null);
 
     Promise.all([
+      // The share columns are fetched separately and best-effort. Selecting
+      // an unknown column is a hard PostgREST error (42703), not a null, so
+      // asking for is_public/share_slug in this query would take out the
+      // whole workspace on any deployment where
+      // 20260831_public_deck_sharing.sql has not been applied yet. Sharing
+      // simply does not appear until the migration lands.
       supabase
         .from("decks")
-        .select("id, title, course_name, raw_notes, is_public, share_slug")
+        .select("id, title, course_name, raw_notes")
         .eq("id", deckId)
         .eq("user_id", userId)
         .maybeSingle(),
@@ -119,7 +125,22 @@ export default function MaterialWorkspacePage() {
           return;
         }
 
-        setDeck(deckResult.data as DeckRecord);
+        void supabase
+          .from("decks")
+          .select("is_public, share_slug")
+          .eq("id", deckId)
+          .eq("user_id", userId)
+          .maybeSingle()
+          .then(({ data, error }) => {
+            if (cancelled || error || !data) return;
+            setDeck((current) =>
+              current
+                ? { ...current, is_public: data.is_public, share_slug: data.share_slug }
+                : current
+            );
+          });
+
+        setDeck({ ...(deckResult.data as Omit<DeckRecord, "is_public" | "share_slug">), is_public: null, share_slug: null });
         setQuestions((questionResult.data || []) as QuestionRecord[]);
         setIsLoading(false);
       })
