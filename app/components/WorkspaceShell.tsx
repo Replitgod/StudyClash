@@ -14,7 +14,7 @@
 // what makes it reusable instead of a one-off screen.
 
 import { useEffect, useId } from "react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "motion/react";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
 
 // Deliberately its own constant, not lib/motion.ts's springSmooth (260/28)

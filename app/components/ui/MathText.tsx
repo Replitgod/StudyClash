@@ -1,75 +1,38 @@
 "use client";
 
-import katex from "katex";
-import "katex/dist/katex.min.css";
+import dynamic from "next/dynamic";
 import { useMemo } from "react";
+import { hasMath, splitMathSegments } from "./mathParsing";
 
-// Not a full markdown parser -- just LaTeX-delimiter-aware ($$...$$ for
-// display/block math, $...$ for inline), which is all AI-generated
-// question text needs. Plain (non-STEM) question text with no $ at all
-// passes straight through unchanged.
-type Segment =
-  | { type: "text"; content: string }
-  | { type: "math"; content: string; display: boolean };
-
-function splitMathSegments(input: string): Segment[] {
-  const segments: Segment[] = [];
-  // $$...$$ must be tried before $...$ in the same alternation, or a
-  // display block would get misread as two inline delimiters.
-  const pattern = /\$\$([\s\S]+?)\$\$|\$([^$\n]+?)\$/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = pattern.exec(input)) !== null) {
-    if (match.index > lastIndex) {
-      segments.push({ type: "text", content: input.slice(lastIndex, match.index) });
-    }
-    if (match[1] !== undefined) {
-      segments.push({ type: "math", content: match[1], display: true });
-    } else if (match[2] !== undefined) {
-      segments.push({ type: "math", content: match[2], display: false });
-    }
-    lastIndex = pattern.lastIndex;
-  }
-
-  if (lastIndex < input.length) {
-    segments.push({ type: "text", content: input.slice(lastIndex) });
-  }
-
-  return segments;
-}
-
-// KaTeX's renderToString is the documented way to use it outside its own
-// React wrapper -- it only ever parses the LaTeX source through KaTeX's
-// math grammar into SVG/MathML, so despite the dangerouslySetInnerHTML
-// below, arbitrary HTML in the source text can't reach the DOM through it.
-function renderMath(content: string, display: boolean): string {
-  try {
-    return katex.renderToString(content, { throwOnError: false, displayMode: display });
-  } catch {
-    // A genuinely broken KaTeX call (not just malformed LaTeX -- that's
-    // already handled by throwOnError: false rendering an inline error
-    // span) shouldn't blank out the rest of the question.
-    return display ? `$$${content}$$` : `$${content}$`;
-  }
-}
+// Question text, with math rendered only when there is math.
+//
+// KaTeX and its stylesheet were the heaviest thing on the study screens and
+// they loaded on all six of them regardless of content -- a history deck
+// pulled down a LaTeX engine to render plain prose. The engine now lives in
+// MathSegments.tsx and is fetched on demand, the first time a string
+// containing `$...$` or `$$...$$` is actually rendered.
+//
+// The overwhelmingly common case -- text with no math at all -- returns
+// before the dynamic import is ever referenced, so those screens never
+// request the chunk.
+const MathSegments = dynamic(() => import("./MathSegments"), {
+  ssr: false,
+  // The raw source is a better placeholder than a blank: a student reading
+  // "x^2 + 1" for a beat is oriented; an empty span is not.
+  loading: () => null,
+});
 
 export function MathText({ text, className }: { text: string; className?: string }) {
   const segments = useMemo(() => splitMathSegments(text), [text]);
+  const needsKatex = useMemo(() => hasMath(segments), [segments]);
 
-  if (segments.length === 1 && segments[0].type === "text") {
+  if (!needsKatex) {
     return <span className={className}>{text}</span>;
   }
 
   return (
     <span className={className}>
-      {segments.map((segment, i) =>
-        segment.type === "text" ? (
-          <span key={i}>{segment.content}</span>
-        ) : (
-          <span key={i} dangerouslySetInnerHTML={{ __html: renderMath(segment.content, segment.display) }} />
-        )
-      )}
+      <MathSegments segments={segments} />
     </span>
   );
 }

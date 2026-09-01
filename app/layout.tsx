@@ -8,7 +8,7 @@ import { UI_Z_INDEX } from "@/lib/uiLayout";
 import { CONTACT_EMAIL } from "@/lib/contact";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Archivo } from "next/font/google";
-import { MotionConfig } from "framer-motion";
+import { MotionConfig } from "motion/react";
 import "./globals.css";
 
 const geistSans = Geist({

@@ -2,7 +2,7 @@
 
 import { forwardRef } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { BRAND, GRADIENTS } from "@/lib/theme";
 import { springBouncy, springSnappy } from "@/lib/motion";
 

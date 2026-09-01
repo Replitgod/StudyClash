@@ -14,6 +14,11 @@ const VyraCoach = dynamic(() => import("@/app/components/VyraCoach"), {
   ssr: false,
 });
 
+// Past this, stop waiting on the model and start the demo on the curated
+// set. Twelve seconds is about the limit of what someone who has not signed
+// up for anything will sit through.
+const DEMO_GENERATION_TIMEOUT_MS = 12_000;
+
 type DemoQuestion = {
 	id: string;
 	question_text: string;
@@ -464,11 +469,21 @@ export default function DemoBattlePage() {
 		const avoidQuestionTexts = demoQuestions.map((question) => question.question_text);
 		let nextQuestions: DemoQuestion[];
 
+		// A hard ceiling on how long a first-time visitor stares at a spinner.
+		// The route calls OpenAI and retries once on a bad batch, which can run
+		// past 40 seconds on a slow day -- long enough that someone trying the
+		// product for the first time simply leaves. The curated set below is
+		// good enough to show the loop, so past this point it is strictly
+		// better than waiting.
+		const controller = new AbortController();
+		const timeout = setTimeout(() => controller.abort(), DEMO_GENERATION_TIMEOUT_MS);
+
 		try {
 			const response = await fetch("/api/demo/generate-questions", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ avoidQuestionTexts, count: QUESTIONS_PER_DEMO, subject: "algebra" }),
+				signal: controller.signal,
 			});
 
 			if (!response.ok) throw new Error("Demo generation request failed");
@@ -489,6 +504,8 @@ export default function DemoBattlePage() {
 			// rather than pretending the AI batch succeeded.
 			nextQuestions = pickDemoQuestions(QUESTIONS_PER_DEMO);
 			setUsedFallbackQuestions(true);
+		} finally {
+			clearTimeout(timeout);
 		}
 
 		setIsGeneratingQuestions(false);

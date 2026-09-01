@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { supabase } from "@/lib/supabase";
 import { trackEvent } from "@/lib/trackEvent";
 import { FLOATING_ACTION } from "@/lib/uiLayout";

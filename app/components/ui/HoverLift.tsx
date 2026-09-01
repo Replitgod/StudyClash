@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { springSmooth } from "@/lib/motion";
 
 // Card hover-lift as its own client-component boundary, so pages that are

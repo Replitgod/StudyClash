@@ -15,7 +15,7 @@ import { OpponentFace, moodFromStreak } from "@/app/components/OpponentFace";
 import { localDateKey } from "@/lib/progression";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
 import { useVoiceStudyMode } from "@/lib/useVoiceStudyMode";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { springBouncy, springSnappy } from "@/lib/motion";
 import { useCountUp } from "@/lib/useCountUp";
 import { MathText } from "@/app/components/ui/MathText";

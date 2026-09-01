@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { authFetch } from "@/lib/authFetch";
 import { FLOATING_ACTION, OPEN_FEEDBACK_EVENT, UI_Z_INDEX } from "@/lib/uiLayout";
 import {
