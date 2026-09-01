@@ -31,7 +31,7 @@ export function StatCard({ label, value, suffix = "", isLoading, hint, valueClas
       className={`rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-sm ${className || ""}`}
     >
       <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-[var(--text-3)]">{label}</p>
-      <p className={`mt-3 text-3xl font-black text-white tabular-nums ${valueClassName || ""}`}>{content}</p>
+      <p className={`mt-3 text-3xl font-semibold text-white tabular-nums ${valueClassName || ""}`}>{content}</p>
       {hint && <p className="mt-2 text-sm text-[var(--text-3)]">{hint}</p>}
     </motion.div>
   );

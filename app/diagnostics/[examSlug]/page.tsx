@@ -128,7 +128,7 @@ export default function ExamDiagnosticPage() {
   if (exam.status !== "available") {
     return (
       <Background>
-        <h1 className="text-2xl font-black text-white">{exam.name} is coming soon</h1>
+        <h1 className="text-2xl font-semibold text-white">{exam.name} is coming soon</h1>
         <p className="mt-3 text-sm text-white/60">
           This diagnostic isn&apos;t published yet. Check back soon, or try the Digital SAT diagnostic in the meantime.
         </p>
@@ -147,7 +147,7 @@ export default function ExamDiagnosticPage() {
         &larr; Back to diagnostics
       </Link>
 
-      <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
+      <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
         <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
           {exam.name} Diagnostic
         </span>

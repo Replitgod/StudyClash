@@ -241,7 +241,7 @@ export default function CourseProgressPage() {
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
             <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
               {data.course.name}
             </span>
@@ -258,7 +258,7 @@ export default function CourseProgressPage() {
 
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <Card padding="sm">
-          <p className="text-2xl font-black text-white">
+          <p className="text-2xl font-semibold text-white">
             {pagesReady.toLocaleString()} / {data.documentStats.totalPages.toLocaleString()}
           </p>
           <p className="mt-1 text-xs text-white/50">pages processed</p>
@@ -267,7 +267,7 @@ export default function CourseProgressPage() {
           )}
         </Card>
         <Card padding="sm">
-          <p className="text-2xl font-black text-white">
+          <p className="text-2xl font-semibold text-white">
             {data.coverage ? `${data.coverage.overall_coverage_percent}%` : "--"}
           </p>
           <p className="mt-1 text-xs text-white/50">
@@ -275,7 +275,7 @@ export default function CourseProgressPage() {
           </p>
         </Card>
         <Card padding="sm">
-          <p className="text-2xl font-black text-white">{data.questionStats.byStatus.approved || 0}</p>
+          <p className="text-2xl font-semibold text-white">{data.questionStats.byStatus.approved || 0}</p>
           <p className="mt-1 text-xs text-white/50">
             questions approved &middot; {data.questionStats.total} generated total
           </p>

@@ -67,7 +67,7 @@ export default function MarketingAnalyticsPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="text-2xl font-black">Analytics</h1>
+      <h1 className="text-2xl font-semibold">Analytics</h1>
 
       <h2 className="mt-8 text-lg font-bold">Funnel</h2>
       <div className="mt-3 overflow-x-auto rounded-xl border border-white/10">

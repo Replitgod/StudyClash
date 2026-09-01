@@ -693,7 +693,7 @@ export default function DemoBattlePage() {
 							Guided Product Demo
 						</div>
 
-						<h1 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
+						<h1 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
 							<span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
 								Try the AceDecks flow in 60 seconds.
 							</span>
@@ -744,7 +744,7 @@ export default function DemoBattlePage() {
 								<div className="mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-400/20 bg-indigo-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.25em] text-indigo-200">
 									Algebra Skills Demo
 								</div>
-								<h2 className="text-2xl font-black tracking-tight sm:text-3xl">
+								<h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
 									{DEMO_DECK.title}
 								</h2>
 								<p className="mt-2 text-sm text-white/55">
@@ -759,15 +759,15 @@ export default function DemoBattlePage() {
 
 							<div className="grid grid-cols-3 gap-2 sm:min-w-[260px]">
 								<div className="rounded-xl border border-white/10 bg-black/20 p-3 text-center">
-									<p className="text-lg font-black text-indigo-300">{totalScore}</p>
+									<p className="text-lg font-semibold text-indigo-300">{totalScore}</p>
 									<p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Score</p>
 								</div>
 								<div className="rounded-xl border border-white/10 bg-black/20 p-3 text-center">
-									<p className="text-lg font-black text-indigo-300">{formatTime(elapsedSeconds)}</p>
+									<p className="text-lg font-semibold text-indigo-300">{formatTime(elapsedSeconds)}</p>
 									<p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Timer</p>
 								</div>
 								<div className="rounded-xl border border-white/10 bg-black/20 p-3 text-center">
-									<p className="text-lg font-black text-green-300">{bestStreak}</p>
+									<p className="text-lg font-semibold text-green-300">{bestStreak}</p>
 									<p className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Best Streak</p>
 								</div>
 							</div>
@@ -917,7 +917,7 @@ export default function DemoBattlePage() {
 							Demo Results
 						</div>
 
-						<h2 className="text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
+						<h2 className="text-center text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
 							<span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
 								Demo battle complete.
 							</span>
@@ -928,21 +928,21 @@ export default function DemoBattlePage() {
 
 						<div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 							<div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
-								<p className="text-4xl font-black bg-gradient-to-r from-indigo-400 to-indigo-400 bg-clip-text text-transparent">
+								<p className="text-4xl font-semibold bg-gradient-to-r from-indigo-400 to-indigo-400 bg-clip-text text-transparent">
 									{totalScore}
 								</p>
 								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">Score</p>
 							</div>
 							<div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
-								<p className="text-4xl font-black text-green-300">{accuracyPercent}%</p>
+								<p className="text-4xl font-semibold text-green-300">{accuracyPercent}%</p>
 								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">Accuracy</p>
 							</div>
 							<div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
-								<p className="text-4xl font-black text-indigo-300">{correctAnswers}/{totalQuestions}</p>
+								<p className="text-4xl font-semibold text-indigo-300">{correctAnswers}/{totalQuestions}</p>
 								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">Correct</p>
 							</div>
 							<div className="rounded-2xl border border-white/10 bg-black/20 p-4 text-center">
-								<p className="text-4xl font-black text-indigo-300">{formatTime(elapsedSeconds)}</p>
+								<p className="text-4xl font-semibold text-indigo-300">{formatTime(elapsedSeconds)}</p>
 								<p className="mt-2 text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">Time</p>
 							</div>
 						</div>
@@ -963,15 +963,15 @@ export default function DemoBattlePage() {
 							<div className="mt-4 grid gap-3 sm:grid-cols-3">
 								<div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
 									<p className="text-sm font-semibold text-white/90">Best streak</p>
-									<p className="mt-1 text-2xl font-black text-indigo-300">{bestStreak}</p>
+									<p className="mt-1 text-2xl font-semibold text-indigo-300">{bestStreak}</p>
 								</div>
 								<div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
 									<p className="text-sm font-semibold text-white/90">Wrong answers</p>
-									<p className="mt-1 text-2xl font-black text-red-300">{wrongAnswers}</p>
+									<p className="mt-1 text-2xl font-semibold text-red-300">{wrongAnswers}</p>
 								</div>
 								<div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
 									<p className="text-sm font-semibold text-white/90">Avg. response</p>
-									<p className="mt-1 text-2xl font-black text-indigo-300">{averageResponseTimeMs > 0 ? `${Math.round(averageResponseTimeMs / 1000)}s` : "—"}</p>
+									<p className="mt-1 text-2xl font-semibold text-indigo-300">{averageResponseTimeMs > 0 ? `${Math.round(averageResponseTimeMs / 1000)}s` : "—"}</p>
 								</div>
 							</div>
 						</div>

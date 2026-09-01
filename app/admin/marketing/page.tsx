@@ -63,7 +63,7 @@ export default function MarketingDashboardHome() {
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black">Marketing Dashboard</h1>
+          <h1 className="text-2xl font-semibold">Marketing Dashboard</h1>
           <p className="mt-1 text-sm text-white/50">
             Private, admin-only. Not marketed or sold -- for promoting AceDecks only.
           </p>
@@ -93,7 +93,7 @@ export default function MarketingDashboardHome() {
           <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {STAT_CARDS.map((card) => (
               <div key={card.key} className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                <p className="text-2xl font-black text-white">{summary[card.key] ?? 0}</p>
+                <p className="text-2xl font-semibold text-white">{summary[card.key] ?? 0}</p>
                 <p className="mt-1 text-xs text-white/50">{card.label}</p>
               </div>
             ))}

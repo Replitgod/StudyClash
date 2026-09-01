@@ -356,7 +356,7 @@ export default function DiagnosticResultsPage() {
           </Link>
         </div>
 
-        <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
           <span className="bg-gradient-to-r from-indigo-300 via-white to-indigo-300 bg-clip-text text-transparent">
             {attempt.exam.name} {isWeakArea ? "Weak-Area Retest Results" : "Results"}
           </span>
@@ -366,7 +366,7 @@ export default function DiagnosticResultsPage() {
           {isWeakArea ? (
             <>
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-indigo-300">Retest accuracy</p>
-              <p className="mt-2 text-4xl font-black text-white sm:text-5xl">{results.overall_accuracy}%</p>
+              <p className="mt-2 text-4xl font-semibold text-white sm:text-5xl">{results.overall_accuracy}%</p>
               <p className="mt-2 text-sm text-white/60">
                 Based on {responses.length} questions targeting your previously flagged weak areas.
               </p>
@@ -376,7 +376,7 @@ export default function DiagnosticResultsPage() {
               <p className="text-xs font-bold uppercase tracking-[0.25em] text-indigo-300">
                 AceDecks diagnostic estimate
               </p>
-              <p className="mt-2 text-4xl font-black text-white sm:text-5xl">
+              <p className="mt-2 text-4xl font-semibold text-white sm:text-5xl">
                 {results.estimated_score_low}&ndash;{results.estimated_score_high}
               </p>
               <p className="mt-2 text-sm text-white/60">
@@ -397,14 +397,14 @@ export default function DiagnosticResultsPage() {
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <Card padding="md">
             <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">Overall accuracy</p>
-            <p className="mt-1 text-2xl font-black text-white">{results.overall_accuracy}%</p>
+            <p className="mt-1 text-2xl font-semibold text-white">{results.overall_accuracy}%</p>
           </Card>
           {Object.entries(results.section_results).map(([section, stats]) => (
             <Card key={section} padding="md">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
                 {SECTION_LABELS[section] || section}
               </p>
-              <p className="mt-1 text-2xl font-black text-white">{stats.accuracy}%</p>
+              <p className="mt-1 text-2xl font-semibold text-white">{stats.accuracy}%</p>
               <p className="text-xs text-white/50">{stats.correct}/{stats.total} correct</p>
             </Card>
           ))}

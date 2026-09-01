@@ -126,7 +126,7 @@ export function WorkspaceShell({
 function PaneHeader({ titleId, title, onClose }: { titleId: string; title: string; onClose: () => void }) {
   return (
     <div className="flex flex-shrink-0 items-center justify-between border-b border-white/10 px-5 py-4">
-      <h2 id={titleId} className="text-sm font-black uppercase tracking-[0.16em] text-white/70">
+      <h2 id={titleId} className="text-sm font-semibold uppercase tracking-[0.16em] text-white/70">
         {title}
       </h2>
       <motion.button

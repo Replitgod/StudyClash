@@ -147,7 +147,7 @@ export default function MarketingSettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <h1 className="text-2xl font-black">Settings</h1>
+      <h1 className="text-2xl font-semibold">Settings</h1>
 
       <h2 className="mt-6 text-lg font-bold">AceDecks marketing profile</h2>
       <p className="text-sm text-white/50">

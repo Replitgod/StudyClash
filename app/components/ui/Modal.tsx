@@ -91,7 +91,7 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
       >
         {title && (
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-black tracking-tight">
+            <h2 className="text-lg font-semibold tracking-tight">
               <span className={`${GRADIENTS.brandHeading} bg-clip-text text-transparent`}>{title}</span>
             </h2>
             <button

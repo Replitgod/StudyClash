@@ -1875,7 +1875,7 @@ export default function ResultsPage() {
         </div>
 
         {/* Title */}
-        <h1 className="break-words text-center text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
+        <h1 className="break-words text-center text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
           <span className="bg-gradient-to-r from-indigo-400 via-indigo-400 to-indigo-400 bg-clip-text text-transparent">
             Nice Work, {match.player_name}!
           </span>
@@ -1890,7 +1890,7 @@ export default function ResultsPage() {
               <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-indigo-200">
                 Victory Screen
               </p>
-              <p className="mt-1 text-base font-black text-white">
+              <p className="mt-1 text-base font-semibold text-white">
                 {victoryTone} performance · {currentAccuracyPercent}% accuracy
               </p>
               <p className="mt-1 text-xs text-white/70">
@@ -1923,7 +1923,7 @@ export default function ResultsPage() {
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-200">
                   Boss Battle Result
                 </p>
-                <h2 className="mt-1 text-lg font-black text-white sm:text-xl">
+                <h2 className="mt-1 text-lg font-semibold text-white sm:text-xl">
                   {bossName}
                 </h2>
               </div>
@@ -2016,7 +2016,7 @@ export default function ResultsPage() {
                 <p className="text-xs font-bold uppercase tracking-[0.22em] text-indigo-200">
                   Study Rival Result
                 </p>
-                <h2 className="mt-1 text-lg font-black text-white sm:text-xl">
+                <h2 className="mt-1 text-lg font-semibold text-white sm:text-xl">
                   {rivalName} · {rivalRank}
                 </h2>
               </div>
@@ -2668,7 +2668,7 @@ export default function ResultsPage() {
         <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-sm sm:mt-8 sm:p-6 lg:p-7 xl:p-8">
           {/* Big score */}
           <div className="text-center">
-            <span className="text-5xl font-black bg-gradient-to-r from-indigo-400 to-indigo-400 bg-clip-text text-transparent sm:text-6xl md:text-7xl">
+            <span className="text-5xl font-semibold bg-gradient-to-r from-indigo-400 to-indigo-400 bg-clip-text text-transparent sm:text-6xl md:text-7xl">
               <AnimatedNumber value={match.score} />
             </span>
             <p className="mt-1 text-xs font-bold uppercase tracking-wider text-[var(--text-3)]">
