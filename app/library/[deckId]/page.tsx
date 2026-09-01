@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { authFetch } from "@/lib/authFetch";
+import { copyTextToClipboard } from "@/lib/clipboard";
+import { trackEvent } from "@/lib/trackEvent";
 import { useAuth } from "@/lib/useAuth";
 import { useStudy } from "@/lib/useStudy";
 import { sessionHref } from "@/lib/nextAction";
@@ -38,6 +40,8 @@ type DeckRecord = {
   title: string;
   course_name: string;
   raw_notes: string | null;
+  is_public: boolean | null;
+  share_slug: string | null;
 };
 
 type QuestionRecord = {
@@ -71,6 +75,9 @@ export default function MaterialWorkspacePage() {
   const [testSize, setTestSize] = useState(DEFAULT_TEST_SIZE);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   // Arriving straight from the composer: say what was just built before
   // asking the student to do anything.
@@ -92,7 +99,7 @@ export default function MaterialWorkspacePage() {
     Promise.all([
       supabase
         .from("decks")
-        .select("id, title, course_name, raw_notes")
+        .select("id, title, course_name, raw_notes, is_public, share_slug")
         .eq("id", deckId)
         .eq("user_id", userId)
         .maybeSingle(),
@@ -151,6 +158,77 @@ export default function MaterialWorkspacePage() {
     }
     return Array.from(seen);
   }, [questions]);
+
+  // Guarded on `window` rather than relying on `deck` being null during the
+  // server render, which is true today only because the deck loads in an
+  // effect -- an accident, not a guarantee.
+  const shareUrl =
+    typeof window !== "undefined" && deck?.share_slug
+      ? `${window.location.origin}/d/${deck.share_slug}`
+      : null;
+
+  const handleShare = useCallback(async () => {
+    if (!deck) return;
+    setShareError(null);
+    setIsSharing(true);
+
+    try {
+      const response = await authFetch("/api/library/share", {
+        method: "POST",
+        body: JSON.stringify({ deckId: deck.id }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.slug) {
+        setShareError(data.error || "Could not share this. Please try again.");
+        setIsSharing(false);
+        return;
+      }
+
+      setDeck((current) =>
+        current ? { ...current, is_public: true, share_slug: data.slug } : current
+      );
+      void trackEvent("deck_shared", { deckId: deck.id });
+
+      // The clipboard write happens after the await deliberately -- see the
+      // note in lib/clipboard.ts about lost user activation. Failing to copy
+      // is not failing to share, so the link is shown either way.
+      const copiedOk = await copyTextToClipboard(`${window.location.origin}/d/${data.slug}`);
+      setCopied(copiedOk);
+      setIsSharing(false);
+    } catch {
+      setShareError("Could not share this. Please try again.");
+      setIsSharing(false);
+    }
+  }, [deck]);
+
+  const handleUnshare = useCallback(async () => {
+    if (!deck) return;
+    setShareError(null);
+    setIsSharing(true);
+
+    try {
+      const response = await authFetch(
+        `/api/library/share?id=${encodeURIComponent(deck.id)}`,
+        { method: "DELETE" }
+      );
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setShareError(data.error || "Could not unshare this. Please try again.");
+        setIsSharing(false);
+        return;
+      }
+
+      setDeck((current) => (current ? { ...current, is_public: false } : current));
+      void trackEvent("deck_unshared", { deckId: deck.id });
+      setCopied(false);
+      setIsSharing(false);
+    } catch {
+      setShareError("Could not unshare this. Please try again.");
+      setIsSharing(false);
+    }
+  }, [deck]);
 
   const handleDelete = useCallback(async () => {
     if (!deck) return;
@@ -323,6 +401,66 @@ export default function MaterialWorkspacePage() {
               </div>
             </div>
           )}
+
+          {/* ---- Share ----
+              A study set with a URL is how a classmate ever sees this
+              product, and it is the one thing Quizlet has structurally that
+              AceDecks did not. Opt-in, and reversible. */}
+          <div className="mt-10">
+            <h2 className="t-section">Share</h2>
+            {deck.is_public && shareUrl ? (
+              <div className="card mt-3 p-4">
+                <p className="t-meta">
+                  Anyone with this link can study this set. Your name, scores and
+                  mastery are not shown.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <code
+                    className="min-w-0 flex-1 truncate rounded-[var(--radius-sm)] px-2.5 py-2 text-[13px]"
+                    style={{ background: "var(--panel-raised)", color: "var(--text-2)" }}
+                  >
+                    {shareUrl}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={async () => setCopied(await copyTextToClipboard(shareUrl))}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    {copied ? "Copied" : "Copy link"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleUnshare()}
+                    disabled={isSharing}
+                    className="btn btn-quiet btn-sm"
+                    style={{ color: "var(--text-3)" }}
+                  >
+                    {isSharing ? "Working…" : "Stop sharing"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <p className="t-meta flex-1 min-w-[15rem]">
+                  Give this set a link your classmates can open. They get their
+                  own copy; you keep yours.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void handleShare()}
+                  disabled={isSharing}
+                  className="btn btn-secondary btn-sm"
+                >
+                  {isSharing ? "Creating link…" : "Share this set"}
+                </button>
+              </div>
+            )}
+            {shareError && (
+              <p className="t-meta mt-2" role="alert" style={{ color: "var(--bad)" }}>
+                {shareError}
+              </p>
+            )}
+          </div>
 
           <div className="mt-10">
             {confirmDelete ? (

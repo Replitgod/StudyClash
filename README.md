@@ -24,6 +24,16 @@ There are four destinations, and nothing else in navigation.
 | `/vyra`     | The AI tutor, as a full chat product.                             |
 | `/settings` | Account, help, and links to every less-used corner.               |
 
+One route sits outside all of that: `/d/[slug]`, a **published study set**.
+It is the only page in the signed-in half of the product written for someone
+who has never heard of AceDecks — a classmate opening a link, or a search
+result — so it is a *server* component with real metadata and JSON-LD, and it
+is listed in `sitemap.ts` and allowed in `robots.ts`. Publishing is opt-in per
+deck (`decks.is_public`), reversible, and never exposes the publisher's name,
+scores or mastery. A visitor who saves the set gets their own copy
+(`POST /api/library/copy`), which is what puts them into the practice loop
+rather than just reading a page.
+
 Two screens deliberately render with no chrome at all — `/study/[deckId]`
 (the distraction-free session) and the older `/battle/[deckId]` (kept for
 challenge links, tournaments, and open-response decks, which need its
@@ -85,8 +95,18 @@ no Vyra chat cap, and no beta access code. `lib/planLimits.ts` is the single
 source of truth, and both the enforcement and every line of user-facing copy
 read from it.
 
-Stripe checkout and the `membership_plans` table are still wired up and
-still work — nothing in the product is gated behind them.
+Ace Pro sells on two intervals: **$9.99 a month** or **$99 a year** (twelve
+months for less than the price of ten). They are the same tier — annual is a
+`BillingInterval`, not a fourth `TierId`, so entitlements, the governor and
+`profiles.plan` are identical either way. Each purchasable price names the env
+var holding its Stripe price id (`STRIPE_PRO_PRICE_ID`,
+`STRIPE_PRO_ANNUAL_PRICE_ID`), and the savings line on the pricing page is
+computed from the two amounts rather than written down, so it cannot claim a
+discount the prices do not support.
+
+Billing lives in **Settings**, not on a page of its own: plan, renewal date,
+"Manage billing" (the Stripe portal), and account deletion. Stripe returns
+customers to `/settings` after checkout and after the portal.
 
 ## Environment
 
@@ -96,8 +116,20 @@ Required:
 - `SUPABASE_SERVICE_ROLE_KEY` (server-only)
 - `OPENAI_API_KEY`
 
-Optional: `NEXT_PUBLIC_SITE_URL`, the `STRIPE_*` keys, `ADMIN_EMAILS`,
-`UPSTASH_REDIS_*`, `TURNSTILE_*`.
+Required in production (not locally):
+
+- `CRON_SECRET` — shared secret for the scheduled jobs in `vercel.json` and
+  for the curriculum pipeline's own self-kick. Outside production a missing
+  value lets those routes run open; **on a production deployment they refuse
+  every request without it**, and log why. Set it or document ingestion
+  silently stops.
+
+Optional: `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAILS`, `UPSTASH_REDIS_*`,
+`TURNSTILE_*`, and the `STRIPE_*` keys — `STRIPE_SECRET_KEY`,
+`STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_ID` (monthly) and
+`STRIPE_PRO_ANNUAL_PRICE_ID` (yearly). A missing annual price id does not fall
+back to the monthly one; checkout refuses and logs, because the alternative is
+charging a customer monthly for the yearly plan they picked.
 
 `BETA_ACCESS_CODE` / `BETA_ACCESS_CODES` are no longer read by anything —
 the gate they controlled was removed.
