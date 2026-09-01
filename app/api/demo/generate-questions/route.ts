@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createHash } from "node:crypto";
+import { getClientIpAddress, hashIdentifier } from "@/lib/server/apiUtils";
+import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 import { TERRA_TASK, type ReasoningEffort } from "@/lib/server/aiModels";
 import { hasUnbalancedMathDelimiters } from "@/lib/server/mathValidation";
 import { shuffleAnswerChoices } from "@/lib/server/questionShuffle";
@@ -70,9 +71,16 @@ function resolveSubjectMix(value: unknown): SubjectMix {
 // database: the demo route has no user/session to attribute cost to, so a
 // warm-instance-scoped cap is enough to blunt casual abuse without adding a
 // public-writable table.
-const DEMO_IP_WINDOW_MS = 60_000;
+// This is the only public, unauthenticated route in the app that spends
+// money on OpenAI, which makes it the one an abuser reaches first. It used
+// to keep its counter in a process-local Map -- and lib/server/rateLimit.ts
+// exists precisely because that does not hold on Vercel: each serverless
+// instance has its own process, so a burst spread across cold instances
+// sees a fresh, empty counter every time. It now shares the same Redis
+// counter as every other rate-limited route, with the in-memory limiter
+// still the automatic fallback when Upstash is not configured.
+const DEMO_IP_WINDOW_SECONDS = 60;
 const DEMO_IP_LIMIT = 5;
-const recentRequestsByIp = new Map<string, number[]>();
 
 type DemoQuestion = {
   question_text: string;
@@ -82,31 +90,6 @@ type DemoQuestion = {
   topic: string;
   difficulty: string;
 };
-
-function getClientIp(req: NextRequest): string {
-  const forwarded = req.headers.get("x-forwarded-for") || "";
-  const firstForwarded = forwarded.split(",").map((part) => part.trim()).filter(Boolean)[0];
-  return firstForwarded || req.headers.get("x-real-ip") || "unknown";
-}
-
-function hashClientIp(ip: string): string {
-  return createHash("sha256").update(ip).digest("hex");
-}
-
-function isRateLimited(ipHash: string): boolean {
-  const now = Date.now();
-  const windowStart = now - DEMO_IP_WINDOW_MS;
-  const timestamps = (recentRequestsByIp.get(ipHash) || []).filter((t) => t > windowStart);
-
-  if (timestamps.length >= DEMO_IP_LIMIT) {
-    recentRequestsByIp.set(ipHash, timestamps);
-    return true;
-  }
-
-  timestamps.push(now);
-  recentRequestsByIp.set(ipHash, timestamps);
-  return false;
-}
 
 function buildPrompt(args: {
   totalQuestions: number;
@@ -290,11 +273,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Generation is not configured right now." }, { status: 503 });
     }
 
-    const clientIpHash = hashClientIp(getClientIp(req));
-    if (isRateLimited(clientIpHash)) {
+    const clientIpHash = hashIdentifier(getClientIpAddress(req));
+    const rateLimit = await checkDistributedRateLimit({
+      key: `demo-generate-questions:${clientIpHash}`,
+      limit: DEMO_IP_LIMIT,
+      windowSeconds: DEMO_IP_WINDOW_SECONDS,
+    });
+
+    if (!rateLimit.allowed) {
       return NextResponse.json(
         { error: "Too many demo requests from this network. Please wait a minute and retry." },
-        { status: 429 }
+        { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
       );
     }
 

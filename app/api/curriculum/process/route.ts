@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServiceSupabaseClient } from "@/lib/server/apiUtils";
+import { getServiceSupabaseClient, isAuthorizedCronRequest } from "@/lib/server/apiUtils";
 import { runIngestionJob } from "@/lib/server/curriculum/jobs/ingestionJob";
 import { runChunkingJob } from "@/lib/server/curriculum/jobs/chunkingJob";
 import { runIndexingJob } from "@/lib/server/curriculum/jobs/indexingJob";
@@ -41,11 +41,6 @@ const HANDLERS: Record<string, JobHandler> = {
   question_verification: runQuestionVerificationJob,
 };
 
-function isAuthorized(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return true;
-  return req.headers.get("authorization") === `Bearer ${secret}`;
-}
 
 async function kickSelf(request: NextRequest, chainDepth: number): Promise<void> {
   if (chainDepth >= MAX_CHAIN_DEPTH) {
@@ -75,7 +70,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isAuthorized(request)) {
+  if (!isAuthorizedCronRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

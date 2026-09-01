@@ -95,6 +95,47 @@ export async function requireAdminUser(
   return { userId: user.id, email: user.email || null, errorStatus: null, errorMessage: null };
 }
 
+// True on a real deployment (Vercel sets VERCEL_ENV; NODE_ENV covers a
+// self-hosted `next start`). Used to decide whether a missing shared secret
+// may fail open.
+export function isProductionDeployment(): boolean {
+  const vercelEnv = process.env.VERCEL_ENV;
+  if (vercelEnv) return vercelEnv === "production";
+  return process.env.NODE_ENV === "production";
+}
+
+// Guards the routes only a scheduler is meant to call.
+//
+// These used to return true whenever CRON_SECRET was unset, which is
+// convenient locally and dangerous in production: with the variable
+// forgotten on the project, anyone who guessed the path could drive the
+// curriculum pipeline -- an OpenAI-spending loop that re-invokes itself --
+// as fast as they liked. It now fails OPEN only outside production, and
+// fails CLOSED on a real deployment, so a missing secret costs a broken
+// cron job (visible, cheap) instead of an unmetered bill (invisible until
+// it is not).
+export function isAuthorizedCronRequest(request: NextRequest): boolean {
+  const secret = process.env.CRON_SECRET;
+
+  if (!secret) {
+    if (!isProductionDeployment()) return true;
+
+    // Failing closed here also stops the app's own fire-and-forget kicks
+    // into /api/curriculum/process, which attach this header only when the
+    // variable exists. That would be a silent stall (the kick is never
+    // awaited), so say so loudly -- a misconfigured deployment should be
+    // findable in the logs rather than showing up as "uploads never
+    // finish processing".
+    console.error(
+      "CRON_SECRET is not set on a production deployment. Scheduled jobs and " +
+        "the curriculum processing pipeline are refusing every request until it is."
+    );
+    return false;
+  }
+
+  return request.headers.get("authorization") === `Bearer ${secret}`;
+}
+
 export function getClientIpAddress(request: NextRequest): string {
   const forwarded = request.headers.get("x-forwarded-for") || "";
   const firstForwarded = forwarded
