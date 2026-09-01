@@ -5,6 +5,7 @@ import AppFrame from "./components/app/AppFrame";
 import { PageTransition } from "./components/PageTransition";
 import { AuthProvider } from "@/lib/useAuth";
 import { UI_Z_INDEX } from "@/lib/uiLayout";
+import { CONTACT_EMAIL } from "@/lib/contact";
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Archivo } from "next/font/google";
 import { MotionConfig } from "framer-motion";
@@ -127,7 +128,7 @@ const organizationSchema = {
     {
       "@type": "ContactPoint",
       contactType: "customer support",
-      email: "acedecks15@gmail.com",
+      email: CONTACT_EMAIL,
       areaServed: "Worldwide",
       availableLanguage: ["English"],
       url: `${siteUrl}/contact`,
