@@ -72,6 +72,8 @@ export default function SettingsPage() {
   const [justPaid, setJustPaid] = useState(false);
   const [billingUpdated, setBillingUpdated] = useState(false);
 
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -147,6 +149,37 @@ export default function SettingsPage() {
     } catch {
       setBillingError("Could not open the billing portal. Please try again.");
       setIsOpeningPortal(false);
+    }
+  }, []);
+
+  const exportData = useCallback(async () => {
+    setExportError(null);
+    setIsExporting(true);
+    try {
+      const response = await authFetch("/api/account/export");
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        setExportError(data.error || "Could not prepare your data. Please try again.");
+        setIsExporting(false);
+        return;
+      }
+
+      // Saved straight from the response rather than opening a URL, so the
+      // request keeps its Authorization header and the file never becomes a
+      // link that could be shared by accident.
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `acedecks-data-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      setExportError("Could not prepare your data. Please try again.");
+    } finally {
+      setIsExporting(false);
     }
   }, []);
 
@@ -391,6 +424,26 @@ export default function SettingsPage() {
               Send feedback
             </button>
           </Row>
+          <Row
+            label="Download your data"
+            description="Everything AceDecks holds about you, as one file."
+          >
+            <button
+              type="button"
+              onClick={() => void exportData()}
+              disabled={isExporting}
+              className="btn btn-secondary btn-sm"
+            >
+              {isExporting ? "Preparing…" : "Download"}
+            </button>
+          </Row>
+          {exportError && (
+            <div className="px-4 py-3">
+              <p className="t-meta" role="alert" style={{ color: "var(--danger)" }}>
+                {exportError}
+              </p>
+            </div>
+          )}
           <Row label="Privacy and terms">
             <div className="flex gap-2">
               <Link href="/privacy" className="btn btn-quiet btn-sm">

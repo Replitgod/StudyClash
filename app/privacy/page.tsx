@@ -58,6 +58,11 @@ export default function PrivacyPage() {
           </section>
 
           <section>
+            <h2 className="text-base font-bold text-white">Getting a copy of your data</h2>
+            <p className="mt-1">You can download everything we hold about you at any time from <Link href="/settings" className="text-indigo-200 hover:text-indigo-100">Settings</Link> &mdash; your account details, decks and questions, uploaded notes, match history, diagnostics, study plans and progress, as a single file. Internal logs and other people&apos;s data are not included.</p>
+          </section>
+
+          <section>
             <h2 className="text-base font-bold text-white">Deleting your account and uploads</h2>
             <p className="mt-1">You can delete your account yourself at any time from <Link href="/settings" className="text-indigo-200 hover:text-indigo-100">Settings</Link>, at the bottom of the page. It removes your account, your decks and questions, your uploaded notes, and your mastery and progress history, and it cannot be undone. If you have a paid subscription it is cancelled first, so you are not billed again.</p>
             <p className="mt-2">Match results you have already played keep their score and time but are detached from your account, so a shared challenge link or a class leaderboard does not break for other people. If you would rather we handled the deletion for you, <Link href="/contact" className="text-indigo-200 hover:text-indigo-100">contact us</Link> from the email on your account.</p>
