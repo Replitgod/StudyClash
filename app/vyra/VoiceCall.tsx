@@ -39,6 +39,10 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
   const [seconds, setSeconds] = useState(0);
 
   // Whose voice is currently moving the circle, and how much.
+  // Set when the browser refuses to play Vyra's audio without a fresh tap.
+  // Without this the call connects, she talks, and the student hears
+  // nothing at all with no explanation -- silent dead air.
+  const [needsTapToHear, setNeedsTapToHear] = useState(false);
   const [level, setLevel] = useState(0);
   const [speaker, setSpeaker] = useState<"student" | "vyra" | null>(null);
 
@@ -71,6 +75,7 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
 
     setLevel(0);
     setSpeaker(null);
+    setNeedsTapToHear(false);
   }, []);
 
   useEffect(() => teardown, [teardown]);
@@ -90,6 +95,9 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
 
     const ctx = new Ctx();
     audioCtxRef.current = ctx;
+    // Created under an autoplay policy it can start suspended, which leaves
+    // the orb frozen even while the call is fine.
+    if (ctx.state === "suspended") void ctx.resume().catch(() => {});
 
     const analyse = (stream: MediaStream) => {
       const node = ctx.createAnalyser();
@@ -176,7 +184,16 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
 
       pc.ontrack = (event) => {
         const [remote] = event.streams;
-        if (audioRef.current) audioRef.current.srcObject = remote;
+        const el = audioRef.current;
+        if (el) {
+          el.srcObject = remote;
+          // autoPlay alone is not enough. Chrome and Safari can still refuse,
+          // and the rejected promise is silent -- the call looks connected
+          // and plays nothing. Ask explicitly so the refusal is catchable.
+          el.play()
+            .then(() => setNeedsTapToHear(false))
+            .catch(() => setNeedsTapToHear(true));
+        }
         startMeter(stream, remote);
       };
 
@@ -289,7 +306,9 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
   const isBusy = state === "connecting";
 
   const status = isLive
-    ? isMuted
+    ? needsTapToHear
+      ? "Tap below to turn her voice on"
+      : isMuted
       ? "Muted"
       : speaker === "vyra"
         ? "Vyra is speaking"
@@ -317,7 +336,13 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
     >
       {/* Vyra's voice. Only ever attached after an explicit tap on Start, so
           autoplay policy is never in the way. */}
-      <audio ref={audioRef} autoPlay className="hidden" />
+      {/* The `hidden` class this used to carry was redundant, not harmful:
+          the UA stylesheet already applies `audio:not([controls]) { display:
+          none }`, and a display-none audio element still plays -- verified.
+          What actually caused silence was the autoPlay promise being
+          rejected with nobody catching it; see pc.ontrack above.
+          playsInline keeps iOS from trying to take it fullscreen. */}
+      <audio ref={audioRef} autoPlay playsInline />
 
       {/* ---- Deck topic ---- */}
       <div className="flex justify-center px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
@@ -395,6 +420,25 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
             Vyra already knows what you have been studying and what you keep
             getting wrong. You can interrupt her.
           </p>
+        )}
+
+        {/* The browser refused to play her. Offer the tap it is asking for
+            rather than leaving the student in silence wondering whether the
+            call is broken. */}
+        {needsTapToHear && (
+          <button
+            type="button"
+            onClick={() => {
+              void audioRef.current
+                ?.play()
+                .then(() => setNeedsTapToHear(false))
+                .catch(() => {});
+              void audioCtxRef.current?.resume().catch(() => {});
+            }}
+            className="btn btn-primary mt-5"
+          >
+            Tap to hear Vyra
+          </button>
         )}
 
         {error && (
