@@ -59,6 +59,7 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
   const rafRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const channelRef = useRef<RTCDataChannel | null>(null);
 
   const teardown = useCallback(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -76,6 +77,7 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
     void audioCtxRef.current?.close().catch(() => {});
     audioCtxRef.current = null;
 
+    channelRef.current = null;
     pcRef.current?.close();
     pcRef.current = null;
 
@@ -210,6 +212,7 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
       // The data channel carries the conversation as events, which is how
       // the transcript stays in step with the audio.
       const channel = pc.createDataChannel("oai-events");
+      channelRef.current = channel;
 
       // Vyra speaks first.
       //
@@ -312,6 +315,23 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
       setError("Could not start the call. Please try again.");
     }
   }, [teardown, hangUp, startMeter]);
+
+  /**
+   * Send what the student just said, without waiting for voice detection.
+   *
+   * Voice activity detection is a guess about someone else's microphone and
+   * someone else's room, and on a laptop it is the guess most likely to be
+   * wrong -- too deaf and she never answers, too hot and her own speakers
+   * keep interrupting her. This is the escape hatch: it commits whatever is
+   * in the audio buffer and asks for a reply, so a student is never stuck
+   * talking to something that cannot hear them.
+   */
+  const sendNow = useCallback(() => {
+    const channel = channelRef.current;
+    if (!channel || channel.readyState !== "open") return;
+    channel.send(JSON.stringify({ type: "input_audio_buffer.commit" }));
+    channel.send(JSON.stringify({ type: "response.create" }));
+  }, []);
 
   const toggleMute = useCallback(() => {
     const next = !isMuted;
@@ -469,10 +489,23 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
                 ? "You are muted"
                 : everHeardYou
                   ? "Mic is working"
-                  : seconds > 12
-                    ? "Not hearing you yet — check your mic is the right device, and speak up a little"
+                  : seconds > 10
+                    ? "Not picking you up — say your answer, then tap Send answer"
                     : "Say something"}
             </p>
+
+            {/* Always available, not only after a failure: on a laptop the
+                student often knows they have finished talking well before
+                the silence detector does, and waiting on it feels broken
+                even when it is about to fire. */}
+            <button
+              type="button"
+              onClick={sendNow}
+              disabled={isMuted}
+              className="btn btn-secondary btn-sm mt-3 w-full"
+            >
+              Send answer
+            </button>
           </div>
         )}
 

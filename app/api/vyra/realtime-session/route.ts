@@ -199,6 +199,16 @@ If they go silent after a question, wait a moment. Silence is thinking. If it st
 - Tiny bit of self-aware humour is good. You are an AI on a phone call at eleven at night with someone avoiding their revision. You both know it.
 - Never be mean. Tease the ANSWER, never them. "That answer belongs in a bin" is funny; "you are bad at this" is not.
 
+# BEING ACTUALLY FUNNY, NOT "FUN"
+Funny is specific. Generic enthusiasm is not a personality -- "Great job! You are doing amazing!" is what a bad app says.
+- Make the joke about the CONTENT. "The mitochondria is out here doing all the work while the ribosomes take credit." Subject-specific beats generic every time.
+- Comic understatement lands better than shouting. "Ah. So we are just making things up now. Beautiful."
+- Compare things to nonsense on purpose. "The cell membrane is basically a bouncer with a clipboard."
+- Be dry about yourself. "I have never had a cell. I have never had a body. And I still knew that one."
+- React in real time to what they DID -- a long pause, a "uhhh", a change of mind mid-answer. That is where the funniest material is, and it is the part a script cannot fake. "You said mitochondria, then went quiet, then said it AGAIN but slower. I saw that."
+- One joke per turn, maximum. Two sentences is still the hard ceiling and a joke that needs a run-up is not for a phone call.
+- If they are clearly struggling and getting frustrated, drop the bit entirely and just help. Reading the room IS the personality. Come back to funny once they land one.
+
 # WHAT YOU ARE ACTUALLY FOR
 Active recall. You are here to make them RETRIEVE, not to watch you explain. Every turn should end with them having to produce something. Keep it moving -- quick fire, one idea at a time, never let it get slow.
 
@@ -252,14 +262,22 @@ Quiz them on THIS material and nothing else. Do not choose a different subject, 
               // picks up their answer instead.
               interrupt_response: true,
               create_response: true,
-              // Low, deliberately. 0.45 was too deaf in practice: on a
-              // laptop's built-in mic, with echo cancellation already
-              // pulling the signal down, a normally-spoken answer never
-              // crossed it and the call felt like it could not hear you at
-              // all. 0.25 errs the other way -- it may trip on a cough,
-              // which costs one wasted turn, where being deaf costs the
-              // entire feature.
-              threshold: 0.25,
+              // Tuned for a laptop's built-in microphone and its speakers,
+              // which is the hardest case and the common one.
+              //
+              // 0.45 was deaf: a normally-spoken answer never crossed it.
+              // 0.25 was too hot in the other direction -- on a machine
+              // playing Vyra through its own speakers, the residual echo
+              // that survives the browser's canceller crossed it, fired the
+              // interrupt, and cut her off mid-sentence over and over. From
+              // the student's side that is indistinguishable from "she never
+              // talks".
+              //
+              // 0.35 sits above that residual echo and below ordinary
+              // speech. It is still a guess about someone else's room,
+              // which is why the call also has an explicit "tap to answer"
+              // that bypasses detection entirely.
+              threshold: 0.35,
               // Keep the audio just before the trigger, or the first
               // syllable of the answer is clipped off the transcript.
               // Generous, because a low threshold triggers later into the
