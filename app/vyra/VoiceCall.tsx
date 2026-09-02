@@ -43,6 +43,12 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
   // Without this the call connects, she talks, and the student hears
   // nothing at all with no explanation -- silent dead air.
   const [needsTapToHear, setNeedsTapToHear] = useState(false);
+  // Driven by OpenAI's OWN speech detection, not by our local meter. The
+  // two can disagree -- the mic can be picking up sound the model's VAD
+  // never triggers on -- and when a student says "it can't hear me" that
+  // distinction is the entire diagnosis.
+  const [heardYou, setHeardYou] = useState(false);
+  const [everHeardYou, setEverHeardYou] = useState(false);
   const [level, setLevel] = useState(0);
   const [speaker, setSpeaker] = useState<"student" | "vyra" | null>(null);
 
@@ -76,6 +82,8 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
     setLevel(0);
     setSpeaker(null);
     setNeedsTapToHear(false);
+    setHeardYou(false);
+    setEverHeardYou(false);
   }, []);
 
   useEffect(() => teardown, [teardown]);
@@ -227,6 +235,15 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
         try {
           const message = JSON.parse(event.data);
 
+          // The model's VAD, not ours.
+          if (message.type === "input_audio_buffer.speech_started") {
+            setHeardYou(true);
+            setEverHeardYou(true);
+          }
+          if (message.type === "input_audio_buffer.speech_stopped") {
+            setHeardYou(false);
+          }
+
           if (message.type === "conversation.item.input_audio_transcription.completed") {
             const text = String(message.transcript || "").trim();
             if (text) {
@@ -308,7 +325,9 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
   const status = isLive
     ? needsTapToHear
       ? "Tap below to turn her voice on"
-      : isMuted
+      : heardYou
+        ? "I can hear you…"
+        : isMuted
       ? "Muted"
       : speaker === "vyra"
         ? "Vyra is speaking"
@@ -420,6 +439,41 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
             Vyra already knows what you have been studying and what you keep
             getting wrong. You can interrupt her.
           </p>
+        )}
+
+        {/* A live mic meter, and -- if she has genuinely never triggered on
+            their voice -- the specific advice that fixes it. "It can't hear
+            me" is otherwise indistinguishable from "it is broken". */}
+        {isLive && !needsTapToHear && (
+          <div className="mt-6 w-full max-w-xs">
+            <div
+              className="h-1.5 w-full overflow-hidden rounded-full"
+              style={{ background: "var(--panel-raised)" }}
+              role="meter"
+              aria-label="Microphone level"
+              aria-valuenow={Math.round(level * 100)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+            >
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${Math.min(100, level * 130)}%`,
+                  background: heardYou ? "var(--neon-green)" : "var(--accent)",
+                  transition: "width 80ms linear, background-color 150ms ease",
+                }}
+              />
+            </div>
+            <p className="t-meta mt-2 text-center">
+              {isMuted
+                ? "You are muted"
+                : everHeardYou
+                  ? "Mic is working"
+                  : seconds > 12
+                    ? "Not hearing you yet — check your mic is the right device, and speak up a little"
+                    : "Say something"}
+            </p>
+          </div>
         )}
 
         {/* The browser refused to play her. Offer the tap it is asking for

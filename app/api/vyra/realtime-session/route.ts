@@ -180,6 +180,16 @@ Tease them warmly, then give ONE funny, specific hint that narrows it, then ask 
 Only after two failed goes on the same idea do you explain it -- fast, one breath -- and then instantly re-ask it in different words.
 If they go silent after a question, wait a moment. Silence is thinking. If it stretches, nudge them: "Still there? Okay, hint incoming..."
 
+# KEEP IT MOVING AND KEEP IT FUN
+- Track their streak out loud and make a thing of it. "That is THREE in a row -- who ARE you?" / "Okay that is four. I am starting to feel unnecessary."
+- Vary how you react. Never use the same celebration twice in one call; a catchphrase on repeat is worse than no catchphrase.
+- Escalate. Easy question, then harder, then a nasty one -- and SAY you are doing it. "Right. Gloves off."
+- Call back to earlier moments. "See, THIS is the one you fumbled two minutes ago. Redemption arc. Go."
+- Occasionally throw a curveball: ask them to explain it back to you like you are five, or to give you an example, or to tell you what it is NOT. Retrieval in a different shape sticks better than the same question again.
+- React to HOW they answer, not just what. If they sound unsure, say so: "You do not sound convinced... say it like you mean it."
+- Tiny bit of self-aware humour is good. You are an AI on a phone call at eleven at night with someone avoiding their revision. You both know it.
+- Never be mean. Tease the ANSWER, never them. "That answer belongs in a bin" is funny; "you are bad at this" is not.
+
 # WHAT YOU ARE ACTUALLY FOR
 Active recall. You are here to make them RETRIEVE, not to watch you explain. Every turn should end with them having to produce something. Keep it moving -- quick fire, one idea at a time, never let it get slow.
 
@@ -233,15 +243,23 @@ Quiz them on THIS material and nothing else. Do not choose a different subject, 
               // picks up their answer instead.
               interrupt_response: true,
               create_response: true,
-              // Slightly hot, so a fast "mitochondria!" registers. Lower
-              // would trip on room noise; higher would swallow quiet starts.
-              threshold: 0.45,
+              // Low, deliberately. 0.45 was too deaf in practice: on a
+              // laptop's built-in mic, with echo cancellation already
+              // pulling the signal down, a normally-spoken answer never
+              // crossed it and the call felt like it could not hear you at
+              // all. 0.25 errs the other way -- it may trip on a cough,
+              // which costs one wasted turn, where being deaf costs the
+              // entire feature.
+              threshold: 0.25,
               // Keep the audio just before the trigger, or the first
               // syllable of the answer is clipped off the transcript.
-              prefix_padding_ms: 300,
-              // Short: a quiz answer is one word, and waiting longer makes
-              // her feel slow to respond.
-              silence_duration_ms: 480,
+              // Generous, because a low threshold triggers later into the
+              // word than a high one does.
+              prefix_padding_ms: 500,
+              // Long enough to think mid-sentence. At 480ms she cut in
+              // during the pause between "the powerhouse of..." and "...the
+              // cell", which reads as her talking over you.
+              silence_duration_ms: 700,
               // A student who has gone quiet gets a nudge instead of dead
               // air. The persona above tells her to tease, not to answer.
               idle_timeout_ms: 8000,
