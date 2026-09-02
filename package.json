@@ -11,10 +11,15 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.123.0",
+    "@fastify/formbody": "^9.0.0",
+    "@fastify/websocket": "^11.3.0",
     "@napi-rs/canvas": "^0.1.100",
     "@supabase/supabase-js": "^2.110.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.12.1",
     "gsap": "^3.15.0",
     "jszip": "^3.10.1",
     "katex": "^0.17.0",
@@ -42,5 +47,20 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.10"
-  }
+  },
+  "description": "An AI study app. You give it a topic, your notes, a PDF, or a photo; it writes the study material, quizzes you, works out what you keep forgetting, and brings that back until you know it.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Replitgod/StudyClash.git"
+  },
+  "keywords": [],
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/Replitgod/StudyClash/issues"
+  },
+  "homepage": "https://github.com/Replitgod/StudyClash#readme"
 }

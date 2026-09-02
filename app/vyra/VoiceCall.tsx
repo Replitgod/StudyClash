@@ -1,121 +1,210 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useVoiceStudyMode } from "@/lib/useVoiceStudyMode";
+import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
 import { CloseIcon } from "@/app/components/app/Icons";
 
-// Talking to Vyra instead of typing at her.
+// A real call with Vyra.
 //
-// Built on the Web Speech API primitives already in lib/useVoiceStudyMode.ts
-// (the battle screen has used them for hands-free answering for a while):
-// SpeechRecognition to hear one turn, SpeechSynthesis to read the reply
-// back. No new dependency, no new API key, and it works offline-ish in
-// Chrome, Edge and Safari.
+// The first version of this was turn-based on the browser's Web Speech API:
+// tap, speak, wait, listen. That is a walkie-talkie. You cannot interrupt
+// it, the latency is a full round trip per turn, and Firefox has no
+// SpeechRecognition at all.
 //
-// It is a *turn-based* call, not a live one. The browser's recogniser
-// finalises on a pause, so the shape is listen -> think -> speak -> listen,
-// which is honest about what this can do rather than pretending to be a
-// full-duplex phone call it would drop words in. Firefox has no
-// SpeechRecognition at all, which is why isSupported gates the whole entry
-// point rather than failing on the first tap.
+// This is a WebRTC audio connection straight to OpenAI's realtime model.
+// Vyra hears the student as they speak, answers while they are still
+// thinking, and stops the moment they start talking again -- which is the
+// entire difference between a call and a form.
+//
+// The browser never holds OPENAI_API_KEY. /api/vyra/realtime-session mints
+// an ephemeral secret that expires in a minute and already has Vyra's
+// persona and this student's weak topics baked in, so the page cannot
+// rewrite who it is talking to.
 
-type CallState = "idle" | "listening" | "thinking" | "speaking";
+type CallState = "idle" | "connecting" | "live" | "ended" | "error";
+
+type Turn = { id: string; role: "student" | "vyra"; text: string };
 
 const STATE_LABEL: Record<CallState, string> = {
-  idle: "Tap to talk",
-  listening: "Listening…",
-  thinking: "Vyra is thinking…",
-  speaking: "Vyra is talking",
+  idle: "Ready",
+  connecting: "Connecting…",
+  live: "Listening — just talk",
+  ended: "Call ended",
+  error: "Couldn't connect",
 };
 
-export function VoiceCall({
-  onAsk,
-  onClose,
-}: {
-  /** Sends one spoken turn and resolves with what Vyra said back. */
-  onAsk: (text: string) => Promise<string>;
-  onClose: () => void;
-}) {
-  const voice = useVoiceStudyMode();
+/**
+ * A hard ceiling on one call.
+ *
+ * Realtime audio bills per minute in both directions. A student who walks
+ * away with the tab open should not run up a bill, so the call ends itself.
+ */
+const MAX_CALL_MS = 10 * 60 * 1000;
+
+export function VoiceCall({ onClose }: { onClose: () => void }) {
   const [state, setState] = useState<CallState>("idle");
-  const [heard, setHeard] = useState<string | null>(null);
-  const [reply, setReply] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [isMuted, setIsMuted] = useState(false);
 
-  // A hung-up call must not keep listening or talking into an empty room.
-  const isMountedRef = useRef(true);
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-      voice.stopListening();
-      voice.cancelSpeech();
-    };
-  }, [voice]);
+  const pcRef = useRef<RTCPeerConnection | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const runTurn = useCallback(async () => {
-    setError(null);
-    setState("listening");
-    setHeard(null);
-    setReply(null);
+  const teardown = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = null;
+    // The microphone track has to be stopped explicitly, or the browser
+    // keeps showing the recording indicator after the call is over.
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    pcRef.current?.close();
+    pcRef.current = null;
+  }, []);
 
-    const transcript = await voice.listenOnce();
-    if (!isMountedRef.current) return;
-
-    if (!transcript) {
-      setState("idle");
-      setError("I didn't catch that. Try again, a little closer to the mic.");
-      return;
-    }
-
-    setHeard(transcript);
-    setState("thinking");
-
-    try {
-      const answer = await onAsk(transcript);
-      if (!isMountedRef.current) return;
-
-      setReply(answer);
-      setState("speaking");
-      await voice.speak(answer);
-      if (!isMountedRef.current) return;
-      setState("idle");
-    } catch {
-      if (!isMountedRef.current) return;
-      setState("idle");
-      setError("Vyra could not answer that. Try again in a moment.");
-    }
-  }, [voice, onAsk]);
+  useEffect(() => teardown, [teardown]);
 
   const hangUp = useCallback(() => {
-    voice.stopListening();
-    voice.cancelSpeech();
+    teardown();
+    setState("ended");
     void trackEvent("vyra_call_ended");
-    onClose();
-  }, [voice, onClose]);
+  }, [teardown]);
 
-  if (!voice.isSupported) {
-    return (
-      <div className="card p-5" role="status">
-        <p className="text-[15px] font-medium" style={{ color: "var(--text-1)" }}>
-          Talking isn&rsquo;t available in this browser
-        </p>
-        <p className="t-meta mt-1">
-          Voice needs Chrome, Edge or Safari. You can still type to Vyra &mdash;
-          she answers exactly the same.
-        </p>
-        <button type="button" onClick={onClose} className="btn btn-secondary btn-sm mt-4">
-          Back to typing
-        </button>
-      </div>
-    );
-  }
+  const start = useCallback(async () => {
+    setError(null);
+    setTurns([]);
+    setState("connecting");
+    void trackEvent("vyra_call_started");
 
-  const isBusy = state !== "idle";
+    try {
+      // 1. Microphone first: if the student declines, nothing else is worth
+      // doing and the message should say what actually happened.
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch {
+        setState("error");
+        setError(
+          "AceDecks needs your microphone to talk. Allow it in your browser's address bar, then try again."
+        );
+        return;
+      }
+      streamRef.current = stream;
+
+      // 2. A one-minute key scoped to this session.
+      const response = await authFetch("/api/vyra/realtime-session", { method: "POST" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.clientSecret) {
+        teardown();
+        setState("error");
+        setError(data.error || "Could not start the call. Please try again.");
+        return;
+      }
+
+      // 3. WebRTC.
+      const pc = new RTCPeerConnection();
+      pcRef.current = pc;
+
+      pc.ontrack = (event) => {
+        if (audioRef.current) audioRef.current.srcObject = event.streams[0];
+      };
+
+      stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+      // The data channel carries the conversation as events, which is how
+      // the transcript on screen stays in step with the audio.
+      const channel = pc.createDataChannel("oai-events");
+      channel.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+
+          if (message.type === "conversation.item.input_audio_transcription.completed") {
+            const text = String(message.transcript || "").trim();
+            if (text) {
+              setTurns((prev) => [
+                ...prev,
+                { id: `s-${message.item_id ?? prev.length}`, role: "student", text },
+              ]);
+            }
+          }
+
+          if (message.type === "response.output_audio_transcript.done") {
+            const text = String(message.transcript || "").trim();
+            if (text) {
+              setTurns((prev) => [
+                ...prev,
+                { id: `v-${message.item_id ?? prev.length}`, role: "vyra", text },
+              ]);
+            }
+          }
+        } catch {
+          // A message shape we do not handle is not a reason to drop a call.
+        }
+      };
+
+      pc.onconnectionstatechange = () => {
+        if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+          teardown();
+          setState("error");
+          setError("The call dropped. Check your connection and try again.");
+        }
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      const answer = await fetch(
+        `https://api.openai.com/v1/realtime/calls?model=${encodeURIComponent(data.model)}`,
+        {
+          method: "POST",
+          body: offer.sdp,
+          headers: {
+            Authorization: `Bearer ${data.clientSecret}`,
+            "Content-Type": "application/sdp",
+          },
+        }
+      );
+
+      if (!answer.ok) {
+        teardown();
+        setState("error");
+        setError("Could not reach Vyra. Please try again in a moment.");
+        return;
+      }
+
+      await pc.setRemoteDescription({ type: "answer", sdp: await answer.text() });
+      setState("live");
+
+      timeoutRef.current = setTimeout(() => {
+        hangUp();
+        setError("Calls stop after ten minutes. Start another whenever you like.");
+      }, MAX_CALL_MS);
+    } catch {
+      teardown();
+      setState("error");
+      setError("Could not start the call. Please try again.");
+    }
+  }, [teardown, hangUp]);
+
+  const toggleMute = useCallback(() => {
+    const tracks = streamRef.current?.getAudioTracks() ?? [];
+    const next = !isMuted;
+    tracks.forEach((track) => (track.enabled = !next));
+    setIsMuted(next);
+  }, [isMuted]);
+
+  const isLive = state === "live";
+  const isBusy = state === "connecting";
 
   return (
-    <div className="card p-6 text-center" role="region" aria-label="Talking to Vyra">
-      <div className="flex items-start justify-between gap-3 text-left">
+    <div className="card p-6" role="region" aria-label="Talking to Vyra">
+      {/* Vyra's voice. Muted-by-default autoplay is blocked, so this is only
+          ever attached after an explicit tap on Start. */}
+      <audio ref={audioRef} autoPlay className="hidden" />
+
+      <div className="flex items-start justify-between gap-3">
         <div>
           <p className="t-section">Talking to Vyra</p>
           <p className="t-meta mt-1" aria-live="polite">
@@ -124,66 +213,90 @@ export function VoiceCall({
         </div>
         <button
           type="button"
-          onClick={hangUp}
-          aria-label="End call"
+          onClick={() => {
+            hangUp();
+            onClose();
+          }}
+          aria-label="Close"
           className="btn btn-quiet btn-sm"
           style={{ color: "var(--text-3)" }}
         >
           <CloseIcon className="h-4 w-4" />
-          End
+          Close
         </button>
       </div>
 
-      {/* The one control. Big, round, and obviously tappable. */}
-      <button
-        type="button"
-        onClick={() => void runTurn()}
-        disabled={isBusy}
-        aria-label={state === "listening" ? "Listening" : "Tap and speak"}
-        className="mx-auto mt-6 flex h-28 w-28 items-center justify-center rounded-full transition-transform active:scale-95"
-        style={{
-          background: state === "listening" ? "var(--accent)" : "var(--accent-soft)",
-          border: "2px solid var(--accent-line)",
-          color: state === "listening" ? "var(--on-brand)" : "var(--accent-bright)",
-          opacity: isBusy && state !== "listening" ? 0.6 : 1,
-          cursor: isBusy ? "default" : "pointer",
-        }}
-      >
-        <MicGlyph className="h-11 w-11" animated={state === "listening"} />
-      </button>
+      <div className="mt-6 flex flex-col items-center">
+        <div
+          aria-hidden="true"
+          className="flex h-24 w-24 items-center justify-center rounded-full"
+          style={{
+            background: isLive ? "var(--accent)" : "var(--accent-soft)",
+            border: "2px solid var(--accent-line)",
+            color: isLive ? "var(--on-brand)" : "var(--accent-bright)",
+            animation: isLive && !isMuted ? "mic-ring-pulse 1.6s ease-in-out infinite" : undefined,
+          }}
+        >
+          <MicGlyph className="h-10 w-10" muted={isMuted} />
+        </div>
 
-      <p className="t-meta mt-4">
-        {state === "idle"
-          ? "Ask her anything about what you are studying."
-          : STATE_LABEL[state]}
-      </p>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+          {!isLive ? (
+            <button
+              type="button"
+              onClick={() => void start()}
+              disabled={isBusy}
+              className="btn btn-primary btn-lg"
+            >
+              {isBusy ? "Connecting…" : state === "ended" ? "Call again" : "Start talking"}
+            </button>
+          ) : (
+            <>
+              <button type="button" onClick={toggleMute} className="btn btn-secondary">
+                {isMuted ? "Unmute" : "Mute"}
+              </button>
+              <button
+                type="button"
+                onClick={hangUp}
+                className="btn"
+                style={{ background: "var(--bad-soft)", color: "var(--bad)" }}
+              >
+                End call
+              </button>
+            </>
+          )}
+        </div>
 
-      {heard && (
-        <p className="t-body mt-6 text-left">
-          <span className="t-section">You said</span>
-          <br />
-          {heard}
-        </p>
-      )}
-
-      {reply && (
-        <p className="t-body mt-4 text-left">
-          <span className="t-section">Vyra</span>
-          <br />
-          {reply}
-        </p>
-      )}
+        {!isLive && state !== "ended" && (
+          <p className="t-meta mt-3 text-center">
+            Vyra already knows what you have been studying and what you keep
+            getting wrong. Just start talking &mdash; you can interrupt her.
+          </p>
+        )}
+      </div>
 
       {error && (
-        <p className="t-meta mt-4" role="alert" style={{ color: "var(--bad)" }}>
+        <p className="t-meta mt-5" role="alert" style={{ color: "var(--bad)" }}>
           {error}
         </p>
+      )}
+
+      {turns.length > 0 && (
+        <div className="mt-6 flex flex-col gap-3">
+          <p className="t-section">Transcript</p>
+          {turns.map((turn) => (
+            <div key={turn.id}>
+              <p className="t-meta">{turn.role === "student" ? "You" : "Vyra"}</p>
+              <p className="t-body">{turn.text}</p>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
 }
 
-function MicGlyph({ className, animated }: { className?: string; animated?: boolean }) {
+function MicGlyph({ className, muted }: { className?: string; muted?: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
@@ -194,11 +307,11 @@ function MicGlyph({ className, animated }: { className?: string; animated?: bool
       strokeLinejoin="round"
       className={className}
       aria-hidden="true"
-      style={animated ? { animation: "mic-ring-pulse 1.4s ease-in-out infinite" } : undefined}
     >
       <rect x="9" y="2.5" width="6" height="11" rx="3" />
       <path d="M5.5 11a6.5 6.5 0 0 0 13 0" />
       <path d="M12 17.5V21" />
+      {muted && <path d="M4 4l16 16" />}
     </svg>
   );
 }

@@ -136,6 +136,13 @@ own schedule, because **Vercel's Hobby plan allows only two cron jobs** and
 third job. `/api/cron/send-emails` exists to trigger a send by hand, and to
 schedule directly if the project ever has a spare slot.
 
+Talking to Vyra (`/vyra` → the mic button) is a live WebRTC call to
+OpenAI's realtime model. It needs **no extra key** — it reuses
+`OPENAI_API_KEY`, and the browser only ever receives a one-minute ephemeral
+secret minted by `/api/vyra/realtime-session`. It does bill per minute of
+audio in both directions, which is why it runs on `gpt-realtime-mini`, is
+capped at 10 calls per user per hour, and hangs up after 10 minutes.
+
 Optional: `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAILS`, `UPSTASH_REDIS_*`,
 `TURNSTILE_*`, and the `STRIPE_*` keys — `STRIPE_SECRET_KEY`,
 `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_ID` (monthly) and

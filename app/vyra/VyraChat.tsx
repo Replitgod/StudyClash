@@ -344,10 +344,7 @@ export default function VyraChat() {
   }
 
   const composer = isCalling ? (
-    <VoiceCall
-      onAsk={(spoken) => send(spoken)}
-      onClose={() => setIsCalling(false)}
-    />
+    <VoiceCall onClose={() => setIsCalling(false)} />
   ) : (
     <div className="card flex items-end gap-2 p-2">
       <label htmlFor="vyra-input" className="visually-hidden">
