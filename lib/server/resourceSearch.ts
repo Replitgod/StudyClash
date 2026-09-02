@@ -16,7 +16,7 @@ import { LUNA_TASK } from "@/lib/server/aiModels";
 const RESOURCE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const MAX_RESOURCES_RETURNED = 5;
 
-export type ExamTrack = "lsat" | "mcat" | "nclex" | "ap";
+export type ExamTrack = "sat" | "lsat" | "mcat" | "nclex" | "ap";
 
 export type ResourceRecommendation = {
   title: string;
@@ -45,6 +45,7 @@ export type FindResourcesOutcome =
 // hard include_domains restriction would return zero results for subjects
 // those sites don't happen to cover.
 const TRUSTED_DOMAIN_HINTS: Record<ExamTrack, string> = {
+  sat: "satsuite.collegeboard.org (official SAT administrator), khanacademy.org (College Board's official practice partner)",
   lsat: "lsac.org (official LSAT administrator), khanacademy.org",
   mcat: "aamc.org (official MCAT administrator), khanacademy.org, ncbi.nlm.nih.gov",
   nclex: "ncsbn.org (official NCLEX administrator/exam board)",
@@ -55,7 +56,13 @@ const GENERAL_TRUSTED_HINTS =
 
 export function detectExamTrack(text: string): ExamTrack | undefined {
   const lower = text.toLowerCase();
+  // LSAT first, so "LSAT" is never read as an SAT. The SAT check below
+  // deliberately matches the ORIGINAL text and only in capitals: "sat" is
+  // also the past tense of "sit", and "the student sat down" is not SAT
+  // prep. It sits ahead of the AP branch so "PSAT/NMSQT" reads as SAT
+  // rather than as an AP course.
   if (/\blsat\b/.test(lower)) return "lsat";
+  if (/\b(SAT|PSAT)\b/.test(text)) return "sat";
   if (/\bmcat\b/.test(lower)) return "mcat";
   if (/\bnclex\b/.test(lower)) return "nclex";
   if (/\b(ap|advanced placement)\b/.test(lower)) return "ap";

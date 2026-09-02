@@ -52,7 +52,7 @@ type GeneratedQuestion = {
 
 type QuestionType = "multiple_choice" | "true_false" | "open_response";
 type DifficultyMode = "mixed" | "easy" | "medium" | "hard";
-type ExamTrack = "lsat" | "mcat" | "nclex" | "ap";
+type ExamTrack = "sat" | "lsat" | "mcat" | "nclex" | "ap";
 // Only meaningful when questionType is "open_response": argumentation asks
 // the student to defend a thesis with evidence; step_by_step asks them to
 // work a multi-step problem, graded on process not just the final answer.
@@ -409,6 +409,23 @@ function buildExamGuidanceBlock(args: {
     : "";
 
   const modeSpecificGuidance = buildExamModeSpecificGuidance(examTrack, examMode);
+
+  if (examTrack === "sat") {
+    // Written to College Board's PUBLISHED Digital SAT specification -- the
+    // two content areas, their documented domains, the short-passage format
+    // and the roughly one-in-four student-produced-response share in Math.
+    // The spec is public; the question bank is not, and is not reproduced
+    // here or anywhere else in this app.
+    return `
+Generate Digital SAT-style prompts.${modeLine}
+- Reading and Writing: one short passage of 25-150 words per question, followed by a single question about it. Never bundle several questions under one passage -- the digital SAT does not.
+- Reading and Writing domains to label with: "Information and Ideas", "Craft and Structure", "Expression of Ideas", "Standard English Conventions".
+- Math domains to label with: "Algebra", "Advanced Math", "Problem-Solving and Data Analysis", "Geometry and Trigonometry".
+- Keep Math wording spare and quantitative. About one question in four should be answerable as a plain number (a student-produced response), phrased so it has exactly one correct numeric answer.
+- Distractors must be the results of specific, nameable mistakes -- a sign error, a misread axis, a confused rate -- not filler.
+- Explanations name the trap the wrong choices set, because that is what transfers to the next question.
+${modeSpecificGuidance}`;
+  }
 
   if (examTrack === "lsat") {
     return `\nGenerate LSAT-style prompts with argument structure focus.${modeLine}

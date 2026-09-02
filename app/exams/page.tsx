@@ -64,11 +64,26 @@ const UNREVIEWED_TRACKS: Track[] = [
   },
 ];
 
-// No generated SAT track: College Board's own released tests are already the
-// best prep for it, so this points there instead of offering a substitute.
-const SAT_OFFICIAL = {
-  label: "Official full-length SAT practice tests",
-  url: "https://satsuite.collegeboard.org/practice",
+// SAT is a real track, alongside AP.
+//
+// It used to be a footnote saying "we don't write SAT questions", which
+// contradicted /exams/sat once that became a real page, and left the most
+// searched-for exam in the product as the one thing it visibly did not do.
+//
+// The practice is written to College Board's PUBLISHED Digital SAT
+// specification -- the two sections, their documented domains, the
+// short-passage format, the share of student-produced responses in Math.
+// The spec is public. The question bank is not, and is not reproduced here:
+// those items are copyrighted, and shipping them would put AceDecks and
+// every school that buys Classroom at risk. The official released tests are
+// linked as well, exactly as they are for every other board on this page.
+const SAT_TRACK: Track = {
+  slug: "sat",
+  name: "Digital SAT",
+  promise:
+    "Two-module practice in the digital format: short-passage Reading and Writing, and Math with a real share of grid-ins.",
+  officialLabel: "Official full-length practice tests, from College Board",
+  officialUrl: "https://satsuite.collegeboard.org/practice",
 };
 
 /** Links out to the exam board's own free material. Never a copy of it. */
@@ -195,25 +210,35 @@ export default function ExamsLandingPage() {
         </div>
       </section>
 
-      {/* ---- SAT: honest about not having a track ---- */}
+      {/* ---- SAT ---- */}
       <section className="mt-10">
-        <h2 className="t-section">SAT</h2>
-        <div className="card mt-3 flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
-          <p className="t-body min-w-0 flex-1">
-            We don&rsquo;t write SAT questions. College Board&rsquo;s own free
-            practice tests are the most accurate prep there is, so we send you
-            straight there.
+        <h2 className="t-section">{SAT_TRACK.name}</h2>
+        <div className="card mt-3 p-5">
+          <p className="t-body">{SAT_TRACK.promise}</p>
+          <p className="t-meta mt-2">
+            Written to College Board&rsquo;s published Digital SAT
+            specification, and marked with the same four Reading and Writing
+            and four Math domains the real test reports against &mdash; so a
+            weak domain here is the domain you are weak in there.
           </p>
-          <a
-            href={SAT_OFFICIAL.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn btn-secondary shrink-0"
-          >
-            {SAT_OFFICIAL.label}
-            <span aria-hidden="true">↗</span>
-            <span className="sr-only">(opens in a new tab)</span>
-          </a>
+
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+            <Link
+              href={`/home?track=${SAT_TRACK.slug}`}
+              className="btn btn-primary btn-lg"
+            >
+              Practice SAT questions
+              <ArrowRightIcon className="h-[18px] w-[18px]" />
+            </Link>
+            <Link href={`/exams/${SAT_TRACK.slug}`} className="btn btn-secondary btn-lg">
+              How the SAT track works
+            </Link>
+          </div>
+
+          <OfficialLink
+            label={SAT_TRACK.officialLabel}
+            url={SAT_TRACK.officialUrl}
+          />
         </div>
       </section>
     </div>

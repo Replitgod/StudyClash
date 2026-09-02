@@ -3,7 +3,7 @@
 export const metadata: Metadata = {
   title: "Exam Prep Study App | SAT, AP, MCAT, LSAT, NCLEX",
   description:
-    "Practice AP, MCAT, LSAT and NCLEX questions written in each exam's format, with timing to match and targeted review of whatever you keep getting wrong. SAT prep links straight to College Board's official practice tests.",
+    "Practice Digital SAT, AP, MCAT, LSAT and NCLEX questions written in each exam's format, with timing to match and targeted review of whatever you keep getting wrong. Official practice tests from each exam board are linked alongside.",
   alternates: {
     canonical: "/exams",
   },

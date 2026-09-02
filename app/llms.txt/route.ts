@@ -37,7 +37,7 @@ export function GET() {
     "- MCAT",
     "- LSAT",
     "- NCLEX",
-    "- SAT prep links to College Board's official practice tests (AceDecks does not generate SAT drills)",
+    "- Digital SAT practice written to College Board's published specification (the four Reading and Writing and four Math domains); College Board's official released tests are linked alongside, not reproduced",
     "",
     "## Audience",
     "- High school students",
