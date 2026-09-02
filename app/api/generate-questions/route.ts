@@ -8,6 +8,7 @@ import { shuffleAnswerChoices } from "@/lib/server/questionShuffle";
 import { TERRA_TASK, LUNA_TASK, type ReasoningEffort } from "@/lib/server/aiModels";
 import { buildAceSystemPrompt } from "@/lib/server/aceIntelligence";
 import { evaluateRequest } from "@/lib/tiers";
+import { normalizeExamTrack } from "@/lib/examTracks";
 
 // Reasoning-effort models spend part of max_completion_tokens on hidden
 // reasoning before writing visible output, unlike the flat-rate gpt-4o-mini
@@ -2395,16 +2396,6 @@ function normalizeUploadKind(value: unknown): UploadKind {
   const raw = typeof value === "string" ? value : "manual";
   const allowed: UploadKind[] = ["manual", "pdf", "text", "folder_text", "image"];
   return allowed.includes(raw as UploadKind) ? (raw as UploadKind) : "manual";
-}
-
-function normalizeExamTrack(value: unknown): ExamTrack | null {
-  if (typeof value !== "string") return null;
-  const normalized = value.trim().toLowerCase();
-  if (normalized === "lsat") return "lsat";
-  if (normalized === "mcat") return "mcat";
-  if (normalized === "nclex") return "nclex";
-  if (normalized === "ap") return "ap";
-  return null;
 }
 
 function normalizeExamMode(value: unknown): string {

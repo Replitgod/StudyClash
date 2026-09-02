@@ -11,6 +11,7 @@ import { Composer } from "@/app/components/app/Composer";
 import { ArrowRightIcon } from "@/app/components/app/Icons";
 import { ProgressSummary } from "@/app/components/app/ProgressSummary";
 import { useProgress } from "@/lib/useProgress";
+import { resolveExamTrack } from "@/lib/examTracks";
 
 // Home answers exactly one question: what should I study right now?
 //
@@ -92,9 +93,12 @@ export default function HomeView() {
     return name.split(/[\s._-]/)[0].replace(/^\w/, (c) => c.toUpperCase());
   }, [profile?.display_name, user?.email]);
 
-  // Arriving from an exam page (/exams -> /home?track=ap) tells the composer
-  // to write questions in that exam's style.
+  // Arriving from an exam page (/exams -> /home?track=sat) tells the
+  // composer to write questions in that exam's style -- and now also
+  // changes what this screen says, because a track that only existed as a
+  // hidden request field made the button look like it did nothing.
   const examTrack = searchParams.get("track");
+  const track = useMemo(() => resolveExamTrack(examTrack), [examTrack]);
 
   const next = useMemo(() => getNextAction(snapshot), [snapshot]);
   const plan = useMemo(() => getTodaysPlan(snapshot), [snapshot]);
@@ -111,20 +115,38 @@ export default function HomeView() {
 
   return (
     <div className="app-page">
-      <h1 className="t-page">
-        {hello || "Welcome"}
-        {firstName ? `, ${firstName}` : ""}
-      </h1>
+      {track ? (
+        <>
+          <p className="t-section">Exam practice</p>
+          <h1 className="t-page mt-2">{track.label}</h1>
+          <p className="t-body mt-2">{track.blurb}</p>
+          <Link
+            href="/exams"
+            className="t-meta mt-3 inline-block underline underline-offset-2"
+          >
+            Practising something else?
+          </Link>
+        </>
+      ) : (
+        <h1 className="t-page">
+          {hello || "Welcome"}
+          {firstName ? `, ${firstName}` : ""}
+        </h1>
+      )}
 
       <div className="mt-6 rise">
         <Composer
-          autoFocus={snapshot.isEmpty}
+          autoFocus={snapshot.isEmpty || !!track}
           examTrack={examTrack}
-          suggestions={snapshot.isEmpty ? STARTER_TOPICS : undefined}
+          suggestions={
+            track ? track.starters : snapshot.isEmpty ? STARTER_TOPICS : undefined
+          }
           placeholder={
-            snapshot.isEmpty
-              ? "What are you studying? Type a topic, or attach your notes."
-              : "What are you studying?"
+            track
+              ? track.placeholder
+              : snapshot.isEmpty
+                ? "What are you studying? Type a topic, or attach your notes."
+                : "What are you studying?"
           }
           footer={
             <p className="t-meta">

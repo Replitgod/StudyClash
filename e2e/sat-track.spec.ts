@@ -29,3 +29,17 @@ test("official College Board practice is still linked, not replaced", async ({ p
   const official = page.getByRole("link", { name: /Official full-length practice tests/i });
   await expect(official).toHaveAttribute("href", /satsuite\.collegeboard\.org/);
 });
+
+test("the sat track survives the sign-in bounce", async ({ page }) => {
+  // The complaint this fixes: every "Practice X" button goes to
+  // /home?track=X, the track existed only as a hidden request field, and
+  // the destination rendered the ordinary greeting and an empty box -- so
+  // the button looked like it had dumped you back on the home screen.
+  //
+  // Signed out, the first thing that has to survive is the login bounce:
+  // losing the query here would land the student on a generic Home even
+  // after the rest of the fix.
+  await page.goto("/home?track=sat");
+  await page.waitForURL(/\/login\?redirect=/, { timeout: 15_000 });
+  expect(decodeURIComponent(page.url())).toContain("/home?track=sat");
+});
