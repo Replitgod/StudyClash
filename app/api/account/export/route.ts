@@ -41,11 +41,11 @@ const OWNED_TABLES: Array<{ table: string; columns: string; orderBy?: string }> 
   { table: "decks", columns: "id, title, course_name, raw_notes, is_public, share_slug, created_at", orderBy: "created_at" },
   { table: "matches", columns: "id, deck_id, score, correct_answers, total_questions, time_taken_seconds, created_at", orderBy: "created_at" },
   { table: "diagnostic_attempts", columns: "id, exam_id, status, mode, created_at", orderBy: "created_at" },
-  { table: "diagnostic_results", columns: "id, attempt_id, overall_accuracy, created_at", orderBy: "created_at" },
+
   { table: "study_plans", columns: "id, title, status, created_at", orderBy: "created_at" },
   { table: "topic_review_schedule", columns: "id, deck_id, topic, status, next_review_at", orderBy: "next_review_at" },
   { table: "mistake_breakdowns", columns: "id, deck_id, topic, created_at", orderBy: "created_at" },
-  { table: "player_progress", columns: "user_id, xp, level, current_streak_days, updated_at" },
+  { table: "player_progress", columns: "user_id, xp, level, current_streak, longest_streak, last_active_on, updated_at" },
   { table: "xp_events", columns: "id, amount, reason, created_at", orderBy: "created_at" },
 ];
 
@@ -88,6 +88,27 @@ export async function GET(request: NextRequest) {
     }
 
     data[spec.table] = rows ?? [];
+  }
+
+  // diagnostic_results has no user_id of its own -- it hangs off
+  // diagnostic_attempts, so it has to be fetched by the caller's attempt
+  // ids. Selecting it by user_id (as this route first did) is not an empty
+  // result, it is a hard "column does not exist" error.
+  const attemptIds = Array.isArray(data.diagnostic_attempts)
+    ? (data.diagnostic_attempts as Array<{ id: string }>).map((attempt) => attempt.id)
+    : [];
+
+  if (attemptIds.length > 0) {
+    const { data: results, error } = await supabase
+      .from("diagnostic_results")
+      .select("id, attempt_id, overall_accuracy, readiness_score, readiness_tier, strongest_skills, weakest_skills, created_at")
+      .in("attempt_id", attemptIds)
+      .limit(MAX_ROWS_PER_TABLE);
+
+    if (error) unavailable.push("diagnostic_results");
+    else data.diagnostic_results = results ?? [];
+  } else {
+    data.diagnostic_results = [];
   }
 
   // Deck questions are keyed by deck, not by user, so they need the ids.

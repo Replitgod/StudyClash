@@ -116,13 +116,15 @@ Required:
 - `SUPABASE_SERVICE_ROLE_KEY` (server-only)
 - `OPENAI_API_KEY`
 
-Required in production (not locally):
+Recommended in production:
 
-- `CRON_SECRET` — shared secret for the scheduled jobs in `vercel.json` and
-  for the curriculum pipeline's own self-kick. Outside production a missing
-  value lets those routes run open; **on a production deployment they refuse
-  every request without it**, and log why. Set it or document ingestion
-  silently stops.
+- `CRON_SECRET` — shared secret for the **scheduled** jobs in `vercel.json`.
+  Vercel Cron sends it automatically once the variable is set on the project;
+  without it the scheduled runs are refused (and say so in the logs).
+  The app's *own* job kicks — document upload → processing, and the pipeline
+  chaining itself — do not depend on it: they authenticate with a token
+  derived from `SUPABASE_SERVICE_ROLE_KEY`, which is always present. So a
+  missing `CRON_SECRET` costs you the daily schedule, not document ingestion.
 
 To actually send the mail that `email_notification_queue` collects:
 `RESEND_API_KEY` and `EMAIL_FROM` (a verified sender on your Resend domain).

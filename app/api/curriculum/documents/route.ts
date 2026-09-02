@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHash } from "node:crypto";
-import { getServiceSupabaseClient, requireAuthenticatedUser } from "@/lib/server/apiUtils";
+import {
+  getInternalJobToken,
+  getServiceSupabaseClient,
+  requireAuthenticatedUser,
+} from "@/lib/server/apiUtils";
 import { buildStoragePath, uploadDocumentFile } from "@/lib/server/curriculum/storage";
 import { isUnsupportedForExtraction } from "@/lib/server/curriculum/extraction";
 
@@ -42,10 +46,12 @@ async function kickWorker(request: NextRequest): Promise<void> {
   // the upload response.
   try {
     const origin = request.nextUrl.origin;
+    // Prefer CRON_SECRET when the project sets it; otherwise fall back to
+    // the derived internal token, so document processing works on a
+    // deployment that never configured a cron secret.
+    const jobToken = process.env.CRON_SECRET || getInternalJobToken();
     const headers: Record<string, string> = {};
-    if (process.env.CRON_SECRET) {
-      headers.Authorization = `Bearer ${process.env.CRON_SECRET}`;
-    }
+    if (jobToken) headers.Authorization = `Bearer ${jobToken}`;
     void fetch(`${origin}/api/curriculum/process`, { method: "POST", headers }).catch(() => {});
   } catch {
     // Best-effort only.

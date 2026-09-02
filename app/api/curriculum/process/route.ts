@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServiceSupabaseClient, isAuthorizedCronRequest } from "@/lib/server/apiUtils";
+import {
+  getInternalJobToken,
+  getServiceSupabaseClient,
+  isAuthorizedCronRequest,
+} from "@/lib/server/apiUtils";
 import { runIngestionJob } from "@/lib/server/curriculum/jobs/ingestionJob";
 import { runChunkingJob } from "@/lib/server/curriculum/jobs/chunkingJob";
 import { runIndexingJob } from "@/lib/server/curriculum/jobs/indexingJob";
@@ -50,7 +54,8 @@ async function kickSelf(request: NextRequest, chainDepth: number): Promise<void>
   try {
     const origin = request.nextUrl.origin;
     const headers: Record<string, string> = { "x-chain-depth": String(chainDepth + 1) };
-    if (process.env.CRON_SECRET) headers.Authorization = `Bearer ${process.env.CRON_SECRET}`;
+    const jobToken = process.env.CRON_SECRET || getInternalJobToken();
+    if (jobToken) headers.Authorization = `Bearer ${jobToken}`;
     void fetch(`${origin}/api/curriculum/process`, { method: "POST", headers }).catch(() => {});
   } catch {
     // Best-effort only.

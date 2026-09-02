@@ -115,25 +115,62 @@ export function isProductionDeployment(): boolean {
 // cron job (visible, cheap) instead of an unmetered bill (invisible until
 // it is not).
 export function isAuthorizedCronRequest(request: NextRequest): boolean {
+  const header = request.headers.get("authorization") || "";
   const secret = process.env.CRON_SECRET;
 
+  // The configured path. Vercel Cron sends exactly this when CRON_SECRET is
+  // set on the project, and it is what should be used in production.
+  if (secret && header === `Bearer ${secret}`) return true;
+
+  // The app's own fire-and-forget kicks (document upload -> processing, and
+  // the pipeline chaining itself) authenticate with a token derived from the
+  // service-role key instead.
+  //
+  // This exists because requiring CRON_SECRET and nothing else was a
+  // regression: on a deployment that never set it, those internal kicks
+  // could not authenticate either, so uploading a document silently stopped
+  // producing anything. The service-role key is guaranteed present -- the
+  // app cannot talk to its own database without it -- and is never sent to
+  // a browser, so a caller who can produce this token already had server
+  // access. It restores the feature without reopening the route to the
+  // internet.
+  const internal = getInternalJobToken();
+  if (internal && header === `Bearer ${internal}`) return true;
+
   if (!secret) {
+    // Outside production, still open: local and preview environments have
+    // neither variable and nobody is spending real money there.
     if (!isProductionDeployment()) return true;
 
-    // Failing closed here also stops the app's own fire-and-forget kicks
-    // into /api/curriculum/process, which attach this header only when the
-    // variable exists. That would be a silent stall (the kick is never
-    // awaited), so say so loudly -- a misconfigured deployment should be
-    // findable in the logs rather than showing up as "uploads never
-    // finish processing".
     console.error(
-      "CRON_SECRET is not set on a production deployment. Scheduled jobs and " +
-        "the curriculum processing pipeline are refusing every request until it is."
+      "CRON_SECRET is not set on this production deployment, so Vercel's " +
+        "SCHEDULED jobs cannot authenticate and are being refused. The app's " +
+        "own internal job kicks still work. Set CRON_SECRET to enable the cron schedule."
     );
-    return false;
   }
 
-  return request.headers.get("authorization") === `Bearer ${secret}`;
+  return false;
+}
+
+let cachedInternalJobToken: string | null = null;
+
+/**
+ * A stable token only code holding the service-role key can produce.
+ *
+ * Derived rather than stored so there is no extra variable to forget, and
+ * hashed so the service-role key itself is never placed in a header.
+ */
+export function getInternalJobToken(): string | null {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceKey) return null;
+
+  if (!cachedInternalJobToken) {
+    cachedInternalJobToken = createHash("sha256")
+      .update(`acedecks:internal-job:${serviceKey}`)
+      .digest("hex");
+  }
+
+  return cachedInternalJobToken;
 }
 
 export function getClientIpAddress(request: NextRequest): string {
