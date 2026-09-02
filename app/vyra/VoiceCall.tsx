@@ -185,6 +185,27 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
       // The data channel carries the conversation as events, which is how
       // the transcript stays in step with the audio.
       const channel = pc.createDataChannel("oai-events");
+
+      // Vyra speaks first.
+      //
+      // With server_vad the model waits for the student, so without this the
+      // call opens on silence and the student has to work out that it is
+      // their move. Asking for a response the moment the channel is ready
+      // means they hear "Okay -- Cell Structure. Ready?" and the thing feels
+      // like a call instead of an open microphone.
+      channel.onopen = () => {
+        // Deliberately NO `instructions` field here.
+        //
+        // In the Realtime API, response.instructions REPLACES the session
+        // instructions for that response -- it does not add to them. Passing
+        // an opening prompt here wiped the persona and, worse, the block
+        // naming what this student is studying: on a "Cell Structure" deck
+        // she opened by announcing a quiz on world geography, then on
+        // environmental science. Sending a bare response.create makes her
+        // open using the session config, which is where the subject lives.
+        channel.send(JSON.stringify({ type: "response.create" }));
+      };
+
       channel.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
