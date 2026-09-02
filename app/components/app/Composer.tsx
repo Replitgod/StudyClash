@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authFetch } from "@/lib/authFetch";
 import { useAuth } from "@/lib/useAuth";
@@ -101,6 +102,9 @@ export function Composer({
   const [attachedText, setAttachedText] = useState("");
   const [stage, setStage] = useState<Stage>("idle");
   const [error, setError] = useState<string | null>(null);
+  // A hit free-plan cap is NOT an error. It gets its own state so it can be
+  // rendered as an offer rather than as red failure text.
+  const [capReached, setCapReached] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -247,6 +251,7 @@ export function Composer({
     const title = deriveTitle(typed, fileName);
 
     setError(null);
+    setCapReached(null);
     clearStageTimers();
     setStage(isTopic ? "thinking" : "writing");
 
@@ -293,6 +298,23 @@ export function Composer({
       }
 
       const data = await response.json();
+
+      // 402 is the billing governor refusing on the monthly map cap
+      // (lib/tiers.ts). It is the one "failure" that is really a moment:
+      // the student just tried to do the exact thing Pro unlocks, and
+      // they have already seen the product work. Showing them red error
+      // text here reads as "the app is broken" and wastes it.
+      if (response.status === 402) {
+        clearStageTimers();
+        setStage("idle");
+        setCapReached(
+          typeof data.error === "string" && data.error.trim()
+            ? data.error
+            : "You have used all your free knowledge maps this month."
+        );
+        void trackEvent("generation_cap_reached", { mode: isTopic ? "topic" : "notes" });
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(data.error || "We could not create your study material. Please try again.");
@@ -459,6 +481,34 @@ export function Composer({
           </button>
         </div>
       </div>
+
+      {capReached && (
+        <div
+          role="status"
+          className="mt-3 rounded-[var(--radius-md)] border p-4"
+          style={{ borderColor: "var(--brand-line)", background: "var(--brand-soft)" }}
+        >
+          <p className="text-[15px] font-medium" style={{ color: "var(--text-1)" }}>
+            {capReached}
+          </p>
+          <p className="t-meta mt-1">
+            Everything you have already made stays exactly where it is. Pro
+            removes the cap, and your maps carry straight over.
+          </p>
+          <div className="mt-3.5 flex flex-wrap items-center gap-2">
+            <Link
+              href="/pricing"
+              onClick={() => void trackEvent("upgrade_prompt_clicked", { source: "composer_cap" })}
+              className="btn btn-primary btn-sm"
+            >
+              See Ace Pro
+            </Link>
+            <Link href="/library" className="btn btn-quiet btn-sm">
+              Study what I have
+            </Link>
+          </div>
+        </div>
+      )}
 
       {error && (
         <p

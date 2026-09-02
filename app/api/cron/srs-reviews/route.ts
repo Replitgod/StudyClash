@@ -36,6 +36,7 @@ export async function GET(req: NextRequest) {
   }
 
   let notified = 0;
+  let emailsQueued = 0;
 
   for (const row of dueRows || []) {
     const actionHref = `/battle/${row.deck_id}?mode=weak_topic&topics=${encodeURIComponent(
@@ -70,6 +71,36 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
+      // The in-app notification above only reaches a student who comes
+      // back on their own. The whole point of a spaced-repetition nudge is
+      // to reach the one who did not, so a signed-in student also gets an
+      // email -- queued here, delivered by /api/cron/send-emails.
+      //
+      // Guests (player_name, no user_id) have no address and are skipped:
+      // the queue would fail those rows permanently anyway.
+      if (row.user_id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("email, display_name")
+          .eq("id", row.user_id)
+          .maybeSingle();
+
+        if (profile?.email) {
+          await supabase.from("email_notification_queue").insert({
+            recipient_email: profile.email,
+            recipient_player_name: profile.display_name || null,
+            event_type: "srs_review_due",
+            subject: title,
+            body: `${message}
+
+It takes about five minutes, and it is the difference between recognising this topic and remembering it.`,
+            action_href: actionHref,
+            metadata: { topic: row.topic, status: row.status, deckId: row.deck_id },
+          });
+          emailsQueued += 1;
+        }
+      }
+
       await supabase
         .from("topic_review_schedule")
         .update({ notified_at: nowIso })
@@ -81,5 +112,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ checked: dueRows?.length || 0, notified });
+  return NextResponse.json({ checked: dueRows?.length || 0, notified, emailsQueued });
 }

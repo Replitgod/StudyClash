@@ -124,6 +124,12 @@ Required in production (not locally):
   every request without it**, and log why. Set it or document ingestion
   silently stops.
 
+To actually send the mail that `email_notification_queue` collects:
+`RESEND_API_KEY` and `EMAIL_FROM` (a verified sender on your Resend domain).
+Without both, `/api/cron/send-emails` sends nothing, discards nothing, and
+logs once per run — the rows stay queued and go out on the first run after
+the keys are set.
+
 Optional: `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAILS`, `UPSTASH_REDIS_*`,
 `TURNSTILE_*`, and the `STRIPE_*` keys — `STRIPE_SECRET_KEY`,
 `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_ID` (monthly) and
