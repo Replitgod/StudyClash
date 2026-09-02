@@ -3,42 +3,30 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { authFetch } from "@/lib/authFetch";
 import { trackEvent } from "@/lib/trackEvent";
-import { CloseIcon } from "@/app/components/app/Icons";
 
-// A real call with Vyra.
+// The call screen.
 //
-// The first version of this was turn-based on the browser's Web Speech API:
-// tap, speak, wait, listen. That is a walkie-talkie. You cannot interrupt
-// it, the latency is a full round trip per turn, and Firefox has no
-// SpeechRecognition at all.
+// A WebRTC audio connection straight to OpenAI's realtime model: Vyra hears
+// the student while they are still speaking, answers, and stops the moment
+// they start again. Audio never passes through our own server -- proxying it
+// would double the latency and Vercel functions cannot hold a long-lived
+// socket anyway. The browser gets a one-minute ephemeral key from
+// /api/vyra/realtime-session and connects direct.
 //
-// This is a WebRTC audio connection straight to OpenAI's realtime model.
-// Vyra hears the student as they speak, answers while they are still
-// thinking, and stops the moment they start talking again -- which is the
-// entire difference between a call and a form.
-//
-// The browser never holds OPENAI_API_KEY. /api/vyra/realtime-session mints
-// an ephemeral secret that expires in a minute and already has Vyra's
-// persona and this student's weak topics baked in, so the page cannot
-// rewrite who it is talking to.
+// The circle in the middle is driven by real audio. Two AnalyserNodes, one
+// on the microphone and one on Vyra's returning stream, so it swells with
+// whoever is actually talking rather than animating on a timer. That is the
+// difference between a call that feels alive and a spinner with a gradient.
 
 type CallState = "idle" | "connecting" | "live" | "ended" | "error";
 
 type Turn = { id: string; role: "student" | "vyra"; text: string };
 
-const STATE_LABEL: Record<CallState, string> = {
-  idle: "Ready",
-  connecting: "Connecting…",
-  live: "Listening — just talk",
-  ended: "Call ended",
-  error: "Couldn't connect",
-};
-
 /**
  * A hard ceiling on one call.
  *
  * Realtime audio bills per minute in both directions. A student who walks
- * away with the tab open should not run up a bill, so the call ends itself.
+ * away with the tab open must not run up a bill, so the call ends itself.
  */
 const MAX_CALL_MS = 10 * 60 * 1000;
 
@@ -47,21 +35,42 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [isMuted, setIsMuted] = useState(false);
+  const [topic, setTopic] = useState<string | null>(null);
+  const [seconds, setSeconds] = useState(0);
+
+  // Whose voice is currently moving the circle, and how much.
+  const [level, setLevel] = useState(0);
+  const [speaker, setSpeaker] = useState<"student" | "vyra" | null>(null);
 
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const teardown = useCallback(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (timerRef.current) clearInterval(timerRef.current);
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    rafRef.current = null;
+    timerRef.current = null;
     timeoutRef.current = null;
-    // The microphone track has to be stopped explicitly, or the browser
-    // keeps showing the recording indicator after the call is over.
+
+    // The microphone track has to be stopped explicitly or the browser keeps
+    // showing its recording indicator after the call is over.
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+
+    void audioCtxRef.current?.close().catch(() => {});
+    audioCtxRef.current = null;
+
     pcRef.current?.close();
     pcRef.current = null;
+
+    setLevel(0);
+    setSpeaker(null);
   }, []);
 
   useEffect(() => teardown, [teardown]);
@@ -72,22 +81,79 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
     void trackEvent("vyra_call_ended");
   }, [teardown]);
 
+  /** Drives the avatar from the two live audio streams. */
+  const startMeter = useCallback((mic: MediaStream, remote: MediaStream) => {
+    const Ctx: typeof AudioContext =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+
+    const ctx = new Ctx();
+    audioCtxRef.current = ctx;
+
+    const analyse = (stream: MediaStream) => {
+      const node = ctx.createAnalyser();
+      node.fftSize = 512;
+      node.smoothingTimeConstant = 0.75;
+      ctx.createMediaStreamSource(stream).connect(node);
+      return node;
+    };
+
+    // Analysers are read-only taps. Neither is connected to the destination,
+    // so nothing here is played back -- routing the mic to the speakers is
+    // exactly how you build an echo.
+    const micNode = analyse(mic);
+    const vyraNode = analyse(remote);
+    const buffer = new Uint8Array(micNode.frequencyBinCount);
+
+    const rms = (node: AnalyserNode) => {
+      node.getByteTimeDomainData(buffer);
+      let sum = 0;
+      for (let i = 0; i < buffer.length; i += 1) {
+        const v = (buffer[i] - 128) / 128;
+        sum += v * v;
+      }
+      return Math.sqrt(sum / buffer.length);
+    };
+
+    const tick = () => {
+      const micLevel = streamRef.current?.getAudioTracks()[0]?.enabled ? rms(micNode) : 0;
+      const vyraLevel = rms(vyraNode);
+
+      // Vyra wins ties: while she is talking the student's own voice is
+      // usually still bleeding into the mic a little.
+      const loudest = Math.max(micLevel, vyraLevel);
+      setSpeaker(loudest < 0.02 ? null : vyraLevel >= micLevel ? "vyra" : "student");
+      setLevel(Math.min(1, loudest * 3.2));
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+  }, []);
+
   const start = useCallback(async () => {
     setError(null);
     setTurns([]);
+    setSeconds(0);
     setState("connecting");
     void trackEvent("vyra_call_started");
 
     try {
-      // 1. Microphone first: if the student declines, nothing else is worth
-      // doing and the message should say what actually happened.
+      // 1. Microphone first. If the student declines there is nothing else
+      // worth doing, and the message should say what actually happened.
       let stream: MediaStream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream = await navigator.mediaDevices.getUserMedia({
+          // Without these the student hears Vyra through their own mic a
+          // beat later and the model hears itself. The browser's own AEC is
+          // far better than anything we could do after the fact.
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
       } catch {
         setState("error");
         setError(
-          "AceDecks needs your microphone to talk. Allow it in your browser's address bar, then try again."
+          "AceDecks needs your microphone to talk. Allow it from your browser's address bar, then try again."
         );
         return;
       }
@@ -102,19 +168,22 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
         setError(data.error || "Could not start the call. Please try again.");
         return;
       }
+      setTopic(typeof data.topic === "string" ? data.topic : null);
 
       // 3. WebRTC.
       const pc = new RTCPeerConnection();
       pcRef.current = pc;
 
       pc.ontrack = (event) => {
-        if (audioRef.current) audioRef.current.srcObject = event.streams[0];
+        const [remote] = event.streams;
+        if (audioRef.current) audioRef.current.srcObject = remote;
+        startMeter(stream, remote);
       };
 
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
       // The data channel carries the conversation as events, which is how
-      // the transcript on screen stays in step with the audio.
+      // the transcript stays in step with the audio.
       const channel = pc.createDataChannel("oai-events");
       channel.onmessage = (event) => {
         try {
@@ -140,7 +209,7 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
             }
           }
         } catch {
-          // A message shape we do not handle is not a reason to drop a call.
+          // An event shape we do not handle is not a reason to drop a call.
         }
       };
 
@@ -148,7 +217,7 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
         if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
           teardown();
           setState("error");
-          setError("The call dropped. Check your connection and try again.");
+          setError("The call dropped. Check your connection and start again.");
         }
       };
 
@@ -177,6 +246,7 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
       await pc.setRemoteDescription({ type: "answer", sdp: await answer.text() });
       setState("live");
 
+      timerRef.current = setInterval(() => setSeconds((s) => s + 1), 1000);
       timeoutRef.current = setTimeout(() => {
         hangUp();
         setError("Calls stop after ten minutes. Start another whenever you like.");
@@ -186,62 +256,182 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
       setState("error");
       setError("Could not start the call. Please try again.");
     }
-  }, [teardown, hangUp]);
+  }, [teardown, hangUp, startMeter]);
 
   const toggleMute = useCallback(() => {
-    const tracks = streamRef.current?.getAudioTracks() ?? [];
     const next = !isMuted;
-    tracks.forEach((track) => (track.enabled = !next));
+    streamRef.current?.getAudioTracks().forEach((track) => (track.enabled = !next));
     setIsMuted(next);
   }, [isMuted]);
 
   const isLive = state === "live";
   const isBusy = state === "connecting";
 
+  const status = isLive
+    ? isMuted
+      ? "Muted"
+      : speaker === "vyra"
+        ? "Vyra is speaking"
+        : speaker === "student"
+          ? "Listening"
+          : "Go ahead — just talk"
+    : isBusy
+      ? "Connecting…"
+      : state === "ended"
+        ? "Call ended"
+        : state === "error"
+          ? "Couldn't connect"
+          : "Ready when you are";
+
   return (
-    <div className="card p-6" role="region" aria-label="Talking to Vyra">
-      {/* Vyra's voice. Muted-by-default autoplay is blocked, so this is only
-          ever attached after an explicit tap on Start. */}
+    <div
+      className="fixed inset-0 z-50 flex flex-col"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Call with Vyra"
+      style={{
+        background:
+          "radial-gradient(120% 90% at 50% 0%, #241a52 0%, var(--app-bg) 62%), var(--app-bg)",
+      }}
+    >
+      {/* Vyra's voice. Only ever attached after an explicit tap on Start, so
+          autoplay policy is never in the way. */}
       <audio ref={audioRef} autoPlay className="hidden" />
 
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="t-section">Talking to Vyra</p>
-          <p className="t-meta mt-1" aria-live="polite">
-            {STATE_LABEL[state]}
+      {/* ---- Deck topic ---- */}
+      <div className="flex justify-center px-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
+        <div
+          className="w-full max-w-md rounded-[var(--radius-lg)] border px-4 py-3 text-center"
+          style={{
+            borderColor: "var(--accent-line)",
+            background: "color-mix(in srgb, var(--accent) 12%, transparent)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <p className="t-section">Studying</p>
+          <p
+            className="mt-0.5 truncate text-[15px] font-medium"
+            style={{ color: "var(--text-1)" }}
+          >
+            {topic || "Whatever you want to work on"}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            hangUp();
-            onClose();
-          }}
-          aria-label="Close"
-          className="btn btn-quiet btn-sm"
-          style={{ color: "var(--text-3)" }}
-        >
-          <CloseIcon className="h-4 w-4" />
-          Close
-        </button>
       </div>
 
-      <div className="mt-6 flex flex-col items-center">
-        <div
-          aria-hidden="true"
-          className="flex h-24 w-24 items-center justify-center rounded-full"
-          style={{
-            background: isLive ? "var(--accent)" : "var(--accent-soft)",
-            border: "2px solid var(--accent-line)",
-            color: isLive ? "var(--on-brand)" : "var(--accent-bright)",
-            animation: isLive && !isMuted ? "mic-ring-pulse 1.6s ease-in-out infinite" : undefined,
-          }}
-        >
-          <MicGlyph className="h-10 w-10" muted={isMuted} />
+      {/* ---- The avatar ---- */}
+      <div className="flex flex-1 flex-col items-center justify-center px-6">
+        <div className="relative flex h-64 w-64 items-center justify-center">
+          {/* Two rings that breathe with the audio. Transform only, so this
+              stays on the compositor and never triggers layout. */}
+          {[0, 1].map((ring) => (
+            <span
+              key={ring}
+              aria-hidden="true"
+              className="absolute rounded-full"
+              style={{
+                inset: 0,
+                border: "1px solid var(--accent-line)",
+                transform: `scale(${0.72 + level * (ring ? 0.34 : 0.2)})`,
+                opacity: 0.16 + level * (ring ? 0.28 : 0.45),
+                transition: "transform 90ms linear, opacity 90ms linear",
+              }}
+            />
+          ))}
+
+          <span
+            aria-hidden="true"
+            className="absolute rounded-full"
+            style={{
+              height: "9rem",
+              width: "9rem",
+              background:
+                "radial-gradient(circle at 32% 28%, #b9a8ff 0%, var(--accent) 48%, #4a3596 100%)",
+              transform: `scale(${1 + level * 0.16})`,
+              boxShadow: `0 0 ${28 + level * 70}px ${level * 14}px rgb(124 106 240 / ${0.22 + level * 0.34})`,
+              transition: "transform 90ms linear, box-shadow 90ms linear",
+            }}
+          />
+
+          <span
+            className="relative text-[15px] font-medium tracking-[0.28em]"
+            style={{ color: "#ffffff", textShadow: "0 1px 12px rgb(0 0 0 / 0.45)" }}
+          >
+            VYRA
+          </span>
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-          {!isLive ? (
+        <p className="t-body mt-8 text-center" aria-live="polite">
+          {status}
+        </p>
+        {isLive && (
+          <p className="t-meta mt-1 tabular-nums">
+            {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
+          </p>
+        )}
+
+        {!isLive && state !== "ended" && !error && (
+          <p className="t-meta mt-4 max-w-xs text-center">
+            Vyra already knows what you have been studying and what you keep
+            getting wrong. You can interrupt her.
+          </p>
+        )}
+
+        {error && (
+          <p
+            role="alert"
+            className="t-meta mt-4 max-w-xs text-center"
+            style={{ color: "var(--bad)" }}
+          >
+            {error}
+          </p>
+        )}
+      </div>
+
+      {/* ---- Transcript ---- */}
+      {turns.length > 0 && (
+        <div className="mx-auto w-full max-w-md flex-none overflow-y-auto px-6" style={{ maxHeight: "22vh" }}>
+          {turns.slice(-6).map((turn) => (
+            <p key={turn.id} className="t-meta mb-2">
+              <span style={{ color: turn.role === "vyra" ? "var(--accent-bright)" : "var(--text-3)" }}>
+                {turn.role === "vyra" ? "Vyra" : "You"}:{" "}
+              </span>
+              <span style={{ color: "var(--text-2)" }}>{turn.text}</span>
+            </p>
+          ))}
+        </div>
+      )}
+
+      {/* ---- Controls ---- */}
+      <div className="flex items-center justify-center gap-5 px-6 pb-[max(2rem,env(safe-area-inset-bottom))] pt-6">
+        {isLive ? (
+          <>
+            <button
+              type="button"
+              onClick={toggleMute}
+              aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+              aria-pressed={isMuted}
+              className="flex h-16 w-16 items-center justify-center rounded-full transition-transform active:scale-95"
+              style={{
+                background: isMuted ? "var(--accent)" : "var(--panel-raised)",
+                border: "1px solid var(--line-strong)",
+                color: isMuted ? "var(--on-brand)" : "var(--text-1)",
+              }}
+            >
+              <MicIcon className="h-6 w-6" muted={isMuted} />
+            </button>
+
+            <button
+              type="button"
+              onClick={hangUp}
+              aria-label="End call"
+              className="flex h-16 w-16 items-center justify-center rounded-full transition-transform active:scale-95"
+              style={{ background: "#e5484d", color: "#ffffff" }}
+            >
+              <EndCallIcon className="h-6 w-6" />
+            </button>
+          </>
+        ) : (
+          <>
             <button
               type="button"
               onClick={() => void start()}
@@ -250,59 +440,36 @@ export function VoiceCall({ onClose }: { onClose: () => void }) {
             >
               {isBusy ? "Connecting…" : state === "ended" ? "Call again" : "Start talking"}
             </button>
-          ) : (
-            <>
-              <button type="button" onClick={toggleMute} className="btn btn-secondary">
-                {isMuted ? "Unmute" : "Mute"}
-              </button>
-              <button
-                type="button"
-                onClick={hangUp}
-                className="btn"
-                style={{ background: "var(--bad-soft)", color: "var(--bad)" }}
-              >
-                End call
-              </button>
-            </>
-          )}
-        </div>
-
-        {!isLive && state !== "ended" && (
-          <p className="t-meta mt-3 text-center">
-            Vyra already knows what you have been studying and what you keep
-            getting wrong. Just start talking &mdash; you can interrupt her.
-          </p>
+            <button type="button" onClick={onClose} className="btn btn-secondary btn-lg">
+              Back to chat
+            </button>
+          </>
         )}
       </div>
 
-      {error && (
-        <p className="t-meta mt-5" role="alert" style={{ color: "var(--bad)" }}>
-          {error}
-        </p>
-      )}
-
-      {turns.length > 0 && (
-        <div className="mt-6 flex flex-col gap-3">
-          <p className="t-section">Transcript</p>
-          {turns.map((turn) => (
-            <div key={turn.id}>
-              <p className="t-meta">{turn.role === "student" ? "You" : "Vyra"}</p>
-              <p className="t-body">{turn.text}</p>
-            </div>
-          ))}
-        </div>
+      {isLive && (
+        <button
+          type="button"
+          onClick={() => {
+            hangUp();
+            onClose();
+          }}
+          className="t-meta pb-6 text-center underline underline-offset-2"
+        >
+          Back to chat
+        </button>
       )}
     </div>
   );
 }
 
-function MicGlyph({ className, muted }: { className?: string; muted?: boolean }) {
+function MicIcon({ className, muted }: { className?: string; muted?: boolean }) {
   return (
     <svg
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.6"
+      strokeWidth="1.7"
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
@@ -312,6 +479,26 @@ function MicGlyph({ className, muted }: { className?: string; muted?: boolean })
       <path d="M5.5 11a6.5 6.5 0 0 0 13 0" />
       <path d="M12 17.5V21" />
       {muted && <path d="M4 4l16 16" />}
+    </svg>
+  );
+}
+
+function EndCallIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      {/* A handset rotated down: the universal "hang up". */}
+      <g transform="rotate(135 12 12)">
+        <path d="M4.5 5.5a2 2 0 0 1 2-2h1.6a1 1 0 0 1 1 .77l.7 3a1 1 0 0 1-.29.95l-1.3 1.2a12 12 0 0 0 5.1 5.1l1.2-1.3a1 1 0 0 1 .95-.29l3 .7a1 1 0 0 1 .77 1v1.6a2 2 0 0 1-2 2A15.5 15.5 0 0 1 4.5 5.5Z" />
+      </g>
     </svg>
   );
 }

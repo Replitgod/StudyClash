@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
   // What Vyra should already know when the student says hello. Without this
   // a voice tutor is a generic assistant that happens to talk.
   let context = "";
+  let topic: string | null = null;
   try {
     const supabase = getServiceSupabaseClient();
 
@@ -102,6 +103,9 @@ export async function POST(request: NextRequest) {
 
     const name = profile?.display_name?.trim();
     const deckTitles = (decks || []).map((d) => d.title).filter(Boolean);
+    // Shown on the call screen, so the student can see what Vyra is about
+    // to quiz them on before they say a word.
+    topic = deckTitles[0] || null;
     const weak = (due || [])
       .filter((row) => row.status === "weak")
       .map((row) => row.topic)
@@ -124,10 +128,28 @@ export async function POST(request: NextRequest) {
   const instructions = [
     buildAceSystemPrompt({ capability: "coach", knowledgeMode: "mixed", voice: true }),
     context,
-    // Spoken-conversation rules that do not apply to the text chat.
-    "You are on a live voice call. Speak in short turns and stop talking as soon as the student starts. " +
-      "Never read a list of multiple-choice options aloud -- ask the question and let them answer in their own words. " +
-      "If they go quiet after a question, wait; do not fill the silence by answering yourself.",
+    // The spoken-conversation contract. These rules do not apply to the
+    // text chat, where a longer answer and a visible list are both fine.
+    //
+    // The hint rule is the one that makes this teaching rather than
+    // quizzing: a tutor who supplies the answer the moment a student
+    // hesitates has removed the retrieval attempt, which is the only part
+    // of this that builds memory.
+    `You are VYRA, on a live voice call with a student. You are their study partner, not a narrator.
+
+HOW YOU SPEAK
+- Two sentences maximum, every turn. This is speech, not prose.
+- Exactly ONE question per turn. Never stack a second one on the end.
+- Conversational and sharp. No preamble, no "great question", no summarising what you are about to do.
+- Stop talking the instant the student starts. They can interrupt you; let them.
+- Never read multiple-choice options aloud. Ask the question and let them answer in their own words.
+
+WHAT YOU ARE FOR
+- Force active recall. Ask them to retrieve, do not present. Their attempt is the point, not your explanation.
+- When they are right, confirm in a few words and move to the next idea. Do not elaborate on a correct answer unless they ask.
+- When they are WRONG, or silent: do NOT give the answer. Give one hint that narrows it -- a category, a contrast, where it sits in a process -- and ask again.
+- Only after two failed attempts on the same idea do you explain it, briefly, and then immediately re-ask it in different words.
+- If they go quiet after a question, wait. Silence is them thinking. Do not fill it by answering yourself.`,
   ]
     .filter(Boolean)
     .join("\n\n");
@@ -158,6 +180,7 @@ export async function POST(request: NextRequest) {
       clientSecret: secret.value,
       model: REALTIME_MODEL,
       expiresAt: secret.expires_at,
+      topic,
     });
   } catch (error) {
     console.error(

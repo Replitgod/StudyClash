@@ -38,6 +38,10 @@ const eslintConfig = defineConfig([
     // thousands of problems from ITS dependencies, which buried every real
     // finding in this app.
     "my-study-app/**",
+    // Same again: a second scaffolded Next app with its own package.json,
+    // node_modules and .next. Its generated route types alone produce lint
+    // errors that have nothing to do with this app.
+    "call-with-vyra/**",
   ]),
 ]);
 
