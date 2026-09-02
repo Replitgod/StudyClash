@@ -7,10 +7,6 @@
     {
       "path": "/api/curriculum/process",
       "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/cron/send-emails",
-      "schedule": "0 15 * * *"
     }
   ]
 }

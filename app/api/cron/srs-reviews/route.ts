@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabaseClient, isAuthorizedCronRequest } from "@/lib/server/apiUtils";
+import { drainEmailQueue } from "@/lib/server/emailQueue";
 
 // Runs daily (see vercel.json). Scans topic_review_schedule for rows whose
 // next_review_at has passed and that haven't been notified yet, and creates
@@ -112,5 +113,16 @@ It takes about five minutes, and it is the difference between recognising this t
     }
   }
 
-  return NextResponse.json({ checked: dueRows?.length || 0, notified, emailsQueued });
+  // Drain the queue in the same invocation. Vercel Hobby allows only two
+  // cron jobs and this app already uses both, so the mail this run just
+  // queued goes out now rather than waiting for a third schedule that
+  // cannot exist. See lib/server/emailQueue.ts.
+  const email = await drainEmailQueue();
+
+  return NextResponse.json({
+    checked: dueRows?.length || 0,
+    notified,
+    emailsQueued,
+    email,
+  });
 }

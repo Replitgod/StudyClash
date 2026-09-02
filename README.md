@@ -126,9 +126,13 @@ Required in production (not locally):
 
 To actually send the mail that `email_notification_queue` collects:
 `RESEND_API_KEY` and `EMAIL_FROM` (a verified sender on your Resend domain).
-Without both, `/api/cron/send-emails` sends nothing, discards nothing, and
-logs once per run — the rows stay queued and go out on the first run after
-the keys are set.
+Without both, the drain sends nothing, discards nothing, and logs once per
+run — the rows stay queued and go out on the first run after the keys are
+set. The drain runs at the end of `/api/cron/srs-reviews` rather than on its
+own schedule, because **Vercel's Hobby plan allows only two cron jobs** and
+`vercel.json` already uses both; a third entry is a deployment error, not a
+third job. `/api/cron/send-emails` exists to trigger a send by hand, and to
+schedule directly if the project ever has a spare slot.
 
 Optional: `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAILS`, `UPSTASH_REDIS_*`,
 `TURNSTILE_*`, and the `STRIPE_*` keys — `STRIPE_SECRET_KEY`,
