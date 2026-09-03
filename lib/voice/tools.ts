@@ -262,6 +262,33 @@ export function resolveToolCall(
   const style = session.requests.includes("skip") ? "adaptive" : "adaptive";
 
   const advance = (base: TutorSession, lastVerdict: Verdict | null = null): ToolResult => {
+    // A question that was asked and never answered must not be abandoned.
+    //
+    // The opening question is baked into the session instructions rather than
+    // fetched through a tool, so a model that calls next_question out of
+    // habit would otherwise be handed a second topic and ask two questions
+    // back to back before the student had answered either. Handing the same
+    // concept back is the recovery. Skipping is unaffected: note_request
+    // clears activeConceptId first, which is exactly what distinguishes
+    // "move on" from "I forgot I already asked".
+    const activeId = base.activeConceptId;
+    const active = activeId ? base.progress[activeId] : null;
+    const unanswered =
+      active && active.asked > 0 && base.attempts.every((a) => a.conceptId !== activeId);
+
+    if (lastVerdict === null && unanswered) {
+      const concept = base.concepts.find((c) => c.id === activeId);
+      if (concept) {
+        return {
+          session: base,
+          output: {
+            next: describeMove(base, concept, hintLevelFor(active), null, true),
+          },
+          activeConcept: concept,
+        };
+      }
+    }
+
     const concept = selectNextConcept(base, { style });
     if (!concept) {
       return {

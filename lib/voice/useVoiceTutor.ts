@@ -15,7 +15,7 @@ import {
   type CallEvent,
   type CallState,
 } from "./sessionMachine";
-import { createSession } from "./tutorState";
+import { createSession, recordAsked } from "./tutorState";
 import { resolveToolCall } from "./tools";
 import { planForEvent } from "./realtimeEvents";
 import { INACTIVITY_TIMEOUT_MS } from "./budget";
@@ -585,8 +585,19 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
       if (!isReconnect) {
         const concepts = (Array.isArray(data.concepts) ? data.concepts : []) as Concept[];
         const fresh = createSession(concepts, optionsRef.current);
-        tutorSessionRef.current = fresh;
-        setTutorSession(fresh);
+
+        // The server picked the opening question and baked it into the
+        // instructions, so she asks it without a tool round trip. Record it
+        // as asked here or the two copies of the session disagree from the
+        // first turn: the app would think the concept was never raised and
+        // would queue it up again a minute later.
+        const opened =
+          typeof data.openingConceptId === "string" && fresh.progress[data.openingConceptId]
+            ? recordAsked(fresh, data.openingConceptId)
+            : fresh;
+
+        tutorSessionRef.current = opened;
+        setTutorSession(opened);
         savedRef.current = false;
         setSummary(null);
       }

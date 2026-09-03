@@ -120,6 +120,33 @@ describe("next_question", () => {
     expect(result.session.activeConceptId).toBe("c1");
   });
 
+  // The opening question is baked into the session instructions now, so the
+  // model has already asked something before its first tool call. Handing it
+  // a second topic would have it ask twice before the student had answered.
+  it("does not abandon a question that was asked but never answered", () => {
+    const opened = next(createSession(CONCEPTS));
+    const again = resolveToolCall(opened.session, TOOL_NEXT_QUESTION, {}, 0);
+
+    expect(moveFrom(again.output).concept_id).toBe("c1");
+  });
+
+  it("still moves on once that question has been answered", () => {
+    const opened = next(createSession(CONCEPTS));
+    const answered = answer(opened.session, "c1", "correct");
+    const after = resolveToolCall(answered.session, TOOL_NEXT_QUESTION, {}, 0);
+
+    expect(moveFrom(after.output).concept_id).not.toBe("c1");
+  });
+
+  it("still honours an explicit skip of an unanswered question", () => {
+    const opened = next(createSession(CONCEPTS));
+    const skipped = resolveToolCall(opened.session, TOOL_NOTE_REQUEST, { kind: "skip" }, 0);
+
+    // Skipping is the one case where leaving a question unanswered is what
+    // the student actually asked for.
+    expect(moveFrom(skipped.output).concept_id).not.toBe("c1");
+  });
+
   it("reports the material as finished rather than inventing a topic", () => {
     let session = createSession([CONCEPTS[0]]);
     // Answer it well enough that it is not owed a revisit, then ask again.

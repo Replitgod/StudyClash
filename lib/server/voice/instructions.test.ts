@@ -47,9 +47,66 @@ describe("buildTutorInstructions", () => {
 
   it("tells the model the tool loop drives the session", () => {
     const text = buildTutorInstructions({ material: material(), options: OPTIONS });
-    expect(text).toMatch(/call next_question/);
-    expect(text).toMatch(/call record_answer FIRST/);
+    expect(text).toMatch(/call record_answer/);
     expect(text).toMatch(/note_request/);
+  });
+
+  // Calling the tool in silence cost a whole model round trip of dead air
+  // after every single answer, which is most of what made this feel slower
+  // than it should. She already knows the verdict -- she is the one deciding
+  // it -- so there is nothing to wait for before reacting.
+  it("tells her to react out loud while the tool call is in flight", () => {
+    const text = buildTutorInstructions({ material: material(), options: OPTIONS });
+
+    expect(text).toMatch(/SPEAK AT THE SAME TIME AS YOU CALL IT/);
+    expect(text).toMatch(/never need to wait for the tool to know how to react/i);
+    expect(text).toMatch(/dead air/i);
+  });
+
+  describe("the opening question", () => {
+    const openingConcept = {
+      id: "c2",
+      label: "Nucleus",
+      facts: ["Q: What holds DNA? A: The nucleus"],
+      priorWeak: true,
+    };
+
+    it("is carried in the prompt so the call opens without a tool round trip", () => {
+      const text = buildTutorInstructions({
+        material: material(),
+        options: OPTIONS,
+        openingConcept,
+      });
+
+      expect(text).toContain("# THE FIRST QUESTION -- ASK THIS NOW");
+      expect(text).toContain("Topic: Nucleus");
+      // The card detail for this one concept rides along, since it is the
+      // only one she needs before the first tool call.
+      expect(text).toContain("Q: What holds DNA? A: The nucleus");
+      expect(text).toMatch(/do NOT call a tool to get it/i);
+    });
+
+    it("still tells her not to read the card out verbatim", () => {
+      const text = buildTutorInstructions({
+        material: material(),
+        options: OPTIONS,
+        openingConcept,
+      });
+      expect(text).toMatch(/Do not read it out verbatim/i);
+      expect(text).toMatch(/never say it out loud/i);
+    });
+
+    it("is omitted cleanly when there is no material to open on", () => {
+      const text = buildTutorInstructions({
+        material: material({ concepts: [] }),
+        options: OPTIONS,
+        openingConcept: null,
+      });
+
+      expect(text).not.toContain("# THE FIRST QUESTION");
+      // No stray blank block left where the section would have been.
+      expect(text).not.toMatch(/\n{3,}/);
+    });
   });
 
   it("spells out every rung of the hint ladder", () => {

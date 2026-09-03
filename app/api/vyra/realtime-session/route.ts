@@ -8,6 +8,7 @@ import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
 import { loadStudyMaterial } from "@/lib/server/voice/studyContext";
 import { buildTutorInstructions } from "@/lib/server/voice/instructions";
 import { VOICE_TUTOR_TOOLS } from "@/lib/voice/tools";
+import { createSession, selectNextConcept } from "@/lib/voice/tutorState";
 import { evaluateVoiceBudget, STALE_SESSION_MS } from "@/lib/voice/budget";
 import type { Difficulty, SessionOptions, SourceType, StudyStyle } from "@/lib/voice/types";
 
@@ -202,7 +203,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const instructions = buildTutorInstructions({ material, options });
+  // The opening question, decided here rather than by a tool call.
+  //
+  // This is the difference between "hello" arriving in half a second and in
+  // three. Going through the tool for the first question meant two model
+  // generations before the student heard a word -- one to ask what to ask,
+  // another to say it -- and that gap lands squarely on the first impression,
+  // where a voice tutor either feels alive or feels like software.
+  //
+  // The app still chooses the question; it just chooses it up front, where
+  // the latency is free. The client is told which concept this was so its
+  // copy of the session agrees.
+  const openingSession = createSession(material.concepts, options);
+  const openingConcept = selectNextConcept(openingSession, { style: options.style });
+
+  const instructions = buildTutorInstructions({ material, options, openingConcept });
 
   // A student-chosen length shortens the call; it can never extend it past
   // what the budget allows.
@@ -224,8 +239,23 @@ export async function POST(request: NextRequest) {
         // next move rather than an acknowledgement.
         tools: VOICE_TUTOR_TOOLS,
         tool_choice: "auto",
+        // A hard ceiling on one spoken turn.
+        //
+        // The persona asks for two sentences and mostly gets them, but
+        // "mostly" is not good enough on a voice call: one rambling
+        // ninety-second answer is the thing a student remembers, and they
+        // cannot skim past it the way they would a wall of text. Generous
+        // enough for the explain rung of the hint ladder, tight enough that
+        // a monologue gets cut off rather than delivered.
+        max_output_tokens: 400,
         audio: {
           input: {
+            // Laptop built-in microphones are the common case and the worst
+            // case: they sit next to the speakers playing her voice back.
+            // near_field cleans that up before it reaches the turn detector,
+            // which is where the residual echo used to trigger a false
+            // interrupt and cut her off mid-sentence.
+            noise_reduction: { type: "near_field" },
             // Transcribe what the student says so the call can be read as
             // well as heard -- a student who mishears an answer needs to see
             // it, and it is what makes the session reviewable afterwards.
@@ -304,6 +334,9 @@ export async function POST(request: NextRequest) {
       title: material.title,
       courseName: material.courseName,
       concepts: material.concepts,
+      // So the client can mark it asked and stay in step with the question
+      // she is about to open on.
+      openingConceptId: openingConcept?.id ?? null,
       maxCallMs,
       remainingMinutes: budget.remainingMinutes,
     });
