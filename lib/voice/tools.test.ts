@@ -36,8 +36,27 @@ type Move = {
   topic: string;
   material: string[];
   hint_level: string;
+  reaction: string;
   guidance: string;
 };
+
+const CLOSENESS = /\bso close\b|\bnot quite\b|\balmost\b|\bgood start\b|\bnearly\b|\bright track\b/gi;
+
+/**
+ * Does this text tell the tutor to say the student was close?
+ *
+ * Negation-aware, because the instructions legitimately quote the banned
+ * phrases in order to forbid them -- "no 'so close', no 'not quite'". A
+ * plain regex flags that prohibition as if it were an endorsement, which
+ * would make the guard fire on exactly the text that fixes the bug.
+ */
+function claimsCloseness(text: string): boolean {
+  for (const match of text.matchAll(CLOSENESS)) {
+    const before = text.slice(Math.max(0, (match.index ?? 0) - 16), match.index);
+    if (!/\b(no|not|never|don't|do not)\b['"\s]*$/i.test(before)) return true;
+  }
+  return false;
+}
 
 function moveFrom(output: Record<string, unknown>): Move {
   return output.next as unknown as Move;
@@ -172,7 +191,7 @@ describe("record_answer", () => {
     expect(result.output).toHaveProperty("next");
   });
 
-  it("falls back to a sane verdict when the model sends nonsense", () => {
+  it("falls back to a verdict that helps rather than praises", () => {
     const opened = next(createSession(CONCEPTS));
     const result = resolveToolCall(
       opened.session,
@@ -181,7 +200,93 @@ describe("record_answer", () => {
       0
     );
 
-    expect(result.session.attempts[0].verdict).toBe("partial");
+    // Defaulting to "partial" meant an unreadable verdict became "they got
+    // part of it right", and the tutor congratulated a student who had said
+    // nothing at all.
+    expect(result.session.attempts[0].verdict).toBe("unknown");
+    expect(claimsCloseness(moveFrom(result.output).reaction)).toBe(false);
+  });
+});
+
+// The bug a student actually heard: they said "I don't know" and were told
+// "ooh, so close". Guidance was keyed on the hint ladder alone, so a
+// non-answer and a confident wrong answer produced identical instructions.
+describe("the reaction matches what was actually said", () => {
+  function reactionTo(verdict: string): string {
+    const opened = next(createSession(CONCEPTS));
+    return moveFrom(answer(opened.session, "c1", verdict).output).reaction;
+  }
+
+  it("never tells a student who said 'I don't know' that they were close", () => {
+    const reaction = reactionTo("unknown");
+
+    expect(claimsCloseness(reaction)).toBe(false);
+    expect(reaction).toMatch(/did not attempt|do not know/i);
+    // And it says so explicitly, because the model's instinct is to console.
+    expect(reaction).toMatch(/no praise|no 'so close'|no ['"]so close['"]/i);
+  });
+
+  it("does not congratulate a wrong answer either", () => {
+    const reaction = reactionTo("incorrect");
+    expect(reaction).toMatch(/wrong|not there|plainly/i);
+    expect(reaction).toMatch(/only say they were close if/i);
+  });
+
+  it("allows 'close' for the one verdict where it is true", () => {
+    const reaction = reactionTo("partial");
+    expect(reaction).toMatch(/part of the right idea/i);
+    expect(reaction).toMatch(/only situation you may say it/i);
+  });
+
+  it("reacts to a correct answer without re-explaining it", () => {
+    const reaction = reactionTo("correct");
+    expect(reaction).toMatch(/got it right/i);
+    expect(reaction).toMatch(/do NOT explain/i);
+  });
+
+  it("gives a different reaction for every verdict", () => {
+    const reactions = ["correct", "partial", "incorrect", "unknown"].map(reactionTo);
+    expect(new Set(reactions).size).toBe(4);
+  });
+
+  it("distinguishes a non-answer from a wrong answer at the same hint rung", () => {
+    const opened = next(createSession(CONCEPTS));
+    const idk = answer(opened.session, "c1", "unknown");
+    const wrong = answer(opened.session, "c1", "incorrect");
+
+    // Same rung of the ladder...
+    expect(moveFrom(idk.output).hint_level).toBe(moveFrom(wrong.output).hint_level);
+    // ...and deliberately different things to say.
+    expect(moveFrom(idk.output).reaction).not.toBe(moveFrom(wrong.output).reaction);
+  });
+
+  it("asks only for the missing piece after a half-answer", () => {
+    const opened = next(createSession(CONCEPTS));
+    const move = moveFrom(answer(opened.session, "c1", "partial").output);
+
+    expect(move.concept_id).toBe("c1");
+    expect(move.guidance).toMatch(/ONLY for the piece they missed/i);
+    expect(move.guidance).not.toMatch(/different angle/i);
+    // And it does not send them back to the start of the question.
+    expect(move.guidance).toMatch(/do not re-ask the whole question/i);
+  });
+
+  it("has nothing to react to on the opening question", () => {
+    const opened = next(createSession(CONCEPTS));
+    const move = moveFrom(opened.output);
+
+    expect(move.reaction).toMatch(/first question/i);
+    expect(claimsCloseness(move.reaction)).toBe(false);
+  });
+
+  it("keeps false encouragement out of the next-question guidance too", () => {
+    // The guidance field is about what to ask next; it must not smuggle a
+    // reaction back in, which is how the two got tangled in the first place.
+    for (const verdict of ["correct", "partial", "incorrect", "unknown"]) {
+      const opened = next(createSession(CONCEPTS));
+      const move = moveFrom(answer(opened.session, "c1", verdict).output);
+      expect(claimsCloseness(move.guidance)).toBe(false);
+    }
   });
 });
 

@@ -114,6 +114,55 @@ describe("buildTutorInstructions", () => {
     expect(easy).toMatch(/Keep the questions gentle/i);
   });
 
+  // A student said "I don't know" and was told "ooh, so close". The persona
+  // used to lump wrong answers and non-answers into one section, and modelled
+  // "ooh, so close" as an example line for the voice to copy.
+  it("separates a non-answer from a wrong answer", () => {
+    const text = buildTutorInstructions({ material: material(), options: OPTIONS });
+
+    expect(text).toContain("# WHEN THEY SAY THEY DO NOT KNOW");
+    expect(text).toContain("# WHEN THEY ANSWER AND GET IT WRONG");
+    expect(text).toMatch(/not a wrong answer and you must not treat it like one/i);
+    expect(text).toMatch(/nothing to be close to/i);
+  });
+
+  it("bans reacting to an answer the student never gave", () => {
+    const text = buildTutorInstructions({ material: material(), options: OPTIONS });
+
+    expect(text).toContain("# NEVER FAKE A REACTION");
+    expect(text).toMatch(/must match what they ACTUALLY said/i);
+    expect(text).toMatch(/never say "so close"/i);
+    expect(text).toMatch(/react to LESS than you think you heard/i);
+  });
+
+  it("does not model false encouragement in its own example lines", () => {
+    const text = buildTutorInstructions({ material: material(), options: OPTIONS });
+
+    // The voice copies these examples verbatim, so an example that praises a
+    // non-answer teaches exactly the behaviour being banned two sections
+    // later. Every remaining use must be a prohibition.
+    for (const match of text.matchAll(/\bso close\b|\bnot quite\b/gi)) {
+      // A short lookback, checked for a negation anywhere in it -- the
+      // prohibitions read "Never say "so close"" and "no 'not quite'", so the
+      // negation is a word or two back rather than immediately adjacent.
+      const before = text.slice(Math.max(0, (match.index ?? 0) - 24), match.index);
+      expect(before).toMatch(/\b(no|not|never)\b/i);
+    }
+  });
+
+  it("tells the model the tool response carries a binding reaction", () => {
+    const text = buildTutorInstructions({ material: material(), options: OPTIONS });
+
+    expect(text).toMatch(/"reaction" tells you how to respond/i);
+    expect(text).toMatch(/derived from the verdict you yourself reported/i);
+  });
+
+  it("classifies 'I don't know' as unknown rather than partial", () => {
+    const text = buildTutorInstructions({ material: material(), options: OPTIONS });
+    expect(text).toMatch(/did not answer did not half-answer/i);
+    expect(text).toMatch(/this is NEVER partial/i);
+  });
+
   it("keeps the spoken-answer rules that make it a tutor rather than a quiz", () => {
     const text = buildTutorInstructions({ material: material(), options: OPTIONS });
     expect(text).toMatch(/TWO SENTENCES MAXIMUM/);

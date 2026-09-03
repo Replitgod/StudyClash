@@ -57,7 +57,7 @@ export const VOICE_TUTOR_TOOLS = [
           type: "string",
           enum: ["correct", "partial", "incorrect", "unknown"],
           description:
-            "correct = the idea is there even if loosely worded. partial = some of it is there. incorrect = the idea is genuinely not there. unknown = they said they do not know, or said nothing useful.",
+            "correct = the idea is there, even if loosely or informally worded. partial = they produced real content and SOME of the idea is in it. incorrect = they produced real content but the idea is genuinely not there. unknown = they did not attempt an answer at all: 'I don't know', 'no idea', 'pass', 'you tell me', a shrug, or silence. Never mark a non-answer as partial — a student who did not answer did not half-answer, and treating it as one makes you congratulate them for nothing.",
         },
         misconception: {
           type: "string",
@@ -107,7 +107,19 @@ export type NextMove = {
   /** Source lines. The model must ask from these and not invent around them. */
   material: string[];
   hint_level: HintLevel;
-  /** Plain-English instruction for this specific turn. */
+  /**
+   * How to respond to what the student just said.
+   *
+   * Separate from `guidance` because they answer different questions, and
+   * collapsing them caused the worst bug this feature has had: guidance was
+   * keyed on the hint ladder alone, so "I don't know" and a confident wrong
+   * answer produced identical instructions ("tease them warmly, then hint").
+   * The tutor replied to silence with "ooh, so close" -- congratulating a
+   * student for an answer they never gave. Nothing makes a tutor sound more
+   * like a script being read at you.
+   */
+  reaction: string;
+  /** What to ask next, and how much help to give while asking it. */
   guidance: string;
   /** Rolling count so the tutor can reference real progress out loud. */
   answered: number;
@@ -125,37 +137,77 @@ export type ToolResult = {
 const HINT_GUIDANCE: Record<HintLevel, string> = {
   none: "Ask this as a fresh question, in your own words. One question only.",
   nudge:
-    "They missed this once. Do NOT give the answer. Tease them warmly, then give one small hint that narrows it down, and ask again.",
+    "Do NOT give the answer. Give one small hint that narrows it down, then ask again.",
   concept:
-    "They have missed this twice. Still no answer. Give a more specific conceptual hint — point at the underlying idea — then ask again.",
+    "Second time on this. Give a more specific conceptual hint — point at the underlying idea — then ask again.",
   breakdown:
-    "Three misses. Break the problem into steps and ask them only the first step. Small, answerable.",
+    "Third time. Break the problem into steps and ask them only the first step. Small, answerable.",
   explain:
     "They are stuck. Explain the idea clearly and quickly — one breath, no lecture — then immediately ask a NEW short question on the same idea in different words so they still have to retrieve it.",
+};
+
+/**
+ * How to respond to what the student actually said.
+ *
+ * Every one of these exists to stop the tutor reacting to an answer that was
+ * not given. A reaction that does not match the input is the single loudest
+ * tell that there is no one home -- a student who says "no idea" and is told
+ * they were *close* learns instantly that nothing is listening, and after
+ * that the encouragement is worthless even when it is deserved.
+ */
+const REACTION: Record<Verdict, string> = {
+  correct:
+    "They got it right. React briefly and genuinely — vary it, never the same celebration twice in one call — and do NOT explain what they have just demonstrated they know. Then move on.",
+  partial:
+    "They gave you PART of the right idea. Name the piece that actually landed, in their own words, then ask only for what is missing. This is the one situation where 'close' is true, so it is the only situation you may say it.",
+  incorrect:
+    "They gave a real answer and it was wrong. Say so plainly and warmly — 'nope', 'not that one', 'other way round'. Only say they were close if what they said genuinely was near it; false encouragement is patronising and teaches nothing.",
+  unknown:
+    "They told you they do not know, or said nothing usable. They did NOT attempt an answer, so do not react as if they had: no 'so close', no 'not quite', no 'almost', no praise. Acknowledge it in two or three words — 'No shame.' / 'Fair enough.' / 'Okay, no problem.' — and go straight to helping.",
 };
 
 function describeMove(
   session: TutorSession,
   concept: Concept,
-  hintLevel: HintLevel
+  hintLevel: HintLevel,
+  /** What the student just did. Null when there is nothing to react to yet. */
+  lastVerdict: Verdict | null,
+  /** True when this is the same concept they were just working on. */
+  staying: boolean
 ): NextMove {
   const answered = session.attempts.length;
   const correct = session.attempts.filter((a) => a.verdict === "correct").length;
 
   const progress = session.progress[concept.id];
   const priorNote =
-    progress && progress.asked > 0 && progress.consecutiveMisses === 0
+    // Only for a genuine revisit later in the call. Saying "come at it from
+    // a different angle" while still finishing the current thread reads as
+    // an instruction to change the subject mid-answer.
+    !staying && progress && progress.asked > 1
       ? " You have asked about this before in this call — come at it from a different angle this time."
-      : concept.priorWeak && (!progress || progress.asked === 0)
+      : concept.priorWeak && progress && progress.asked <= 1
         ? " They have got this wrong in past study sessions, so expect it to be shaky."
         : "";
+
+  const guidance =
+    // A half-answer is not a fresh question. Re-asking the whole thing makes
+    // the student repeat the part they already got right, which is the exact
+    // opposite of "say which part landed, now give me the rest".
+    staying && lastVerdict === "partial"
+      ? "Ask ONLY for the piece they missed. Do not re-ask the whole question — they already gave you half of it."
+      : HINT_GUIDANCE[hintLevel] + priorNote;
 
   return {
     concept_id: concept.id,
     topic: concept.label,
     material: concept.facts,
     hint_level: hintLevel,
-    guidance: HINT_GUIDANCE[hintLevel] + priorNote,
+    reaction: lastVerdict
+      ? REACTION[lastVerdict]
+      : answered === 0
+        ? "This is the first question of the call. One short greeting, then ask it."
+        : "Nothing to react to — move straight on with no filler.",
+    guidance,
     answered,
     correct,
   };
@@ -174,7 +226,13 @@ function noMoreConcepts(session: TutorSession): Record<string, unknown> {
 
 function toVerdict(value: unknown): Verdict {
   const allowed: Verdict[] = ["correct", "partial", "incorrect", "unknown"];
-  return allowed.includes(value as Verdict) ? (value as Verdict) : "partial";
+  if (allowed.includes(value as Verdict)) return value as Verdict;
+
+  // "unknown", not "partial". The old default meant that any verdict we
+  // could not read became "they got part of it right", and the tutor
+  // congratulated a student who had said nothing. When we do not know what
+  // happened, the safe reaction is to help, never to praise.
+  return "unknown";
 }
 
 function toRequest(value: unknown): StudentRequest | null {
@@ -203,21 +261,26 @@ export function resolveToolCall(
 
   const style = session.requests.includes("skip") ? "adaptive" : "adaptive";
 
-  const advance = (base: TutorSession): ToolResult => {
+  const advance = (base: TutorSession, lastVerdict: Verdict | null = null): ToolResult => {
     const concept = selectNextConcept(base, { style });
     if (!concept) {
-      return { session: base, output: noMoreConcepts(base), activeConcept: null };
+      return {
+        session: base,
+        output: { ...noMoreConcepts(base), reaction: lastVerdict ? REACTION[lastVerdict] : "" },
+        activeConcept: null,
+      };
     }
 
     // Reading the hint level BEFORE recording the ask, because recordAsked
     // does not touch consecutiveMisses and we want the level the student is
     // actually on, not one computed from a half-updated row.
     const hintLevel = hintLevelFor(base.progress[concept.id]);
+    const staying = base.activeConceptId === concept.id;
     const next = recordAsked(base, concept.id);
 
     return {
       session: next,
-      output: { next: describeMove(next, concept, hintLevel) },
+      output: { next: describeMove(next, concept, hintLevel, lastVerdict, staying) },
       activeConcept: concept,
     };
   };
@@ -242,7 +305,7 @@ export function resolveToolCall(
         atMs: now,
       });
 
-      return advance(recorded);
+      return advance(recorded, verdict);
     }
 
     case TOOL_NEXT_QUESTION:
