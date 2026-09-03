@@ -99,6 +99,11 @@ export default function VyraChat() {
     };
   }, [snapshot]);
 
+  // Which deck a call should be grounded in. The URL wins, because it is the
+  // student's explicit choice; otherwise fall back to whatever they are
+  // weakest on, which is the deck they most need to be asked about.
+  const callDeckId = searchParams.get("deckId") || context.deckId || null;
+
   /* ---------------------------------------------------------------- history */
 
   const loadConversations = useCallback(async () => {
@@ -319,6 +324,16 @@ export default function VyraChat() {
     inputRef.current?.focus();
   }, [searchParams]);
 
+  // A deck can also send the student straight into a call on its own
+  // material: /vyra?call=1&deckId=… . The call screen still needs an
+  // explicit tap on Start, because a browser will not grant a microphone --
+  // or play audio -- on a navigation alone.
+  useEffect(() => {
+    if (searchParams.get("call") !== "1") return;
+    setIsCalling(true);
+    void trackEvent("voice_tutor_opened", { from: "deck" });
+  }, [searchParams]);
+
   // Keep the newest message in view as it streams.
   useEffect(() => {
     const el = scrollRef.current;
@@ -344,7 +359,14 @@ export default function VyraChat() {
   }
 
   const composer = isCalling ? (
-    <VoiceCall onClose={() => setIsCalling(false)} />
+    <VoiceCall
+      onClose={() => setIsCalling(false)}
+      // A deck reached through /vyra?deckId=… wins over the one inferred
+      // from their weakest topic: it is the thing they explicitly chose.
+      sourceType={callDeckId ? "deck" : "open"}
+      sourceId={callDeckId}
+      sourceTitle={callDeckId === context.deckId ? context.deckTitle ?? null : null}
+    />
   ) : (
     <div className="card flex items-end gap-2 p-2">
       <label htmlFor="vyra-input" className="visually-hidden">
@@ -361,12 +383,13 @@ export default function VyraChat() {
         className="max-h-40 min-h-[44px] flex-1 resize-none bg-transparent px-3 py-2.5 text-[16px] leading-relaxed outline-none"
         style={{ color: "var(--text-1)" }}
       />
-      {/* Talking to Vyra rather than typing at her. Turn-based, on the
-          browser's own speech APIs -- see app/vyra/VoiceCall.tsx. */}
+      {/* Talking to Vyra rather than typing at her. A live WebRTC call to a
+          realtime model -- she hears the student as they speak and can be
+          interrupted. See app/vyra/VoiceCall.tsx. */}
       <button
         type="button"
         onClick={() => {
-          void trackEvent("vyra_call_started");
+          void trackEvent("voice_tutor_opened", { from: "chat" });
           setIsCalling(true);
         }}
         disabled={isSending}

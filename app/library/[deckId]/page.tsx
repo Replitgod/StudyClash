@@ -16,6 +16,7 @@ import {
   ArrowRightIcon,
   BackIcon,
   CheckIcon,
+  MicIcon,
   SparkIcon,
   TrashIcon,
 } from "@/app/components/app/Icons";
@@ -408,6 +409,20 @@ export default function MaterialWorkspacePage() {
               {mastery === null ? "Start studying" : "Continue study session"}
               <ArrowRightIcon className="h-[18px] w-[18px]" />
             </Link>
+
+            {/* Deliberately secondary. Studying is still the primary action
+                on this screen; saying an answer out loud is a different
+                shape of the same retrieval, and it goes straight into a call
+                grounded in THIS deck rather than whatever they last opened. */}
+            <div className="mt-3">
+              <Link
+                href={`/vyra?call=1&deckId=${encodeURIComponent(deck.id)}`}
+                className="btn btn-secondary w-full sm:w-auto"
+              >
+                <MicIcon className="h-[17px] w-[17px]" />
+                Practise out loud
+              </Link>
+            </div>
           </div>
 
           {topics.length > 0 && (

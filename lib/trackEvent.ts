@@ -64,6 +64,21 @@ export type AnalyticsEventName =
   | "deck_unshared"
   | "vyra_call_started"
   | "vyra_call_ended"
+  // Voice tutor. Deliberately never carry transcript text or a concept
+  // label: this table is a product-analytics stream, and what a student got
+  // wrong out loud belongs in voice_concept_attempts behind row level
+  // security, not in an events table queried for funnels.
+  | "voice_tutor_opened"
+  | "voice_session_started"
+  | "voice_connection_success"
+  | "voice_connection_failed"
+  | "voice_student_spoke"
+  | "voice_tutor_responded"
+  | "voice_interrupted"
+  | "voice_reconnected"
+  | "voice_session_completed"
+  | "voice_session_abandoned"
+  | "voice_summary_viewed"
   | "generation_cap_reached"
   | "upgrade_prompt_clicked"
   | "instant_demo_started"
