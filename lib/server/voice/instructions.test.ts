@@ -183,6 +183,20 @@ describe("buildTutorInstructions", () => {
     expect(text).toMatch(/nothing to be close to/i);
   });
 
+  // A student who said nothing for half a minute got "Oooo, good choice",
+  // then "Yesss -- exactly", then "Oof -- close!". She was holding both
+  // sides of the conversation.
+  it("forbids inventing the student's side of the conversation", () => {
+    const text = buildTutorInstructions({ material: material(), options: OPTIONS });
+
+    expect(text).toContain("# NEVER SPEAK FOR THE STUDENT");
+    expect(text).toMatch(/nothing has come in since your last turn/i);
+    expect(text).toMatch(/never call record_answer on a turn where they did not speak/i);
+    expect(text).toMatch(/about to talk to yourself/i);
+    // The exact phrases from the real transcript.
+    expect(text).toMatch(/good choice/i);
+  });
+
   it("bans reacting to an answer the student never gave", () => {
     const text = buildTutorInstructions({ material: material(), options: OPTIONS });
 

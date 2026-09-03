@@ -295,10 +295,27 @@ export async function POST(request: NextRequest) {
               // Long enough to think mid-sentence. At 480ms she cut in
               // during the pause between "the powerhouse of..." and "...the
               // cell", which reads as talking over you.
-              silence_duration_ms: 700,
-              // A student who has gone quiet gets a nudge instead of dead
-              // air. The persona tells her to hint, never to answer.
-              idle_timeout_ms: 8000,
+              silence_duration_ms: 550,
+              // Deliberately OFF, and this is not a small detail.
+              //
+              // idle_timeout_ms makes the SERVER generate a response after N
+              // seconds of silence. With no new input to respond to, the
+              // model does the most plausible thing available to it, which is
+              // to continue the dialogue -- so it invents the student's turn
+              // and then reacts to the answer it just imagined. A real
+              // transcript from a student who said nothing at all for half a
+              // minute:
+              //
+              //   "Which one -- thylakoid function -- sound good to start?"
+              //   "Oooo, good choice. What's the thylakoid's main job?"
+              //   "Yesss -- exactly. What's the energy molecule...?"
+              //   "Oof -- close! Think about..."
+              //
+              // Four turns, three imaginary answers, one of them graded.
+              // Silence is now handled in the app instead (see the silence
+              // nudge in useVoiceTutor), where we can state plainly that
+              // nothing was said rather than leaving the model to guess.
+              idle_timeout_ms: null,
             },
           },
           output: { voice: VOICE },

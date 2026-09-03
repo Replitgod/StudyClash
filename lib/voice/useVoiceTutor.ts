@@ -62,6 +62,17 @@ export type UseVoiceTutorArgs = {
 
 const SPEAKING_THRESHOLD = 0.02;
 
+/**
+ * How long to let a question hang before checking in, per nudge.
+ *
+ * The first gap is generous because silence after a question is usually
+ * thinking, and a tutor who fills it is a tutor who answers their own
+ * questions. After two check-ins we stop: someone who has not spoken in
+ * roughly a minute has walked away, and the inactivity timeout ends the call
+ * on its own.
+ */
+const NUDGE_DELAYS_MS = [14_000, 20_000];
+
 export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorArgs) {
   const [state, dispatch] = useReducer(transition, INITIAL_CALL_STATE);
   const [turns, setTurns] = useState<TranscriptTurn[]>([]);
@@ -116,6 +127,12 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
   const optionsRef = useRef(options);
   const endedByRef = useRef<"student" | "timeout" | "inactivity" | "error" | null>(null);
 
+  // Has the microphone heard the student since the question on the table was
+  // asked? The gate on recording a verdict, and on nudging.
+  const studentSpokeRef = useRef(false);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nudgeCountRef = useRef(0);
+
   // Mirrors of the values the realtime event handlers need to read.
   //
   // Those handlers are created once and live for the whole call, so reading
@@ -160,7 +177,14 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
 
-    for (const ref of [tickRef, maxCallRef, idleRef, reconnectRef, connectTimeoutRef]) {
+    for (const ref of [
+      tickRef,
+      maxCallRef,
+      idleRef,
+      reconnectRef,
+      connectTimeoutRef,
+      silenceTimerRef,
+    ]) {
       if (ref.current) {
         clearTimeout(ref.current as ReturnType<typeof setTimeout>);
         clearInterval(ref.current as ReturnType<typeof setInterval>);
@@ -284,6 +308,55 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
     },
     [saveSession, teardown]
   );
+
+  /**
+   * Break a silence, without inventing what the student said.
+   *
+   * This replaces the Realtime API's own `idle_timeout_ms`, which generated a
+   * response server-side with no new input for the model to respond to. Given
+   * nothing to work with, it continued the dialogue -- imagining an answer and
+   * then congratulating the student for it. The fix is not a better prompt;
+   * it is telling the model, at the moment it matters, the one fact it cannot
+   * observe: nobody said anything.
+   */
+  const armSilenceNudge = useCallback(() => {
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+
+    const delay = NUDGE_DELAYS_MS[nudgeCountRef.current];
+    if (delay === undefined) return;
+
+    silenceTimerRef.current = setTimeout(() => {
+      // Someone started talking while the timer ran, or the tutor is mid-turn.
+      if (studentSpokeRef.current) return;
+      if (phaseRef.current !== "listening") return;
+      if (mutedRef.current) return;
+
+      nudgeCountRef.current += 1;
+
+      // A system item rather than a user one: the API documents these for
+      // exactly this ("the user is now asking about a different topic"), and
+      // putting it in as a user turn would make the model treat our own note
+      // as something the student said out loud.
+      send({
+        type: "conversation.item.create",
+        item: {
+          type: "message",
+          role: "system",
+          content: [
+            {
+              type: "input_text",
+              text: `[SESSION NOTE] The student has said nothing since your last turn — the microphone has picked up no speech at all. They have NOT answered and have NOT chosen anything. Do not react as though they replied: no "good choice", no "exactly", no "close", no praise, no verdict, and do not call record_answer. ${
+                nudgeCountRef.current === 1
+                  ? "Give one small hint for the question already on the table, in one short sentence, then wait."
+                  : "Ask once, in one short sentence, whether they are still there — then wait."
+              }`,
+            },
+          ],
+        },
+      });
+      send({ type: "response.create" });
+    }, delay);
+  }, [send]);
 
   /** Reset the hang-up-on-silence timer. Any sign of life counts. */
   const bumpIdle = useCallback(() => {
@@ -415,12 +488,29 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
       switch (type) {
         case "input_audio_buffer.speech_started": {
           setEverHeardYou(true);
+          // The earliest reliable proof the student is actually there. The
+          // transcript arrives seconds later, and a verdict may be reported
+          // before it does.
+          studentSpokeRef.current = true;
+          nudgeCountRef.current = 0;
+          if (silenceTimerRef.current) {
+            clearTimeout(silenceTimerRef.current);
+            silenceTimerRef.current = null;
+          }
           bumpIdle();
           break;
         }
 
         case "input_audio_buffer.speech_stopped":
           speechStoppedAtRef.current = now;
+          break;
+
+        case "output_audio_buffer.stopped":
+          // She has stopped talking, so the question is now the student's to
+          // answer. Start counting the silence from here rather than from
+          // when the response began, or a long explanation eats the whole
+          // thinking window.
+          armSilenceNudge();
           break;
 
         case "output_audio_buffer.cleared":
@@ -496,10 +586,18 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
             tutorSessionRef.current,
             name,
             args,
-            now - startedAtRef.current
+            now - startedAtRef.current,
+            // The fact the model cannot observe: whether anyone spoke.
+            { studentSpokeSinceAsk: studentSpokeRef.current }
           );
           tutorSessionRef.current = result.session;
           setTutorSession(result.session);
+
+          // A question is now on the table and the student has not answered
+          // it yet, so the evidence for the next verdict starts empty. This
+          // also covers the refusal path above: still no answer, still no
+          // verdict to be had.
+          if (result.activeConcept) studentSpokeRef.current = false;
 
           send({
             type: "conversation.item.create",
@@ -532,7 +630,7 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
           break;
       }
     },
-    [appendTurn, bumpIdle, send]
+    [appendTurn, armSilenceNudge, bumpIdle, send]
   );
 
   const connect = useCallback(
@@ -920,6 +1018,16 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
     (text: string) => {
       const clean = text.trim();
       if (!clean) return;
+
+      // Typing is answering. Without this the "did anyone actually speak?"
+      // guard would refuse to record a typed answer, and every typed reply
+      // would come back as "you have not answered yet".
+      studentSpokeRef.current = true;
+      nudgeCountRef.current = 0;
+      if (silenceTimerRef.current) {
+        clearTimeout(silenceTimerRef.current);
+        silenceTimerRef.current = null;
+      }
 
       send({
         type: "conversation.item.create",

@@ -52,8 +52,11 @@ const CLOSENESS = /\bso close\b|\bnot quite\b|\balmost\b|\bgood start\b|\bnearly
  */
 function claimsCloseness(text: string): boolean {
   for (const match of text.matchAll(CLOSENESS)) {
-    const before = text.slice(Math.max(0, (match.index ?? 0) - 16), match.index);
-    if (!/\b(no|not|never|don't|do not)\b['"\s]*$/i.test(before)) return true;
+    // A wide-ish window, because a prohibition can list several phrases at
+    // once -- "Do not say 'good choice', 'exactly', 'close'" puts the
+    // negation a good thirty characters before the last item.
+    const before = text.slice(Math.max(0, (match.index ?? 0) - 48), match.index);
+    if (!/\b(no|not|never|don't)\b/i.test(before)) return true;
   }
   return false;
 }
@@ -232,6 +235,109 @@ describe("record_answer", () => {
     // nothing at all.
     expect(result.session.attempts[0].verdict).toBe("unknown");
     expect(claimsCloseness(moveFrom(result.output).reaction)).toBe(false);
+  });
+});
+
+// A student sat in silence and got four turns of this:
+//
+//   "Which one -- thylakoid function -- sound good to start with?"
+//   "Oooo, good choice. Okay, what's the thylakoid's main job?"
+//   "Yesss -- exactly. But what's the energy molecule...?"
+//   "Oof -- close! Think about..."
+//
+// Three imaginary answers, and the "exactly" would have been recorded as a
+// correct answer against a concept the student never spoke about -- landing
+// in their mastery estimate and their end-of-session review. The model
+// cannot know whether the microphone heard anything. The app can.
+describe("an answer nobody gave is never recorded", () => {
+  function silentAnswer(verdict: string) {
+    const opened = next(createSession(CONCEPTS));
+    return resolveToolCall(
+      opened.session,
+      TOOL_RECORD_ANSWER,
+      { concept_id: "c1", verdict },
+      0,
+      { studentSpokeSinceAsk: false }
+    );
+  }
+
+  it("refuses to record a verdict when the microphone heard nothing", () => {
+    const result = silentAnswer("correct");
+
+    expect(result.session.attempts).toHaveLength(0);
+    expect(result.session.progress.c1.correct).toBe(0);
+    expect(result.session.progress.c1.asked).toBe(1);
+    expect(result.output.recorded).toBe(false);
+    expect(result.output.reason).toBe("the_student_has_not_answered");
+  });
+
+  it("refuses every verdict, not just the flattering one", () => {
+    for (const verdict of ["correct", "partial", "incorrect", "unknown"]) {
+      const result = silentAnswer(verdict);
+      expect(result.session.attempts).toHaveLength(0);
+    }
+  });
+
+  it("tells her plainly that nothing was said", () => {
+    const result = silentAnswer("correct");
+    const reaction = String(result.output.reaction);
+
+    expect(reaction).toMatch(/said NOTHING/i);
+    expect(reaction).toMatch(/picked up no speech/i);
+    expect(claimsCloseness(reaction)).toBe(false);
+    // The exact phrases from the real transcript, banned by name.
+    expect(reaction).toMatch(/good choice/i);
+    expect(reaction).toMatch(/do not call record_answer/i);
+  });
+
+  it("keeps the question on the table rather than moving on", () => {
+    const result = silentAnswer("correct");
+
+    expect(result.activeConcept?.id).toBe("c1");
+    expect(result.output.topic).toBe("Mitosis");
+    expect(result.output.material).toEqual(CONCEPTS[0].facts);
+    expect(String(result.output.guidance)).toMatch(/still there|one small hint/i);
+  });
+
+  it("cannot inflate the mastery estimate", () => {
+    let session = next(createSession(CONCEPTS)).session;
+    // Ten imaginary correct answers in a row.
+    for (let i = 0; i < 10; i += 1) {
+      session = resolveToolCall(
+        session,
+        TOOL_RECORD_ANSWER,
+        { concept_id: "c1", verdict: "correct" },
+        0,
+        { studentSpokeSinceAsk: false }
+      ).session;
+    }
+
+    // Nothing was answered, so nothing is known, so the meter stays empty.
+    // Being asked a question is not evidence about the person who did not
+    // reply to it.
+    expect(session.attempts).toHaveLength(0);
+    expect(liveMastery(session)).toHaveLength(0);
+  });
+
+  it("records normally once the student has actually spoken", () => {
+    const opened = next(createSession(CONCEPTS));
+    const result = resolveToolCall(
+      opened.session,
+      TOOL_RECORD_ANSWER,
+      { concept_id: "c1", verdict: "correct" },
+      0,
+      { studentSpokeSinceAsk: true }
+    );
+
+    expect(result.session.attempts).toHaveLength(1);
+    expect(result.session.progress.c1.correct).toBe(1);
+  });
+
+  it("assumes the student spoke when the caller cannot tell", () => {
+    // An omitted flag must not silently disable grading.
+    const opened = next(createSession(CONCEPTS));
+    const result = answer(opened.session, "c1", "correct");
+    expect(result.session.attempts).toHaveLength(1);
   });
 });
 

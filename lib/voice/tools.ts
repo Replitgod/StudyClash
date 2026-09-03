@@ -248,11 +248,24 @@ function toRequest(value: unknown): StudentRequest | null {
  * behaviour is verified at all -- none of it can be exercised by clicking
  * around without a microphone and ten minutes of talking.
  */
+export type ToolContext = {
+  /**
+   * Has the microphone actually picked up the student since the current
+   * question was asked?
+   *
+   * The app knows this and the model does not, which is exactly why the check
+   * belongs here. Left undefined it defaults to true, so a caller that cannot
+   * tell keeps the old behaviour.
+   */
+  studentSpokeSinceAsk?: boolean;
+};
+
 export function resolveToolCall(
   session: TutorSession,
   name: string,
   rawArgs: unknown,
-  now: number
+  now: number,
+  context: ToolContext = {}
 ): ToolResult {
   const args = (rawArgs && typeof rawArgs === "object" ? rawArgs : {}) as Record<
     string,
@@ -314,6 +327,38 @@ export function resolveToolCall(
 
   switch (name) {
     case TOOL_RECORD_ANSWER: {
+      // Nothing was said, so there is nothing to grade.
+      //
+      // A model with no new input will still cheerfully report a verdict --
+      // it continues the dialogue because that is what continuing looks like.
+      // Left unchecked that writes an answer the student never gave into
+      // their mastery estimate and into the end-of-session review, which is a
+      // far worse failure than the awkward silence it came from: the numbers
+      // stop describing the student.
+      //
+      // The app knows whether the microphone heard anything and the model
+      // does not, so this is refused here rather than discouraged in the
+      // prompt.
+      if (context.studentSpokeSinceAsk === false) {
+        const active =
+          session.concepts.find((c) => c.id === session.activeConceptId) || null;
+
+        return {
+          session,
+          output: {
+            recorded: false,
+            reason: "the_student_has_not_answered",
+            reaction:
+              "The student has said NOTHING since you asked — the microphone picked up no speech at all. They have not answered, so there is no verdict and it was not recorded. Do not say 'good choice', 'exactly', 'close', 'not quite' or anything else implying they replied, and do not thank them for an answer. Do not call record_answer again until they have actually said something.",
+            guidance:
+              "Either give one small hint for the question already on the table, or ask once whether they are still there. One short sentence, then wait.",
+            topic: active?.label ?? null,
+            material: active?.facts ?? [],
+          },
+          activeConcept: active,
+        };
+      }
+
       const conceptId = String(args.concept_id || session.activeConceptId || "");
       const verdict = toVerdict(args.verdict);
       const misconception =

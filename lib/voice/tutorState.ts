@@ -135,8 +135,17 @@ export function createSession(
  * whose state and counters disagree, and then nobody can tell which one the
  * summary should believe.
  */
+/** How many times the student actually answered this, however badly. */
+function attemptCount(progress: ConceptProgress): number {
+  return progress.correct + progress.partial + progress.incorrect + progress.unknown;
+}
+
 export function deriveState(progress: ConceptProgress): ConceptState {
-  if (progress.asked === 0) return "unseen";
+  // Asked is not answered. A question put to a student who then said nothing
+  // tells us exactly as much about what they know as never asking did, so it
+  // must not move them off "unseen" -- otherwise a call where they sat in
+  // silence reports a room full of half-learned topics.
+  if (attemptCount(progress) === 0) return "unseen";
   if (progress.strength <= -1) return "shaky";
   if (progress.strength >= MASTERY_MIN_STRENGTH && progress.correct >= MASTERY_MIN_CORRECT) {
     return "mastered";
@@ -403,8 +412,11 @@ export function masteryEstimates(
     const progress = session.progress[concept.id] ?? emptyProgress(concept.id);
     const state = deriveState(progress);
     const span = MAX_STRENGTH - MIN_STRENGTH;
+    // Keyed on answers, not on questions asked. Reading it off `asked` meant
+    // a concept the student had been asked about and never answered showed a
+    // confident 33%, which is a number invented out of a silence.
     const percent =
-      progress.asked === 0
+      attemptCount(progress) === 0
         ? 0
         : Math.max(
             0,
