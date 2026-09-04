@@ -18,6 +18,7 @@ import {
 import { createSession, recordAsked } from "./tutorState";
 import { resolveToolCall } from "./tools";
 import { planForEvent } from "./realtimeEvents";
+import { isLikelySilence } from "./transcript";
 import { INACTIVITY_TIMEOUT_MS } from "./budget";
 import type {
   Concept,
@@ -542,17 +543,37 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
           break;
         }
 
+        case "conversation.item.input_audio_transcription.failed":
         case "conversation.item.input_audio_transcription.completed": {
           const text = String(message.transcript || "").trim();
-          if (text) {
-            appendTurn({
-              id: `s-${message.item_id ?? turnsRef.current.length}`,
-              role: "student",
-              text,
-              atMs: now - startedAtRef.current,
-            });
-            void trackEvent("voice_student_spoke");
+
+          // The turn detector fired but there were no words in it -- a noise
+          // in the room, or the transcriber returning one of its stock
+          // silence phrases ("Thank you.", "you"). Either way the student
+          // did not speak, and the session has ALREADY begun generating a
+          // reply to it, because turn detection creates responses on its own.
+          // Killing that reply here is the only thing between the student and
+          // a tutor answering a question they never asked.
+          if (isLikelySilence(text)) {
+            studentSpokeRef.current = false;
+
+            if (activeResponseRef.current) {
+              send({ type: "response.cancel" });
+              send({ type: "output_audio_buffer.clear" });
+            }
+
+            // Back to waiting for them, on the same question as before.
+            armSilenceNudge();
+            break;
           }
+
+          appendTurn({
+            id: `s-${message.item_id ?? turnsRef.current.length}`,
+            role: "student",
+            text,
+            atMs: now - startedAtRef.current,
+          });
+          void trackEvent("voice_student_spoke");
           break;
         }
 
@@ -744,16 +765,21 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
       channel.onopen = () => {
         if (generation !== generationRef.current) return;
 
-        // Deliberately NO `instructions` field on this response.create.
+        // Nothing is sent here, and that is the point: the student speaks
+        // first.
         //
-        // In the Realtime API, response.instructions REPLACES the session
-        // instructions for that response rather than adding to them. An
-        // opening prompt here wiped the persona and, worse, the block naming
-        // what the student is studying: on a "Cell Structure" deck she once
-        // opened by announcing a quiz on world geography. A bare
-        // response.create makes her open from the session config, which is
-        // where the subject and the tools live.
-        send({ type: "response.create" });
+        // This used to fire a bare response.create so she would open the
+        // call. It is the root of the worst behaviour this feature has had.
+        // Her opening turn is the one turn with no student input to respond
+        // to, so it is generated purely from context -- and a model
+        // generating dialogue with nothing to answer will write both parts.
+        // Once she has opened by asking "which one sounds good to start
+        // with?", every silence afterwards looks to her like a turn she is
+        // owed, and she fills it: "Oooo, good choice", "Yesss -- exactly".
+        //
+        // Waiting removes the whole class. She now never speaks without
+        // something real in front of her, which is also simply how a tutor
+        // behaves when you ring them: they say hello because you did.
       };
 
       pc.onconnectionstatechange = () => {
@@ -849,7 +875,9 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
 
       bumpIdle();
     },
-    [bumpIdle, finish, handleMessage, send, sourceId, sourceType, startMeter, teardown]
+    // `send` is deliberately absent: nothing is sent while connecting any
+    // more, because the student opens the call rather than the tutor.
+    [bumpIdle, finish, handleMessage, sourceId, sourceType, startMeter, teardown]
   );
 
   const start = useCallback(

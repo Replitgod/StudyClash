@@ -267,4 +267,22 @@ describe("statusLabel", () => {
   it("prioritises the silent-audio problem over everything else", () => {
     expect(statusLabel(CONNECTED, { needsTapToHear: true })).toMatch(/tap/i);
   });
+
+  // She waits for the student now, so an idle connected call is correct
+  // rather than broken -- and the two are indistinguishable unless the
+  // screen says which one it is.
+  it("tells the student it is their turn before anyone has spoken", () => {
+    const label = statusLabel(CONNECTED, { awaitingFirstWord: true });
+    expect(label).toMatch(/connected/i);
+    expect(label).toMatch(/say hello|tell her/i);
+  });
+
+  it("stops saying that once the conversation is under way", () => {
+    expect(statusLabel(CONNECTED, { awaitingFirstWord: false })).toBe("Listening");
+  });
+
+  it("still reports muted over the invitation to speak", () => {
+    const muted = transition(CONNECTED, { type: "TOGGLE_MUTE" });
+    expect(statusLabel(muted, { awaitingFirstWord: true })).toMatch(/muted/i);
+  });
 });

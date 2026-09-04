@@ -24,12 +24,17 @@ against a 5-card deck.
 |---|------|----------|
 | 1.1 | Open a deck → **Practise out loud** | Lands on `/vyra?call=1&deckId=…` with the call screen open and the deck name in the header |
 | 1.2 | Tap **Start call** | Browser asks for the microphone; status reads "Waiting for microphone access…" |
-| 1.3 | Allow | Status goes Connecting → Listening within ~3s |
-| 1.4 | Wait | Vyra speaks first, greets briefly, and asks a question **from this deck** |
-| 1.5 | Listen to the first question | It is about a topic that is actually in the deck, not a general-knowledge question |
+| 1.3 | Allow | Status goes Connecting → "Connected — say hello, or tell her what to quiz you on" |
+| 1.4 | **Say nothing for 30 seconds** | She stays **completely silent**. No greeting, no question, no "are you there" |
+| 1.5 | Say "hey" | She replies briefly and asks a question **from this deck** |
+| 1.6 | Listen to the first question | It is about a topic actually in the deck, not general knowledge |
+| 1.7 | Instead of "hey", open with "quiz me on photosynthesis" | She does that rather than her prepared question |
 
-**Fail if:** she opens on a different subject (this was a real bug — see the
-note on `response.create` in `useVoiceTutor.ts`), or the call connects and
+**Fail if** she says anything at all before you do. The student opens the
+call: her speaking first was the root of every invented-dialogue bug, because
+that turn is the only one with no student input to respond to.
+
+**Fail if** she opens on a different subject, or the call connects and
 nothing is heard.
 
 ## 2. She hears you and judges fairly
@@ -64,6 +69,10 @@ or two replies to one utterance.
 | # | Step | Expected |
 |---|------|----------|
 | 4.1 | Say nothing for 15s after a question | She nudges with a **hint**, never the answer, and the question still stands |
+| 4.1b | Say nothing for a further 20s | She asks once whether you are still there, then goes quiet for good |
+| 4.1c | Stay silent through the whole call | She **never** claims you answered, chose, or agreed to anything. No "good choice", no "exactly", no "close" |
+| 4.1d | Make a non-speech noise — cough, tap the desk, close a door | She does not respond to it. A stray noise must not produce a reply |
+| 4.1e | Afterwards, end the call and read the review | Nothing is recorded as answered. Mastery shows nothing for topics you never spoke about |
 | 4.2 | Mute, speak, unmute, speak | Status says Muted while muted; nothing is transcribed while muted; works repeatedly |
 | 4.3 | Say nothing at all for 3 minutes | Call ends itself and saves |
 | 4.4 | Tap **Send answer** immediately after speaking | She replies without waiting for the silence timer |

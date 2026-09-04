@@ -92,7 +92,12 @@ export function VoiceCall({
   const live = isLive(state);
   const heading = title || sourceTitle;
 
-  const status = statusLabel(state, { needsTapToHear });
+  const status = statusLabel(state, {
+    needsTapToHear,
+    // Nothing has been said by either side yet, so the call is waiting on
+    // the student rather than stalled.
+    awaitingFirstWord: turns.length === 0,
+  });
 
   // The saved review is authoritative -- it was recomputed server-side from
   // the attempts that were actually stored. Falling back to a local

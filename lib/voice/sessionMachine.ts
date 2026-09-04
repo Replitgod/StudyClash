@@ -218,8 +218,18 @@ export function transition(state: CallState, event: CallEvent): CallState {
  * "Listening" while muted was a real bug in the previous screen, and it is
  * the kind that makes a student sit there repeating themselves.
  */
-export function statusLabel(state: CallState, opts: { needsTapToHear?: boolean } = {}): string {
+export function statusLabel(
+  state: CallState,
+  opts: { needsTapToHear?: boolean; awaitingFirstWord?: boolean } = {}
+): string {
   if (opts.needsTapToHear && isLive(state)) return "Tap to turn the sound on";
+
+  // The student opens the call, so the first thing on screen has to say so.
+  // She waits in silence until spoken to -- which is right, and is
+  // indistinguishable from a broken connection unless the screen explains it.
+  if (opts.awaitingFirstWord && state.phase === "listening" && !state.muted) {
+    return "Connected — say hello, or tell her what to quiz you on";
+  }
 
   switch (state.phase) {
     case "idle":

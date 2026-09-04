@@ -99,7 +99,7 @@ Funny is specific. Generic enthusiasm is not a personality -- "Great job! You ar
 const SESSION_LOOP = `# HOW THIS SESSION RUNS -- FOLLOW THIS EXACTLY
 You are not choosing what to teach. The app is, because it can see their whole history and you cannot. You have three tools and they drive the entire call.
 
-1. Your opening question is already below, in THE FIRST QUESTION. Ask it straight away -- do NOT call a tool to get it. One short greeting, then the question.
+1. THE STUDENT SPEAKS FIRST. Do not say anything until they do. The call opens in silence and you wait, however long that takes -- no greeting, no "are you there", no opening question. The moment they say something, answer it: if they just said hello, say hello back in a few words and go into THE FIRST QUESTION below. If they asked for something specific, do that instead.
 2. Every time the student answers a question you asked: call record_answer with the concept_id you were given and your honest verdict.
 
    SPEAK AT THE SAME TIME AS YOU CALL IT. In the same turn, say your immediate reaction out loud -- "Nope, not that one." / "Yesss, that is it." / "Fair enough." -- and then make the call. You already know the verdict, because you are the one deciding it, so you never need to wait for the tool to know how to react.
@@ -203,13 +203,15 @@ export function buildTutorInstructions(args: {
   const hasMaterial = material.concepts.length > 0;
 
   const opening = openingConcept
-    ? `# THE FIRST QUESTION -- ASK THIS NOW
+    ? `# THE FIRST QUESTION -- READY FOR WHEN THEY SPEAK
+Do NOT open with this. Wait until the student has said something. Then, unless they asked for something else, this is where you start.
+
 Topic: ${openingConcept.label}
 Concept id (for record_answer, never say it out loud): ${openingConcept.id}
 Source material to ask from:
 ${openingConcept.facts.map((fact) => `- ${fact}`).join("\n")}
 
-Greet them in one short sentence, then ask ONE open question from that material. Do not read it out verbatim and do not list options -- ask it the way a friend would.`
+Answer whatever they opened with in a few words, then ask ONE open question from that material. Do not read it out verbatim and do not list options -- ask it the way a friend would.`
     : "";
 
   return [

@@ -71,6 +71,24 @@ describe("buildTutorInstructions", () => {
       priorWeak: true,
     };
 
+    // Her opening turn was the one turn with no student input to respond
+    // to, so it was generated from context alone -- and a model writing
+    // dialogue with nothing to answer writes both parts. Waiting for the
+    // student removes the whole class of invented turns.
+    it("is not used to open the call", () => {
+      const text = buildTutorInstructions({
+        material: material(),
+        options: OPTIONS,
+        openingConcept,
+      });
+
+      expect(text).toMatch(/THE STUDENT SPEAKS FIRST/);
+      expect(text).toMatch(/Do not say anything until they do/i);
+      expect(text).toMatch(/The call opens in silence and you wait/i);
+      expect(text).toMatch(/no greeting, no "are you there", no opening question/i);
+      expect(text).toMatch(/Do NOT open with this/i);
+    });
+
     it("is carried in the prompt so the call opens without a tool round trip", () => {
       const text = buildTutorInstructions({
         material: material(),
@@ -78,12 +96,14 @@ describe("buildTutorInstructions", () => {
         openingConcept,
       });
 
-      expect(text).toContain("# THE FIRST QUESTION -- ASK THIS NOW");
+      expect(text).toContain("# THE FIRST QUESTION -- READY FOR WHEN THEY SPEAK");
       expect(text).toContain("Topic: Nucleus");
       // The card detail for this one concept rides along, since it is the
       // only one she needs before the first tool call.
       expect(text).toContain("Q: What holds DNA? A: The nucleus");
-      expect(text).toMatch(/do NOT call a tool to get it/i);
+      // It comes from the prompt, so the first exchange costs no tool round
+      // trip -- she already has the question in hand when they speak.
+      expect(text).toMatch(/this is where you start/i);
     });
 
     it("still tells her not to read the card out verbatim", () => {
