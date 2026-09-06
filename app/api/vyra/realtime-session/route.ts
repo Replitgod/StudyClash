@@ -10,7 +10,15 @@ import { buildTutorInstructions } from "@/lib/server/voice/instructions";
 import { VOICE_TUTOR_TOOLS } from "@/lib/voice/tools";
 import { createSession, selectNextConcept } from "@/lib/voice/tutorState";
 import { evaluateVoiceBudget, STALE_SESSION_MS } from "@/lib/voice/budget";
-import type { Difficulty, SessionOptions, SourceType, StudyStyle } from "@/lib/voice/types";
+import { normalizeTopic } from "@/lib/voice/topics";
+import type {
+  Difficulty,
+  EducationLevel,
+  SessionOptions,
+  SourceType,
+  StudyStyle,
+  TutoringMode,
+} from "@/lib/voice/types";
 
 // Authorising one voice tutor session.
 //
@@ -57,11 +65,22 @@ const SECRET_TTL_SECONDS = 60;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function parseOptions(raw: unknown): SessionOptions {
+function parseOptions(raw: unknown, sourceType: SourceType): SessionOptions {
   const input = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
 
   const styles: StudyStyle[] = ["adaptive", "review_all", "weak_first", "test_me"];
   const difficulties: Difficulty[] = ["easy", "normal", "hard", "adaptive"];
+  const modes: TutoringMode[] = ["quiz", "learn", "exam"];
+  const levels: EducationLevel[] = [
+    "unspecified",
+    "elementary",
+    "middle",
+    "high_school",
+    "ap_honors",
+    "undergraduate",
+    "graduate",
+    "professional",
+  ];
 
   const style = styles.includes(input.style as StudyStyle)
     ? (input.style as StudyStyle)
@@ -76,11 +95,29 @@ function parseOptions(raw: unknown): SessionOptions {
       ? Math.max(1, Math.min(30, Math.round(lengthRaw)))
       : null;
 
-  return { style, difficulty, lengthMinutes };
+  // The default depends on where the call came from, and this is the single
+  // most consequential line in the file.
+  //
+  // A deck call is recall: the student built that material and has worked
+  // through it, so asking is the point. A topic call is teaching: "teach me
+  // the Krebs cycle" is said by somebody who does not know the Krebs cycle,
+  // and opening with a question about it is how a tutor loses somebody in
+  // the first fifteen seconds.
+  const mode = modes.includes(input.mode as TutoringMode)
+    ? (input.mode as TutoringMode)
+    : sourceType === "topic"
+      ? "learn"
+      : "quiz";
+
+  const level = levels.includes(input.level as EducationLevel)
+    ? (input.level as EducationLevel)
+    : "unspecified";
+
+  return { style, difficulty, lengthMinutes, mode, level };
 }
 
 function parseSourceType(raw: unknown): SourceType {
-  const allowed: SourceType[] = ["deck", "note", "weak_topics", "open"];
+  const allowed: SourceType[] = ["deck", "note", "weak_topics", "open", "topic"];
   return allowed.includes(raw as SourceType) ? (raw as SourceType) : "open";
 }
 
@@ -140,7 +177,20 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const sourceType = parseSourceType(body?.sourceType);
   const rawSourceId = typeof body?.sourceId === "string" ? body.sourceId : null;
-  const options = parseOptions(body?.options);
+  const options = parseOptions(body?.options, sourceType);
+
+  // Normalised here rather than trusted from the client, because it is
+  // interpolated into the tutor's instructions and used as a cache key that
+  // other students share. A caller sending their own phrasing straight
+  // through would be writing both.
+  const topic = sourceType === "topic" ? normalizeTopic(body?.topic) : null;
+
+  if (sourceType === "topic" && !topic) {
+    return NextResponse.json(
+      { error: "Tell Vyra what you want to work on.", kind: "session_create_failed" },
+      { status: 400 }
+    );
+  }
 
   // An id that is not a uuid is never going to match a row, and passing it
   // to Postgres produces a 500 rather than a 404. Reject it here.
@@ -189,12 +239,31 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { material, error: materialError } = await loadStudyMaterial({
+  const {
+    material,
+    error: materialError,
+    refusal,
+  } = await loadStudyMaterial({
     supabase,
     userId,
     sourceType,
     sourceId: rawSourceId,
+    topic,
+    level: options.level,
   });
+
+  // A topic that could not be turned into a lesson is not a missing row --
+  // the student typed something real and deserves to be told what happened,
+  // in the words the outliner chose, not a generic 404.
+  if (materialError === "topic_refused") {
+    return NextResponse.json(
+      {
+        error: refusal || "I could not put a lesson together for that. Try naming it differently.",
+        kind: "topic_refused",
+      },
+      { status: 422 }
+    );
+  }
 
   if (materialError === "not_found" || !material) {
     return NextResponse.json(
@@ -214,7 +283,11 @@ export async function POST(request: NextRequest) {
   // The app still chooses the question; it just chooses it up front, where
   // the latency is free. The client is told which concept this was so its
   // copy of the session agrees.
-  const openingSession = createSession(material.concepts, options);
+  // The subject the call opens on, whatever it was grounded in. A deck call
+  // records the deck's name for the same reason a topic call records the
+  // topic: it is what a mid-call switch is compared against, and it is the
+  // first entry in the list of subjects the review is written from.
+  const openingSession = createSession(material.concepts, options, material.title);
   const openingConcept = selectNextConcept(openingSession, { style: options.style });
 
   const instructions = buildTutorInstructions({ material, options, openingConcept });
@@ -334,6 +407,10 @@ export async function POST(request: NextRequest) {
         source_type: material.sourceType,
         source_id: material.sourceId,
         source_title: material.title,
+        // Seeded with the opening subject; /api/vyra/voice-session rewrites
+        // it at the end of the call with everything that was actually taught,
+        // including anything switched to mid-call.
+        topics_covered: [material.title],
         options,
         model: REALTIME_MODEL,
         status: "live",

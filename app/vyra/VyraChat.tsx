@@ -52,6 +52,23 @@ const QUICK_STARTS = [
   { label: "Make me a study plan", action: "study_plan" as const, mode: "plan" as const },
 ];
 
+/**
+ * What to offer somebody who has not studied anything here yet.
+ *
+ * Every one of the quick starts above reads the student's own history --
+ * their weakest topic, what they keep getting wrong, what to plan around --
+ * so on a brand-new account all three are buttons that can only answer
+ * "you have not studied anything yet". These are plain subjects instead:
+ * they work on the first second of the first visit, and they say what the
+ * product is by being visibly unrelated to each other.
+ */
+const FIRST_VISIT_STARTS = [
+  "Teach me quadratic equations",
+  "Quiz me on cellular respiration",
+  "Explain pointers in C++",
+  "Help me practise SAT punctuation",
+];
+
 function newId(): string {
   return `vyra-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -80,6 +97,12 @@ export default function VyraChat() {
   const didSeedRef = useRef(false);
 
   const isEmpty = messages.length === 0;
+
+  // Has this student got anything of their own for Vyra to reason about?
+  // Three of the quick starts below can only answer "you have not studied
+  // anything yet" without it, and a button whose only possible reply is
+  // "there is nothing here" is a dead button.
+  const hasOwnMaterial = snapshot.decks.length > 0 || snapshot.weakTopics.length > 0;
 
   /* ------------------------------------------------------ context for Vyra */
 
@@ -331,7 +354,9 @@ export default function VyraChat() {
   useEffect(() => {
     if (searchParams.get("call") !== "1") return;
     setIsCalling(true);
-    void trackEvent("voice_tutor_opened", { from: "deck" });
+    void trackEvent("voice_tutor_opened", {
+      from: searchParams.get("topic") ? "topic_link" : "deck",
+    });
   }, [searchParams]);
 
   // Keep the newest message in view as it streams.
@@ -366,6 +391,12 @@ export default function VyraChat() {
       sourceType={callDeckId ? "deck" : "open"}
       sourceId={callDeckId}
       sourceTitle={callDeckId === context.deckId ? context.deckTitle ?? null : null}
+      // Whatever they had already said they wanted, from either direction:
+      // a ?topic= link, or the sentence sitting in the chat box when they
+      // reached for the microphone. Typing "teach me quadratics" and then
+      // tapping the mic should call about quadratics, not throw the sentence
+      // away and ask again.
+      initialTopic={searchParams.get("topic") || input.trim() || null}
     />
   ) : (
     <div className="card flex items-end gap-2 p-2">
@@ -466,17 +497,29 @@ export default function VyraChat() {
               <div className="mt-7">{composer}</div>
 
               <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {QUICK_STARTS.map((quick) => (
-                  <button
-                    key={quick.label}
-                    type="button"
-                    disabled={isSending}
-                    onClick={() => void send(quick.label, quick.action, quick.mode)}
-                    className="chip transition-colors hover:border-[var(--line-strong)]"
-                  >
-                    {quick.label}
-                  </button>
-                ))}
+                {hasOwnMaterial
+                  ? QUICK_STARTS.map((quick) => (
+                      <button
+                        key={quick.label}
+                        type="button"
+                        disabled={isSending}
+                        onClick={() => void send(quick.label, quick.action, quick.mode)}
+                        className="chip transition-colors hover:border-[var(--line-strong)]"
+                      >
+                        {quick.label}
+                      </button>
+                    ))
+                  : FIRST_VISIT_STARTS.map((prompt) => (
+                      <button
+                        key={prompt}
+                        type="button"
+                        disabled={isSending}
+                        onClick={() => void send(prompt)}
+                        className="chip transition-colors hover:border-[var(--line-strong)]"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
               </div>
 
               {snapshot.weakTopics.length > 0 && (

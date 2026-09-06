@@ -75,6 +75,12 @@ export type AnalyticsEventName =
   | "voice_student_spoke"
   | "voice_tutor_responded"
   | "voice_interrupted"
+  // A student changed subject mid-call. Worth its own name because it is
+  // the single clearest signal that the tutor is being used as a tutor
+  // rather than as a deck reader -- nobody switches from photosynthesis to
+  // algebra unless they are actually working.
+  | "voice_topic_switched"
+  | "voice_topic_call_started"
   | "voice_reconnected"
   | "voice_session_completed"
   | "voice_session_abandoned"

@@ -6,6 +6,7 @@ import { useVoiceTutor } from "@/lib/voice/useVoiceTutor";
 import { errorMessage, isLive, statusLabel } from "@/lib/voice/sessionMachine";
 import { liveMastery } from "@/lib/voice/tools";
 import { summarizeSession } from "@/lib/voice/sessionSummary";
+import { normalizeTopic } from "@/lib/voice/topics";
 import type {
   Difficulty,
   SessionOptions,
@@ -42,6 +43,24 @@ const DIFFICULTIES: Array<{ id: Difficulty; label: string }> = [
   { id: "hard", label: "Hard" },
 ];
 
+/**
+ * What to offer somebody staring at an empty box.
+ *
+ * Chosen for BREADTH rather than popularity: the one thing this screen has
+ * to communicate in two seconds is that the answer to "can she do X" is yes,
+ * whatever X is. A list of five science topics would say the opposite.
+ */
+const TOPIC_SUGGESTIONS = [
+  "Quadratic equations",
+  "Cellular respiration",
+  "The French Revolution",
+  "Pointers in C++",
+  "SAT punctuation rules",
+  "Conversational Spanish",
+  "Supply and demand",
+  "NCLEX prioritisation",
+];
+
 const LENGTHS: Array<{ id: number | null; label: string }> = [
   { id: null, label: "Until I stop" },
   { id: 5, label: "5 min" },
@@ -56,6 +75,16 @@ export type VoiceCallProps = {
   sourceId?: string | null;
   /** Shown before the session loads, so the screen is never nameless. */
   sourceTitle?: string | null;
+  /**
+   * A subject to open the topic box with.
+   *
+   * Set when the student arrived already saying what they wanted -- a
+   * ?topic= link, or whatever they had typed in the chat box when they
+   * reached for the microphone. It seeds the field rather than starting the
+   * call, because a browser grants neither a microphone nor audio playback
+   * on a navigation alone.
+   */
+  initialTopic?: string | null;
 };
 
 export function VoiceCall({
@@ -63,14 +92,31 @@ export function VoiceCall({
   sourceType = "open",
   sourceId = null,
   sourceTitle = null,
+  initialTopic = null,
 }: VoiceCallProps) {
   const [options, setOptions] = useState<SessionOptions>({
     style: "adaptive",
     difficulty: "adaptive",
     lengthMinutes: null,
+    // Overridden below the moment a topic is named. A deck call is recall;
+    // a topic call is teaching, and opening a topic call with a question is
+    // how you lose somebody in the first fifteen seconds.
+    mode: "quiz",
+    level: "unspecified",
   });
 
-  const tutor = useVoiceTutor({ sourceType, sourceId, options });
+  // What they typed, and what survives normalisation. A box holding "um"
+  // has no topic in it, so the call falls back to their own material rather
+  // than starting a lesson about nothing.
+  const [topicInput, setTopicInput] = useState(initialTopic ?? "");
+  const topic = normalizeTopic(topicInput);
+
+  const tutor = useVoiceTutor({
+    sourceType: topic ? "topic" : sourceType,
+    sourceId: topic ? null : sourceId,
+    topic,
+    options: topic ? { ...options, mode: options.mode === "quiz" ? "learn" : options.mode } : options,
+  });
   const {
     state,
     turns,
@@ -169,6 +215,10 @@ export function VoiceCall({
               options={options}
               onChange={setOptions}
               micPermission={micPermission}
+              topicInput={topicInput}
+              onTopicChange={setTopicInput}
+              hasOwnMaterial={Boolean(sourceTitle)}
+              materialTitle={sourceTitle}
             />
           )}
 
@@ -339,18 +389,78 @@ function Setup({
   options,
   onChange,
   micPermission,
+  topicInput,
+  onTopicChange,
+  hasOwnMaterial,
+  materialTitle,
 }: {
   options: SessionOptions;
   onChange: (next: SessionOptions) => void;
   micPermission: string;
+  topicInput: string;
+  onTopicChange: (next: string) => void;
+  hasOwnMaterial: boolean;
+  materialTitle: string | null;
 }) {
   const [open, setOpen] = useState(false);
+  const typed = topicInput.trim().length > 0;
 
   return (
     <div className="mt-5 w-full max-w-md">
-      <p className="t-meta text-center">
-        Vyra already knows what you have been studying and what you keep getting wrong. Just
-        talk — and interrupt her whenever you like.
+      {/* The topic box, first and largest.
+
+          This is the answer to the question every student has about a voice
+          tutor in the first two seconds -- "can I ask it about MY thing" --
+          and until it existed the honest answer was no: a call could only be
+          grounded in a deck they had already built. Leaving it blank still
+          does the old thing, which is why it is a box and not a mode. */}
+      <label htmlFor="vyra-topic" className="t-section mb-1.5 block">
+        What do you want to work on?
+      </label>
+      <input
+        id="vyra-topic"
+        type="text"
+        value={topicInput}
+        onChange={(event) => onTopicChange(event.target.value)}
+        placeholder={
+          hasOwnMaterial ? `Anything — or leave blank for ${materialTitle}` : "Anything at all"
+        }
+        maxLength={120}
+        autoComplete="off"
+        className="w-full rounded-[var(--radius-md)] px-3.5 py-3 text-[16px] outline-none"
+        style={{
+          background: "var(--panel-raised)",
+          border: "1px solid var(--line-strong)",
+          color: "var(--text-1)",
+        }}
+      />
+
+      {!typed && (
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {TOPIC_SUGGESTIONS.map((suggestion) => (
+            <button
+              key={suggestion}
+              type="button"
+              onClick={() => onTopicChange(suggestion)}
+              className="rounded-full px-2.5 py-1 text-[12px] transition-colors"
+              style={{
+                background: "var(--panel-raised)",
+                border: "1px solid var(--line)",
+                color: "var(--text-2)",
+              }}
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <p className="t-meta mt-3 text-center">
+        {typed
+          ? "She will teach it from the beginning, and you can change the subject any time by just saying so."
+          : hasOwnMaterial
+            ? "Leave it blank and she will quiz you on what you have been studying. Interrupt her whenever you like."
+            : "Say a subject and she will start teaching. Interrupt her whenever you like."}
       </p>
 
       {micPermission === "denied" && (

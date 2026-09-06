@@ -46,6 +46,20 @@ export type Concept = {
   facts: string[];
   /** True when the app already knew this was a weak spot before the call. */
   priorWeak: boolean;
+  /**
+   * Which subject of the call this belongs to. 0 is what the call opened on;
+   * each mid-call topic switch adds one.
+   *
+   * Concepts are APPENDED on a switch rather than replaced, because the
+   * session's attempts point at concept ids and the end-of-call review
+   * resolves those ids back to labels through this list. Replacing it would
+   * make everything taught before the switch resolve to a raw id like "c3"
+   * — the student would finish a two-subject call and be reviewed on one.
+   *
+   * Absent means 0, so every session created before switching existed reads
+   * correctly without a migration.
+   */
+  segment?: number;
 };
 
 export type ConceptProgress = {
@@ -91,21 +105,77 @@ export type TutorSession = {
   /** Difficulty the student has steered us to. */
   difficulty: Difficulty;
   requests: StudentRequest[];
+  /**
+   * The subject currently being taught. Only concepts with this segment are
+   * offered as the next question, so a switch to algebra does not wander
+   * back into photosynthesis three turns later.
+   */
+  segment: number;
+  /**
+   * Every topic taught in this call, in order, starting with the one it
+   * opened on. Drives the end-of-call review and voice_sessions.topics_covered.
+   */
+  topics: string[];
 };
 
 export type Difficulty = "easy" | "normal" | "hard" | "adaptive";
 
 export type StudyStyle = "adaptive" | "review_all" | "weak_first" | "test_me";
 
+/**
+ * How the call is taught, as distinct from what it is taught from.
+ *
+ * The tutor used to have exactly one shape: ask, judge, hint, ask again.
+ * That is the right shape for material a student has already studied, and
+ * the wrong shape the moment they can call about any topic at all -- because
+ * "teach me the Krebs cycle" is said by someone who does not know the Krebs
+ * cycle, and quizzing them on it produces four "I don't know"s in a row and
+ * a student who hangs up.
+ *
+ * - `quiz`  active recall on material they have seen. The original loop.
+ * - `learn` teach a piece, check they got it, teach the next piece. The
+ *           default for a topic call, where there is nothing to recall yet.
+ * - `exam`  exam-format questions and exam-format reasoning, out loud.
+ */
+export type TutoringMode = "quiz" | "learn" | "exam";
+
+/**
+ * How advanced the explanation should be.
+ *
+ * Deliberately separate from `Difficulty`. Difficulty is how hard the
+ * QUESTIONS are; level is who is being spoken to. A hard question for a
+ * ten-year-old and an easy question for a medical student are different in
+ * vocabulary, in how much is assumed, and in what counts as a full answer --
+ * and collapsing the two produced a tutor that made questions harder by
+ * making them wordier.
+ */
+export type EducationLevel =
+  | "unspecified"
+  | "elementary"
+  | "middle"
+  | "high_school"
+  | "ap_honors"
+  | "undergraduate"
+  | "graduate"
+  | "professional";
+
 export type SessionOptions = {
   style: StudyStyle;
   difficulty: Difficulty;
   /** Minutes, or null for "until I stop". */
   lengthMinutes: number | null;
+  mode: TutoringMode;
+  level: EducationLevel;
 };
 
-/** What the student launched the tutor from. */
-export type SourceType = "deck" | "note" | "weak_topics" | "open";
+/**
+ * What the student launched the tutor from.
+ *
+ * `topic` is the one that does not read from the database at all: the
+ * student named a subject and the concepts were generated for it. Everything
+ * else is grounded in material they already own.
+ */
+export type SourceType = "deck" | "note" | "weak_topics" | "open" | "topic";
 
 export type TranscriptTurn = {
   id: string;

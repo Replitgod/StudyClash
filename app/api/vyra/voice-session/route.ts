@@ -39,6 +39,8 @@ export const maxDuration = 30;
 const MAX_TURNS = 400;
 const MAX_ATTEMPTS = 300;
 const MAX_CONCEPTS = 40;
+/** Subjects one call can cover. Beyond this nobody is studying. */
+const MAX_TOPICS = 12;
 const MAX_TEXT = 2000;
 
 const VERDICTS: Verdict[] = ["correct", "partial", "incorrect", "unknown"];
@@ -76,7 +78,16 @@ function rehydrate(body: Record<string, unknown>): {
     };
   });
 
-  const session = createSession(concepts);
+  // Every subject taught in the call, in order. A student who started on
+  // photosynthesis and moved to algebra had two lessons, and a review that
+  // names only the first one is describing a call that did not happen.
+  const rawTopics = Array.isArray(body.topics) ? body.topics : [];
+  const topics = rawTopics
+    .slice(0, MAX_TOPICS)
+    .map((raw) => clamp(raw, 160))
+    .filter(Boolean);
+
+  const session: TutorSession = { ...createSession(concepts), topics };
 
   const rawAttempts = Array.isArray(body.attempts) ? body.attempts : [];
   const progress: Record<string, ConceptProgress> = { ...session.progress };
@@ -225,6 +236,7 @@ export async function POST(request: NextRequest) {
       incorrect_count: summary.stats.incorrectCount,
       hints_used: summary.stats.hintsUsed,
       concepts_mastered: summary.stats.conceptsMastered,
+      topics_covered: session.topics,
     })
     .eq("id", sessionId)
     .eq("user_id", userId)

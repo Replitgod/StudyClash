@@ -3,6 +3,7 @@ import {
   TOOL_NEXT_QUESTION,
   TOOL_NOTE_REQUEST,
   TOOL_RECORD_ANSWER,
+  TOOL_SWITCH_TOPIC,
   VOICE_TUTOR_TOOLS,
   liveMastery,
   resolveToolCall,
@@ -86,9 +87,14 @@ function answer(
 }
 
 describe("tool definitions", () => {
-  it("declares exactly the three tools the instructions tell the model to call", () => {
+  it("declares exactly the four tools the instructions tell the model to call", () => {
     const names = VOICE_TUTOR_TOOLS.map((tool) => tool.name);
-    expect(names).toEqual([TOOL_RECORD_ANSWER, TOOL_NEXT_QUESTION, TOOL_NOTE_REQUEST]);
+    expect(names).toEqual([
+      TOOL_RECORD_ANSWER,
+      TOOL_NEXT_QUESTION,
+      TOOL_NOTE_REQUEST,
+      TOOL_SWITCH_TOPIC,
+    ]);
     expect(VOICE_TUTOR_TOOLS.every((tool) => tool.type === "function")).toBe(true);
   });
 

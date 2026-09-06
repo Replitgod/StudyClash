@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Concept, SourceType } from "@/lib/voice/types";
+import { normalizeTopic } from "@/lib/voice/topics";
+import type { Concept, EducationLevel, SourceType } from "@/lib/voice/types";
+import { loadTopicConcepts } from "./topicConcepts";
 
 // Turning a student's material into something a voice tutor can teach from.
 //
@@ -50,6 +52,17 @@ export type StudyMaterial = {
   /** Topics the app already knew were weak, for the opening line. */
   priorWeakTopics: string[];
   studentName: string | null;
+  /**
+   * True when the concepts were written for this topic rather than read
+   * from the student's own material.
+   *
+   * The tutor has to know the difference and say so. Grounding in a deck
+   * means "this is from your notes"; grounding in a generated outline means
+   * "this is me, and you should check it against your course". Collapsing
+   * the two would have the tutor claim the student's own notes said
+   * something they never said.
+   */
+  generated: boolean;
 };
 
 /**
@@ -217,7 +230,19 @@ export async function loadStudyMaterial(args: {
   userId: string;
   sourceType: SourceType;
   sourceId: string | null;
-}): Promise<{ material: StudyMaterial | null; error: "not_found" | null }> {
+  /**
+   * Only read when sourceType is "topic": the subject the student named,
+   * already normalised by the caller. Concepts for it are generated rather
+   * than read, which is the one path through here that costs a model call.
+   */
+  topic?: string | null;
+  level?: EducationLevel;
+}): Promise<{
+  material: StudyMaterial | null;
+  error: "not_found" | "topic_refused" | null;
+  /** Present only on "topic_refused": what to tell the student, out loud. */
+  refusal?: string;
+}> {
   const { supabase, userId, sourceType, sourceId } = args;
 
   const [{ data: profile }, { data: due }] = await Promise.all([
@@ -236,6 +261,51 @@ export async function loadStudyMaterial(args: {
     .map((row: { topic?: string | null }) => (row.topic || "").trim())
     .filter(Boolean)
     .slice(0, 10) as string[];
+
+  // A topic call. Nothing is read from the student's material at all: they
+  // named a subject, and the concepts are written for it.
+  //
+  // Deliberately first, before the deck branch, because a student who named
+  // a topic gets that topic even if they arrived from a deck page. The
+  // explicit request always beats the implied context.
+  if (sourceType === "topic") {
+    const topic = normalizeTopic(args.topic);
+    if (!topic) {
+      return {
+        material: null,
+        error: "topic_refused",
+        refusal: "Tell me what you want to work on and I will start.",
+      };
+    }
+
+    const outline = await loadTopicConcepts({
+      supabase,
+      topic,
+      level: args.level ?? "unspecified",
+    });
+
+    if (!outline.ok) {
+      return { material: null, error: "topic_refused", refusal: outline.refusal };
+    }
+
+    return {
+      material: {
+        sourceType: "topic",
+        sourceId: null,
+        title: outline.label,
+        courseName: null,
+        concepts: outline.concepts,
+        // Their existing weak topics still travel with a topic call. They
+        // are not what is being taught, but they are true things about the
+        // student, and the tutor sounding like it has met them before is
+        // most of the difference between a tutor and a search box.
+        priorWeakTopics,
+        studentName,
+        generated: true,
+      },
+      error: null,
+    };
+  }
 
   if (sourceType === "deck" && sourceId) {
     const { data: deck } = await supabase
@@ -268,6 +338,7 @@ export async function loadStudyMaterial(args: {
         concepts,
         priorWeakTopics,
         studentName,
+        generated: false,
       },
       error: null,
     };
@@ -307,6 +378,7 @@ export async function loadStudyMaterial(args: {
       concepts,
       priorWeakTopics,
       studentName,
+      generated: false,
     },
     error: null,
   };

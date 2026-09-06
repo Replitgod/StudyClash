@@ -7,6 +7,8 @@ const OPTIONS: SessionOptions = {
   style: "adaptive",
   difficulty: "adaptive",
   lengthMinutes: null,
+  mode: "quiz",
+  level: "unspecified",
 };
 
 function material(overrides: Partial<StudyMaterial> = {}): StudyMaterial {
@@ -21,6 +23,7 @@ function material(overrides: Partial<StudyMaterial> = {}): StudyMaterial {
     ],
     priorWeakTopics: ["Nucleus"],
     studentName: "Sam",
+    generated: false,
     ...overrides,
   };
 }
@@ -166,13 +169,19 @@ describe("buildTutorInstructions", () => {
     expect(text).toMatch(/You know nothing about them yet/i);
   });
 
-  it("handles a student with no material at all", () => {
+  // A student with nothing loaded used to be told to quiz them "from general
+  // knowledge", which is the one thing this tutor is built not to do -- an
+  // ungrounded question has no source lines, so the hint ladder has nothing
+  // to hint from. Now it asks and grounds itself, which is what switch_topic
+  // is for.
+  it("sends a student with no material through the topic switch rather than improvising", () => {
     const text = buildTutorInstructions({
       material: material({ concepts: [], priorWeakTopics: [] }),
       options: OPTIONS,
     });
     expect(text).toMatch(/no material loaded/i);
-    expect(text).toMatch(/asking what they are revising/i);
+    expect(text).toMatch(/switch_topic/);
+    expect(text).toMatch(/nothing to teach from yet/i);
     expect(text).not.toContain("BEGIN STUDY MATERIAL");
   });
 

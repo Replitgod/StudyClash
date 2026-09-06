@@ -1,4 +1,5 @@
 import {
+  applyTopicSwitch,
   hintLevelFor,
   masteryEstimates,
   recordAsked,
@@ -6,17 +7,19 @@ import {
   recordRequest,
   selectNextConcept,
 } from "./tutorState";
+import { isSameTopic, normalizeTopic } from "./topics";
 import type {
   Concept,
   HintLevel,
   StudentRequest,
+  TutoringMode,
   TutorSession,
   Verdict,
 } from "./types";
 
 // The contract between the realtime model and the app's tutoring state.
 //
-// Three tools, and the important design decision is that two of them RETURN
+// Four tools, and the important design decision is that three of them RETURN
 // the next move rather than merely acknowledging. The model does the one job
 // only a language model can do -- deciding whether a spoken, rambling,
 // half-remembered answer contains the right idea -- and hands that verdict
@@ -32,6 +35,7 @@ import type {
 export const TOOL_RECORD_ANSWER = "record_answer";
 export const TOOL_NEXT_QUESTION = "next_question";
 export const TOOL_NOTE_REQUEST = "note_request";
+export const TOOL_SWITCH_TOPIC = "switch_topic";
 
 /**
  * Tool schemas for the realtime session.
@@ -98,6 +102,24 @@ export const VOICE_TUTOR_TOOLS = [
       additionalProperties: false,
     },
   },
+  {
+    type: "function" as const,
+    name: TOOL_SWITCH_TOPIC,
+    description:
+      "Call this when the student wants to work on a DIFFERENT subject — 'switch to algebra two', 'can we do Spanish instead', 'help me with my Java homework now'. Say one short line acknowledging it in the same turn, so they are not sitting in silence while it loads. Returns the new material and what to start with. Not for a question about the current topic, and not for going harder or easier — that is note_request.",
+    parameters: {
+      type: "object",
+      properties: {
+        topic: {
+          type: "string",
+          description:
+            "The subject they asked for, in their own words. 'algebra 2', 'Spanish conversation', 'Java inheritance'. Just the subject — not the whole sentence they said.",
+        },
+      },
+      required: ["topic"],
+      additionalProperties: false,
+    },
+  },
 ];
 
 /** What the app sends back down the tool channel. Read aloud by nobody — it steers. */
@@ -132,6 +154,22 @@ export type ToolResult = {
   output: Record<string, unknown>;
   /** Set when this call changed the concept in play, for the UI. */
   activeConcept: Concept | null;
+  /**
+   * The subject the student asked to move to, when this call was a topic
+   * switch.
+   *
+   * This module is pure and synchronous on purpose -- it is the tutoring
+   * decision layer, and every one of its decisions is testable without a
+   * network. Fetching an outline for a new subject is not a decision, it is
+   * I/O, so a switch is resolved in two halves: this function says "they
+   * want algebra 2", the caller goes and gets it, and resolveTopicSwitch
+   * puts the result back into the session.
+   *
+   * When this is set, `output` is empty and must NOT be sent: the caller
+   * owes the model exactly one function_call_output for this call, and it
+   * is the one resolveTopicSwitch returns.
+   */
+  pendingTopicSwitch?: string;
 };
 
 const HINT_GUIDANCE: Record<HintLevel, string> = {
@@ -383,6 +421,51 @@ export function resolveToolCall(
     case TOOL_NEXT_QUESTION:
       return advance(session);
 
+    case TOOL_SWITCH_TOPIC: {
+      const requested = normalizeTopic(
+        typeof args.topic === "string" ? args.topic : null
+      );
+
+      // Nothing usable in it. Do not stall the call waiting for a fetch that
+      // cannot succeed -- carry on with the current subject and let the
+      // student ask again.
+      if (!requested) {
+        const result = advance(session);
+        return {
+          ...result,
+          output: {
+            ...result.output,
+            switch_failed: true,
+            guidance:
+              "You could not tell what subject they meant. Ask them plainly which subject they want, in a few words, and do not change anything until they say.",
+          },
+        };
+      }
+
+      // Already there. A student saying "let's do photosynthesis" while
+      // doing photosynthesis is agreeing with you, not redirecting you, and
+      // regenerating the same outline would cost a round trip to end up
+      // exactly where the call already is.
+      if (isSameTopic(requested, session.topics[session.topics.length - 1])) {
+        const result = advance(session);
+        return {
+          ...result,
+          output: {
+            ...result.output,
+            already_on_topic: requested,
+            reaction: "That is what you are already on, so do not announce a switch. Just keep going.",
+          },
+        };
+      }
+
+      return {
+        session,
+        output: {},
+        activeConcept: null,
+        pendingTopicSwitch: requested,
+      };
+    }
+
     case TOOL_NOTE_REQUEST: {
       const kind = toRequest(args.kind);
       if (!kind) return advance(session);
@@ -430,6 +513,89 @@ export function resolveToolCall(
       // An unknown tool name is a model mistake, not a crash. Keep teaching.
       return advance(session);
   }
+}
+
+/**
+ * The other half of a topic switch: the outline has arrived, put it in play.
+ *
+ * Split from resolveToolCall so the tutoring logic stays pure and the
+ * network call lives with the rest of the I/O. The caller sends exactly one
+ * function_call_output per tool call, and this returns it.
+ *
+ * `concepts` empty means the fetch failed or the topic was refused. That is
+ * not an error state for the call: the tutor says so and keeps teaching what
+ * it was already teaching, which is a far better outcome than a dead line.
+ */
+export function resolveTopicSwitch(args: {
+  session: TutorSession;
+  topic: string;
+  concepts: Concept[];
+  /** Spoken back to the student when the topic could not be taught. */
+  refusal?: string | null;
+  mode?: TutoringMode;
+}): ToolResult {
+  const { session, topic, concepts, refusal, mode } = args;
+
+  if (concepts.length === 0) {
+    const current = session.activeConceptId
+      ? session.concepts.find((c) => c.id === session.activeConceptId)
+      : null;
+
+    return {
+      session,
+      output: {
+        switch_failed: true,
+        reaction:
+          refusal ||
+          "You could not put a lesson together for that one. Say so in a few words -- do not pretend it worked.",
+        guidance: current
+          ? "Offer to carry on with what you were doing, and re-ask the question that was on the table."
+          : "Ask them for another subject to try instead.",
+        topic: current?.label ?? null,
+        material: current?.facts ?? [],
+      },
+      activeConcept: current ?? null,
+    };
+  }
+
+  const switched = applyTopicSwitch(session, topic, concepts);
+  const concept = selectNextConcept(switched, { style: "adaptive" });
+
+  if (!concept) {
+    return {
+      session: switched,
+      output: {
+        switched_to: topic,
+        guidance: "Ask them where in this they want to start.",
+      },
+      activeConcept: null,
+    };
+  }
+
+  const next = recordAsked(switched, concept.id);
+
+  return {
+    session: next,
+    output: {
+      switched_to: topic,
+      next: {
+        concept_id: concept.id,
+        topic: concept.label,
+        material: concept.facts,
+        hint_level: "none" as HintLevel,
+        // No verdict to react to: they changed the subject, they did not
+        // answer anything. Saying "nice" here would be praising a request.
+        reaction: `They have moved to ${topic}. Acknowledge it in a few words and go straight in — do not recap what you were doing before.`,
+        guidance:
+          mode === "learn"
+            ? "Teach the first piece of this in about three sentences, with one concrete example, then ask one small question checking they followed. Do not quiz them on it first."
+            : "Ask one open question from this material. One question only.",
+        answered: next.attempts.length,
+        correct: next.attempts.filter((a) => a.verdict === "correct").length,
+      },
+    },
+    activeConcept: concept,
+  };
 }
 
 /** Convenience for the UI: the live mastery rows, already sorted for display. */

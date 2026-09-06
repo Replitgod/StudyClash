@@ -16,7 +16,7 @@ import {
   type CallState,
 } from "./sessionMachine";
 import { createSession, recordAsked } from "./tutorState";
-import { resolveToolCall } from "./tools";
+import { resolveToolCall, resolveTopicSwitch } from "./tools";
 import { planForEvent } from "./realtimeEvents";
 import { isLikelySilence } from "./transcript";
 import { INACTIVITY_TIMEOUT_MS } from "./budget";
@@ -59,6 +59,14 @@ export type UseVoiceTutorArgs = {
   sourceType: SourceType;
   sourceId: string | null;
   options: SessionOptions;
+  /**
+   * The subject to teach, when sourceType is "topic". Ignored otherwise.
+   *
+   * This is the whole of what makes the tutor callable about anything: with
+   * it set, nothing is read from the student's decks and the concepts are
+   * written for the topic instead.
+   */
+  topic?: string | null;
 };
 
 const SPEAKING_THRESHOLD = 0.02;
@@ -74,7 +82,12 @@ const SPEAKING_THRESHOLD = 0.02;
  */
 const NUDGE_DELAYS_MS = [14_000, 20_000];
 
-export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorArgs) {
+export function useVoiceTutor({
+  sourceType,
+  sourceId,
+  options,
+  topic = null,
+}: UseVoiceTutorArgs) {
   const [state, dispatch] = useReducer(transition, INITIAL_CALL_STATE);
   const [turns, setTurns] = useState<TranscriptTurn[]>([]);
   const [tutorSession, setTutorSession] = useState<TutorSession>(() => createSession([]));
@@ -122,6 +135,17 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
   const maxCallMsRef = useRef(10 * 60 * 1000);
   const activeResponseRef = useRef<string | null>(null);
   const toolOutputsRef = useRef(0);
+  /** The topic switch currently in flight, if any. Null the rest of the time. */
+  const pendingSwitchRef = useRef<string | null>(null);
+  /**
+   * Set when a response.create was due while a switch was still loading.
+   *
+   * The realtime protocol allows exactly one spoken turn per response, and
+   * asking for it before the tool output lands makes the model speak with a
+   * hole where its material should be. This defers the ask; the switch
+   * handler fires it.
+   */
+  const deferredResponseCreateRef = useRef(false);
   const speechStoppedAtRef = useRef<number | null>(null);
   const interruptAtRef = useRef<number | null>(null);
   const connectStartedAtRef = useRef(0);
@@ -273,6 +297,9 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
               priorWeak: c.priorWeak,
             })),
             attempts: session.attempts,
+            // Every subject the call covered, so a session that moved from
+            // photosynthesis to algebra is stored as the two lessons it was.
+            topics: session.topics,
             turns: turnsRef.current,
           }),
         });
@@ -446,6 +473,88 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
     setTurns(turnsRef.current);
   }, []);
 
+  /**
+   * The student changed the subject: go and get a lesson for it.
+   *
+   * This is the only tool call in the session that cannot be answered from
+   * memory, and everything awkward about it follows from that. Three things
+   * have to hold, and each one is a bug that a student would hear:
+   *
+   * - Exactly one function_call_output is sent for this call id, whatever
+   *   happens. A missing one leaves the model waiting forever, which sounds
+   *   like the call froze; a second one is a protocol error.
+   * - The spoken turn is requested only after the output is in. Before it,
+   *   the model has nothing to teach from and will make something up.
+   * - A response that lands after the call has moved on is dropped. The
+   *   generation token is the same guard every other async step here uses.
+   */
+  const requestTopicSwitch = useCallback(
+    async (topic: string, callId: string, generation: number) => {
+      pendingSwitchRef.current = topic;
+
+      const finishSwitch = (concepts: Concept[], refusal: string | null) => {
+        if (generation !== generationRef.current) return;
+
+        const result = resolveTopicSwitch({
+          session: tutorSessionRef.current,
+          topic,
+          concepts,
+          refusal,
+          mode: optionsRef.current.mode,
+        });
+
+        tutorSessionRef.current = result.session;
+        setTutorSession(result.session);
+
+        // A new question is on the table and nobody has answered it, so the
+        // evidence for the next verdict starts empty -- the same reset the
+        // synchronous tool path does.
+        if (result.activeConcept) studentSpokeRef.current = false;
+
+        send({
+          type: "conversation.item.create",
+          item: {
+            type: "function_call_output",
+            call_id: callId,
+            output: JSON.stringify(result.output),
+          },
+        });
+
+        pendingSwitchRef.current = null;
+
+        if (deferredResponseCreateRef.current) {
+          deferredResponseCreateRef.current = false;
+          toolOutputsRef.current = 0;
+          send({ type: "response.create" });
+        }
+
+        if (concepts.length > 0) {
+          void trackEvent("voice_topic_switched");
+        }
+      };
+
+      try {
+        const response = await authFetch("/api/vyra/topic-concepts", {
+          method: "POST",
+          body: JSON.stringify({ topic, level: optionsRef.current.level }),
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          finishSwitch([], typeof data.error === "string" ? data.error : null);
+          return;
+        }
+
+        finishSwitch(Array.isArray(data.concepts) ? (data.concepts as Concept[]) : [], null);
+      } catch {
+        // Network gone. Still owes the model an output, so send the failure
+        // one rather than leaving the turn hanging.
+        finishSwitch([], null);
+      }
+    },
+    [send]
+  );
+
   const handleMessage = useCallback(
     (raw: MessageEvent, generation: number) => {
       if (generation !== generationRef.current) return;
@@ -480,7 +589,24 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
       }
       if (plan.createResponse) {
         toolOutputsRef.current = 0;
-        send({ type: "response.create" });
+
+        // A topic switch is the one tool call whose answer is not in hand
+        // yet: it needs an outline for a subject nobody has asked for
+        // before, which is a network round trip. Asking for the spoken turn
+        // now would have her talk with the tool output still missing, and a
+        // model asked to continue with a hole where its material should be
+        // fills the hole -- it would invent a lesson on the new subject.
+        //
+        // So the request is deferred, and sendPendingSwitch fires it the
+        // moment the outline lands. This is the only path in the file that
+        // holds back a response.create, and the flag is always cleared:
+        // either by the fetch resolving, or by its failure branch, which
+        // sends a "could not switch" output rather than nothing.
+        if (pendingSwitchRef.current) {
+          deferredResponseCreateRef.current = true;
+        } else {
+          send({ type: "response.create" });
+        }
       }
       if (plan.transition) {
         dispatch(plan.transition);
@@ -611,6 +737,19 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
             // The fact the model cannot observe: whether anyone spoke.
             { studentSpokeSinceAsk: studentSpokeRef.current }
           );
+
+          // The student changed the subject. resolveToolCall has told us
+          // what to, and nothing else: fetching an outline for a subject is
+          // I/O, and the tutoring module is deliberately pure. Count the
+          // output as owed now -- the response.done handler reads this
+          // counter to decide whether a spoken turn is still coming -- and
+          // send it when the outline arrives.
+          if (result.pendingTopicSwitch) {
+            toolOutputsRef.current += 1;
+            void requestTopicSwitch(result.pendingTopicSwitch, callId, generationRef.current);
+            break;
+          }
+
           tutorSessionRef.current = result.session;
           setTutorSession(result.session);
 
@@ -651,7 +790,7 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
           break;
       }
     },
-    [appendTurn, armSilenceNudge, bumpIdle, send]
+    [appendTurn, armSilenceNudge, bumpIdle, requestTopicSwitch, send]
   );
 
   const connect = useCallback(
@@ -675,6 +814,7 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
         body: JSON.stringify({
           sourceType,
           sourceId,
+          topic,
           options: optionsRef.current,
         }),
       });
@@ -703,7 +843,11 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
       // saved.
       if (!isReconnect) {
         const concepts = (Array.isArray(data.concepts) ? data.concepts : []) as Concept[];
-        const fresh = createSession(concepts, optionsRef.current);
+        const fresh = createSession(
+          concepts,
+          optionsRef.current,
+          typeof data.title === "string" ? data.title : null
+        );
 
         // The server picked the opening question and baked it into the
         // instructions, so she asks it without a tool round trip. Record it
@@ -877,7 +1021,7 @@ export function useVoiceTutor({ sourceType, sourceId, options }: UseVoiceTutorAr
     },
     // `send` is deliberately absent: nothing is sent while connecting any
     // more, because the student opens the call rather than the tutor.
-    [bumpIdle, finish, handleMessage, sourceId, sourceType, startMeter, teardown]
+    [bumpIdle, finish, handleMessage, sourceId, sourceType, startMeter, teardown, topic]
   );
 
   const start = useCallback(

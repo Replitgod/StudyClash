@@ -88,6 +88,12 @@ export const DEFAULT_OPTIONS: SessionOptions = {
   style: "adaptive",
   difficulty: "adaptive",
   lengthMinutes: null,
+  // Quiz, not learn, is the default here because this constant is the
+  // fallback for a session built from stored material -- a deck the student
+  // has already worked through. A topic call overrides it to "learn" at the
+  // point the topic is chosen, since there is nothing yet to recall.
+  mode: "quiz",
+  level: "unspecified",
 };
 
 function emptyProgress(conceptId: string): ConceptProgress {
@@ -109,7 +115,9 @@ function emptyProgress(conceptId: string): ConceptProgress {
 
 export function createSession(
   concepts: Concept[],
-  options: SessionOptions = DEFAULT_OPTIONS
+  options: SessionOptions = DEFAULT_OPTIONS,
+  /** What the call opened on. Shown in the review; absent for a bare deck. */
+  openingTopic?: string | null
 ): TutorSession {
   const progress: Record<string, ConceptProgress> = {};
   for (const concept of concepts) {
@@ -124,6 +132,67 @@ export function createSession(
     turn: 0,
     difficulty: options.difficulty,
     requests: [],
+    segment: 0,
+    topics: openingTopic ? [openingTopic] : [],
+  };
+}
+
+/**
+ * Change the subject mid-call.
+ *
+ * Two rules, and both are the difference between a tutor and a chatbot with
+ * a memory leak:
+ *
+ * 1. The new concepts are APPENDED, never swapped in. Attempts recorded
+ *    before the switch point at concept ids, and the end-of-call review
+ *    resolves those ids back to labels through `concepts`. Replace the list
+ *    and a student who spent five minutes on photosynthesis and then moved
+ *    to algebra gets reviewed on algebra alone, with the first half of their
+ *    call showing up as "c3" if it shows up at all.
+ *
+ * 2. Everything the app learned about HOW they answer survives. Difficulty,
+ *    the requests they have made, the turn counter and every recorded
+ *    attempt carry over. The subject changed; the student did not.
+ *
+ * Ids for the incoming concepts are rewritten to be unique across the whole
+ * call, because the generator and the deck distiller both emit positional
+ * "c1", "c2" — and a second "c1" would silently overwrite the progress of
+ * the first.
+ */
+export function applyTopicSwitch(
+  session: TutorSession,
+  topic: string,
+  concepts: Concept[]
+): TutorSession {
+  if (concepts.length === 0) return session;
+
+  const segment = session.segment + 1;
+
+  const incoming: Concept[] = concepts.map((concept, index) => ({
+    ...concept,
+    id: `s${segment}c${index + 1}`,
+    segment,
+    // Nothing arriving mid-call is a known prior weakness: the app's record
+    // of what this student is weak on was read before the call started and
+    // has not been re-read.
+    priorWeak: false,
+  }));
+
+  const progress = { ...session.progress };
+  for (const concept of incoming) {
+    progress[concept.id] = emptyProgress(concept.id);
+  }
+
+  return {
+    ...session,
+    concepts: [...session.concepts, ...incoming],
+    progress,
+    // The old subject's thread is over. Leaving activeConceptId set would
+    // make shouldStayOnActive hand back a photosynthesis question as the
+    // first thing after "switch to algebra".
+    activeConceptId: null,
+    segment,
+    topics: [...session.topics, topic],
   };
 }
 
@@ -346,6 +415,10 @@ export function selectNextConcept(
   const style = options.style ?? "adaptive";
 
   const candidates = session.concepts
+    // Only the subject currently being taught. Concepts from before a topic
+    // switch stay in the list so the review can still name them, but they
+    // are finished business and must never be offered as the next question.
+    .filter((concept) => (concept.segment ?? 0) === session.segment)
     .map((concept, index) => {
       const progress = session.progress[concept.id] ?? emptyProgress(concept.id);
       const state = deriveState(progress);
