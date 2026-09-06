@@ -3,18 +3,21 @@
 Everything in here needs a real microphone, a real browser, or a real network
 fault, which is exactly why it is a checklist and not a test file. Everything
 that *could* be automated is, in `lib/voice/*.test.ts` and
-`lib/server/voice/*.test.ts` — 144 tests covering the tutoring loop, the state
-machine, the summary, the budget and the material sanitiser. Nothing below is
-covered there.
+`lib/server/voice/*.test.ts` — 231 tests covering the tutoring loop, the state
+machine, topic normalisation, the topic switch, the summary, the budget and
+the material sanitiser. Nothing below is covered there.
 
-Run this against a deck with at least 10 questions across 3+ topics, and once
-against a 5-card deck.
+Run this against a deck with at least 10 questions across 3+ topics, once
+against a 5-card deck, and once with **no deck at all** — the last one is new,
+and until topic calls existed it was not a supported case.
 
 ## Setup
 
 - `OPENAI_API_KEY` set, with realtime access on the account.
-- Migration `20260902_voice_tutor_sessions.sql` applied.
-- Signed in as a real user with at least one deck.
+- Migrations `20260902_voice_tutor_sessions.sql` and
+  `20260906_voice_topic_tutoring.sql` applied.
+- Signed in as a real user with at least one deck, and separately as one with
+  none.
 
 ---
 
@@ -36,6 +39,43 @@ that turn is the only one with no student input to respond to.
 
 **Fail if** she opens on a different subject, or the call connects and
 nothing is heard.
+
+## 1b. Calling about a topic, with no deck
+
+The half of this feature that needs a brand-new account to test properly.
+Sign in as a user with no decks for 1b.1 to 1b.4.
+
+| # | Step | Expected |
+|---|------|----------|
+| 1b.1 | Open `/vyra`, tap the mic | The pre-call screen leads with **What do you want to work on?** and a row of suggested subjects |
+| 1b.2 | Tap a suggestion, then **Start call**, then say "hey" | She **teaches** the first piece of that topic and ends on a small check question. She does NOT open by quizzing you |
+| 1b.3 | Type a topic of your own — something obscure but real, e.g. "Ostwald ripening" | The call starts, grounded in that topic, and the header names it |
+| 1b.4 | Type something that is not a subject ("my neighbour Dave") | Refused with a spoken-style message asking for a subject. **Not** a generic error, and **not** a call that starts anyway |
+| 1b.5 | Type only filler — "um", "okay" | Falls back to your own material rather than starting a lesson about nothing |
+| 1b.6 | From a deck page, take **Practise out loud**, then type a topic in the box | The topic wins over the deck. The explicit request always beats the implied context |
+| 1b.7 | Call the same topic twice in a row | The second call starts noticeably faster — the outline is cached |
+| 1b.8 | Check `voice_topic_concepts` | One row for the topic, `use_count` incremented on the second call |
+
+**Fail if** she opens a topic call with a question about something she has not
+taught. That is the whole reason `learn` mode exists.
+
+## 1c. Changing the subject mid-call
+
+| # | Step | Expected |
+|---|------|----------|
+| 1c.1 | Mid-call, say "actually, switch to algebra two" | She acknowledges in one short line, then a beat, then teaches algebra. The acknowledgement covers the fetch — you should not hear silence first |
+| 1c.2 | Keep going for 5+ turns | She never wanders back to the old subject |
+| 1c.3 | Say "wait, what is chlorophyll?" while on photosynthesis | She answers and returns. This is a question, **not** a switch |
+| 1c.4 | Say "make it harder" | Difficulty changes, subject does not. That is `note_request`, not `switch_topic` |
+| 1c.5 | Say "switch to photosynthesis" while already on photosynthesis | She carries on without announcing a switch |
+| 1c.6 | Switch to something that cannot be taught ("switch to my neighbour Dave") | She says she could not, and offers to carry on with what you were doing. The call does **not** go dead |
+| 1c.7 | Kill the network the instant you ask for a switch | Same as 1c.6 — she says she could not, rather than hanging |
+| 1c.8 | Switch twice, answer questions in all three subjects, end the call | The review names **all three** subjects and every concept by name. No raw ids like `c3` or `s1c1` anywhere |
+| 1c.9 | Check `voice_sessions.topics_covered` | An ordered array of all three subjects |
+
+**Fail if** she speaks a full lesson on the new subject before the tool
+returns. That means the deferred `response.create` did not defer, and what
+you are hearing is invented.
 
 ## 2. She hears you and judges fairly
 

@@ -12,6 +12,7 @@ import { ArrowRightIcon } from "@/app/components/app/Icons";
 import { ProgressSummary } from "@/app/components/app/ProgressSummary";
 import { useProgress } from "@/lib/useProgress";
 import { resolveExamTrack } from "@/lib/examTracks";
+import { trackEvent } from "@/lib/trackEvent";
 
 // Home answers exactly one question: what should I study right now?
 //
@@ -295,6 +296,28 @@ export default function HomeView() {
               </li>
             ))}
           </ol>
+
+          {/* The other way in, and on an empty account it is now the faster
+              one: a call needs no deck, no upload and no setup at all. That
+              was not true until topic calls existed -- the tutor could only
+              be grounded in material the student had already built, so
+              offering it here would have sent a new account to a screen with
+              nothing to teach from. */}
+          <Link
+            href="/vyra?call=1"
+            className="card-link mt-3 flex items-center gap-3 px-4 py-3.5"
+            onClick={() => void trackEvent("voice_tutor_opened", { from: "home_empty" })}
+          >
+            <div className="min-w-0">
+              <p className="text-[15px] font-medium" style={{ color: "var(--text-1)" }}>
+                Or just say what you want to learn
+              </p>
+              <p className="t-meta mt-0.5">
+                Call Vyra and name any subject. She teaches it from the start,
+                and you can change your mind halfway through.
+              </p>
+            </div>
+          </Link>
         </section>
       )}
     </div>

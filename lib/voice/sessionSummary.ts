@@ -120,11 +120,22 @@ export function summarizeSession(
         durationMs < 20000
           ? "That call ended before it got going, so there is nothing to review yet."
           : "You were on the call, but no questions were answered, so there is nothing to review yet.",
+      // Named even here. A student who spent five minutes changing subject
+      // and answering nothing should still see what they wandered through.
+      topics: session.topics,
     };
   }
 
   const clean = strengthRows.filter((row) => row.hintsUsed === 0);
   const sentences: string[] = [];
+
+  // A call that changed subject is two lessons, and the review has to open
+  // by saying so. Without this the concept names from both halves are
+  // listed together as though they belonged to one topic, and a student who
+  // moved from photosynthesis to algebra reads a paragraph that mixes them.
+  if (session.topics.length > 1) {
+    sentences.push(`You covered ${formatList(session.topics.slice(0, 4))} in this call.`);
+  }
 
   if (clean.length > 0) {
     sentences.push(
@@ -186,6 +197,7 @@ export function summarizeSession(
     misconceptions,
     recommendation,
     headline: sentences.join(" "),
+    topics: session.topics,
   };
 }
 

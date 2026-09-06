@@ -120,6 +120,18 @@ const CATALOG: ExamTrackEntry[] = [
 
 export const EXAM_TRACKS: readonly ExamTrackEntry[] = CATALOG;
 
+/**
+ * The tracks that have a question bank behind them, for copy that names them.
+ *
+ * Derived rather than written down, because it was written down: /practice
+ * advertised "AP, SAT, MCAT, LSAT, NCLEX" long after two of those had
+ * nothing behind them and two exams that did were missing from the list.
+ * A sentence listing products has to be generated from the products.
+ */
+export function tracksWithBanks(): ExamTrackEntry[] {
+  return CATALOG.filter((entry) => entry.examSlug !== null);
+}
+
 export function findExamTrack(slug: string | null | undefined): ExamTrackEntry | null {
   if (!slug) return null;
   const normalized = slug.trim().toLowerCase();

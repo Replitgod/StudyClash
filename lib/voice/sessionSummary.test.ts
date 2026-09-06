@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { computeStats, summarizeSession } from "./sessionSummary";
-import { createSession, recordAsked, recordAttempt } from "./tutorState";
+import { applyTopicSwitch, createSession, recordAsked, recordAttempt } from "./tutorState";
 import type { Concept, TutorSession, Verdict } from "./types";
 
 const CONCEPTS: Concept[] = [
@@ -194,5 +194,61 @@ describe("summarizeSession", () => {
     expect(headline).toMatch(/^You explained Ionic bonding without needing a hint\./);
     expect(headline).toContain("Cations and anions came up short 2 times");
     expect(headline).toContain("confuses cations with anions");
+  });
+});
+
+// A call that changed subject is two lessons. Without this the concept names
+// from both halves are listed together as though they belonged to one topic,
+// and a student who moved from photosynthesis to algebra reads a paragraph
+// that silently mixes them.
+describe("a call that covered more than one subject", () => {
+  function twoSubjectSession() {
+    const biology: Concept[] = [
+      { id: "c1", label: "Photosynthesis", facts: ["f"], priorWeak: false },
+      { id: "c2", label: "Osmosis", facts: ["f"], priorWeak: false },
+    ];
+    const algebra: Concept[] = [
+      { id: "c1", label: "Absolute value", facts: ["f"], priorWeak: false },
+      { id: "c2", label: "Vertex form", facts: ["f"], priorWeak: false },
+    ];
+
+    let session = createSession(biology, undefined, "Photosynthesis");
+    session = recordAsked(session, "c1");
+    session = recordAttempt(session, { conceptId: "c1", verdict: "correct", atMs: 1000 });
+
+    session = applyTopicSwitch(session, "algebra 2", algebra);
+    session = recordAsked(session, "s1c1");
+    session = recordAttempt(session, { conceptId: "s1c1", verdict: "correct", atMs: 2000 });
+
+    return session;
+  }
+
+  it("opens the review by naming both subjects", () => {
+    const summary = summarizeSession(twoSubjectSession(), 300000);
+    expect(summary.headline).toMatch(/covered Photosynthesis and algebra 2/i);
+    expect(summary.topics).toEqual(["Photosynthesis", "algebra 2"]);
+  });
+
+  // The concepts from before the switch are still in the list, so their
+  // labels must still resolve -- a raw "c1" in a review is the failure this
+  // whole design is arranged to prevent.
+  it("still names concepts from the subject they left", () => {
+    const summary = summarizeSession(twoSubjectSession(), 300000);
+    expect(summary.headline).toContain("Photosynthesis");
+    expect(summary.headline).not.toMatch(/\bc1\b|\bs1c1\b/);
+  });
+
+  it("says nothing about subjects when the call stayed on one", () => {
+    let session = createSession(
+      [{ id: "c1", label: "Photosynthesis", facts: ["f"], priorWeak: false }],
+      undefined,
+      "Photosynthesis"
+    );
+    session = recordAsked(session, "c1");
+    session = recordAttempt(session, { conceptId: "c1", verdict: "correct", atMs: 1000 });
+
+    const summary = summarizeSession(session, 120000);
+    expect(summary.headline).not.toMatch(/You covered/i);
+    expect(summary.topics).toEqual(["Photosynthesis"]);
   });
 });

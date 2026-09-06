@@ -6,6 +6,7 @@ import { useStudy } from "@/lib/useStudy";
 import { useRequireAuth } from "@/lib/useRequireAuth";
 import { getNextAction, sessionHref } from "@/lib/nextAction";
 import { MASTERY_TIER_LABELS } from "@/lib/masteryTiers";
+import { tracksWithBanks } from "@/lib/examCatalog";
 import { ArrowRightIcon } from "@/app/components/app/Icons";
 import {
   OpportunityCard,
@@ -246,6 +247,17 @@ export default function PracticePage() {
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {[
             {
+              href: "/exams",
+              label: "Exam practice",
+              // Generated from the catalog rather than written down. This
+              // line said "AP, SAT, MCAT, LSAT, NCLEX" long after two of
+              // those had no questions behind them and two that did were
+              // missing from it.
+              detail: `Original questions for ${tracksWithBanks()
+                .map((track) => track.name)
+                .join(", ")}`,
+            },
+            {
               href: "/diagnostics",
               label: "Full diagnostic test",
               detail: "Find every gap before a real exam",
@@ -261,11 +273,6 @@ export default function PracticePage() {
               // Says where a plan comes from, because it is built from a
               // diagnostic and there is nothing to schedule without one.
               detail: "A day-by-day schedule, built from a diagnostic",
-            },
-            {
-              href: "/exams",
-              label: "Exam practice",
-              detail: "AP, SAT, MCAT, LSAT, NCLEX",
             },
             {
               href: "/clashrank",

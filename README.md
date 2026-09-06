@@ -24,6 +24,16 @@ There are four destinations, and nothing else in navigation.
 | `/vyra`     | The AI tutor, as a full chat product.                             |
 | `/settings` | Account, help, and links to every less-used corner.               |
 
+`/exams` is the exam-prep front door, and everything on it starts a real
+timed attempt out of `diagnostic_questions` via `/diagnostics/[examSlug]`.
+A card offers practice only when the exam is `available` **and** its bank is
+non-empty — those two fail independently, and a "coming soon" row was an
+available exam with nothing in it. Tracks with no bank say so.
+
+The bank holds 259 original questions: 98 Digital SAT, 60 ACT, 57 NCLEX-RN,
+24 MCAT, 20 GRE. All of it is written to each board's published
+specification and none of it is copied from a real exam.
+
 One route sits outside all of that: `/d/[slug]`, a **published study set**.
 It is the only page in the signed-in half of the product written for someone
 who has never heard of AceDecks — a classmate opening a link, or a search
@@ -50,6 +60,20 @@ Every one of these is a pure module with tests. They decide what a student
 practises and what they are told about themselves, and getting them wrong
 does not throw — it just quietly makes the app point at the wrong thing.
 
+- `lib/examBlueprint.ts` — **one exam's shape, read from data.** Section
+  order, module sizes and timings, the quick-mode sample, each section's
+  score scale and how sections combine into a composite, all parsed from
+  `exam_definitions.configuration`. Adding an exam is a migration. The
+  engine used to open on `const FIRST_SECTION = "reading_writing"`, which is
+  why it could hold exactly one exam.
+- `lib/examAnswer.ts` — **whether an answer is right.** Grid-ins accept a
+  decimal or a fraction, so `3/4`, `0.75` and `.75` are one answer;
+  select-all is compared as a set and scored all-or-nothing. This was a
+  single string equality until it was not.
+- `lib/server/questionBankValidation.ts` — **whether a question is fit to
+  show.** Runs on the admin Publish button and, via
+  `questionBank.seed.test.ts`, over every question in every seed migration
+  on every commit. It found a third of the SAT bank missing.
 - `lib/mastery.ts` — **the mastery engine.** Mastery is not `correct/total`.
   Recency-weighted Bayesian strength, stability grown by spaced
   repetitions, Ebbinghaus retrievability, and a reported confidence.
@@ -141,7 +165,27 @@ OpenAI's realtime model. It needs **no extra key** — it reuses
 `OPENAI_API_KEY`, and the browser only ever receives a one-minute ephemeral
 secret minted by `/api/vyra/realtime-session`. It does bill per minute of
 audio in both directions, which is why it runs on `gpt-realtime-mini`, is
-capped at 10 calls per user per hour, and hangs up after 10 minutes.
+capped at 12 calls per user per hour, and hangs up after 10 minutes.
+
+A call can be grounded in a deck **or in a topic the student names**, and
+the subject can change mid-call. Naming a topic generates a concept outline
+for it (`lib/server/voice/topicConcepts.ts`, on the cheap model, behind a
+shared cache in `voice_topic_concepts`) — a cache miss costs a model call
+and roughly two seconds, which is why the cache is not optional: mid-call,
+that gap is dead air while the student waits.
+
+The switch is resolved in two halves, because `lib/voice/tools.ts` is pure
+and fetching an outline is I/O. `resolveToolCall` returns
+`pendingTopicSwitch`; `useVoiceTutor` fetches; `resolveTopicSwitch` puts the
+result back. The hook holds back its `response.create` until the tool output
+lands — asking for the spoken turn early makes the model teach a lesson it
+has not been handed.
+
+Concepts are **appended** on a switch, never replaced. Attempts point at
+concept ids and the end-of-call review resolves those ids back to labels
+through the concept list, so replacing it would review a two-subject call as
+one, with the first half showing up as `c3`. `selectNextConcept` filters to
+the current segment instead.
 
 Optional: `NEXT_PUBLIC_SITE_URL`, `ADMIN_EMAILS`, `UPSTASH_REDIS_*`,
 `TURNSTILE_*`, and the `STRIPE_*` keys — `STRIPE_SECRET_KEY`,

@@ -208,4 +208,9 @@ export type SessionSummary = {
   recommendation: string;
   /** A written review built only from what actually happened. */
   headline: string;
+  /**
+   * Every subject taught, in order. One entry for an ordinary call; more
+   * when the student changed the subject partway through.
+   */
+  topics: string[];
 };
