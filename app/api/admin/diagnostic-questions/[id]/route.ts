@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabaseClient, requireAdminUser } from "@/lib/server/apiUtils";
 import { hasUnbalancedMathDelimiters } from "@/lib/server/mathValidation";
+import { validateQuestion } from "@/lib/server/questionBankValidation";
 
 export const runtime = "nodejs";
 
@@ -38,7 +39,9 @@ export async function PATCH(
   const supabase = getServiceSupabaseClient();
   const { data: existing, error: fetchError } = await supabase
     .from("diagnostic_questions")
-    .select("id, status, question_text, explanation, answer_choices, correct_answer, question_type")
+    .select(
+      "id, status, section, domain, skill, difficulty, question_text, explanation, answer_choices, correct_answer, question_type"
+    )
     .eq("id", id)
     .single();
 
@@ -122,27 +125,34 @@ export async function PATCH(
     // "only published questions can appear in a diagnostic" only means
     // something if publish itself is gated, not just creation.
     if (body.status === "published") {
-      const finalText = (updates.question_text as string) ?? existing.question_text;
-      const finalExplanation = (updates.explanation as string) ?? existing.explanation;
-      const finalCorrectAnswer = (updates.correct_answer as string) ?? existing.correct_answer;
-      const finalChoices = (updates.answer_choices ?? existing.answer_choices) as
-        | { id: string }[]
-        | null;
+      // The same validator the seeded banks are held to, rather than a
+      // second, looser copy of the rules written here. The two used to
+      // disagree: this gate never checked for two choices with identical
+      // text, for an explanation arguing for a different letter than the
+      // key, or for a select-all key naming a choice that does not exist --
+      // all of which a reviewer clicking Publish would let straight through.
+      const issues = validateQuestion({
+        section: existing.section,
+        domain: existing.domain,
+        skill: existing.skill,
+        difficulty: existing.difficulty,
+        question_type: existing.question_type,
+        question_text: (updates.question_text as string) ?? existing.question_text,
+        explanation: (updates.explanation as string) ?? existing.explanation,
+        answer_choices: updates.answer_choices ?? existing.answer_choices,
+        correct_answer: (updates.correct_answer as string) ?? existing.correct_answer,
+      });
 
-      if (!finalText || finalText.trim().length < 5) {
-        return NextResponse.json({ error: "Cannot publish: question text is missing." }, { status: 400 });
-      }
-      if (!finalExplanation || finalExplanation.trim().length < 5) {
-        return NextResponse.json({ error: "Cannot publish: explanation is missing." }, { status: 400 });
-      }
-      if (existing.question_type === "multiple_choice") {
-        const ids = (finalChoices || []).map((c) => c.id);
-        if (ids.length < 2 || !ids.includes(finalCorrectAnswer)) {
-          return NextResponse.json(
-            { error: "Cannot publish: answer choices must include exactly one matching correct answer." },
-            { status: 400 }
-          );
-        }
+      if (issues.length > 0) {
+        return NextResponse.json(
+          {
+            error: `Cannot publish: ${issues[0].message}`,
+            // Every issue, not just the first: a reviewer coming back three
+            // times for three problems on one row stops using the queue.
+            issues,
+          },
+          { status: 400 }
+        );
       }
 
       updates.reviewed_by = admin.userId;

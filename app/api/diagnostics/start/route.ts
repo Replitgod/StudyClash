@@ -5,22 +5,16 @@ import {
   fetchPublishedPool,
   loadAssignedModuleQuestions,
   pickModule1Questions,
-  QUICK_MODE_QUESTION_COUNTS,
-  QUICK_MODE_TIME_LIMIT_MINUTES,
 } from "@/lib/server/diagnosticBank";
+import {
+  firstSectionKey,
+  moduleSize,
+  parseExamBlueprint,
+  sectionLabel,
+} from "@/lib/examBlueprint";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
-
-type ExamModuleConfig = { module: number; questions: number; minutes: number };
-type ExamSectionConfig = { key: string; label: string; modules: ExamModuleConfig[] };
-type ExamConfiguration = {
-  sections: ExamSectionConfig[];
-  breakMinutesBetweenSections: number;
-  adaptive: { module2ThresholdAccuracy: number };
-};
-
-const FIRST_SECTION = "reading_writing";
 
 export async function POST(request: NextRequest) {
   const { userId, errorResponse } = await requireAuthenticatedUser(request);
@@ -66,7 +60,12 @@ export async function POST(request: NextRequest) {
     .eq("status", "in_progress")
     .maybeSingle();
 
-  const config = exam.configuration as ExamConfiguration;
+  // Which section comes first, how big a module is and how long it runs are
+  // all read from the exam's own blueprint now. This route used to open
+  // with `const FIRST_SECTION = "reading_writing"`, which is the reason
+  // every exam other than the SAT was a card with nothing behind it.
+  const blueprint = parseExamBlueprint(exam.configuration);
+  const firstSection = firstSectionKey(blueprint);
 
   if (existingAttempt) {
     const items = await loadAssignedModuleQuestions(
@@ -76,19 +75,18 @@ export async function POST(request: NextRequest) {
       existingAttempt.current_module
     );
 
-    const resumeSectionConfig = config.sections?.find((s) => s.key === existingAttempt.current_section);
-    const resumeModuleConfig = resumeSectionConfig?.modules.find(
-      (m) => m.module === existingAttempt.current_module
-    );
-    const resumeTimeLimitMinutes =
-      existingAttempt.mode === "quick"
-        ? QUICK_MODE_TIME_LIMIT_MINUTES[existingAttempt.current_section]
-        : resumeModuleConfig?.minutes || 30;
+    const resumeTimeLimitMinutes = moduleSize(
+      blueprint,
+      existingAttempt.current_section,
+      existingAttempt.current_module,
+      existingAttempt.mode === "quick" ? "quick" : "full"
+    ).minutes;
 
     return NextResponse.json({
       attemptId: existingAttempt.id,
       resumed: true,
       section: existingAttempt.current_section,
+      sectionLabel: sectionLabel(blueprint, existingAttempt.current_section),
       module: existingAttempt.current_module,
       timeLimitMinutes: resumeTimeLimitMinutes,
       // Approximates "time already spent in this module" from when the
@@ -101,22 +99,19 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  const sectionConfig = config.sections?.find((s) => s.key === FIRST_SECTION);
-  const module1Config = sectionConfig?.modules.find((m) => m.module === 1);
+  const { questions: questionCount, minutes: timeLimitMinutes } = moduleSize(
+    blueprint,
+    firstSection,
+    1,
+    body.mode
+  );
 
-  const questionCount =
-    body.mode === "quick"
-      ? QUICK_MODE_QUESTION_COUNTS[FIRST_SECTION]
-      : module1Config?.questions || 27;
-  const timeLimitMinutes =
-    body.mode === "quick"
-      ? QUICK_MODE_TIME_LIMIT_MINUTES[FIRST_SECTION]
-      : module1Config?.minutes || 32;
-
-  const pool = await fetchPublishedPool(supabase, exam.id, FIRST_SECTION);
+  const pool = await fetchPublishedPool(supabase, exam.id, firstSection);
   if (pool.length === 0) {
     return NextResponse.json(
-      { error: `No published ${sectionConfig?.label || FIRST_SECTION} questions are available yet. Please check back soon.` },
+      {
+        error: `No published ${sectionLabel(blueprint, firstSection)} questions are available yet. Please check back soon.`,
+      },
       { status: 503 }
     );
   }
@@ -130,7 +125,7 @@ export async function POST(request: NextRequest) {
       exam_id: exam.id,
       mode: body.mode,
       status: "in_progress",
-      current_section: FIRST_SECTION,
+      current_section: firstSection,
       current_module: 1,
       adaptive_path: {},
     })
@@ -144,14 +139,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await assignModuleQuestions(supabase, attempt.id, FIRST_SECTION, 1, selected);
+  await assignModuleQuestions(supabase, attempt.id, firstSection, 1, selected);
   const moduleStartedAt = new Date().toISOString();
-  const items = await loadAssignedModuleQuestions(supabase, attempt.id, FIRST_SECTION, 1);
+  const items = await loadAssignedModuleQuestions(supabase, attempt.id, firstSection, 1);
 
   return NextResponse.json({
     attemptId: attempt.id,
     resumed: false,
-    section: FIRST_SECTION,
+    section: firstSection,
+    // Sent rather than mapped on the client. The client used to hold a
+    // two-key record of the SAT's section names, so every other exam
+    // rendered its section as a database key.
+    sectionLabel: sectionLabel(blueprint, firstSection),
     module: 1,
     timeLimitMinutes,
     moduleStartedAt,

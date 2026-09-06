@@ -8,22 +8,18 @@ import {
   loadAssignedModuleQuestions,
   pickModule1Questions,
   pickModule2Questions,
-  QUICK_MODE_QUESTION_COUNTS,
-  QUICK_MODE_TIME_LIMIT_MINUTES,
 } from "@/lib/server/diagnosticBank";
+import {
+  moduleBlueprint,
+  moduleCount,
+  moduleSize,
+  nextSectionKey,
+  parseExamBlueprint,
+  sectionLabel,
+} from "@/lib/examBlueprint";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
-
-type ExamModuleConfig = { module: number; questions: number; minutes: number };
-type ExamSectionConfig = { key: string; label: string; modules: ExamModuleConfig[] };
-type ExamConfiguration = {
-  sections: ExamSectionConfig[];
-  breakMinutesBetweenSections: number;
-  adaptive: { module2ThresholdAccuracy: number };
-};
-
-const SECTION_ORDER = ["reading_writing", "math"];
 
 export async function POST(
   request: NextRequest,
@@ -69,7 +65,11 @@ export async function POST(
     return NextResponse.json({ error: "Exam configuration not found." }, { status: 500 });
   }
 
-  const config = exam.configuration as ExamConfiguration;
+  // Section order, module sizes and the adaptive threshold all come from
+  // the exam's own blueprint. They used to be a ["reading_writing", "math"]
+  // constant and a pair of SAT-shaped records, which is why this engine
+  // could hold exactly one exam.
+  const blueprint = parseExamBlueprint(exam.configuration);
   const section = attempt.current_section as string;
   const moduleNumber = attempt.current_module as number;
   const mode = attempt.mode as "quick" | "full";
@@ -92,10 +92,13 @@ export async function POST(
   // Full mode, Module 1 just finished within a section -> route into an
   // adaptive Module 2 using the transparent configured threshold, not a
   // second full section transition.
-  if (mode === "full" && moduleNumber === 1) {
-    const sectionConfig = config.sections.find((s) => s.key === section);
-    const module2Config = sectionConfig?.modules.find((m) => m.module === 2);
-    const path = chooseModule2Path(accuracy, config.adaptive.module2ThresholdAccuracy);
+  // ...and only when the section actually HAS a second module. A section
+  // configured with one module is not adaptive, and routing it into a
+  // Module 2 that its blueprint never described would serve a module with
+  // no size and no time limit.
+  if (mode === "full" && moduleNumber === 1 && moduleCount(blueprint, section) > 1) {
+    const module2Config = moduleBlueprint(blueprint, section, 2);
+    const path = chooseModule2Path(accuracy, blueprint.adaptive.module2ThresholdAccuracy);
 
     const { data: module1Ids } = await supabase
       .from("diagnostic_responses")
@@ -106,7 +109,7 @@ export async function POST(
 
     const excludeIds = new Set((module1Ids || []).map((r) => r.question_id as string));
     const pool = await fetchPublishedPool(supabase, exam.id, section);
-    const selected = pickModule2Questions(pool, module2Config?.questions || 22, path, excludeIds);
+    const selected = pickModule2Questions(pool, module2Config.questions, path, excludeIds);
 
     await assignModuleQuestions(supabase, attemptId, section, 2, selected);
 
@@ -121,8 +124,9 @@ export async function POST(
     return NextResponse.json({
       status: "in_progress",
       section,
+      sectionLabel: sectionLabel(blueprint, section),
       module: 2,
-      timeLimitMinutes: module2Config?.minutes || 32,
+      timeLimitMinutes: module2Config.minutes,
       moduleStartedAt: new Date().toISOString(),
       adaptivePath: path,
       items,
@@ -131,20 +135,16 @@ export async function POST(
 
   // The section (both modules for full mode, its one module for quick
   // mode) is done. Move to the next section, or finish the whole attempt.
-  const currentSectionIndex = SECTION_ORDER.indexOf(section);
-  const nextSection = SECTION_ORDER[currentSectionIndex + 1];
+  const nextSection = nextSectionKey(blueprint, section);
 
   if (!nextSection) {
     const results = await finalizeAttempt(supabase, attemptId);
     return NextResponse.json({ status: "completed", attemptId, results });
   }
 
-  const nextSectionConfig = config.sections.find((s) => s.key === nextSection);
-  const nextModule1Config = nextSectionConfig?.modules.find((m) => m.module === 1);
-  const nextQuestionCount =
-    mode === "quick" ? QUICK_MODE_QUESTION_COUNTS[nextSection] : nextModule1Config?.questions || 22;
-  const nextTimeLimitMinutes =
-    mode === "quick" ? QUICK_MODE_TIME_LIMIT_MINUTES[nextSection] : nextModule1Config?.minutes || 35;
+  const nextSize = moduleSize(blueprint, nextSection, 1, mode);
+  const nextQuestionCount = nextSize.questions;
+  const nextTimeLimitMinutes = nextSize.minutes;
 
   const nextPool = await fetchPublishedPool(supabase, exam.id, nextSection);
   const nextSelected = pickModule1Questions(nextPool, nextQuestionCount);
@@ -162,8 +162,12 @@ export async function POST(
   if (nextStatus === "module_break") {
     return NextResponse.json({
       status: "module_break",
-      breakMinutes: config.breakMinutesBetweenSections,
+      breakMinutes: blueprint.breakMinutesBetweenSections,
       nextSection,
+      // Named, so the break screen can say "come back for Math" on the SAT
+      // and "come back for Science" on the ACT without knowing either.
+      finishedSectionLabel: sectionLabel(blueprint, section),
+      nextSectionLabel: sectionLabel(blueprint, nextSection),
     });
   }
 
@@ -171,6 +175,7 @@ export async function POST(
   return NextResponse.json({
     status: "in_progress",
     section: nextSection,
+    sectionLabel: sectionLabel(blueprint, nextSection),
     module: 1,
     timeLimitMinutes: nextTimeLimitMinutes,
     moduleStartedAt: new Date().toISOString(),

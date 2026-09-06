@@ -14,6 +14,12 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { difficultyToBeta, probabilityCorrect, updateAbility } from "@/lib/irt";
+import {
+  combineComposite,
+  estimateScoreRange,
+  parseExamBlueprint,
+  type ExamBlueprint,
+} from "@/lib/examBlueprint";
 import { getMasteryTier, MIN_ATTEMPTS_FOR_HIGH_TIER, type MasteryTier } from "@/lib/masteryTiers";
 
 export type DifficultyLabel = "easy" | "medium" | "hard";
@@ -211,41 +217,15 @@ export function estimateSectionTheta(responses: ScoredResponse[]): number {
   return theta;
 }
 
-// Maps a theta (roughly -3..+3, 0 = average) onto the real Digital SAT
-// section score band (200-800, multiples of 10), then widens into a range
-// rather than a single number -- "show a score range rather than false
-// precision" is a hard requirement, not a nice-to-have.
-export function estimateSectionScoreRange(
-  theta: number,
-  path: AdaptivePath | null,
-  mode: "quick" | "full"
-): { low: number; high: number } {
-  const raw = 500 + theta * 100;
-  // The harder Module 2 path caps out with more headroom (a student who
-  // earned the harder module and did reasonably well there is likely
-  // scoring above what Module 1 alone would suggest); the easier path caps
-  // ability estimates from climbing past what Module 2 could actually
-  // confirm.
-  const pathAdjustedRaw =
-    path === "harder" ? raw + 20 : path === "easier" ? raw - 20 : raw;
-
-  const center = Math.max(200, Math.min(800, Math.round(pathAdjustedRaw / 10) * 10));
-  // A quick diagnostic saw far fewer items, so its range is deliberately
-  // wider than a full diagnostic's -- less data, less false precision.
-  const halfWidth = mode === "quick" ? 70 : 40;
-
-  return {
-    low: Math.max(200, Math.round((center - halfWidth) / 10) * 10),
-    high: Math.min(800, Math.round((center + halfWidth) / 10) * 10),
-  };
-}
-
-export function combineToCompositeRange(
-  rw: { low: number; high: number },
-  math: { low: number; high: number }
-): { low: number; high: number } {
-  return { low: rw.low + math.low, high: rw.high + math.high };
-}
+// Score estimation moved to lib/examBlueprint.ts.
+//
+// It used to live here as "500 + theta * 100, clamped to 200-800, rounded
+// to 10", plus a composite that added a Reading-and-Writing range to a Math
+// range. Both are correct for the SAT and meaningless for an exam scored
+// 1-36 or 118-132, so they now read the scale off the exam's blueprint.
+// The SAT numbers are unchanged -- see the reproduction tests in
+// lib/examBlueprint.test.ts.
+export { estimateScoreRange, combineComposite } from "@/lib/examBlueprint";
 
 export { probabilityCorrect };
 
@@ -310,10 +290,19 @@ export async function finalizeAttempt(
     question: row.question,
   }));
 
+  // The exam's blueprint decides what a score even means here, so it is
+  // read before the results are computed rather than assumed to be the SAT.
+  const { data: examRow } = await supabase
+    .from("exam_definitions")
+    .select("configuration")
+    .eq("id", attempt.exam_id)
+    .maybeSingle();
+
   const results = computeDiagnosticResults(
     responses,
     attempt.mode as AttemptMode,
-    (attempt.adaptive_path || {}) as Record<string, AdaptivePath>
+    (attempt.adaptive_path || {}) as Record<string, AdaptivePath>,
+    parseExamBlueprint(examRow?.configuration)
   );
 
   await supabase.from("diagnostic_results").insert({
@@ -627,7 +616,9 @@ export async function assignModuleQuestions(
 export function computeDiagnosticResults(
   responses: ResponseForResults[],
   mode: AttemptMode,
-  adaptivePath: Record<string, AdaptivePath>
+  adaptivePath: Record<string, AdaptivePath>,
+  /** The exam's own shape. Defaults to a blueprint with no score scale. */
+  blueprint: ExamBlueprint = parseExamBlueprint(null)
 ): DiagnosticResultsPayload {
   const totalCorrect = responses.filter((r) => r.is_correct).length;
   const overallAccuracy = accuracyPercent(totalCorrect, responses.length);
@@ -756,16 +747,39 @@ export function computeDiagnosticResults(
   // targeted mastery check across whatever sections the flagged skills
   // happen to span, not a fresh full/quick diagnostic, so an RW/Math
   // composite score here would be misleading rather than informative.
+  //
+  // The section list, the scale each section is reported on, and how the
+  // sections combine all come from the exam's blueprint. Hardcoding
+  // "reading_writing" and "math" here is what made every exam other than
+  // the SAT unscoreable, and an exam whose sections carry no scale -- the
+  // NCLEX, which reports a pass/fail decision and no scaled score -- gets
+  // null rather than an invented number.
   let estimatedScoreLow: number | null = null;
   let estimatedScoreHigh: number | null = null;
   if (mode !== "weak_area") {
-    const rwTheta = estimateSectionTheta(sectionResponses.get("reading_writing") || []);
-    const mathTheta = estimateSectionTheta(sectionResponses.get("math") || []);
-    const rwRange = estimateSectionScoreRange(rwTheta, adaptivePath.reading_writing || null, mode);
-    const mathRange = estimateSectionScoreRange(mathTheta, adaptivePath.math || null, mode);
-    const composite = combineToCompositeRange(rwRange, mathRange);
-    estimatedScoreLow = composite.low;
-    estimatedScoreHigh = composite.high;
+    const ranges: Array<{ low: number; high: number }> = [];
+
+    for (const section of blueprint.sections) {
+      if (!section.score || !section.inComposite) continue;
+      const seen = sectionResponses.get(section.key) || [];
+      // A section nobody answered contributes no evidence. Including it
+      // would drag the composite towards the middle of the scale and call
+      // that an estimate.
+      if (seen.length === 0) continue;
+
+      ranges.push(
+        estimateScoreRange({
+          theta: estimateSectionTheta(seen),
+          scale: section.score,
+          path: adaptivePath[section.key] || null,
+          mode,
+        })
+      );
+    }
+
+    const composite = combineComposite(blueprint, ranges);
+    estimatedScoreLow = composite?.low ?? null;
+    estimatedScoreHigh = composite?.high ?? null;
   }
 
   return {

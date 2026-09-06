@@ -6,6 +6,7 @@ import {
   loadAllAssignedQuestions,
   pickWeakAreaQuestions,
 } from "@/lib/server/diagnosticBank";
+import { parseExamBlueprint, sectionKeys } from "@/lib/examBlueprint";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -20,8 +21,6 @@ const QUESTIONS_PER_SKILL = 4;
 const MAX_QUESTIONS = 20;
 const MINUTES_PER_QUESTION = 1.5;
 const MIN_TIME_LIMIT_MINUTES = 10;
-
-const SECTIONS = ["reading_writing", "math"];
 
 // The highest-leverage re-entry point after a diagnostic: retest ONLY the
 // skills a student is actually weak in, rather than a fresh full/quick
@@ -43,7 +42,7 @@ export async function POST(request: NextRequest) {
 
   const { data: exam, error: examError } = await supabase
     .from("exam_definitions")
-    .select("id, name, status, disclaimer")
+    .select("id, name, status, disclaimer, configuration")
     .eq("slug", body.examSlug)
     .single();
 
@@ -124,7 +123,14 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const pools = await Promise.all(SECTIONS.map((section) => fetchPublishedPool(supabase, exam.id, section)));
+  // Every section this exam actually has, from its own blueprint. This was
+  // a ["reading_writing", "math"] constant, so a weak-area retest on any
+  // exam but the SAT searched two sections that did not exist and found
+  // nothing to retest.
+  const sections = sectionKeys(parseExamBlueprint(exam.configuration));
+  const pools = await Promise.all(
+    sections.map((section) => fetchPublishedPool(supabase, exam.id, section))
+  );
   const combinedPool = pools.flat();
   const selected = pickWeakAreaQuestions(combinedPool, targetSkills, QUESTIONS_PER_SKILL).slice(0, MAX_QUESTIONS);
 

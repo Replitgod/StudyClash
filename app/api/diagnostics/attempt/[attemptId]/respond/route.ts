@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabaseClient, requireAuthenticatedUser } from "@/lib/server/apiUtils";
+import { isAnswerCorrect } from "@/lib/examAnswer";
 
 export const runtime = "nodejs";
 
@@ -67,12 +68,21 @@ export async function POST(
   if (body.selectedAnswer !== undefined) {
     const { data: question } = await supabase
       .from("diagnostic_questions")
-      .select("correct_answer")
+      .select("correct_answer, question_type")
       .eq("id", body.questionId)
       .single();
 
     updates.selected_answer = body.selectedAnswer;
-    updates.is_correct = question ? question.correct_answer === body.selectedAnswer : null;
+    // Graded by lib/examAnswer, not by string equality. A grid-in answered
+    // "3/4" against a key of "0.75" is right, and a select-all answered
+    // "C,A" against "A,C" is right; both used to be marked wrong.
+    updates.is_correct = question
+      ? isAnswerCorrect({
+          questionType: String(question.question_type || "multiple_choice"),
+          correctAnswer: question.correct_answer,
+          selected: body.selectedAnswer,
+        })
+      : null;
   }
 
   if (typeof body.responseTimeSeconds === "number" && Number.isFinite(body.responseTimeSeconds)) {

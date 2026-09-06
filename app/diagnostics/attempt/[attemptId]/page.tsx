@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { authFetch } from "@/lib/authFetch";
 import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/trackEvent";
+import { humanizeSectionKey } from "@/lib/examBlueprint";
 import { Button } from "@/app/components/ui/Button";
 import { Modal } from "@/app/components/ui/Modal";
 
@@ -29,6 +30,10 @@ type AssignedItem = {
 type ModuleState = {
   status: "loading" | "in_progress" | "module_break" | "completed" | "error";
   section?: string;
+  /** Sent by the API from the exam's blueprint. See sectionTitle below. */
+  sectionLabel?: string;
+  finishedSectionLabel?: string;
+  nextSectionLabel?: string;
   module?: number;
   timeLimitMinutes?: number;
   moduleStartedAt?: string;
@@ -36,11 +41,24 @@ type ModuleState = {
   items: AssignedItem[];
 };
 
-const SECTION_LABELS: Record<string, string> = {
-  reading_writing: "Reading and Writing",
-  math: "Math",
+/**
+ * What to call the section on screen.
+ *
+ * This was a three-key record of the SAT's own section names, so an ACT or
+ * MCAT attempt rendered its section as a raw database key. The name now
+ * comes from the exam's blueprint, sent alongside the questions; the local
+ * map survives only for "weak_area", which is an AceDecks mode rather than
+ * a section of anybody's exam, and humanizeSectionKey is the floor under
+ * both.
+ */
+const LOCAL_SECTION_LABELS: Record<string, string> = {
   weak_area: "Weak-Area Retest",
 };
+
+function sectionTitle(section: string | undefined, fromApi: string | undefined): string {
+  if (!section) return "";
+  return fromApi || LOCAL_SECTION_LABELS[section] || humanizeSectionKey(section);
+}
 
 function computeRemainingSeconds(timeLimitMinutes: number, moduleStartedAt: string): number {
   const startedMs = new Date(moduleStartedAt).getTime();
@@ -331,8 +349,9 @@ export default function DiagnosticAttemptPage() {
         <p className="text-xs font-bold uppercase tracking-[0.25em] text-indigo-300">Break</p>
         <h1 className="text-2xl font-semibold">Take a {state.breakMinutes || 10}-minute break</h1>
         <p className="max-w-md text-sm text-white/60">
-          You&apos;ve finished {state.section ? SECTION_LABELS[state.section] || state.section : "this section"}.
-          Stretch, hydrate, and come back for {state.section === "reading_writing" ? "Math" : "the next section"}.
+          You&apos;ve finished{" "}
+          {state.finishedSectionLabel || sectionTitle(state.section, state.sectionLabel) || "this section"}.
+          Stretch, hydrate, and come back for {state.nextSectionLabel || "the next section"}.
         </p>
         <Button variant="primary" onClick={handleContinueFromBreak}>
           Continue now
@@ -355,7 +374,7 @@ export default function DiagnosticAttemptPage() {
         <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-300">
-              {state.section ? SECTION_LABELS[state.section] || state.section : ""}
+              {sectionTitle(state.section, state.sectionLabel)}
               {state.section !== "weak_area" ? ` · Module ${state.module}` : ""}
             </p>
             <p className="text-sm font-semibold text-white/80">

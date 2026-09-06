@@ -7,6 +7,7 @@ import { authFetch } from "@/lib/authFetch";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/lib/useAuth";
 import { trackEvent } from "@/lib/trackEvent";
+import { humanizeSectionKey } from "@/lib/examBlueprint";
 import { Button } from "@/app/components/ui/Button";
 import { Card } from "@/app/components/ui/Card";
 import type { AiAnalysis } from "@/app/api/diagnostics/attempt/[attemptId]/ai-analysis/route";
@@ -71,11 +72,19 @@ type Resource = {
   trustTier: "official" | "reputable" | "community";
 };
 
-const SECTION_LABELS: Record<string, string> = {
-  reading_writing: "Reading and Writing",
-  math: "Math",
+/**
+ * "weak_area" is an AceDecks mode rather than a section of anybody's exam,
+ * so it is named here. Every real section is named by humanizeSectionKey
+ * off its own key, which reads correctly for any exam rather than only for
+ * the two the SAT happens to have.
+ */
+const LOCAL_SECTION_LABELS: Record<string, string> = {
   weak_area: "Weak-Area Retest",
 };
+
+function sectionTitle(section: string): string {
+  return LOCAL_SECTION_LABELS[section] || humanizeSectionKey(section);
+}
 
 const READINESS_LABELS: Record<ResultsPayload["readiness_tier"], string> = {
   needs_review: "Needs Review",
@@ -402,7 +411,7 @@ export default function DiagnosticResultsPage() {
           {Object.entries(results.section_results).map(([section, stats]) => (
             <Card key={section} padding="md">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-3)]">
-                {SECTION_LABELS[section] || section}
+                {sectionTitle(section)}
               </p>
               <p className="mt-1 text-2xl font-semibold text-white">{stats.accuracy}%</p>
               <p className="text-xs text-white/50">{stats.correct}/{stats.total} correct</p>
