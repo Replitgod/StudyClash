@@ -98,6 +98,12 @@ export function explanationNamesWrongAnswer(
     /\b(?:choice|option|answer)\s+([A-H])\b\s+is\s+(?:the\s+)?correct\b/gi,
     /\bthe\s+(?:correct\s+)?answer\s+is\s+(?:choice\s+|option\s+)?([A-H])\b/gi,
     /\b([A-H])\s+is\s+(?:the\s+)?correct\s+(?:answer|choice|option)\b/gi,
+    // Both of these caught a real one. An NCLEX rationale talked itself into
+    // "the answer key here is B" while the key column said C -- written by
+    // someone (me) who changed their mind halfway through the paragraph and
+    // did not go back and change the column.
+    /\bthe\s+(?:answer\s+)?key\s+(?:here\s+)?is\s+([A-H])\b/gi,
+    /\bthe\s+correct\s+(?:action|option|response)\s+is\s+(?:choice\s+|option\s+)?([A-H])\b/gi,
   ];
 
   for (const pattern of patterns) {
@@ -260,7 +266,7 @@ export function findDuplicateQuestions(
   const byNormalized = new Map<string, string[]>();
 
   questions.forEach((question, index) => {
-    const normalized = `${question.stimulus || ""} ${question.question_text || ""}`
+    const normalized = `${question.stimulus || ""}\u0000${question.question_text || ""}`
       .toLowerCase()
       .replace(/[‘’]/g, "'")
       .replace(/[^a-z0-9]+/g, " ")

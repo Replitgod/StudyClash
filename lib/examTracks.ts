@@ -1,6 +1,17 @@
-// The exam tracks, as the student sees them.
+// Exam-flavoured practice on a topic the student names.
 //
-// Every "Practice X questions" button on /exams goes to /home?track=X, and
+// NOT the exam prep front door -- that is /exams, which starts a real timed
+// attempt out of the validated bank in diagnostic_questions (see
+// lib/examCatalog.ts). This is the other thing: the composer at /home,
+// generating practice on whatever the student types, shaped like a given
+// exam. It matters for a topic no bank covers, which on most exams is most
+// topics.
+//
+// It used to be the ONLY thing /exams offered, which is why every card there
+// was decorative. It is now one of two, and the smaller one.
+//
+// Historically: every "Practice X questions" button on /exams went to
+// /home?track=X, and
 // until now the track existed only as a hidden prop the composer put in an
 // API request body. Nothing on the destination changed -- same greeting,
 // same empty box, same placeholder -- so clicking "Practice SAT questions"

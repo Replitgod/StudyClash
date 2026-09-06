@@ -47,6 +47,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/pricing", changeFrequency: "weekly", priority: 0.95 },
     { path: "/exams", changeFrequency: "weekly", priority: 0.9 },
     { path: "/exams/sat", changeFrequency: "weekly", priority: 0.88 },
+    { path: "/exams/act", changeFrequency: "weekly", priority: 0.88 },
+    { path: "/exams/gre", changeFrequency: "weekly", priority: 0.84 },
     { path: "/exams/ap", changeFrequency: "weekly", priority: 0.88 },
     { path: "/exams/mcat", changeFrequency: "weekly", priority: 0.84 },
     { path: "/exams/lsat", changeFrequency: "weekly", priority: 0.84 },

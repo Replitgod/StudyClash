@@ -261,3 +261,23 @@ describe("findDuplicateQuestions", () => {
     ).toEqual([]);
   });
 });
+
+// Both of these phrasings got past the first version of the check, and one
+// of them shipped: an NCLEX rationale that talked itself into "the answer
+// key here is B" while the key column said C.
+describe("phrasings a writer changing their mind reaches for", () => {
+  it("catches an explanation that names the key it thinks is right", () => {
+    expect(explanationNamesWrongAnswer("The answer key here is B.", "C")).toBe("B");
+    expect(explanationNamesWrongAnswer("The key is D, not what you picked.", "A")).toBe("D");
+  });
+
+  it("catches an explanation that names the correct action", () => {
+    expect(explanationNamesWrongAnswer("The correct action is B.", "C")).toBe("B");
+    expect(explanationNamesWrongAnswer("The correct response is option D.", "A")).toBe("D");
+  });
+
+  it("still says nothing when the explanation agrees with the key", () => {
+    expect(explanationNamesWrongAnswer("The answer key here is C.", "C")).toBeNull();
+    expect(explanationNamesWrongAnswer("The correct action is B.", "B")).toBeNull();
+  });
+});
