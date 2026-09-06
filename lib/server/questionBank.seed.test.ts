@@ -111,6 +111,40 @@ describe("the shipped question bank", () => {
     expect(failures).toEqual([]);
   });
 
+  // Per exam, so an exam cannot silently regress to an empty bank behind a
+  // card that still offers practice. Minimums rather than exact counts: a
+  // bank is meant to grow, and a test that fails when somebody adds a
+  // question teaches people to stop adding questions.
+  it("keeps a usable bank behind every exam that is switched on", () => {
+    const MINIMUMS: Record<string, number> = {
+      "digital-sat": 90,
+      act: 50,
+      "nclex-rn": 50,
+      mcat: 20,
+      gre: 18,
+    };
+
+    const distinctByExam = new Map<string, Set<string>>();
+    for (const [file, questions] of BY_FILE) {
+      const sql = readFileSync(join(MIGRATIONS_DIR, file), "utf8");
+      const slug = (/where e\.slug = '([^']+)'/.exec(sql) || [])[1];
+      if (!slug) continue;
+
+      const seen = distinctByExam.get(slug) ?? new Set<string>();
+      for (const question of questions) {
+        // The same identity the unique index uses, so this counts what
+        // actually lands rather than what the migrations write.
+        seen.add(`${question.stimulus ?? ""}|${question.question_text}`);
+      }
+      distinctByExam.set(slug, seen);
+    }
+
+    for (const [slug, minimum] of Object.entries(MINIMUMS)) {
+      const count = distinctByExam.get(slug)?.size ?? 0;
+      expect({ slug, atLeast: count >= minimum }).toEqual({ slug, atLeast: true });
+    }
+  });
+
   it("uses only difficulties and question types the schema allows", () => {
     const difficulties = new Set(["easy", "medium", "hard"]);
     const types = new Set([
