@@ -19,7 +19,13 @@
 -- together, and an item that cannot be answered without a sibling it may
 -- never be shown alongside is a broken item.
 --
--- Idempotent through the (exam_id, md5(question_text)) unique index.
+-- Idempotent through the (exam_id, stimulus + question_text) unique index
+-- created in 20260906_01. That ordering is not incidental: nearly every
+-- Conventions of Standard English item here shares the stem "Which choice
+-- makes the sentence conform to the conventions of Standard English?", and
+-- under the old stem-only index ten of these sixty rows would have been
+-- silently discarded on insert -- the same bug that cost the SAT bank a
+-- third of its questions.
 
 insert into public.diagnostic_questions
   (exam_id, section, domain, skill, difficulty, question_type, stimulus, question_text, answer_choices, correct_answer, explanation, status, source_type, reviewed_at)
@@ -466,7 +472,7 @@ Scientist 2 argues that human hunting was the primary cause, noting that extinct
 
 ) as v(section, domain, skill, difficulty, question_type, stimulus, question_text, answer_choices, correct_answer, explanation)
 where e.slug = 'act'
-on conflict (exam_id, md5(question_text)) do nothing;
+on conflict (exam_id, md5(coalesce(stimulus, '') || chr(31) || question_text)) do nothing;
 
 -- Now, and only now, the ACT becomes available: there is something behind
 -- the card. The status flip lives here rather than in the definitions

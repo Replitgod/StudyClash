@@ -181,3 +181,74 @@ describe("the shipped question bank", () => {
     expect(thin).toEqual([]);
   });
 });
+
+// Migrations apply in filename order, and these have real dependencies on
+// each other. Getting the order wrong does not error: the insert runs
+// against whatever index and whatever constraint happen to exist, and rows
+// are dropped by "on conflict do nothing" without a word.
+//
+// This caught a live one. 20260906_act_question_bank sorted before
+// 20260906_diagnostic_question_identity_fix, so sixty ACT rows would have
+// been inserted against the old stem-only index -- and nearly every
+// Conventions item shares a stem, so ten of them would have vanished. Both
+// files were renamed with an explicit sequence.
+describe("the order the seed migrations apply in", () => {
+  const ALL_MIGRATIONS = readdirSync(MIGRATIONS_DIR)
+    .filter((name) => name.endsWith(".sql"))
+    .sort();
+
+  function indexOf(predicate: (sql: string) => boolean): number {
+    return ALL_MIGRATIONS.findIndex((name) =>
+      predicate(readFileSync(join(MIGRATIONS_DIR, name), "utf8"))
+    );
+  }
+
+  it("creates the corrected unique index before anything relies on it", () => {
+    const createsIndex = indexOf((sql) =>
+      sql.includes("create unique index if not exists diagnostic_questions_exam_item_unique")
+    );
+    expect(createsIndex).toBeGreaterThanOrEqual(0);
+
+    ALL_MIGRATIONS.forEach((name, position) => {
+      const sql = readFileSync(join(MIGRATIONS_DIR, name), "utf8");
+      if (!sql.includes("on conflict (exam_id, md5(coalesce(stimulus")) return;
+      expect({ name, afterIndexCreation: position >= createsIndex }).toEqual({
+        name,
+        afterIndexCreation: true,
+      });
+    });
+  });
+
+  it("widens the question type constraint before a select-all question is inserted", () => {
+    const widensConstraint = indexOf((sql) => sql.includes("'multiple_response'))"));
+    expect(widensConstraint).toBeGreaterThanOrEqual(0);
+
+    ALL_MIGRATIONS.forEach((name, position) => {
+      const sql = readFileSync(join(MIGRATIONS_DIR, name), "utf8");
+      if (!sql.includes("insert into public.diagnostic_questions")) return;
+      if (!parseSeedQuestions(sql).some((q) => q.question_type === "multiple_response")) return;
+
+      expect({ name, afterConstraint: position >= widensConstraint }).toEqual({
+        name,
+        afterConstraint: true,
+      });
+    });
+  });
+
+  // A bank inserted before its exam has a configuration is a bank the
+  // engine cannot read: parseExamBlueprint falls back to a single generic
+  // section, and the pool query looks for sections that do not exist.
+  it("configures an exam before seeding questions into it", () => {
+    const configures = indexOf((sql) =>
+      sql.includes("update public.exam_definitions") && sql.includes('"sections"')
+    );
+    expect(configures).toBeGreaterThanOrEqual(0);
+
+    for (const slug of ["act", "mcat", "gre"]) {
+      const seeds = ALL_MIGRATIONS.findIndex((name) =>
+        readFileSync(join(MIGRATIONS_DIR, name), "utf8").includes(`where e.slug = '${slug}'`)
+      );
+      expect({ slug, afterConfig: seeds >= configures }).toEqual({ slug, afterConfig: true });
+    }
+  });
+});
