@@ -2,11 +2,12 @@ import { test, expect } from "@playwright/test";
 
 // What can honestly be checked without a microphone and a logged-in student.
 //
-// The tutoring loop, the state machine, the hint ladder and the review are
-// covered by 144 unit tests in lib/voice and lib/server/voice, because they
-// were deliberately built as pure modules for exactly that reason. What those
-// cannot cover is the boundary: that the new entry point does not open a hole
-// in the auth gate, and that the two new API routes refuse a stranger.
+// The tutoring loop, the state machine, the hint ladder, topic normalisation,
+// the topic switch and the review are covered by 231 unit tests in lib/voice
+// and lib/server/voice, because they were deliberately built as pure modules
+// for exactly that reason. What those cannot cover is the boundary: that the
+// entry points do not open a hole in the auth gate, and that the API routes
+// refuse a stranger.
 //
 // Everything requiring real audio is in docs/voice-tutor-qa.md.
 
@@ -17,6 +18,9 @@ test.describe("the voice tutor is behind the auth gate", () => {
   const deepLinks = [
     "/vyra?call=1",
     "/vyra?call=1&deckId=11111111-1111-1111-1111-111111111111",
+    // A topic link is the newest way in, and it is linked from public pages
+    // -- /exams offers "Work on LSAT with Vyra" to anyone. It has to bounce.
+    "/vyra?call=1&topic=photosynthesis",
   ];
 
   for (const path of deepLinks) {
@@ -47,6 +51,13 @@ test.describe("the voice API refuses a stranger", () => {
       name: "a voice session cannot be saved without a session",
       url: "/api/vyra/voice-session",
       body: { sessionId: "11111111-1111-1111-1111-111111111111" },
+    },
+    {
+      // The one that spends money per request on a cache miss. An open
+      // endpoint here is a bill, not a feature.
+      name: "a topic outline cannot be generated without a session",
+      url: "/api/vyra/topic-concepts",
+      body: { topic: "photosynthesis" },
     },
   ];
 

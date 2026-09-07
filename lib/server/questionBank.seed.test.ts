@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   parseExplanationOverrides,
   parseSeedQuestions,
+  stripComments,
   type SeedQuestion,
 } from "./seedQuestionParser";
 import { findDuplicateQuestions, validateQuestion } from "./questionBankValidation";
@@ -251,4 +252,71 @@ describe("the order the seed migrations apply in", () => {
       expect({ slug, afterConfig: seeds >= configures }).toEqual({ slug, afterConfig: true });
     }
   });
+});
+
+// There is no Postgres in this test environment, so nothing here proves a
+// migration runs. What it can prove is the class of damage that a
+// hand-written 600-line SQL file actually suffers: an unclosed quote or an
+// unbalanced bracket, which turns the rest of the file into one enormous
+// string literal and fails at deploy time rather than here.
+//
+// The parser above already proves the quoting is balanced -- it could not
+// have split the tuples otherwise -- so this covers what it does not.
+describe("the seed SQL is structurally intact", () => {
+  function outsideStrings(sql: string): string {
+    let out = "";
+    let inString = false;
+
+    for (let i = 0; i < sql.length; i += 1) {
+      const char = sql[i];
+      if (inString) {
+        if (char === "'") {
+          if (sql[i + 1] === "'") {
+            i += 1;
+            continue;
+          }
+          inString = false;
+        }
+        continue;
+      }
+      if (char === "'") {
+        inString = true;
+        continue;
+      }
+      out += char;
+    }
+
+    // An odd number of quotes leaves the scanner inside a string at the end,
+    // which is the failure this whole check exists for.
+    if (inString) throw new Error("unterminated string literal");
+    return out;
+  }
+
+  for (const file of FILES) {
+    it(`${file} has balanced quotes, brackets and terminated statements`, () => {
+      const sql = readFileSync(join(MIGRATIONS_DIR, file), "utf8");
+
+      // Comments first. These files are heavily commented and the prose is
+      // full of apostrophes -- "College Board's published spec" -- every one
+      // of which reads as an opening quote to a scanner that does not know
+      // it is inside a comment.
+      const bare = outsideStrings(stripComments(sql));
+
+      let depth = 0;
+      for (const char of bare) {
+        if (char === "(") depth += 1;
+        if (char === ")") depth -= 1;
+        // Never negative: a stray closing bracket is as broken as a missing
+        // one, and only checking the total would let the two cancel out.
+        expect(depth).toBeGreaterThanOrEqual(0);
+      }
+      expect(depth).toBe(0);
+
+      // Every insert is terminated. An unterminated final statement is the
+      // other way a truncated file gets committed looking fine.
+      const inserts = (sql.match(/insert into public\.diagnostic_questions/g) || []).length;
+      const conflicts = (sql.match(/on conflict[^;]*do nothing;/g) || []).length;
+      expect(conflicts).toBe(inserts);
+    });
+  }
 });

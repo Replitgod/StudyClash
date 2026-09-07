@@ -43,7 +43,7 @@ export type SeedQuestion = {
  *
  * The distinction is quote state, and nothing else.
  */
-function stripComments(sql: string): string {
+export function stripComments(sql: string): string {
   let out = "";
   let inString = false;
 
