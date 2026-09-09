@@ -165,7 +165,7 @@ export function VoiceCall({
       aria-label="Voice tutor"
       style={{
         background:
-          "radial-gradient(120% 90% at 50% 0%, #241a52 0%, var(--app-bg) 62%), var(--app-bg)",
+          "radial-gradient(120% 90% at 50% 0%, #1a2c51 0%, var(--app-bg) 62%), var(--app-bg)",
       }}
     >
       {/* Her voice. Attached only after an explicit tap on Start, so autoplay
@@ -368,7 +368,7 @@ function Orb({
           background:
             speaker === "student"
               ? "radial-gradient(circle at 32% 28%, #7fe7c4 0%, var(--neon-green, #34d399) 46%, #14684e 100%)"
-              : "radial-gradient(circle at 32% 28%, #9dc0ff 0%, var(--accent) 48%, #4a3596 100%)",
+              : "radial-gradient(circle at 32% 28%, #9dc0ff 0%, var(--accent) 48%, #355697 100%)",
           transform: `scale(${1 + glow * 0.16})`,
           boxShadow: `0 0 ${28 + glow * 70}px ${glow * 14}px rgb(42 99 216 / ${0.22 + glow * 0.34})`,
           transition: "transform 90ms linear, box-shadow 90ms linear, background 200ms ease",

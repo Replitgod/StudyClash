@@ -25,7 +25,7 @@
   --color-brand-primary: #2a63d8;
   --color-brand-primary-emphasis: #5b8ff5;
   --color-brand-accent: #9dc0ff;
-  --color-brand-accent-emphasis: #d0c4ff;
+  --color-brand-accent-emphasis: #cfe0ff;
 
   /* --- Tailwind's `indigo` scale, retuned to the AceDecks blue.
      729 utilities across the app (bg-indigo-500, border-indigo-400/30,
@@ -36,17 +36,17 @@
      here, so every existing utility resolves to the brand ramp. New code
      should still use --accent directly; this is what makes the not-yet-
      converted screens agree with the converted ones in the meantime. --- */
-  --color-indigo-50: #f2effd;
-  --color-indigo-100: #e5e0fb;
-  --color-indigo-200: #cfc6f7;
-  --color-indigo-300: #b0a2f2;
+  --color-indigo-50: #f0f5fe;
+  --color-indigo-100: #dde8fd;
+  --color-indigo-200: #bcd1fb;
+  --color-indigo-300: #90b3f9;
   --color-indigo-400: #5b8ff5;
   --color-indigo-500: #2a63d8;
   --color-indigo-600: #1c4aa8;
-  --color-indigo-700: #46348a;
-  --color-indigo-800: #372a6b;
-  --color-indigo-900: #2a2054;
-  --color-indigo-950: #1a1436;
+  --color-indigo-700: #183d86;
+  --color-indigo-800: #153066;
+  --color-indigo-900: #122549;
+  --color-indigo-950: #0c172c;
 
   /* --- Semantic. Deliberately desaturated so they read as information,
      not decoration. --- */
@@ -1517,7 +1517,7 @@ textarea:-webkit-autofill:focus {
   }
 
   .text-accent-sheen {
-    background: linear-gradient(100deg, #a99bff 0%, #7c6af0 46%, #c084fc 100%);
+    background: linear-gradient(100deg, #a9c6ff 0%, #4b82ee 46%, #8fd0ff 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -1608,16 +1608,18 @@ textarea:-webkit-autofill:focus {
 
   /* --- Primary button. Blue, with a top inner highlight so it reads as a
      lit surface rather than a flat swatch.
-     The top stop is #7669cc, not the brighter #5b8ff5 it used to be: white
-     label text sat at 3.39:1 on that, under the 4.5:1 AA floor. Both stops now
-     clear it (4.50:1 and 8.31:1) and the surface still reads as lit. --- */
+     The stops are the brand ramp itself -- --accent over --accent-dim --
+     rather than two bespoke colors. White label text needs 4.5:1 and the
+     brighter --accent-bright only reaches 3.14:1, so the gradient starts at
+     --accent: both stops clear AA (5.42:1 and 8.09:1) and the surface still
+     reads as lit. --- */
   .btn-accent {
-    background: linear-gradient(180deg, #7669cc, #5238ad);
+    background: linear-gradient(180deg, #2a63d8, #1c4aa8);
     color: #fff;
     border: 0;
     box-shadow:
       inset 0 1px 0 0 rgb(255 255 255 / 0.28),
-      0 10px 30px -12px rgb(110 86 207 / 0.7);
+      0 10px 30px -12px rgb(42 99 216 / 0.7);
     transition:
       transform 200ms var(--ease-premium-out),
       box-shadow 260ms var(--ease-premium-out),
@@ -1628,7 +1630,7 @@ textarea:-webkit-autofill:focus {
     filter: brightness(1.07);
     box-shadow:
       inset 0 1px 0 0 rgb(255 255 255 / 0.34),
-      0 16px 42px -14px rgb(110 86 207 / 0.85);
+      0 16px 42px -14px rgb(42 99 216 / 0.85);
   }
 
   .btn-ghost {

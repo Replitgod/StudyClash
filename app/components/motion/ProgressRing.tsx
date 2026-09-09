@@ -75,7 +75,7 @@ export function ProgressRing({
   const stops =
     tone === "success"
       ? { from: "#34D399", to: "#10B981", glow: "rgb(16 185 129 / 0.55)" }
-      : { from: "#C084FC", to: "#6366F1", glow: "rgb(168 85 247 / 0.55)" };
+      : { from: "#9DC0FF", to: "#2A63D8", glow: "rgb(42 99 216 / 0.55)" };
 
   return (
     <div

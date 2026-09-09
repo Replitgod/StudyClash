@@ -27,7 +27,7 @@ export default function Image() {
           justifyContent: "space-between",
           padding: "64px",
           background:
-            "radial-gradient(900px circle at 12% 8%, rgba(124,106,240,0.55) 0%, rgba(5,5,6,0) 60%), radial-gradient(760px circle at 88% 30%, rgba(88,66,171,0.45) 0%, rgba(5,5,6,0) 62%), radial-gradient(600px circle at 60% 110%, rgba(255,176,32,0.28) 0%, rgba(5,5,6,0) 60%), #050506",
+            "radial-gradient(900px circle at 12% 8%, rgba(42,99,216,0.55) 0%, rgba(5,5,6,0) 60%), radial-gradient(760px circle at 88% 30%, rgba(66,101,171,0.45) 0%, rgba(5,5,6,0) 62%), radial-gradient(600px circle at 60% 110%, rgba(255,176,32,0.28) 0%, rgba(5,5,6,0) 60%), #050506",
           color: "#eef4fb",
           fontFamily: "sans-serif",
         }}

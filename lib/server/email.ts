@@ -81,10 +81,10 @@ export function renderEmailHtml(email: QueuedEmail): string {
     : "";
 
   return [
-    `<div style="font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.6;color:#191625;max-width:520px">`,
+    `<div style="font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.6;color:#161b25;max-width:520px">`,
     paragraphs,
     action,
-    `<p style="margin:32px 0 0;font-size:12px;color:#6f6987">You are getting this because you study with AceDecks. <a href="${SITE_URL}/settings" style="color:#1c4aa8">Manage your account</a>.</p>`,
+    `<p style="margin:32px 0 0;font-size:12px;color:#697387">You are getting this because you study with AceDecks. <a href="${SITE_URL}/settings" style="color:#1c4aa8">Manage your account</a>.</p>`,
     `</div>`,
   ].join("");
 }

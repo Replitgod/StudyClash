@@ -1,5 +1,14 @@
 // Violet to blue, across the whole product.
 //
+// SPENT. This ran once and its COLORS map is deliberately not maintained --
+// it was incomplete when it ran, converting 65 values and missing eight,
+// including the whole top of the indigo scale and both stops on .btn-accent.
+// Do not reach for it to catch a stray color; a list cannot know about a
+// value nobody added to it. lib/brandHue.test.ts checks the property that
+// actually matters (nothing in app/ or lib/ sits in the purple arc) and
+// scripts/find-stray-purple.mjs prints the same thing with file and line.
+// This is kept only as the record of which values moved and why.
+//
 // The design system was built so this is one change rather than fifty: ONE
 // accent leads everything, and `--brand*` are aliases of `--accent` rather
 // than a second palette. What is left is the literal hex values -- the accent
