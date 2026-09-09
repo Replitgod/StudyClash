@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { detectExamTrack, isKnownExamTrack } from "./resourceSearch";
 
 describe("detectExamTrack", () => {
-  it("recognises the SAT and the PSAT", () => {
+  it("recognizes the SAT and the PSAT", () => {
     expect(detectExamTrack("SAT Math practice")).toBe("sat");
     expect(detectExamTrack("PSAT/NMSQT prep")).toBe("sat");
   });
@@ -18,7 +18,7 @@ describe("detectExamTrack", () => {
     expect(detectExamTrack("LSAT logical reasoning")).toBe("lsat");
   });
 
-  it("still recognises the other tracks", () => {
+  it("still recognizes the other tracks", () => {
     expect(detectExamTrack("MCAT biochemistry")).toBe("mcat");
     expect(detectExamTrack("NCLEX pharmacology")).toBe("nclex");
     expect(detectExamTrack("AP World History")).toBe("ap");

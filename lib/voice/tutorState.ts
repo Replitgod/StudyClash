@@ -38,7 +38,7 @@ const STRENGTH_DELTA: Record<Verdict, number> = {
 /**
  * A correct answer that needed a hint is worth less than one that did not.
  * Without this a student can be walked to the answer four times and come out
- * the far side labelled "mastered", which makes the end-of-session review a
+ * the far side labeled "mastered", which makes the end-of-session review a
  * lie and, worse, stops the concept being revisited.
  */
 const HINTED_CORRECT_STRENGTH = 1;

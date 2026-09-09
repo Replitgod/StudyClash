@@ -84,7 +84,7 @@ const LEAD_INS = [
   "let's",
   "lets",
   "actually",
-  "practise",
+  "practice",
   "practice",
   "explain",
   "instead",

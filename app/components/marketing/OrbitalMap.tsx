@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 // The live knowledge map.
 //
-// Nodes orbit a centre in 3D. Decaying ones dim, flicker and drift
+// Nodes orbit a center in 3D. Decaying ones dim, flicker and drift
 // outward as you stay on the page -- the further out, the more forgotten.
 // Clicking one runs a spring correction that snaps it back to its true
 // radius and flips it green.
@@ -210,20 +210,20 @@ export function OrbitalMap() {
           : 1;
 
         const justFixed = node.fixedAt !== null && now - node.fixedAt < 900;
-        const colour = node.decaying ? "244, 63, 94" : "52, 227, 155";
+        const color = node.decaying ? "244, 63, 94" : "52, 227, 155";
 
         // Glow
         const glowRadius = p.r * (isHover ? 7 : justFixed ? 9 : 5);
         const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowRadius);
-        gradient.addColorStop(0, `rgba(${colour}, ${0.55 * flicker})`);
-        gradient.addColorStop(1, `rgba(${colour}, 0)`);
+        gradient.addColorStop(0, `rgba(${color}, ${0.55 * flicker})`);
+        gradient.addColorStop(1, `rgba(${color}, 0)`);
         ctx.fillStyle = gradient;
         ctx.beginPath();
         ctx.arc(p.x, p.y, glowRadius, 0, Math.PI * 2);
         ctx.fill();
 
         // Core
-        ctx.fillStyle = `rgba(${colour}, ${flicker})`;
+        ctx.fillStyle = `rgba(${color}, ${flicker})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r * (isHover ? 1.5 : 1), 0, Math.PI * 2);
         ctx.fill();

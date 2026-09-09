@@ -2,7 +2,7 @@ import type { CallEvent, CallPhase } from "./sessionMachine";
 
 // What to do about one event from the realtime server.
 //
-// This exists as its own module for one reason: the two behaviours most
+// This exists as its own module for one reason: the two behaviors most
 // likely to be wrong in a voice tutor -- cutting the tutor off the instant
 // the student talks, and never answering the same utterance twice -- were
 // otherwise buried inside a data-channel message handler, where the only way

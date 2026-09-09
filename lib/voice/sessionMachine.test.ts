@@ -264,7 +264,7 @@ describe("statusLabel", () => {
     }
   });
 
-  it("prioritises the silent-audio problem over everything else", () => {
+  it("prioritizes the silent-audio problem over everything else", () => {
     expect(statusLabel(CONNECTED, { needsTapToHear: true })).toMatch(/tap/i);
   });
 

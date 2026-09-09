@@ -77,14 +77,14 @@ export function renderEmailHtml(email: QueuedEmail): string {
     .join("");
 
   const action = email.action_href
-    ? `<p style="margin:24px 0 0"><a href="${escapeHtml(absoluteUrl(email.action_href))}" style="display:inline-block;background:#6e56cf;color:#ffffff;text-decoration:none;padding:11px 18px;border-radius:12px;font-weight:600">Open AceDecks</a></p>`
+    ? `<p style="margin:24px 0 0"><a href="${escapeHtml(absoluteUrl(email.action_href))}" style="display:inline-block;background:#2a63d8;color:#ffffff;text-decoration:none;padding:11px 18px;border-radius:12px;font-weight:600">Open AceDecks</a></p>`
     : "";
 
   return [
     `<div style="font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:15px;line-height:1.6;color:#191625;max-width:520px">`,
     paragraphs,
     action,
-    `<p style="margin:32px 0 0;font-size:12px;color:#6f6987">You are getting this because you study with AceDecks. <a href="${SITE_URL}/settings" style="color:#5842ab">Manage your account</a>.</p>`,
+    `<p style="margin:32px 0 0;font-size:12px;color:#6f6987">You are getting this because you study with AceDecks. <a href="${SITE_URL}/settings" style="color:#1c4aa8">Manage your account</a>.</p>`,
     `</div>`,
   ].join("");
 }

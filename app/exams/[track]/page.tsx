@@ -15,7 +15,7 @@ import { ArrowRightIcon } from "@/app/components/app/Icons";
 //
 // Everything on it is now read from the exam's own row: the sections it has,
 // how long each runs, how many original questions sit behind it, and whether
-// there is anything to practise at all. The primary button starts a real
+// there is anything to practice at all. The primary button starts a real
 // attempt out of the real bank.
 export const revalidate = 3600;
 
@@ -93,7 +93,7 @@ export default async function ExamTrackPage({
             className="card p-5 sm:p-6"
             style={{ borderColor: "var(--brand-line)", background: "var(--brand-soft)" }}
           >
-            <h2 className="t-section">Start practising</h2>
+            <h2 className="t-section">Start practicing</h2>
             <p
               className="mt-2 text-[22px] font-medium tracking-tight"
               style={{ color: "var(--text-1)" }}
@@ -126,7 +126,7 @@ export default async function ExamTrackPage({
             <h2 className="t-section">No question bank yet</h2>
             <p className="t-body mt-2">
               There is no {track.name} bank in AceDecks today, so there is
-              nothing here to practise and this page is not going to pretend
+              nothing here to practice and this page is not going to pretend
               otherwise. Vyra can still teach and quiz you on any {track.name}{" "}
               topic out loud, and the board&rsquo;s own free material is the
               right place for real questions.

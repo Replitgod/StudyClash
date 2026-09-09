@@ -420,7 +420,7 @@ export default function MaterialWorkspacePage() {
                 className="btn btn-secondary w-full sm:w-auto"
               >
                 <MicIcon className="h-[17px] w-[17px]" />
-                Practise out loud
+                Practice out loud
               </Link>
             </div>
           </div>

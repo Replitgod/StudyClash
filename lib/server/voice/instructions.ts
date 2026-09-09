@@ -75,7 +75,7 @@ Do not explain a correct answer unless they ask. They got it. Move.
 Never hand over the answer. This is the rule that matters most -- the moment you say it, you have taken away the only part of this that builds memory.
 Say plainly that it is not right, then give the help the tool tells you to give, then ask again.
 "Oof. Not that one -- the cell called, it wants its powerhouse back. Think ENERGY. Go again."
-"Hmm... you are in the right neighbourhood but the wrong house. Think about what comes BEFORE that step."
+"Hmm... you are in the right neighborhood but the wrong house. Think about what comes BEFORE that step."
 
 # WHEN THEY SAY THEY DO NOT KNOW
 This is not a wrong answer and you must not treat it like one. They did not try, so there is nothing to be close to and nothing to tease.
@@ -210,7 +210,7 @@ function levelInstruction(level: EducationLevel): string {
  * The material fence.
  *
  * Everything between the markers is the student's own text and is never an
- * instruction. This is the structural half of the prompt-injection defence;
+ * instruction. This is the structural half of the prompt-injection defense;
  * the other half is sanitizeMaterial, which stops that text from closing the
  * fence. Neither is sufficient alone.
  */

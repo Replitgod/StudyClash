@@ -14,6 +14,7 @@ import {
   PracticeIcon,
   SearchIcon,
   SettingsIcon,
+  TestIcon,
   VyraIcon,
 } from "./Icons";
 
@@ -21,6 +22,10 @@ const NAV_ICONS = {
   home: HomeIcon,
   library: LibraryIcon,
   practice: PracticeIcon,
+  // The clipboard-and-check already in the set. Exams did not need a new
+  // icon drawn for it, and one more hand-made glyph in a set of six is how
+  // an icon set stops looking like a set.
+  exams: TestIcon,
   vyra: VyraIcon,
 } as const;
 

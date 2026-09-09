@@ -1,10 +1,18 @@
 // Where every route in AceDecks lives, in one place.
 //
-// The app has exactly four primary destinations. Everything else is either
-// a detail screen inside one of them, a distraction-free focus screen, or a
+// The app has five primary destinations. Everything else is either a detail
+// screen inside one of them, a distraction-free focus screen, or a
 // public/marketing page. Nothing else gets navigation.
+//
+// It was four for a long time, and Exam prep was the fifth thing that earned
+// its place rather than being added because it existed. While /exams was a
+// set of cards whose buttons went to the topic composer, burying it under
+// Practice was correct -- it was not a destination, it was a detour. It now
+// holds several hundred original questions across five exams and is the
+// reason a lot of people would pay for this, and a student cannot choose a
+// product they cannot find.
 
-export type NavId = "home" | "library" | "practice" | "vyra";
+export type NavId = "home" | "library" | "practice" | "exams" | "vyra";
 
 export const NAV_ITEMS: Array<{
   id: NavId;
@@ -23,11 +31,18 @@ export const NAV_ITEMS: Array<{
       "/practice",
       "/mastery-map",
       "/study-plans",
-      "/diagnostics",
-      "/exams",
       "/clashrank",
       "/friends",
     ],
+  },
+  {
+    id: "exams",
+    label: "Exams",
+    href: "/exams",
+    // /diagnostics is the attempt machinery behind /exams -- the timed
+    // sitting, the results, the history. A student in the middle of one is
+    // still in Exams, and the nav should say so rather than going dark.
+    match: ["/exams", "/diagnostics"],
   },
   { id: "vyra", label: "Vyra", href: "/vyra", match: ["/vyra"] },
 ];

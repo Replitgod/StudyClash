@@ -20,7 +20,7 @@ export type ExamTrackEntry = {
   /** The URL segment. Never changes -- these are indexed. */
   slug: ExamTrackSlug;
   /**
-   * The exam_definitions row this track practises from, or null when the
+   * The exam_definitions row this track practices from, or null when the
    * track has no bank yet.
    *
    * Null is the honest answer for a track we have not built, and it is what
@@ -69,7 +69,7 @@ const CATALOG: ExamTrackEntry[] = [
     examSlug: "nclex-rn",
     name: "NCLEX-RN",
     promise:
-      "Clinical judgement practice across all eight content areas of the current NCSBN test plan, with rationales that name the principle.",
+      "Clinical judgment practice across all eight content areas of the current NCSBN test plan, with rationales that name the principle.",
     officialLabel: "Official NCLEX preparation resources",
     officialUrl: "https://www.nclex.com/prepare.page",
     needsExpertReview: true,
@@ -138,13 +138,13 @@ export function findExamTrack(slug: string | null | undefined): ExamTrackEntry |
   return CATALOG.find((entry) => entry.slug === normalized) ?? null;
 }
 
-/** The catalog entry for an exam_definitions slug, if a track practises it. */
+/** The catalog entry for an exam_definitions slug, if a track practices it. */
 export function findTrackByExamSlug(examSlug: string): ExamTrackEntry | null {
   return CATALOG.find((entry) => entry.examSlug === examSlug) ?? null;
 }
 
 /**
- * Is this track something a student can practise right now?
+ * Is this track something a student can practice right now?
  *
  * Both halves matter and they fail independently. An exam can be `available`
  * in the database with an empty bank -- that is what every "coming soon" row
@@ -162,7 +162,7 @@ export function isTrackPlayable(args: {
    *
    * Supplied, it wins. /exams and /diagnostics/[examSlug] used to decide
    * this separately and disagreed the moment a bank went thin: the card
-   * offered "Practise MCAT" and the page behind it said there were not
+   * offered "Practice MCAT" and the page behind it said there were not
    * enough questions to estimate anything.
    */
   offeredModes?: number | null;
@@ -191,7 +191,7 @@ export function trackAction(args: {
 }): { label: string; href: string } | null {
   if (!isTrackPlayable(args)) return null;
   return {
-    label: `Practise ${args.track.name}`,
+    label: `Practice ${args.track.name}`,
     href: `/diagnostics/${args.track.examSlug}`,
   };
 }

@@ -80,7 +80,7 @@ export type MasterySignals = {
   total: number;
   /** Per-attempt history, oldest first. Sharpens the estimate when present. */
   attempts?: AttemptSignal[];
-  /** ms since epoch of the last practice, or null if never practised. */
+  /** ms since epoch of the last practice, or null if never practiced. */
   lastPracticedMs?: number | null;
   /** Distinct sessions that touched this topic. Drives stability growth. */
   sessions?: number;
@@ -106,7 +106,7 @@ export type MasteryState = {
   stabilityDays: number;
   /** Days until it drops to the review threshold. Negative means overdue. */
   daysUntilDue: number;
-  /** ms since epoch when review is due, or null if never practised. */
+  /** ms since epoch when review is due, or null if never practiced. */
   dueAtMs: number | null;
   isDue: boolean;
   /** Actively being forgotten right now. */
@@ -191,7 +191,7 @@ export function computeStrength(signals: MasterySignals): {
     // Recency weights are normalised so they sum back to the real number of
     // attempts. Without this the weights form a geometric series capped at
     // 1/(1-RECENCY_DECAY) ~= 5.6, the prior never gets outweighed however
-    // much a student practises, and mastery silently caps around 82% -- a
+    // much a student practices, and mastery silently caps around 82% -- a
     // student who genuinely knows something could never be told so.
     // Recency decides *which* answers matter; it must not decide how much
     // evidence exists.

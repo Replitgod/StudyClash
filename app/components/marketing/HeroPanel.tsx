@@ -46,7 +46,7 @@ export function HeroPanel() {
   return (
     <div
       className="relative w-full max-w-[440px]"
-      // Pulled up slightly on large screens so it optically centres against
+      // Pulled up slightly on large screens so it optically centers against
       // the headline rather than the whole column.
       style={{ transform: "translateZ(0)" }}
     >
@@ -56,7 +56,7 @@ export function HeroPanel() {
         className="absolute -inset-8 rounded-[32px]"
         style={{
           background:
-            "radial-gradient(60% 55% at 50% 30%, rgb(124 106 240 / 0.2), transparent 70%)",
+            "radial-gradient(60% 55% at 50% 30%, rgb(42 99 216 / 0.2), transparent 70%)",
           filter: "blur(28px)",
         }}
       />

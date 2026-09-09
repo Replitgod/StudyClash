@@ -8,7 +8,7 @@
 -- paraphrases or is derived from any NCSBN item -- those are secure, and a
 -- product that shipped them would deserve everything that followed. What is
 -- taken from NCSBN is the published 2026 test plan: the eight content areas,
--- their share of the exam, and the six steps of the Clinical Judgement
+-- their share of the exam, and the six steps of the Clinical Judgment
 -- Measurement Model. A test plan is public; an item bank is not.
 --
 -- Domain names are the content areas exactly as the test plan words them,
@@ -49,7 +49,7 @@ cross join (values
     null,
     'Which task is appropriate for a registered nurse to delegate to unlicensed assistive personnel?',
     '[{"id":"A","text":"Assessing a client''s lung sounds before ambulation"},{"id":"B","text":"Teaching a client how to use an incentive spirometer"},{"id":"C","text":"Measuring and recording vital signs for a stable client"},{"id":"D","text":"Evaluating a client''s response to a new pain medication"}]',
-    'C', 'Delegation transfers a task, never the nursing process. Assessment, teaching and evaluation all require nursing judgement and cannot be delegated; measuring vital signs on a stable client is a routine, predictable task with a clear expected outcome. The reusable test: if the task requires judging what the finding means, it stays with the nurse.'),
+    'C', 'Delegation transfers a task, never the nursing process. Assessment, teaching and evaluation all require nursing judgment and cannot be delegated; measuring vital signs on a stable client is a routine, predictable task with a clear expected outcome. The reusable test: if the task requires judging what the finding means, it stays with the nurse.'),
 
   ('nclex_rn', 'Management of Care', 'Informed consent', 'medium', 'multiple_choice',
     null,
@@ -67,7 +67,7 @@ cross join (values
     null,
     'A registered nurse is assigning clients on a medical unit that includes a licensed practical nurse. Which client is most appropriate to assign to the LPN?',
     '[{"id":"A","text":"A client admitted one hour ago who needs an initial admission assessment"},{"id":"B","text":"A client with stable heart failure who needs daily weights and oral medications"},{"id":"C","text":"A client receiving a first dose of intravenous antibiotic"},{"id":"D","text":"A client whose plan of care needs revision after a change in condition"}]',
-    'B', 'An LPN cares for stable clients with predictable outcomes. The initial admission assessment, the first dose of a medication that could cause a reaction, and revising a care plan all require RN assessment and judgement. Stable heart failure with routine weights and oral medication is exactly the predictable case an LPN manages.'),
+    'B', 'An LPN cares for stable clients with predictable outcomes. The initial admission assessment, the first dose of a medication that could cause a reaction, and revising a care plan all require RN assessment and judgment. Stable heart failure with routine weights and oral medication is exactly the predictable case an LPN manages.'),
 
   ('nclex_rn', 'Management of Care', 'Advocacy', 'medium', 'multiple_choice',
     null,
@@ -205,12 +205,12 @@ cross join (values
     null,
     'A client whose spouse died three weeks ago tells the nurse, "I still set out two cups of coffee every morning." Which response is most appropriate?',
     '[{"id":"A","text":"“That sounds like it is time to talk to someone about your grief.”"},{"id":"B","text":"“It takes time. What is that morning like for you?”"},{"id":"C","text":"“You should try to change your routine to help you move on.”"},{"id":"D","text":"“Many people do that. It is completely normal.”"}]',
-    'B', 'Three weeks out, this is ordinary grief rather than a complication, and the response both normalizes it briefly and opens the door to the client saying more. Suggesting professional help pathologizes normal grief, telling the client to change the routine directs behaviour nobody asked about, and closing with "completely normal" ends the conversation.'),
+    'B', 'Three weeks out, this is ordinary grief rather than a complication, and the response both normalizes it briefly and opens the door to the client saying more. Suggesting professional help pathologizes normal grief, telling the client to change the routine directs behavior nobody asked about, and closing with "completely normal" ends the conversation.'),
 
   ('nclex_rn', 'Psychosocial Integrity', 'De-escalation', 'hard', 'multiple_choice',
     null,
     'A client on a psychiatric unit is pacing, speaking loudly, and clenching their fists. What is the nurse''s most appropriate initial action?',
-    '[{"id":"A","text":"Approach closely and place a hand on the client''s shoulder"},{"id":"B","text":"Speak calmly from a non-threatening distance and offer to talk in a quieter area"},{"id":"C","text":"Call security to place the client in restraints"},{"id":"D","text":"Ignore the behaviour so as not to reinforce it"}]',
+    '[{"id":"A","text":"Approach closely and place a hand on the client''s shoulder"},{"id":"B","text":"Speak calmly from a non-threatening distance and offer to talk in a quieter area"},{"id":"C","text":"Call security to place the client in restraints"},{"id":"D","text":"Ignore the behavior so as not to reinforce it"}]',
     'B', 'De-escalation begins with a calm voice, personal space and an offer that gives the client a choice, and it works far more often than anything that follows it. Touch at this stage is likely to be read as a threat, restraints are a last resort after less restrictive measures fail, and ignoring escalating agitation lets it escalate.'),
 
   -- ============== Basic Care and Comfort ==============
@@ -236,8 +236,8 @@ cross join (values
   ('nclex_rn', 'Basic Care and Comfort', 'Pain management', 'medium', 'multiple_choice',
     null,
     'A postoperative client rates pain as 8 out of 10 but is smiling and talking with visitors. What should the nurse do?',
-    '[{"id":"A","text":"Reassess the pain rating, since the client does not appear to be in pain"},{"id":"B","text":"Administer the prescribed analgesic based on the client''s report"},{"id":"C","text":"Document that the client''s report is inconsistent with observed behaviour"},{"id":"D","text":"Offer a non-pharmacological measure instead"}]',
-    'B', 'Pain is whatever the client says it is. Behaviour is an unreliable indicator -- people distract themselves, mask discomfort in front of visitors, and adapt to chronic pain -- so treating the report is correct. Each other option substitutes the nurse''s observation for the client''s report, which is the definition of undertreating pain.'),
+    '[{"id":"A","text":"Reassess the pain rating, since the client does not appear to be in pain"},{"id":"B","text":"Administer the prescribed analgesic based on the client''s report"},{"id":"C","text":"Document that the client''s report is inconsistent with observed behavior"},{"id":"D","text":"Offer a non-pharmacological measure instead"}]',
+    'B', 'Pain is whatever the client says it is. Behavior is an unreliable indicator -- people distract themselves, mask discomfort in front of visitors, and adapt to chronic pain -- so treating the report is correct. Each other option substitutes the nurse''s observation for the client''s report, which is the definition of undertreating pain.'),
 
   ('nclex_rn', 'Basic Care and Comfort', 'Sleep', 'hard', 'multiple_choice',
     null,
@@ -349,13 +349,13 @@ cross join (values
     null,
     'A client with heart failure has gained 2.5 kg in three days. What does this finding most likely indicate?',
     '[{"id":"A","text":"Improved nutritional intake"},{"id":"B","text":"Fluid retention"},{"id":"C","text":"Increased muscle mass"},{"id":"D","text":"Measurement error"}]',
-    'B', 'A kilogram is roughly a litre of fluid, so 2.5 kg in three days is fluid, not tissue -- nobody builds two and a half kilograms of muscle or fat in seventy-two hours. Daily weights are the most sensitive routine measure of fluid status in heart failure for exactly this reason.'),
+    'B', 'A kilogram is roughly a liter of fluid, so 2.5 kg in three days is fluid, not tissue -- nobody builds two and a half kilograms of muscle or fat in seventy-two hours. Daily weights are the most sensitive routine measure of fluid status in heart failure for exactly this reason.'),
 
   ('nclex_rn', 'Physiological Adaptation', 'Respiratory', 'medium', 'multiple_choice',
     null,
-    'A client with chronic obstructive pulmonary disease has an oxygen saturation of 90 percent on 2 litres per minute by nasal cannula. What should the nurse do?',
-    '[{"id":"A","text":"Increase the oxygen to 6 litres per minute"},{"id":"B","text":"Continue the current oxygen and monitor the client"},{"id":"C","text":"Remove the oxygen entirely"},{"id":"D","text":"Place the client on a non-rebreather mask"}]',
-    'B', 'A saturation of 88 to 92 percent is an acceptable target in COPD, so 90 percent on 2 litres is where this client should be. Pushing the saturation higher can worsen carbon dioxide retention; removing oxygen abandons a client who needs it; and a non-rebreather is a large escalation with no indication here.'),
+    'A client with chronic obstructive pulmonary disease has an oxygen saturation of 90 percent on 2 liters per minute by nasal cannula. What should the nurse do?',
+    '[{"id":"A","text":"Increase the oxygen to 6 liters per minute"},{"id":"B","text":"Continue the current oxygen and monitor the client"},{"id":"C","text":"Remove the oxygen entirely"},{"id":"D","text":"Place the client on a non-rebreather mask"}]',
+    'B', 'A saturation of 88 to 92 percent is an acceptable target in COPD, so 90 percent on 2 liters is where this client should be. Pushing the saturation higher can worsen carbon dioxide retention; removing oxygen abandons a client who needs it; and a non-rebreather is a large escalation with no indication here.'),
 
   ('nclex_rn', 'Physiological Adaptation', 'Cardiac', 'medium', 'multiple_choice',
     null,

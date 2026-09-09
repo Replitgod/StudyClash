@@ -141,7 +141,7 @@ describe("computeStability", () => {
 });
 
 describe("computeRetrievability", () => {
-  it("is 1 the moment it is practised and decays from there", () => {
+  it("is 1 the moment it is practiced and decays from there", () => {
     expect(computeRetrievability(0, 10)).toBe(1);
     expect(computeRetrievability(5, 10)).toBeLessThan(1);
     expect(computeRetrievability(50, 10)).toBeLessThan(computeRetrievability(5, 10));
@@ -220,7 +220,7 @@ describe("computeMastery", () => {
     expect(state.daysUntilDue).toBeLessThan(0);
   });
 
-  it("never marks a never-practised topic due, and gives it no due date", () => {
+  it("never marks a never-practiced topic due, and gives it no due date", () => {
     const state = computeMastery({ correct: 0, total: 0, lastPracticedMs: null, now: NOW });
     expect(state.isDue).toBe(false);
     expect(state.isFading).toBe(false);
@@ -267,7 +267,7 @@ describe("computeMastery", () => {
   it("does not let recency weighting cap how high mastery can go", () => {
     // Regression: geometric recency weights used to cap the effective
     // sample near 5.6, so the prior was never outweighed and mastery could
-    // not exceed ~82% however much a student practised.
+    // not exceed ~82% however much a student practiced.
     const state = computeMastery({
       correct: 40,
       total: 40,

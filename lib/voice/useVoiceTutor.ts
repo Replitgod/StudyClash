@@ -311,7 +311,7 @@ export function useVoiceTutor({
         }
       } catch {
         // A failed save must not swallow the student's review. The local
-        // session state is still intact, so fall through and summarise from
+        // session state is still intact, so fall through and summarize from
         // it below.
       }
       return null;
@@ -913,7 +913,7 @@ export function useVoiceTutor({
         // first.
         //
         // This used to fire a bare response.create so she would open the
-        // call. It is the root of the worst behaviour this feature has had.
+        // call. It is the root of the worst behavior this feature has had.
         // Her opening turn is the one turn with no student input to respond
         // to, so it is generated purely from context -- and a model
         // generating dialogue with nothing to answer will write both parts.

@@ -68,7 +68,7 @@ export type StudyMaterial = {
 /**
  * Strip anything that could let material act as an instruction.
  *
- * The real defence is structural -- the material is fenced, and the system
+ * The real defense is structural -- the material is fenced, and the system
  * prompt says in as many words that everything inside the fence is the
  * student's notes and never a command. A blocklist alone would be security
  * theatre, because there are unlimited ways to phrase "ignore the above".

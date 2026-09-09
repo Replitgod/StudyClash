@@ -34,6 +34,15 @@ The bank holds 278 original questions: 98 Digital SAT, 60 ACT, 57 NCLEX-RN,
 43 MCAT, 20 GRE. All of it is written to each board's published
 specification and none of it is copied from a real exam.
 
+`lib/server/questionQuality.ts` checks the bank for the item-writing flaws
+that let a student answer without knowing anything — the key being the
+longest option, absolutes in distractors, a stem word echoed only in the
+key, and the answer key piling onto one position. That last one was real:
+the bank shipped with **67 percent of NCLEX keys on B**, so guessing B
+scored 67 percent. `lib/server/keyBalance.ts` spread them, rewriting every
+explanation that cites an option letter and verifying each rewrite is
+exactly the remap of the original.
+
 `lib/examModes.ts` decides what a student can actually sit, and both /exams
 and the exam page read it, so they cannot disagree. A mode the bank cannot
 mostly fill is **not offered** — a "Full Diagnostic" that serves an eighth

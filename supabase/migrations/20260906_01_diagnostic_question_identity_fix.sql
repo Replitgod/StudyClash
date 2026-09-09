@@ -1,7 +1,7 @@
 -- A question is its stimulus AND its stem, not its stem alone.
 --
 -- diagnostic_questions has carried a unique index on (exam_id,
--- md5(question_text)) since the diagnostics centre was built, and every seed
+-- md5(question_text)) since the diagnostics center was built, and every seed
 -- migration inserts with "on conflict ... do nothing". On most exams that is
 -- fine. On the Digital SAT it is not, because the stem is boilerplate: every
 -- words-in-context item asks "Which choice completes the text with the most

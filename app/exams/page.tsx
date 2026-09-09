@@ -108,7 +108,7 @@ function NotYetCard({ track }: { track: ExamTrackEntry }) {
           buy needs to know this track has nothing in it today. */}
       <p className="t-meta mt-2">
         There is no {track.name} question bank yet, so there is nothing here to
-        practise. Vyra can still teach and quiz you on any {track.name} topic
+        practice. Vyra can still teach and quiz you on any {track.name} topic
         out loud.
       </p>
 
@@ -174,7 +174,7 @@ export default async function ExamsLandingPage() {
       {ready.length > 0 && (
         <section className="mt-8">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="t-section">Ready to practise</h2>
+            <h2 className="t-section">Ready to practice</h2>
             <p className="t-meta">
               {totalQuestions.toLocaleString()} questions across {ready.length} exam
               {ready.length === 1 ? "" : "s"}

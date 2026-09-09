@@ -15,7 +15,7 @@ import { FAQ_ITEMS } from "@/app/components/marketing/faq";
 
 // The landing page.
 //
-// One accent colour, one card treatment, one section rhythm, and depth that
+// One accent color, one card treatment, one section rhythm, and depth that
 // comes from light rather than from borders. The interactive pieces -- the
 // product demo, the decaying knowledge map and the arena card -- are the only
 // places the page raises its voice, because they are the only places it has
@@ -51,7 +51,7 @@ export function NeonLanding() {
         <div
           className="halo left-1/2 top-[-14%] h-[46rem] w-[46rem] -translate-x-1/2"
           aria-hidden="true"
-          style={{ background: "rgb(124 106 240 / 0.16)" }}
+          style={{ background: "rgb(42 99 216 / 0.16)" }}
         />
         <div
           className="halo left-[6%] top-[38%] h-[26rem] w-[26rem]"
@@ -145,7 +145,7 @@ export function NeonLanding() {
         <div
           className="halo left-1/2 top-[6%] h-[34rem] w-[34rem] -translate-x-1/2"
           aria-hidden="true"
-          style={{ background: "rgb(124 106 240 / 0.11)" }}
+          style={{ background: "rgb(42 99 216 / 0.11)" }}
         />
 
         <div className="shell relative">
@@ -206,12 +206,94 @@ export function NeonLanding() {
 
       <hr className="hairline" />
 
+      {/* ========================== MEET VYRA ==========================
+          The differentiator, and until now invisible to anyone not signed
+          in: the header had Pricing and Contact, and /vyra sits behind the
+          login wall. Someone arriving from a search for "AI tutor" could
+          read the price and never see the product.
+
+          Written to be specific rather than impressive. "Adaptive AI-powered
+          learning companion" describes every product in this category and
+          none of them; "say 'actually, switch to algebra two' and she does"
+          describes exactly one. */}
+      <section id="vyra" aria-labelledby="vyra-heading" className="section relative overflow-hidden">
+        <div
+          className="halo left-[-8%] top-[10%] h-[34rem] w-[34rem]"
+          aria-hidden="true"
+          style={{ background: "rgb(42 99 216 / 0.12)" }}
+        />
+
+        <div className="shell relative">
+          <Reveal>
+            <p className="eyebrow">Meet Vyra</p>
+            <h2
+              id="vyra-heading"
+              className="headline-lg mt-5 text-[clamp(2rem,4.6vw,3.25rem)]"
+            >
+              <span className="text-sheen">Some things are easier</span>
+              <br />
+              <span className="text-accent-sheen">said than typed.</span>
+            </h2>
+            <p className="lede mt-7">
+              Vyra is a phone call, not a chat window. You talk, she listens,
+              and she stops mid-word the second you cut in — the way a person
+              does when you have got the answer and want to say it.
+            </p>
+          </Reveal>
+
+          <Reveal delay={120}>
+            <div className="mt-14 grid gap-4 md:grid-cols-3">
+              {[
+                {
+                  title: "Start with nothing",
+                  body:
+                    "Say “teach me the Krebs cycle” and she teaches it, from the beginning. No deck to build first, no PDF to upload, no setup screen.",
+                },
+                {
+                  title: "Change your mind",
+                  body:
+                    "Say “actually, switch to algebra two” and she does — and keeps everything she has worked out about how you answer.",
+                },
+                {
+                  title: "She makes you work",
+                  body:
+                    "Get it wrong and you get a hint, not the answer. Wrong again and you get a better hint. She explains it only after you have really tried.",
+                },
+              ].map((card) => (
+                <div key={card.title} className="card p-6">
+                  <p
+                    className="text-[17px] font-medium"
+                    style={{ color: "var(--text-1)" }}
+                  >
+                    {card.title}
+                  </p>
+                  <p className="t-body mt-2.5">{card.body}</p>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+
+          <Reveal delay={200}>
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link href="/signup" className="btn btn-lg btn-accent">
+                Try a call
+              </Link>
+              <p className="t-meta">
+                Free to start. Ten minutes a call, and you can hang up on her.
+              </p>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <hr className="hairline" />
+
       {/* ====================== LIVE KNOWLEDGE MAP ====================== */}
       <section aria-labelledby="map" className="section relative overflow-hidden">
         <div
           className="halo right-[-6%] top-[16%] h-[32rem] w-[32rem]"
           aria-hidden="true"
-          style={{ background: "rgb(124 106 240 / 0.12)" }}
+          style={{ background: "rgb(42 99 216 / 0.12)" }}
         />
 
         <div className="shell relative">
@@ -307,7 +389,7 @@ export function NeonLanding() {
         <div
           className="halo left-[-4%] top-[24%] h-[30rem] w-[30rem]"
           aria-hidden="true"
-          style={{ background: "rgb(124 106 240 / 0.13)" }}
+          style={{ background: "rgb(42 99 216 / 0.13)" }}
         />
 
         <div className="shell relative">
@@ -414,7 +496,7 @@ export function NeonLanding() {
             <div
               className="halo left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2"
               aria-hidden="true"
-              style={{ background: "rgb(124 106 240 / 0.18)" }}
+              style={{ background: "rgb(42 99 216 / 0.18)" }}
             />
 
             <Reveal>

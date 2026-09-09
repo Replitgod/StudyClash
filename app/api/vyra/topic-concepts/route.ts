@@ -25,7 +25,7 @@ export const maxDuration = 20;
 /**
  * Topic switches per student per hour.
  *
- * Generous, because switching subject is the behaviour this feature exists
+ * Generous, because switching subject is the behavior this feature exists
  * to allow and a student bouncing between four topics in one call is using
  * it correctly. Most of these are cache hits and cost nothing; the limit is
  * here for the pathological case, not the enthusiastic one.

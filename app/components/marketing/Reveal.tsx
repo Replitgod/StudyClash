@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 // Scroll reveal, built on IntersectionObserver rather than a scroll handler
 // so it costs nothing on the main thread while scrolling.
 //
-// Two deliberate behaviours:
+// Two deliberate behaviors:
 //
 //   It only fires once. Content that re-animates every time it scrolls back
 //   into view is distracting on a second read and makes a long page feel

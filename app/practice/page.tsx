@@ -18,7 +18,7 @@ import {
 // Three modes, and that is the whole page. Everything the app used to
 // expose as its own navigation item -- diagnostics, mastery map, study
 // plans, exam tunnels -- still exists and still works; it lives at the
-// bottom of this page as "more ways to practise" instead of competing for
+// bottom of this page as "more ways to practice" instead of competing for
 // attention with the three things that matter.
 
 const TIER_CHIP: Record<string, string> = {
@@ -118,11 +118,11 @@ export default function PracticePage() {
         <h1 className="t-page">Practice</h1>
         <div className="card mt-8 px-6 py-12 text-center">
           <p className="text-[17px] font-medium" style={{ color: "var(--text-1)" }}>
-            Nothing to practise yet
+            Nothing to practice yet
           </p>
           <p className="t-body mx-auto mt-2 max-w-sm">
             Add something you are studying and AceDecks will work out what you
-            should practise, and when.
+            should practice, and when.
           </p>
           <Link href="/home" className="btn btn-primary mt-6">
             Add material
@@ -150,7 +150,7 @@ export default function PracticePage() {
             <span style={{ width: `${Math.min(100, Math.max(2, readiness))}%` }} />
           </div>
           <p className="t-meta mt-3">
-            Based on everything you have practised so far.
+            Based on everything you have practiced so far.
           </p>
         </div>
       )}
@@ -243,7 +243,7 @@ export default function PracticePage() {
 
       {/* ---- Deeper tools, kept but subordinate ---- */}
       <section className="mt-12">
-        <h2 className="t-section">More ways to practise</h2>
+        <h2 className="t-section">More ways to practice</h2>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {[
             {

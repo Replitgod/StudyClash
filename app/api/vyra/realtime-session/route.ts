@@ -343,7 +343,7 @@ export async function POST(request: NextRequest) {
             // they are done.
             turn_detection: {
               type: "server_vad",
-              // The whole barge-in behaviour: she is cut off mid-joke and
+              // The whole barge-in behavior: she is cut off mid-joke and
               // picks up their answer instead.
               interrupt_response: true,
               create_response: true,

@@ -74,9 +74,9 @@ const TRACKS: Record<ExamTrackId, ExamTrackDisplay> = {
   nclex: {
     id: "nclex",
     label: "NCLEX",
-    blurb: "Clinical judgment vignettes with safety-first prioritisation.",
+    blurb: "Clinical judgment vignettes with safety-first prioritization.",
     placeholder: "Which NCLEX topic? Or paste your notes.",
-    starters: ["Prioritisation", "Pharmacology safety", "Delegation"],
+    starters: ["Prioritization", "Pharmacology safety", "Delegation"],
   },
 };
 

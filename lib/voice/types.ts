@@ -8,7 +8,7 @@
 /**
  * How well the student knows one concept, right now, in this call.
  *
- * This is a *session* judgement, not the app's long-term mastery number.
+ * This is a *session* judgment, not the app's long-term mastery number.
  * lib/mastery.ts owns the latter and is computed from graded questions;
  * spoken answers are softer evidence than a marked multiple-choice attempt,
  * so they feed it as a nudge (see summarizeSession) rather than overwriting
@@ -204,7 +204,7 @@ export type SessionSummary = {
   weaknesses: string[];
   /** Specific wrong ideas worth re-reading, in the student's own terms. */
   misconceptions: string[];
-  /** One concrete thing to do next. Never "keep practising". */
+  /** One concrete thing to do next. Never "keep practicing". */
   recommendation: string;
   /** A written review built only from what actually happened. */
   headline: string;

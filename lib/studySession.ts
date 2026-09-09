@@ -6,7 +6,7 @@
 // became a real decision driven by mastery.
 //
 // Kept out of the component so it can be tested directly -- these rules
-// decide what a student actually practises, and getting them wrong is
+// decide what a student actually practices, and getting them wrong is
 // invisible in the UI (the session still "works", it just asks the wrong
 // questions).
 

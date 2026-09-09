@@ -28,7 +28,7 @@ function weakTopic(deckId: string, name: string): TopicRow {
 describe("sessionHref", () => {
   // These have to match exactly what the session screens parse
   // (app/study/[deckId] and the older app/battle/[deckId]). Both ignore
-  // anything they do not recognise, so a wrong parameter name produces a
+  // anything they do not recognize, so a wrong parameter name produces a
   // link that looks fine and quietly starts the wrong session.
   it("links straight to the deck when nothing is narrowed", () => {
     expect(sessionHref({ deckId: "d1" })).toBe("/study/d1");

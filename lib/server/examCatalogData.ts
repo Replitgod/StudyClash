@@ -29,7 +29,7 @@ export type ExamTrackStatus = {
    * uses.
    *
    * These two screens decided availability separately and disagreed the
-   * moment a bank was thin: /exams offered "Practise MCAT" while
+   * moment a bank was thin: /exams offered "Practice MCAT" while
    * /diagnostics/mcat said there were not enough questions to estimate
    * anything. A card may only offer practice if a mode behind it is offered.
    */

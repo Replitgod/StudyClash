@@ -31,7 +31,7 @@ export const XP_REASONS: Record<XpReason, { amount: number; label: string }> = {
   question_answered: { amount: 2, label: "Question answered" },
   session_completed: { amount: 15, label: "Session finished" },
   // The single biggest per-event payout: fixing something you got wrong is
-  // the behaviour most worth encouraging.
+  // the behavior most worth encouraging.
   mistake_recovered: { amount: 30, label: "Mistake fixed" },
   review_completed: { amount: 25, label: "Review done on time" },
   topic_improved: { amount: 40, label: "Topic improved" },
@@ -218,7 +218,7 @@ export type QuestDefinition = {
 /**
  * The four daily quests.
  *
- * Each maps to a different worthwhile behaviour rather than four flavours
+ * Each maps to a different worthwhile behavior rather than four flavours
  * of "do more". `comeback` and `consistency` in particular are things a
  * student would not choose on their own but benefit most from.
  */

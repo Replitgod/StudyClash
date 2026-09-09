@@ -28,7 +28,7 @@ export function ProgressRing({
   max?: number;
   size?: number;
   strokeWidth?: number;
-  /** brand = violet→indigo (in progress); success = emerald (mastered/complete). */
+  /** brand = the blue accent ramp (in progress); success = emerald (mastered/complete). */
   tone?: "brand" | "success";
   /** Optional override for the big center text; defaults to the live percent. */
   label?: string;

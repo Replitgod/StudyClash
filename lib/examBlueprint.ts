@@ -323,12 +323,12 @@ function clamp(value: number, min: number, max: number): number {
  * An ability estimate, on this section's own scale.
  *
  * Generalised from the SAT-only version, and deliberately reproducing it
- * exactly for a 200-800/step-10 scale: centre is the midpoint, one unit of
+ * exactly for a 200-800/step-10 scale: center is the midpoint, one unit of
  * theta is a sixth of the range (so -3..+3 spans it), the adaptive path
- * moves the centre by a fifth of a unit, and the reported band is 0.7 units
+ * moves the center by a fifth of a unit, and the reported band is 0.7 units
  * wide for a quick attempt and 0.4 for a full one.
  *
- * The band matters more than the centre. A student who answered fourteen
+ * The band matters more than the center. A student who answered fourteen
  * questions has not earned a single number, and printing one anyway is the
  * most common way a practice product lies to somebody.
  */
@@ -341,10 +341,10 @@ export function estimateScoreRange(args: {
 }): ScoreRange {
   const { theta, scale, path, mode } = args;
 
-  const centre = (scale.min + scale.max) / 2;
+  const center = (scale.min + scale.max) / 2;
   const unit = (scale.max - scale.min) / 6;
 
-  const raw = centre + theta * unit;
+  const raw = center + theta * unit;
   // The harder Module 2 caps out with more headroom; the easier one caps
   // the estimate at what that module could actually confirm.
   const adjusted = path === "harder" ? raw + unit * 0.2 : path === "easier" ? raw - unit * 0.2 : raw;

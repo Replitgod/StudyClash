@@ -22,9 +22,21 @@ export function isActiveBattleRoute(pathname: string | null): boolean {
   return !!pathname && /^\/battle\/[^/]+/.test(pathname);
 }
 
+// What a visitor who has never signed in can actually reach.
+//
+// This was Pricing and Contact, which meant the two things worth coming here
+// for were both invisible: the exam banks and the voice tutor. Someone
+// arriving from a search for "SAT practice" could read the price of a
+// product whose product they could not see.
+//
+// Exam prep goes to /exams, which is public and real. Vyra goes to the
+// homepage section rather than to /vyra, because /vyra is behind the login
+// wall and a nav link that bounces you to a sign-up form is a worse answer
+// than showing you the thing first.
 const LINKS = [
+  { label: "Exam prep", href: "/exams" },
+  { label: "Meet Vyra", href: "/#vyra" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Contact", href: "/contact" },
 ];
 
 export default function Navigation() {

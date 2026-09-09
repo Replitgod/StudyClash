@@ -194,7 +194,7 @@ describe("parseExamBlueprint", () => {
 describe("estimateScoreRange", () => {
   const SAT_SCALE = { min: 200, max: 800, step: 10 };
 
-  // The SAT numbers this replaced, reproduced exactly. Centre 500, one theta
+  // The SAT numbers this replaced, reproduced exactly. Center 500, one theta
   // = 100 points, the adaptive path worth 20, the band 70 wide on a quick
   // attempt and 40 on a full one.
   it("reproduces the SAT scale it was generalised from", () => {
@@ -234,7 +234,7 @@ describe("estimateScoreRange", () => {
     }
   });
 
-  it("centres each exam on its own midpoint", () => {
+  it("centers each exam on its own midpoint", () => {
     // MCAT sections run 118-132, so an average performance is 125 and not
     // 500. This is the whole reason the scale is a parameter.
     const mcat = { min: 118, max: 132, step: 1 };

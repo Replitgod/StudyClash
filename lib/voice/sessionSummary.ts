@@ -9,7 +9,7 @@ import type {
 // The end-of-call review.
 //
 // Phase 20 of the brief bans the thing every study app ships -- "You did a
-// great job, keep practising!" -- and it is banned for a good reason: a
+// great job, keep practicing!" -- and it is banned for a good reason: a
 // summary that would read identically after a perfect session and a
 // disastrous one carries no information, and students learn very quickly to
 // scroll past it.
@@ -86,7 +86,7 @@ function minutes(durationMs: number): number {
  * Build the review.
  *
  * The headline is assembled rather than generated because it has to be true:
- * an LLM asked to summarise a transcript will happily report that a student
+ * an LLM asked to summarize a transcript will happily report that a student
  * "showed strong understanding of photosynthesis" when the transcript shows
  * them being walked to it after three hints. The counters cannot do that.
  */
@@ -216,8 +216,8 @@ function buildRecommendation(
 
     const others = weaknessRows.slice(1, 3).map((row) => label(session, row.conceptId));
     return others.length > 0
-      ? `Practise ${name} next — it was the shakiest — then ${formatList(others)}.`
-      : `Practise ${name} next. It was the only thing that did not settle.`;
+      ? `Practice ${name} next — it was the shakiest — then ${formatList(others)}.`
+      : `Practice ${name} next. It was the only thing that did not settle.`;
   }
 
   const unseen = Object.values(session.progress).filter((row) => row.asked === 0).length;

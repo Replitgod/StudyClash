@@ -12,7 +12,7 @@ import { ArrowRightIcon } from "@/app/components/app/Icons";
 //
 // The point of this is the second half. A student told "Radical Equations,
 // 51%" knows where the problem is but not what it is, so their only option
-// is to re-practise everything and hope. Naming the recurring sub-skills --
+// is to re-practice everything and hope. Naming the recurring sub-skills --
 // extraneous solutions, domain restrictions -- turns a score into something
 // they can act on.
 //

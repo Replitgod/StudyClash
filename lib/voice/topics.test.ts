@@ -110,12 +110,12 @@ describe("topicKey", () => {
 });
 
 describe("isSameTopic", () => {
-  it("recognises a switch that goes nowhere", () => {
+  it("recognizes a switch that goes nowhere", () => {
     expect(isSameTopic("Photosynthesis", "photosynthesis")).toBe(true);
     expect(isSameTopic("the Krebs cycle", "Krebs cycle!")).toBe(true);
   });
 
-  it("recognises a real switch", () => {
+  it("recognizes a real switch", () => {
     expect(isSameTopic("photosynthesis", "algebra 2")).toBe(false);
   });
 

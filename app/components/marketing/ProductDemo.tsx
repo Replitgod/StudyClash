@@ -572,7 +572,7 @@ export function ProductDemo() {
                 className="flex items-center justify-center gap-2 px-2 py-3 text-[12.5px] font-medium transition-colors"
                 style={{
                   color: active ? "var(--text-1)" : "var(--text-3)",
-                  background: active ? "rgb(124 106 240 / 0.1)" : "transparent",
+                  background: active ? "rgb(42 99 216 / 0.1)" : "transparent",
                   boxShadow: active
                     ? "inset 0 -2px 0 0 var(--accent-bright)"
                     : "none",

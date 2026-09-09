@@ -40,7 +40,7 @@ export default function Image() {
               width: "64px",
               height: "64px",
               borderRadius: "18px",
-              background: "linear-gradient(135deg, #9B8AFF 0%, #6E56CF 52%, #4A3596 100%)",
+              background: "linear-gradient(135deg, #7FA8FF 0%, #2A63D8 52%, #17408F 100%)",
               alignItems: "center",
               justifyContent: "center",
             }}

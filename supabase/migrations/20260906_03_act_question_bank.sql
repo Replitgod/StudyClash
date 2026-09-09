@@ -286,7 +286,7 @@ cross join (values
     'Between 1870 and 1910 the number of public libraries in the United States rose from fewer than 200 to more than 3,000. Andrew Carnegie funded roughly half of the new buildings, but his grants came with a condition that is often forgotten: the town had to supply the site and commit public money -- usually a tenth of the construction cost, every year -- to running the library once it opened. Towns that would not make the commitment did not get the building, and several dozen refused.',
     'The author includes the final sentence primarily to:',
     '[{"id":"A","text":"show that the condition was a real constraint rather than a formality"},{"id":"B","text":"criticize the towns that declined the grants"},{"id":"C","text":"explain why library construction slowed after 1910"},{"id":"D","text":"suggest that Carnegie regretted imposing the condition"}]',
-    'A', 'Naming towns that refused demonstrates that the requirement had teeth. The sentence passes no judgement on those towns, says nothing about the period after 1910, and reports nothing about Carnegie''s feelings.'),
+    'A', 'Naming towns that refused demonstrates that the requirement had teeth. The sentence passes no judgment on those towns, says nothing about the period after 1910, and reports nothing about Carnegie''s feelings.'),
 
   ('reading', 'Craft and Structure', 'Text structure', 'hard', 'multiple_choice',
     'Between 1870 and 1910 the number of public libraries in the United States rose from fewer than 200 to more than 3,000. Andrew Carnegie funded roughly half of the new buildings, but his grants came with a condition that is often forgotten: the town had to supply the site and commit public money -- usually a tenth of the construction cost, every year -- to running the library once it opened. Towns that would not make the commitment did not get the building, and several dozen refused.',
@@ -461,7 +461,7 @@ Temperature (C) | Solubility (g per 100 mL)
 50              | 84',
     'To test whether the relationship between temperature and solubility continues above 50 degrees Celsius, the chemist should:',
     '[{"id":"A","text":"repeat the measurement at 50 degrees Celsius several more times"},{"id":"B","text":"measure solubility at 60 and 70 degrees Celsius using the same procedure"},{"id":"C","text":"measure solubility of a different salt at the same temperatures"},{"id":"D","text":"measure solubility at 5 degrees Celsius"}]',
-    'B', 'The question is about behaviour above 50 C, so the procedure must be extended to temperatures above 50 C. Repeating an existing point tests precision, a different salt tests a different substance, and 5 C extends the range in the wrong direction.'),
+    'B', 'The question is about behavior above 50 C, so the procedure must be extended to temperatures above 50 C. Repeating an existing point tests precision, a different salt tests a different substance, and 5 C extends the range in the wrong direction.'),
 
   ('science', 'Evaluation of Models, Inferences, and Experimental Results', 'Conflicting viewpoints', 'hard', 'multiple_choice',
     'Scientist 1 argues that the megafauna of North America died out primarily because of rapid climate warming at the end of the last glacial period, which fragmented the habitats large herbivores depended on.

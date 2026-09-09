@@ -720,7 +720,7 @@ async function updateTopicReviewSchedule(args: {
   const nowIso = new Date(nowMs).toISOString();
 
   // A topic that moved up a mastery tier this session is the single thing
-  // most worth rewarding -- it is the difference between practising and
+  // most worth rewarding -- it is the difference between practicing and
   // improving. Counted here because this is the only place that sees both
   // the before and after state.
   let topicsImproved = 0;

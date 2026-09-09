@@ -2,7 +2,7 @@
 
 import { CONTACT_EMAIL } from "@/lib/contact";
 
-// The last line of defence: an error thrown by the root layout itself
+// The last line of defense: an error thrown by the root layout itself
 // (app/layout.tsx) is above app/error.tsx's boundary, so only this file can
 // catch it. It replaces the root layout when active, which means it has to
 // bring its own <html> and <body> -- and cannot assume globals.css, the
@@ -82,7 +82,7 @@ export default function GlobalError({
           >
             Nothing you saved is affected. Reload the page, and if it keeps
             happening email{" "}
-            <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: "#b9a8ff" }}>
+            <a href={`mailto:${CONTACT_EMAIL}`} style={{ color: "#9dc0ff" }}>
               {CONTACT_EMAIL}
             </a>
             .
@@ -105,7 +105,7 @@ export default function GlobalError({
                   appearance: "none",
                   border: "1px solid transparent",
                   borderRadius: "0.75rem",
-                  background: "#6e56cf",
+                  background: "#2a63d8",
                   color: "#ffffff",
                   fontSize: "0.875rem",
                   fontWeight: 600,

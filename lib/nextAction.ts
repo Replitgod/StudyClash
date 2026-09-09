@@ -77,7 +77,7 @@ export function getNextAction(snapshot: StudySnapshot): NextAction | null {
     };
   }
 
-  // 2. Otherwise, the weakest thing they have practised.
+  // 2. Otherwise, the weakest thing they have practiced.
   const weak = snapshot.weakTopics[0];
   if (weak && weak.total >= 2) {
     return {

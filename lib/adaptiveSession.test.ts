@@ -70,7 +70,7 @@ describe("planSession", () => {
     expect(plan.questions[0].topic).toBe("Kinetics");
   });
 
-  it("prioritises questions the student missed last time", () => {
+  it("prioritizes questions the student missed last time", () => {
     const plan = planSession({
       questions,
       topics: [],

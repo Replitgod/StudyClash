@@ -15,7 +15,7 @@
 //                    dominating, ease off and diagnose when they are not
 //
 // Both are pure. A bug in either does not throw, it just quietly makes the
-// student practise the wrong things, so they are tested directly.
+// student practice the wrong things, so they are tested directly.
 
 import type { SessionQuestion } from "@/lib/studySession";
 import { normalizeTopicKey } from "@/lib/studySession";
@@ -69,7 +69,7 @@ export function difficultyValue(raw: string | null | undefined): number {
 export type TopicPriority = {
   /** Normalised topic key, as produced by normalizeTopicKey. */
   topic: string;
-  /** Higher = more worth practising. From opportunityScore in lib/mastery. */
+  /** Higher = more worth practicing. From opportunityScore in lib/mastery. */
   priority: number;
   /** Due for review right now. */
   isDue: boolean;
@@ -107,7 +107,7 @@ function historyWeight(history: QuestionHistory | undefined): number {
  * Ordering is not purely "hardest first" or "weakest first". It opens with
  * something winnable so the session starts with momentum rather than a
  * wall, front-loads what actually needs work, and keeps the highest-value
- * items early enough that a student who quits halfway still practised the
+ * items early enough that a student who quits halfway still practiced the
  * things that mattered most.
  */
 export function planSession(args: {
@@ -277,7 +277,7 @@ export function adaptDifficulty(
   const missStreak = state.missStreak + 1;
 
   // A topic already missed once this session and missed again is a genuine
-  // gap. Recorded so the session can prioritise it rather than move on.
+  // gap. Recorded so the session can prioritize it rather than move on.
   const alreadyStruggling = state.strugglingTopics.includes(topicKey);
   const missedBefore = state.strugglingTopics.length > 0 || state.missStreak > 0;
   const strugglingTopics =

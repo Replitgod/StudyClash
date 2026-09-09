@@ -1,7 +1,7 @@
 -- Exams other than the SAT become real.
 --
 -- exam_definitions has held rows for the ACT, MCAT, GRE and AP since the
--- diagnostics centre was built, all of them `coming_soon` with `{}` for a
+-- diagnostics center was built, all of them `coming_soon` with `{}` for a
 -- configuration and no questions behind them. /exams rendered them as cards
 -- whose only button went to /home, where the student typed a topic and got
 -- generic AI-generated practice. That is a decorative exam-prep card, which
@@ -236,7 +236,7 @@ values
     'NCLEX-RN',
     'NCSBN',
     'coming_soon',
-    'AceDecks NCLEX-RN-style practice. Original questions written to the publicly published NCSBN test plan. Not affiliated with, endorsed by, or containing questions from NCSBN, and not a substitute for clinical judgement or professional advice.',
+    'AceDecks NCLEX-RN-style practice. Original questions written to the publicly published NCSBN test plan. Not affiliated with, endorsed by, or containing questions from NCSBN, and not a substitute for clinical judgment or professional advice.',
     '{
       "sections": [
         {
@@ -272,7 +272,7 @@ values
     'NCLEX-PN',
     'NCSBN',
     'coming_soon',
-    'AceDecks NCLEX-PN-style practice. Original questions written to the publicly published NCSBN test plan. Not affiliated with, endorsed by, or containing questions from NCSBN, and not a substitute for clinical judgement or professional advice.',
+    'AceDecks NCLEX-PN-style practice. Original questions written to the publicly published NCSBN test plan. Not affiliated with, endorsed by, or containing questions from NCSBN, and not a substitute for clinical judgment or professional advice.',
     '{
       "sections": [
         {
@@ -305,7 +305,7 @@ set
 -- ============================================================
 
 -- Every row shared one sentence naming every board at once, which read as
--- boilerplate and named organisations that had nothing to do with the exam
+-- boilerplate and named organizations that had nothing to do with the exam
 -- in front of the student. One disclaimer per exam, naming that exam's
 -- board and no other.
 update public.exam_definitions

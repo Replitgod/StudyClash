@@ -34,6 +34,6 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "How is it different from Quizlet?",
-    a: "Quizlet holds your flashcards. AceDecks decides what you practise next, and tells you why. You never build a study plan or pick a mode.",
+    a: "Quizlet holds your flashcards. AceDecks decides what you practice next, and tells you why. You never build a study plan or pick a mode.",
   },
 ];

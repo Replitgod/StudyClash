@@ -66,7 +66,7 @@ const FIRST_VISIT_STARTS = [
   "Teach me quadratic equations",
   "Quiz me on cellular respiration",
   "Explain pointers in C++",
-  "Help me practise SAT punctuation",
+  "Help me practice SAT punctuation",
 ];
 
 function newId(): string {
@@ -603,7 +603,7 @@ export default function VyraChat() {
                           }`}
                           className="btn btn-secondary btn-sm mt-3"
                         >
-                          Practise this now
+                          Practice this now
                           <ArrowRightIcon className="h-4 w-4" />
                         </Link>
                       )}

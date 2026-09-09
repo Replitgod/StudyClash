@@ -13,7 +13,7 @@ import { ArrowRightIcon } from "@/app/components/app/Icons";
 // Rebuilt on the design system alongside /diagnostics, which links here as
 // "Past results". Two things beyond the styling:
 //
-// - The tier badges used a fifth colour language (green/indigo/amber/red)
+// - The tier badges used a fifth color language (green/indigo/amber/red)
 //   for the same words the rest of the app already had chips for. They now
 //   use the shared four-tone chip scale.
 // - Auth is handled by useRequireAuth rather than a hand-rolled effect, so a

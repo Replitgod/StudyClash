@@ -239,7 +239,7 @@ describe("buildTutorInstructions", () => {
     const text = buildTutorInstructions({ material: material(), options: OPTIONS });
 
     // The voice copies these examples verbatim, so an example that praises a
-    // non-answer teaches exactly the behaviour being banned two sections
+    // non-answer teaches exactly the behavior being banned two sections
     // later. Every remaining use must be a prohibition.
     for (const match of text.matchAll(/\bso close\b|\bnot quite\b/gi)) {
       // A short lookback, checked for a negation anywhere in it -- the

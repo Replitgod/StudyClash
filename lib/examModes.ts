@@ -16,7 +16,7 @@ import {
 //
 // The other half is supply. A blueprint says the ACT English section runs 50
 // questions; the bank holds 20. The engine already serves what it has, which
-// is the right behaviour -- but a screen that promises 50 and delivers 20
+// is the right behavior -- but a screen that promises 50 and delivers 20
 // without a word is the thing that makes a product feel like a demo, and it
 // is worse than saying "20" would have been.
 //

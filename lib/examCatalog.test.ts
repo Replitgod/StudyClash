@@ -43,7 +43,7 @@ describe("the catalog", () => {
   });
 });
 
-describe("whether a track can be practised", () => {
+describe("whether a track can be practiced", () => {
   it("needs a bank and a published exam", () => {
     expect(
       isTrackPlayable({ track: SAT, examStatus: "available", publishedQuestions: 98 })
@@ -90,7 +90,7 @@ describe("what the card's button does", () => {
     });
 
     expect(action).toEqual({
-      label: "Practise Digital SAT",
+      label: "Practice Digital SAT",
       href: "/diagnostics/digital-sat",
     });
     expect(action!.href).not.toContain("/home");
@@ -107,10 +107,10 @@ describe("what the card's button does", () => {
 });
 
 // /exams and /diagnostics/[examSlug] decided availability separately and
-// disagreed the moment a bank went thin: the card offered "Practise MCAT"
+// disagreed the moment a bank went thin: the card offered "Practice MCAT"
 // while the page behind it said there were not enough questions to estimate
 // anything. Both now read lib/examModes, and this is the seam.
-describe("agreeing with the exam page about what can be practised", () => {
+describe("agreeing with the exam page about what can be practiced", () => {
   it("withholds the card when no mode behind it can run", () => {
     expect(
       trackAction({

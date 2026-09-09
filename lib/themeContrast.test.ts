@@ -12,7 +12,7 @@ import { THEME_LIST } from "@/lib/themes";
 //
 // The rule a theme author needs is not "use white labels", it is "a light
 // accent needs a dark label" -- which is exactly what a ratio check encodes
-// and a hardcoded colour does not.
+// and a hardcoded color does not.
 
 const AA_NORMAL = 4.5;
 const AA_LARGE = 3;

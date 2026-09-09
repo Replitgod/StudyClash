@@ -4,7 +4,7 @@
 // The mastery engine can already say *which* topic is weakest. On its own
 // that is not actionable: "Radical Equations 51%" tells a student where the
 // problem is but not what the problem is, so the only thing they can do is
-// re-practise the whole topic and hope.
+// re-practice the whole topic and hope.
 //
 // This mines the recorded mistake breakdowns for the recurring sub-skills
 // underneath a weak topic -- extraneous solutions, domain restrictions --
@@ -131,7 +131,7 @@ export function extractPatterns(
 /* ------------------------------------------------------------ selecting */
 
 // Below this, there is not enough evidence to tell a student they have a
-// weakness. Being wrong about that sends them to practise something they
+// weakness. Being wrong about that sends them to practice something they
 // are fine at and teaches them the recommendation is guesswork.
 const MIN_ATTEMPTS = 3;
 

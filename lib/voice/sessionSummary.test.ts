@@ -128,7 +128,7 @@ describe("summarizeSession", () => {
     const headlines = cases.map((session) => summarizeSession(session, TEN_MINUTES).headline);
 
     for (const headline of headlines) {
-      expect(headline).not.toMatch(/great job|keep practising|keep practicing|well done|amazing/i);
+      expect(headline).not.toMatch(/great job|keep practicing|keep practicing|well done|amazing/i);
     }
 
     // And crucially, the three sessions do not read the same.

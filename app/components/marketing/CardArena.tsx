@@ -310,11 +310,11 @@ export function CardArena() {
                 ["What went wrong", EXPLANATION.wrong, "#ff8fa3"],
                 ["The idea", EXPLANATION.idea, "var(--accent-bright)"],
                 ["Next time", EXPLANATION.next, "#34e39b"],
-              ].map(([label, body, colour], i) => (
+              ].map(([label, body, color], i) => (
                 <div key={label} className={i > 0 ? "mt-4" : undefined}>
                   <p
                     className="text-[10px] font-semibold uppercase tracking-[0.16em]"
-                    style={{ color: colour }}
+                    style={{ color: color }}
                   >
                     {label}
                   </p>

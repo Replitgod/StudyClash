@@ -58,7 +58,7 @@ type ClashRankPayload = {
 };
 
 // Rank tiers, keyed by the labels in lib/ranking.ts. Three steps, not eight
-// colours: the lower tiers are neutral, the mid tiers take the brand, and only
+// colors: the lower tiers are neutral, the mid tiers take the brand, and only
 // the top two get the "you are improving" green. Previously every tier had its
 // own hue (amber/slate/indigo/green), which made the badge read as decoration.
 type Tone = "neutral" | "brand" | "ok";
@@ -328,7 +328,7 @@ export default function ClashRankPage() {
               how much you improve between them.
             </p>
             <Link href="/practice" className="btn btn-primary mt-6">
-              Start practising
+              Start practicing
             </Link>
           </div>
         )}

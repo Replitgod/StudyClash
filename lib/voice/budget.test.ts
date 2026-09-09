@@ -32,7 +32,7 @@ describe("evaluateVoiceBudget", () => {
     expect(decision.reason).toBeNull();
   });
 
-  // The important behaviour: a student with four minutes left gets a
+  // The important behavior: a student with four minutes left gets a
   // four-minute call, not a locked door.
   it("shortens the call rather than refusing when the budget is nearly spent", () => {
     const decision = evaluateVoiceBudget({ planId: "free", minutesUsedToday: 16 });

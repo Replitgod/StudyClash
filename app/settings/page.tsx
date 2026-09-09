@@ -54,7 +54,7 @@ export default function SettingsPage() {
   const { user, profile, isLoading, refreshProfile } = useAuth();
 
   // `profile.plan` carries legacy plan ids; resolveTier maps anything it
-  // does not recognise to free rather than throwing.
+  // does not recognize to free rather than throwing.
   const currentTier = resolveTier(
     profile?.plan === "pro_individual" || profile?.plan === "pro" ? "pro" : profile?.plan
   );

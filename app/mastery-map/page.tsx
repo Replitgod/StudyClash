@@ -166,7 +166,7 @@ function getRecommendedAction(status: TopicStatus, missedCount: number): string 
 
 // Review urgency and mastery tier both map onto the SAME three-step chip
 // vocabulary the rest of the app uses (neutral / ok / warn / bad), rather than
-// each inventing its own colour. Previously this screen used red, amber,
+// each inventing its own color. Previously this screen used red, amber,
 // indigo, green and white chips side by side, which made every badge read as
 // decoration rather than as a status.
 function reviewChipClass(urgency: ReviewUrgency): string {
@@ -193,7 +193,7 @@ function tierChipClass(tier: MasteryTier): string {
   return "chip chip-bad";
 }
 
-/** Bar colour for a topic's mastery meter, on the same three-step scale. */
+/** Bar color for a topic's mastery meter, on the same three-step scale. */
 function tierMeterColor(tier: MasteryTier): string {
   if (tier === "mastered" || tier === "strong") return "var(--ok)";
   if (tier === "developing") return "var(--warn)";
@@ -684,7 +684,7 @@ function MasteryMapPageContent() {
             Sign in to see your map
           </p>
           <p className="t-body mx-auto mt-2 max-w-sm">
-            Every topic you have practised, scored, and ordered by what needs
+            Every topic you have practiced, scored, and ordered by what needs
             work.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5">
@@ -704,7 +704,7 @@ function MasteryMapPageContent() {
     <div className="app-page app-page-wide">
       <h1 className="t-page">Mastery map</h1>
       <p className="t-body mt-2 max-w-2xl">
-        Every topic you have practised, scored. Open one to see why it scored
+        Every topic you have practiced, scored. Open one to see why it scored
         that way and what to do about it.
       </p>
 
@@ -873,7 +873,7 @@ function MasteryMapPageContent() {
                           {[
                             ["Typical mistake", topic.mistakeType],
                             ["Average speed", topic.averageSpeedLabel],
-                            ["Last practised", topic.lastPracticedDate],
+                            ["Last practiced", topic.lastPracticedDate],
                             ["Next review", topic.nextReviewLabel],
                           ].map(([label, value]) => (
                             <div key={label} className="flex items-baseline gap-1.5">
@@ -891,7 +891,7 @@ function MasteryMapPageContent() {
                         <div className="mt-4 flex flex-wrap gap-2">
                           {/* One primary action. The other two are quiet. */}
                           <Link href={topic.practiceHref} className="btn btn-primary btn-sm">
-                            Practise this
+                            Practice this
                           </Link>
                           <Link href={topic.rematchHref} className="btn btn-secondary btn-sm">
                             Just my mistakes

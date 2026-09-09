@@ -200,7 +200,7 @@ export default function PricingPage() {
         <div
           className="halo left-1/2 top-[-12%] h-[40rem] w-[40rem] -translate-x-1/2"
           aria-hidden="true"
-          style={{ background: "rgb(124 106 240 / 0.16)" }}
+          style={{ background: "rgb(42 99 216 / 0.16)" }}
         />
 
         <div className="shell relative pb-[clamp(4rem,8vw,6rem)] pt-[clamp(4rem,9vw,7rem)]">
@@ -309,7 +309,7 @@ export default function PricingPage() {
                       featured
                         ? {
                             borderColor: "var(--accent-line)",
-                            boxShadow: "0 0 60px -26px rgb(124 106 240 / 0.7)",
+                            boxShadow: "0 0 60px -26px rgb(42 99 216 / 0.7)",
                           }
                         : undefined
                     }

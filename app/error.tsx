@@ -13,7 +13,7 @@ import { useEffect } from "react";
 // action, and a plain statement that nothing saved was lost, because that is
 // the actual question a student has when a screen breaks mid-session.
 // Next 16.2 replaced `reset` with `unstable_retry`, which re-fetches the
-// segment as well as re-rendering it -- the right behaviour when the cause
+// segment as well as re-rendering it -- the right behavior when the cause
 // was a failed load rather than bad local state (see
 // node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/error.md).
 // `reset` is still passed and still supported, so both are accepted here:

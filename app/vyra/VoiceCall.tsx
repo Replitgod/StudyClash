@@ -58,7 +58,7 @@ const TOPIC_SUGGESTIONS = [
   "SAT punctuation rules",
   "Conversational Spanish",
   "Supply and demand",
-  "NCLEX prioritisation",
+  "NCLEX prioritization",
 ];
 
 const LENGTHS: Array<{ id: number | null; label: string }> = [
@@ -368,9 +368,9 @@ function Orb({
           background:
             speaker === "student"
               ? "radial-gradient(circle at 32% 28%, #7fe7c4 0%, var(--neon-green, #34d399) 46%, #14684e 100%)"
-              : "radial-gradient(circle at 32% 28%, #b9a8ff 0%, var(--accent) 48%, #4a3596 100%)",
+              : "radial-gradient(circle at 32% 28%, #9dc0ff 0%, var(--accent) 48%, #4a3596 100%)",
           transform: `scale(${1 + glow * 0.16})`,
-          boxShadow: `0 0 ${28 + glow * 70}px ${glow * 14}px rgb(124 106 240 / ${0.22 + glow * 0.34})`,
+          boxShadow: `0 0 ${28 + glow * 70}px ${glow * 14}px rgb(42 99 216 / ${0.22 + glow * 0.34})`,
           transition: "transform 90ms linear, box-shadow 90ms linear, background 200ms ease",
         }}
       />
@@ -915,7 +915,7 @@ function Review({
 
         <div className="mt-7 flex flex-wrap gap-2 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <button type="button" onClick={onAgain} className="btn btn-primary">
-            Practise again
+            Practice again
           </button>
           <button type="button" onClick={onClose} className="btn btn-secondary">
             Done

@@ -7,7 +7,7 @@ import { trackEvent } from "@/lib/trackEvent";
 import { useLoadingTimeout } from "@/lib/useLoadingTimeout";
 import { ArrowRightIcon } from "@/app/components/app/Icons";
 
-// The diagnostic centre.
+// The diagnostic center.
 //
 // Rebuilt on the app's design system. It used to paint its own full-bleed
 // background (#05050a), its own indigo blur halos and its own type scale,

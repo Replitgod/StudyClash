@@ -34,14 +34,14 @@ cross join (values
   -- ============== Chemical and Physical Foundations ==============
 
   ('chem_phys', 'Thermodynamics and kinetics', 'Reaction energetics', 'medium', 'multiple_choice',
-    'Researchers measured the rate of an enzyme-catalysed reaction at several temperatures. Rate rose steadily from 20 to 40 degrees Celsius, peaked near 42 degrees, then fell sharply, reaching almost zero by 60 degrees. A parallel run with the same reactants and no enzyme showed rate rising steadily across the entire range.',
+    'Researchers measured the rate of an enzyme-catalyzed reaction at several temperatures. Rate rose steadily from 20 to 40 degrees Celsius, peaked near 42 degrees, then fell sharply, reaching almost zero by 60 degrees. A parallel run with the same reactants and no enzyme showed rate rising steadily across the entire range.',
     'Which explanation best accounts for the difference between the two runs above 45 degrees Celsius?',
-    '[{"id":"A","text":"The uncatalysed reaction has a lower activation energy at high temperature"},{"id":"B","text":"The enzyme denatures, removing the catalysed pathway, while the uncatalysed reaction continues to speed up"},{"id":"C","text":"The reactants are consumed faster in the catalysed run"},{"id":"D","text":"The equilibrium constant of the catalysed reaction decreases with temperature"}]',
+    '[{"id":"A","text":"The uncatalysed reaction has a lower activation energy at high temperature"},{"id":"B","text":"The enzyme denatures, removing the catalyzed pathway, while the uncatalysed reaction continues to speed up"},{"id":"C","text":"The reactants are consumed faster in the catalyzed run"},{"id":"D","text":"The equilibrium constant of the catalyzed reaction decreases with temperature"}]',
     'B', 'Rate rises with temperature for any reaction because more collisions clear the activation barrier. An enzyme adds a lower-barrier pathway, but it is a protein and loses its tertiary structure above its optimum, which removes that pathway entirely. Choice A inverts the definition of a catalyst; choice C would affect both runs; and a change in equilibrium constant describes where the reaction ends up, not how fast it gets there.'),
 
   ('chem_phys', 'Thermodynamics and kinetics', 'Catalysis', 'medium', 'multiple_choice',
-    'Researchers measured the rate of an enzyme-catalysed reaction at several temperatures. Rate rose steadily from 20 to 40 degrees Celsius, peaked near 42 degrees, then fell sharply, reaching almost zero by 60 degrees. A parallel run with the same reactants and no enzyme showed rate rising steadily across the entire range.',
-    'Compared with the uncatalysed reaction at 30 degrees Celsius, the catalysed reaction has:',
+    'Researchers measured the rate of an enzyme-catalyzed reaction at several temperatures. Rate rose steadily from 20 to 40 degrees Celsius, peaked near 42 degrees, then fell sharply, reaching almost zero by 60 degrees. A parallel run with the same reactants and no enzyme showed rate rising steadily across the entire range.',
+    'Compared with the uncatalysed reaction at 30 degrees Celsius, the catalyzed reaction has:',
     '[{"id":"A","text":"a lower activation energy and the same overall free energy change"},{"id":"B","text":"a lower activation energy and a more negative free energy change"},{"id":"C","text":"the same activation energy and a more negative free energy change"},{"id":"D","text":"a higher activation energy and the same free energy change"}]',
     'A', 'A catalyst lowers the activation barrier and is unchanged at the end, so it alters the path and not the endpoints. The free energy change is a state function fixed by the reactants and products, which is why a catalyst can never make an unfavourable reaction favourable -- only faster.'),
 
@@ -119,7 +119,7 @@ cross join (values
     'In a study, participants heard a tone immediately before receiving a mild puff of air to the eye. After many pairings, participants blinked when the tone was played alone.',
     'In this experiment, the tone is best described as:',
     '[{"id":"A","text":"an unconditioned stimulus"},{"id":"B","text":"a conditioned stimulus"},{"id":"C","text":"an unconditioned response"},{"id":"D","text":"a negative reinforcer"}]',
-    'B', 'The air puff produces a blink without any learning, which makes it the unconditioned stimulus. The tone started neutral and acquired its power through pairing, which is the definition of a conditioned stimulus. Reinforcement belongs to operant conditioning, where behaviour is emitted rather than elicited.'),
+    'B', 'The air puff produces a blink without any learning, which makes it the unconditioned stimulus. The tone started neutral and acquired its power through pairing, which is the definition of a conditioned stimulus. Reinforcement belongs to operant conditioning, where behavior is emitted rather than elicited.'),
 
   ('psych_soc', 'Learning and memory', 'Extinction', 'hard', 'multiple_choice',
     'In a study, participants heard a tone immediately before receiving a mild puff of air to the eye. After many pairings, participants blinked when the tone was played alone. The tone was then presented alone repeatedly, and blinking gradually stopped. After a day away, the tone was presented again and weak blinking returned.',
@@ -131,18 +131,18 @@ cross join (values
     'A driver is cut off in traffic and immediately concludes that the other driver is reckless and inconsiderate. Later the same day, the driver cuts someone off while rushing to a hospital, and attributes it to the emergency.',
     'This pattern is best described as:',
     '[{"id":"A","text":"the fundamental attribution error, applied asymmetrically to self and other"},{"id":"B","text":"cognitive dissonance"},{"id":"C","text":"the just-world hypothesis"},{"id":"D","text":"groupthink"}]',
-    'A', 'Explaining someone else''s behaviour by their character while explaining one''s own by the situation is the actor-observer asymmetry of the fundamental attribution error. Dissonance is the discomfort of holding conflicting beliefs, the just-world hypothesis is the belief that people get what they deserve, and groupthink is a failure of group decision-making.'),
+    'A', 'Explaining someone else''s behavior by their character while explaining one''s own by the situation is the actor-observer asymmetry of the fundamental attribution error. Dissonance is the discomfort of holding conflicting beliefs, the just-world hypothesis is the belief that people get what they deserve, and groupthink is a failure of group decision-making.'),
 
-  ('psych_soc', 'Biological bases of behaviour', 'Neurotransmission', 'medium', 'multiple_choice',
+  ('psych_soc', 'Biological bases of behavior', 'Neurotransmission', 'medium', 'multiple_choice',
     'A drug blocks the reuptake transporter for a particular neurotransmitter at the synapse.',
     'What is the most direct consequence of this action?',
     '[{"id":"A","text":"Less neurotransmitter is released into the synapse"},{"id":"B","text":"The neurotransmitter remains in the synaptic cleft longer"},{"id":"C","text":"Postsynaptic receptors are destroyed"},{"id":"D","text":"The action potential travels faster along the axon"}]',
     'B', 'Reuptake is how a released transmitter is cleared from the cleft, so blocking it leaves the transmitter available to bind receptors for longer and prolongs the signal. Release is presynaptic and unaffected, receptors are not destroyed, and axonal conduction speed depends on myelination and diameter rather than on synaptic clearance.'),
 
   ('psych_soc', 'Sociology', 'Research methods', 'hard', 'multiple_choice',
-    'A survey finds that neighbourhoods with more parks report better self-rated health. The researchers conclude that building parks improves health.',
+    'A survey finds that neighborhoods with more parks report better self-rated health. The researchers conclude that building parks improves health.',
     'Which is the strongest objection to that conclusion?',
-    '[{"id":"A","text":"The sample size was too small to detect an effect"},{"id":"B","text":"Wealthier neighbourhoods may have both more parks and better health for other reasons"},{"id":"C","text":"Self-rated health is not a valid construct"},{"id":"D","text":"Parks are not the only kind of green space"}]',
+    '[{"id":"A","text":"The sample size was too small to detect an effect"},{"id":"B","text":"Wealthier neighborhoods may have both more parks and better health for other reasons"},{"id":"C","text":"Self-rated health is not a valid construct"},{"id":"D","text":"Parks are not the only kind of green space"}]',
     'B', 'The study is observational, so the association could be produced entirely by a third variable that causes both -- income being the obvious candidate. That is confounding, and it is the objection that undermines the causal claim rather than merely qualifying it. Sample size affects precision, not causal direction, and the other two narrow the finding without challenging its logic.'),
 
   ('psych_soc', 'Sensation and perception', 'Thresholds', 'easy', 'multiple_choice',
@@ -170,7 +170,7 @@ cross join (values
   ('cars', 'Reasoning beyond the text', 'Application', 'hard', 'multiple_choice',
     'Restoration is usually described as returning a building to how it looked at some earlier moment. But every building has had many moments, and choosing one is an argument rather than a discovery. The restorer who strips a Victorian church back to its medieval fabric has not uncovered the true building; they have decided that six centuries of use were an interruption. That decision may be defensible. What it is not is neutral, and the language of restoration -- returning, uncovering, revealing -- works hard to make it sound as though no decision was made at all.',
     'Which situation is most analogous to the author''s central concern?',
-    '[{"id":"A","text":"A museum labelling a reconstructed vase as an original"},{"id":"B","text":"An editor calling a heavily rewritten manuscript the author''s definitive text"},{"id":"C","text":"A conservationist removing an invasive species from a wetland"},{"id":"D","text":"A translator producing two versions of a poem for different audiences"}]',
+    '[{"id":"A","text":"A museum labeling a reconstructed vase as an original"},{"id":"B","text":"An editor calling a heavily rewritten manuscript the author''s definitive text"},{"id":"C","text":"A conservationist removing an invasive species from a wetland"},{"id":"D","text":"A translator producing two versions of a poem for different audiences"}]',
     'B', 'The concern is that a word implies a single true version was recovered when in fact one was chosen from many. "Definitive" does exactly that work for a manuscript with many states. The vase case is straightforward misrepresentation rather than a concealed choice; the wetland has an uncontested baseline; and the translator with two versions is being openly plural, which is the opposite of the complaint.'),
 
   ('cars', 'Foundations of comprehension', 'Inference', 'medium', 'multiple_choice',

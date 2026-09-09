@@ -46,9 +46,9 @@ export type DeckSummary = {
   title: string;
   course: string;
   createdAt: string;
-  /** Last time the student actually practised this deck, if ever. */
+  /** Last time the student actually practiced this deck, if ever. */
   lastStudiedAt: string | null;
-  /** 0-100. Null until the deck has been practised at least once. */
+  /** 0-100. Null until the deck has been practiced at least once. */
   mastery: number | null;
   /** Topics in this deck that are weak or due for review right now. */
   dueTopics: string[];
@@ -175,7 +175,7 @@ export function buildSnapshot(args: {
   // A topic is due if the server scheduled it due, if it was flagged weak,
   // or if the model says it has decayed past the review threshold. The
   // union matters: the stored `next_review_at` is only recomputed when the
-  // student practises, so on its own it cannot notice a topic going stale
+  // student practices, so on its own it cannot notice a topic going stale
   // between sessions -- which is exactly when a reminder is worth most.
   const isDueRow = (row: TopicRow) =>
     row.status === "weak" ||
@@ -187,7 +187,7 @@ export function buildSnapshot(args: {
     const deckTopics = topicsByDeck.get(deck.id) || [];
 
     // Prefer the model when there is per-topic evidence to model from; fall
-    // back to raw session accuracy for a deck that has been practised but
+    // back to raw session accuracy for a deck that has been practiced but
     // has no topic rows yet.
     const modelled = deckTopics
       .map((row) => stateByRow.get(row))

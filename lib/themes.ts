@@ -33,7 +33,7 @@ const ACEDECKS: Theme = {
   label: "AceDecks",
   description: "Obsidian and indigo. The default.",
   light: false,
-  swatches: ["#050506", "#6e56cf", "#8b7bf0"],
+  swatches: ["#050506", "#2a63d8", "#5b8ff5"],
   tokens: {
     "--void": "#050506",
     "--void-raised": "#0a0a0c",
@@ -47,14 +47,14 @@ const ACEDECKS: Theme = {
     "--text-4": "#48566d",
     "--line": "rgb(255 255 255 / 0.07)",
     "--line-strong": "rgb(255 255 255 / 0.14)",
-    "--accent": "#6e56cf",
-    "--accent-bright": "#8b7bf0",
-    "--accent-dim": "#5842ab",
-    "--accent-soft": "rgb(124 106 240 / 0.14)",
-    "--accent-line": "rgb(124 106 240 / 0.34)",
-    "--accent-text": "#b9a8ff",
-    "--brand-ink": "#2a1d59",
-    // White clears AA on this violet (5.39:1). A lighter accent would not --
+    "--accent": "#2a63d8",
+    "--accent-bright": "#5b8ff5",
+    "--accent-dim": "#1c4aa8",
+    "--accent-soft": "rgb(42 99 216 / 0.14)",
+    "--accent-line": "rgb(42 99 216 / 0.34)",
+    "--accent-text": "#9dc0ff",
+    "--brand-ink": "#10305f",
+    // White clears AA on this blue (5.42:1). A lighter accent would not --
     // see Dark Academia and Tokyo Midnight, which need dark ink instead.
     "--on-brand": "#ffffff",
     "--ok": "#34e39b",
@@ -153,7 +153,7 @@ const MINIMALIST_MATCHA: Theme = {
     "--text-1": "#1b241d",
     "--text-2": "#47554a",
     // #6d7d71 was 4.35:1 on this theme's white panel -- under AA, and it is
-    // the colour every field placeholder and .t-meta line uses. Darkened
+    // the color every field placeholder and .t-meta line uses. Darkened
     // one step to 4.74:1. Enforced by lib/themeContrast.test.ts.
     "--text-3": "#67776b",
     "--text-4": "#93a397",

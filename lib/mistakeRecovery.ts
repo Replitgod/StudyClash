@@ -138,7 +138,7 @@ export type RecoveryOutcome = "recovered" | "still_wrong" | "skipped";
  * Recovering is the strongest learning signal the app collects -- it is
  * direct evidence that an explanation landed, which a first-time correct
  * answer is not. It is deliberately worth more than getting the original
- * right would have been, because that is the behaviour worth encouraging.
+ * right would have been, because that is the behavior worth encouraging.
  */
 export function recoveryCredit(outcome: RecoveryOutcome): {
   recoveries: number;

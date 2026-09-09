@@ -11,7 +11,7 @@
 --
 -- 2. Anything competitive is written service-role only. A client that can
 --    write its own rating is not running a ranked ladder, it is running an
---    honour system -- so the read policies below are for authenticated
+--    honor system -- so the read policies below are for authenticated
 --    users and the writes all go through /api/* with the service client.
 --
 -- Safe to run multiple times.

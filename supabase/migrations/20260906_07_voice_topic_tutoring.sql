@@ -21,7 +21,7 @@
 -- algebra 2" are one row and one generation.
 --
 -- The cache is shared across users on purpose. It holds no student text: the
--- key is a normalised subject name and the value is a generic concept
+-- key is a normalized subject name and the value is a generic concept
 -- outline for it, which is the same for everyone who asks. Nothing personal
 -- goes in, so nothing personal can come out of a shared read.
 --

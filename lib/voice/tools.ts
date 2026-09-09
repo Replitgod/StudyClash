@@ -283,7 +283,7 @@ function toRequest(value: unknown): StudentRequest | null {
  *
  * Pure: session in, session out. Every branch of the tutoring loop is
  * therefore reachable from a unit test, which is the only reason any of this
- * behaviour is verified at all -- none of it can be exercised by clicking
+ * behavior is verified at all -- none of it can be exercised by clicking
  * around without a microphone and ten minutes of talking.
  */
 export type ToolContext = {
@@ -293,7 +293,7 @@ export type ToolContext = {
    *
    * The app knows this and the model does not, which is exactly why the check
    * belongs here. Left undefined it defaults to true, so a caller that cannot
-   * tell keeps the old behaviour.
+   * tell keeps the old behavior.
    */
   studentSpokeSinceAsk?: boolean;
 };

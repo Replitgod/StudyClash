@@ -49,7 +49,7 @@ export function SiteFooter() {
               className="mt-5 max-w-xs text-[14.5px] leading-relaxed"
               style={{ color: "var(--text-2)" }}
             >
-              The study app that decides what you practise next, and tells you
+              The study app that decides what you practice next, and tells you
               why.
             </p>
 

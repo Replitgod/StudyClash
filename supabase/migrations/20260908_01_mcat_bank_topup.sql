@@ -3,7 +3,7 @@
 -- The first MCAT bank landed 24 questions across four sections. The Quick
 -- Diagnostic samples every section and needs 39, so lib/examModes.ts withheld
 -- both modes and the exam page said "not enough questions yet" -- honest, and
--- useless. Meanwhile /exams still offered "Practise MCAT", because it was
+-- useless. Meanwhile /exams still offered "Practice MCAT", because it was
 -- deciding availability a different way. One of those screens had to change,
 -- and the answer was both: this migration supplies the questions, and /exams
 -- now reads the same availability logic the diagnostic does.
@@ -27,10 +27,10 @@ cross join (values
   -- ============== Chemical and Physical Foundations (+4) ==============
 
   ('chem_phys', 'Thermodynamics and kinetics', 'Equilibrium', 'medium', 'multiple_choice',
-    'A sealed vessel holds the equilibrium N2O4(g) reversibly forming 2 NO2(g), which is endothermic in the forward direction. N2O4 is colourless and NO2 is brown. The vessel is warmed from 25 to 60 degrees Celsius.',
-    'What happens to the colour of the gas mixture, and why?',
+    'A sealed vessel holds the equilibrium N2O4(g) reversibly forming 2 NO2(g), which is endothermic in the forward direction. N2O4 is colorless and NO2 is brown. The vessel is warmed from 25 to 60 degrees Celsius.',
+    'What happens to the color of the gas mixture, and why?',
     '[{"id":"A","text":"It darkens, because heating shifts an endothermic equilibrium toward products"},{"id":"B","text":"It lightens, because heating shifts an endothermic equilibrium toward reactants"},{"id":"C","text":"It darkens, because heating always increases the rate of the forward reaction only"},{"id":"D","text":"It is unchanged, because temperature does not affect an equilibrium position"}]',
-    'A', 'Heat is a reactant in an endothermic reaction, so adding it drives the system toward products by Le Chatelier -- more NO2, darker colour. Choice C reaches the right answer by wrong reasoning: heating speeds both directions, and it is the shift in the equilibrium constant that matters. Choice D confuses a catalyst, which does not move an equilibrium, with temperature, which does.'),
+    'A', 'Heat is a reactant in an endothermic reaction, so adding it drives the system toward products by Le Chatelier -- more NO2, darker color. Choice C reaches the right answer by wrong reasoning: heating speeds both directions, and it is the shift in the equilibrium constant that matters. Choice D confuses a catalyst, which does not move an equilibrium, with temperature, which does.'),
 
   ('chem_phys', 'Molecular structure', 'Intermolecular forces', 'easy', 'multiple_choice',
     null,
@@ -42,7 +42,7 @@ cross join (values
     'A patient is given an intravenous infusion from a bag suspended above the arm. The bag is raised from 0.5 m above the insertion point to 1.5 m.',
     'What happens to the pressure the fluid exerts at the insertion point?',
     '[{"id":"A","text":"It is unchanged, since the fluid and the tubing are the same"},{"id":"B","text":"It roughly triples, since hydrostatic pressure is proportional to height"},{"id":"C","text":"It roughly triples, since pressure is proportional to the square of the height"},{"id":"D","text":"It falls, since the fluid has further to travel"}]',
-    'B', 'Hydrostatic pressure is rho times g times h, linear in height, so tripling the height triples that contribution. Choice C invents a square that is not in the relationship, and choice D confuses distance travelled with pressure -- the column of fluid is what pushes, and a taller column pushes harder.'),
+    'B', 'Hydrostatic pressure is rho times g times h, linear in height, so tripling the height triples that contribution. Choice C invents a square that is not in the relationship, and choice D confuses distance traveled with pressure -- the column of fluid is what pushes, and a taller column pushes harder.'),
 
   ('chem_phys', 'Atomic structure', 'Quantum numbers', 'hard', 'multiple_choice',
     null,
@@ -79,7 +79,7 @@ cross join (values
   ('cars', 'Reasoning beyond the text', 'Application', 'hard', 'multiple_choice',
     'The first commercial lighthouse keepers were paid by the ship. A vessel passing safely would settle up at the next port, and a keeper whose light had guided nobody earned nothing. It was a system with an obvious flaw, and the flaw was not that keepers were poor. It was that a light, once lit, shines on every ship in the bay, including the ones that never pay. What the lighthouse taught economics was not how to run a lighthouse. It was that some goods cannot be sold one at a time.',
     'Which modern situation is most analogous to the problem the passage describes?',
-    '[{"id":"A","text":"A newspaper charging more for a print edition than a digital one"},{"id":"B","text":"A neighbourhood association funding street lighting that benefits non-members equally"},{"id":"C","text":"A shop raising prices when a competitor closes"},{"id":"D","text":"An airline overbooking a flight to account for no-shows"}]',
+    '[{"id":"A","text":"A newspaper charging more for a print edition than a digital one"},{"id":"B","text":"A neighborhood association funding street lighting that benefits non-members equally"},{"id":"C","text":"A shop raising prices when a competitor closes"},{"id":"D","text":"An airline overbooking a flight to account for no-shows"}]',
     'B', 'The structure is a good that, once provided, cannot be withheld from those who did not pay -- which is exactly street lighting funded by some and used by all. Pricing tiers, monopoly pricing and overbooking are all problems of allocating a good that CAN be withheld.'),
 
   -- ============== Biological and Biochemical Foundations (+5) ==============
@@ -91,7 +91,7 @@ cross join (values
     'B', 'Codons are read in non-overlapping threes from a fixed start, so deleting one base shifts every codon after it -- a frameshift, which typically also produces a premature stop. Choice A describes a point substitution, choice C describes a silent mutation at the wobble position, and neither applies to an indel. The start codon is untouched, so translation still begins.'),
 
   ('bio_biochem', 'Metabolism', 'Regulation', 'hard', 'multiple_choice',
-    'Phosphofructokinase-1 catalyses an early, effectively irreversible step of glycolysis. It is inhibited by ATP and by citrate, and activated by AMP.',
+    'Phosphofructokinase-1 catalyzes an early, effectively irreversible step of glycolysis. It is inhibited by ATP and by citrate, and activated by AMP.',
     'What does this regulation pattern most directly accomplish?',
     '[{"id":"A","text":"It matches glycolytic flux to the cell''s energy demand"},{"id":"B","text":"It prevents glucose from entering the cell when ATP is high"},{"id":"C","text":"It ensures glycolysis runs at a constant rate regardless of conditions"},{"id":"D","text":"It couples glycolysis directly to protein synthesis"}]',
     'A', 'ATP and citrate both signal that energy and carbon are plentiful and shut the pathway down; AMP signals that ATP has been spent and opens it up. Regulating an early irreversible step is how a pathway is throttled without wasting intermediates. Choice B describes transport rather than this enzyme, and choice C is the opposite of what feedback regulation does.'),
@@ -104,9 +104,9 @@ cross join (values
 
   ('bio_biochem', 'Enzymes', 'Cooperativity', 'hard', 'multiple_choice',
     'Haemoglobin binds oxygen with a sigmoidal saturation curve; myoglobin binds it with a hyperbolic one.',
-    'What does the sigmoidal shape of the haemoglobin curve indicate?',
+    'What does the sigmoidal shape of the hemoglobin curve indicate?',
     '[{"id":"A","text":"Haemoglobin has a higher affinity for oxygen than myoglobin at every partial pressure"},{"id":"B","text":"Binding at one site increases the affinity of the remaining sites"},{"id":"C","text":"Haemoglobin is denatured at low oxygen partial pressures"},{"id":"D","text":"Haemoglobin binds only one oxygen molecule per protein"}]',
-    'B', 'A sigmoidal curve is the signature of positive cooperativity: the first oxygen bound shifts the protein toward a higher-affinity state, so the middle of the curve is steep. That steepness is what lets haemoglobin load in the lungs and unload in tissue. Myoglobin has one site and so cannot cooperate, which is why its curve is hyperbolic and its affinity is higher, not lower.'),
+    'B', 'A sigmoidal curve is the signature of positive cooperativity: the first oxygen bound shifts the protein toward a higher-affinity state, so the middle of the curve is steep. That steepness is what lets hemoglobin load in the lungs and unload in tissue. Myoglobin has one site and so cannot cooperate, which is why its curve is hyperbolic and its affinity is higher, not lower.'),
 
   ('bio_biochem', 'Genetics', 'Population genetics', 'medium', 'multiple_choice',
     'In a large population at Hardy-Weinberg equilibrium, a recessive condition affects 1 in 400 individuals.',
@@ -117,28 +117,28 @@ cross join (values
   -- ============== Psychological, Social, and Biological Foundations (+5) ==============
 
   ('psych_soc', 'Learning and memory', 'Memory systems', 'medium', 'multiple_choice',
-    'A patient with bilateral hippocampal damage can learn to trace a shape in a mirror, improving over days, but has no memory of ever having practised the task.',
+    'A patient with bilateral hippocampal damage can learn to trace a shape in a mirror, improving over days, but has no memory of ever having practiced the task.',
     'What does this pattern most directly demonstrate?',
     '[{"id":"A","text":"Procedural and declarative memory rely on different systems"},{"id":"B","text":"Working memory capacity is unaffected by hippocampal damage"},{"id":"C","text":"Motor skills are stored in the hippocampus"},{"id":"D","text":"Memory consolidation requires sleep"}]',
-    'A', 'The skill improves while the episodic record of practising it does not form, which is only possible if the two are supported by separate systems -- procedural learning through the basal ganglia and cerebellum, declarative memory through the hippocampus. Choice C is contradicted by the very fact the patient improves.'),
+    'A', 'The skill improves while the episodic record of practicing it does not form, which is only possible if the two are supported by separate systems -- procedural learning through the basal ganglia and cerebellum, declarative memory through the hippocampus. Choice C is contradicted by the very fact the patient improves.'),
 
-  ('psych_soc', 'Social psychology', 'Group behaviour', 'medium', 'multiple_choice',
+  ('psych_soc', 'Social psychology', 'Group behavior', 'medium', 'multiple_choice',
     'Participants were asked to pull on a rope, alone and in groups. Individual force decreased as group size increased, even though participants reported trying equally hard throughout.',
     'This finding is best explained by:',
     '[{"id":"A","text":"social facilitation"},{"id":"B","text":"social loafing"},{"id":"C","text":"deindividuation"},{"id":"D","text":"group polarisation"}]',
     'B', 'Reduced individual effort on a collective task where contributions cannot be separated is social loafing. Social facilitation is the opposite -- improved performance when observed -- deindividuation is loss of self-awareness in a crowd, and group polarisation is about attitudes becoming more extreme after discussion.'),
 
-  ('psych_soc', 'Biological bases of behaviour', 'Endocrine', 'hard', 'multiple_choice',
+  ('psych_soc', 'Biological bases of behavior', 'Endocrine', 'hard', 'multiple_choice',
     'Cortisol released from the adrenal cortex inhibits the release of both corticotropin-releasing hormone from the hypothalamus and adrenocorticotropic hormone from the anterior pituitary.',
     'This arrangement is an example of:',
     '[{"id":"A","text":"positive feedback"},{"id":"B","text":"negative feedback"},{"id":"C","text":"feedforward regulation"},{"id":"D","text":"a reflex arc"}]',
-    'B', 'The end product of the axis suppresses the signals that produced it, which damps the response and holds the system near a set point -- the definition of negative feedback. Positive feedback would amplify instead, which physiology reserves for processes meant to run to completion, such as labour or clotting.'),
+    'B', 'The end product of the axis suppresses the signals that produced it, which damps the response and holds the system near a set point -- the definition of negative feedback. Positive feedback would amplify instead, which physiology reserves for processes meant to run to completion, such as labor or clotting.'),
 
   ('psych_soc', 'Sociology', 'Social stratification', 'medium', 'multiple_choice',
     null,
     'A researcher finds that children of parents in the highest income quintile are far more likely to remain in that quintile as adults than chance would predict. This finding is best described as evidence of:',
     '[{"id":"A","text":"low intergenerational mobility"},{"id":"B","text":"high intergenerational mobility"},{"id":"C","text":"absolute poverty"},{"id":"D","text":"the Hawthorne effect"}]',
-    'A', 'Position persisting across generations is exactly what low mobility means -- where you end up is strongly predicted by where you started. High mobility would show the opposite. Absolute poverty is a threshold measure rather than a movement one, and the Hawthorne effect concerns behaviour changing under observation.'),
+    'A', 'Position persisting across generations is exactly what low mobility means -- where you end up is strongly predicted by where you started. High mobility would show the opposite. Absolute poverty is a threshold measure rather than a movement one, and the Hawthorne effect concerns behavior changing under observation.'),
 
   ('psych_soc', 'Sensation and perception', 'Visual processing', 'hard', 'multiple_choice',
     'A person can accurately reach for and grasp an object placed in front of them but cannot report its shape or orientation when asked.',

@@ -86,7 +86,7 @@ cross join (values
   ('verbal', 'Reading comprehension', 'Weaken', 'hard', 'multiple_choice',
     'A city reduced its speed limit on residential streets and reported a 22 percent fall in collisions the following year. Officials concluded that the lower limit caused the reduction.',
     'Which finding, if true, most weakens the officials'' conclusion?',
-    '[{"id":"A","text":"Collisions fell by a similar amount in neighbouring cities that did not change their limits"},{"id":"B","text":"Some drivers exceeded the new limit"},{"id":"C","text":"The reduction was larger on some streets than on others"},{"id":"D","text":"The new limit was unpopular with commuters"},{"id":"E","text":"Enforcement of the limit increased slightly"}]',
+    '[{"id":"A","text":"Collisions fell by a similar amount in neighboring cities that did not change their limits"},{"id":"B","text":"Some drivers exceeded the new limit"},{"id":"C","text":"The reduction was larger on some streets than on others"},{"id":"D","text":"The new limit was unpopular with commuters"},{"id":"E","text":"Enforcement of the limit increased slightly"}]',
     'A', 'If cities that changed nothing saw the same fall, the fall was produced by something affecting all of them and not by the policy -- that removes the causal link rather than merely qualifying it. Non-compliance and uneven effects are compatible with the policy working, unpopularity is irrelevant to whether it worked, and increased enforcement would if anything strengthen the case.'),
 
   -- ============== Quantitative Reasoning ==============

@@ -30,6 +30,11 @@ const FILES = [
   // it is ON CONFLICT DO NOTHING like every other seed, so a database that
   // already ran the earlier files just picks up the new questions.
   "20260908_01_mcat_bank_topup.sql",
+  // Corrections to content already inserted above. They run last because
+  // they rewrite rows the inserts create, and an UPDATE before its INSERT
+  // silently does nothing.
+  "20260908_02_american_spelling.sql",
+  "20260908_03_question_quality.sql",
 ];
 
 const DOLLAR = "$" + "$";

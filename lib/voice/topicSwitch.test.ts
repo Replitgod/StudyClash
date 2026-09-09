@@ -241,7 +241,7 @@ describe("when the new material never arrives", () => {
   it("passes a refusal through in the words it was written in", () => {
     const failed = resolveTopicSwitch({
       session: createSession(BIOLOGY),
-      topic: "my neighbour",
+      topic: "my neighbor",
       concepts: [],
       refusal: "That one is not really a study topic.",
     });

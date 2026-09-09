@@ -17,7 +17,7 @@ import { getStripeClient } from "@/lib/server/stripe";
 //     a subscription is still open would keep charging a card belonging to
 //     someone who no longer has an account and cannot reach the billing
 //     portal to stop it.
-//  2. Delete the rows whose cascade behaviour this repo cannot vouch for
+//  2. Delete the rows whose cascade behavior this repo cannot vouch for
 //     (`decks`/`questions` predate supabase/migrations, exactly as noted in
 //     app/api/library/material/route.ts).
 //  3. Delete the auth user last. Every table added since 20260711 declares

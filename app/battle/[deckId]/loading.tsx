@@ -4,7 +4,7 @@
 // deck/question-fetch gap after this mounts.
 //
 // A focus route, so it DOES own its canvas -- but it takes the canvas from
-// --app-bg rather than hardcoding #05050a, which had drifted from the colour
+// --app-bg rather than hardcoding #05050a, which had drifted from the color
 // the rest of the app paints.
 export default function BattleLoading() {
   return (
