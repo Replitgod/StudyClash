@@ -119,7 +119,7 @@ values (
     },
     "adaptive": {
       "module2ThresholdAccuracy": 0.6,
-      "note": "Transparent internal threshold, not a reproduction of College Board's proprietary adaptive algorithm."
+      "note": "Transparent internal threshold, not a reproduction of College Board''s proprietary adaptive algorithm."
     },
     "scoreRange": {"min": 400, "max": 1600, "sectionMin": 200, "sectionMax": 800}
   }'::jsonb

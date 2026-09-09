@@ -157,7 +157,7 @@ Q4: 18',
 
 ) as v(section, domain, skill, difficulty, question_type, stimulus, question_text, answer_choices, correct_answer, explanation)
 where e.slug = 'gre'
-on conflict (exam_id, md5(coalesce(stimulus, '') || chr(31) || question_text)) do nothing;
+on conflict (exam_id, md5(coalesce(stimulus, '') || E'\x1f' || question_text)) do nothing;
 
 update public.exam_definitions
 set status = 'available'

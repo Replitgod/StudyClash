@@ -15,9 +15,11 @@
 -- Two changes:
 --
 --   1. Identity becomes the stimulus and the stem together. A separator that
---      cannot occur in either (a unit separator, chr(31)) sits between them,
---      so a stimulus ending where a stem begins cannot collide with the
---      reverse split.
+--      cannot occur in either -- a unit separator, written as the constant
+--      E'\x1f' rather than chr(31) so the index expression needs no
+--      argument about function volatility -- sits between them, so a
+--      stimulus ending where a stem begins cannot collide with the reverse
+--      split.
 --   2. The four SAT seeds are replayed under the new identity, which inserts
 --      exactly the rows that were lost and does nothing for the rows that
 --      landed. The originals are left untouched: a migration that has already
@@ -28,7 +30,7 @@
 drop index if exists public.diagnostic_questions_exam_text_unique;
 
 create unique index if not exists diagnostic_questions_exam_item_unique
-  on public.diagnostic_questions (exam_id, md5(coalesce(stimulus, '') || chr(31) || question_text));
+  on public.diagnostic_questions (exam_id, md5(coalesce(stimulus, '') || E'\x1f' || question_text));
 
 comment on index public.diagnostic_questions_exam_item_unique is
   'Exact-duplicate guard. Keyed on stimulus AND question text: on the Digital SAT the stem is boilerplate and the item is the passage, so keying on the stem alone silently dropped a third of the bank.';
@@ -632,7 +634,7 @@ cross join (values
     'C', 'The radius is half the diameter, 7. Area = πr^2 = 49π.')
 ) as v(section, domain, skill, difficulty, question_type, stimulus, question_text, answer_choices, correct_answer, explanation)
 where e.slug = 'digital-sat'
-on conflict (exam_id, md5(coalesce(stimulus, '') || chr(31) || question_text)) do nothing;
+on conflict (exam_id, md5(coalesce(stimulus, '') || E'\x1f' || question_text)) do nothing;
 
 -- ============================================================
 -- Explanations that stopped at the arithmetic

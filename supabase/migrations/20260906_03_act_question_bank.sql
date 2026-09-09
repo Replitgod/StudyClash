@@ -472,7 +472,7 @@ Scientist 2 argues that human hunting was the primary cause, noting that extinct
 
 ) as v(section, domain, skill, difficulty, question_type, stimulus, question_text, answer_choices, correct_answer, explanation)
 where e.slug = 'act'
-on conflict (exam_id, md5(coalesce(stimulus, '') || chr(31) || question_text)) do nothing;
+on conflict (exam_id, md5(coalesce(stimulus, '') || E'\x1f' || question_text)) do nothing;
 
 -- Now, and only now, the ACT becomes available: there is something behind
 -- the card. The status flip lives here rather than in the definitions
