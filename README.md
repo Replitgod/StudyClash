@@ -30,9 +30,15 @@ A card offers practice only when the exam is `available` **and** its bank is
 non-empty — those two fail independently, and a "coming soon" row was an
 available exam with nothing in it. Tracks with no bank say so.
 
-The bank holds 259 original questions: 98 Digital SAT, 60 ACT, 57 NCLEX-RN,
-24 MCAT, 20 GRE. All of it is written to each board's published
+The bank holds 278 original questions: 98 Digital SAT, 60 ACT, 57 NCLEX-RN,
+43 MCAT, 20 GRE. All of it is written to each board's published
 specification and none of it is copied from a real exam.
+
+`lib/examModes.ts` decides what a student can actually sit, and both /exams
+and the exam page read it, so they cannot disagree. A mode the bank cannot
+mostly fill is **not offered** — a "Full Diagnostic" that serves an eighth
+of its questions teaches a student that the label means nothing — and a mode
+that is offered but short says so in the number of questions it promises.
 
 One route sits outside all of that: `/d/[slug]`, a **published study set**.
 It is the only page in the signed-in half of the product written for someone

@@ -155,11 +155,24 @@ export function isTrackPlayable(args: {
   track: ExamTrackEntry;
   examStatus?: string | null;
   publishedQuestions?: number | null;
+  /**
+   * Whether any mode behind this exam can actually run, from
+   * lib/examModes.ts. Omitted, the older rule applies -- a non-empty bank is
+   * enough -- which keeps every existing caller and test working.
+   *
+   * Supplied, it wins. /exams and /diagnostics/[examSlug] used to decide
+   * this separately and disagreed the moment a bank went thin: the card
+   * offered "Practise MCAT" and the page behind it said there were not
+   * enough questions to estimate anything.
+   */
+  offeredModes?: number | null;
 }): boolean {
-  const { track, examStatus, publishedQuestions } = args;
+  const { track, examStatus, publishedQuestions, offeredModes } = args;
   if (!track.examSlug) return false;
   if (examStatus !== "available") return false;
-  return (publishedQuestions ?? 0) > 0;
+  if ((publishedQuestions ?? 0) <= 0) return false;
+  if (offeredModes === undefined || offeredModes === null) return true;
+  return offeredModes > 0;
 }
 
 /**
@@ -174,6 +187,7 @@ export function trackAction(args: {
   track: ExamTrackEntry;
   examStatus?: string | null;
   publishedQuestions?: number | null;
+  offeredModes?: number | null;
 }): { label: string; href: string } | null {
   if (!isTrackPlayable(args)) return null;
   return {

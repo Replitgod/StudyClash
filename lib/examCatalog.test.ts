@@ -105,3 +105,47 @@ describe("what the card's button does", () => {
     ).toBeNull();
   });
 });
+
+// /exams and /diagnostics/[examSlug] decided availability separately and
+// disagreed the moment a bank went thin: the card offered "Practise MCAT"
+// while the page behind it said there were not enough questions to estimate
+// anything. Both now read lib/examModes, and this is the seam.
+describe("agreeing with the exam page about what can be practised", () => {
+  it("withholds the card when no mode behind it can run", () => {
+    expect(
+      trackAction({
+        track: SAT,
+        examStatus: "available",
+        publishedQuestions: 24,
+        offeredModes: 0,
+      })
+    ).toBeNull();
+  });
+
+  it("offers the card when at least one mode can run", () => {
+    expect(
+      trackAction({
+        track: SAT,
+        examStatus: "available",
+        publishedQuestions: 24,
+        offeredModes: 1,
+      })
+    ).not.toBeNull();
+  });
+
+  // Older callers and the catalog's own fallbacks do not pass this, and must
+  // keep the previous rule rather than silently losing every card.
+  it("falls back to the bank being non-empty when nothing is passed", () => {
+    expect(
+      trackAction({ track: SAT, examStatus: "available", publishedQuestions: 98 })
+    ).not.toBeNull();
+    expect(
+      trackAction({
+        track: SAT,
+        examStatus: "available",
+        publishedQuestions: 98,
+        offeredModes: null,
+      })
+    ).not.toBeNull();
+  });
+});

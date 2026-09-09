@@ -1,5 +1,6 @@
 import { getServiceSupabaseClient } from "@/lib/server/apiUtils";
 import { parseExamBlueprint, type ExamBlueprint } from "@/lib/examBlueprint";
+import { describeModes, type ModeAvailability } from "@/lib/examModes";
 import { EXAM_TRACKS, type ExamTrackEntry } from "@/lib/examCatalog";
 
 // What is actually behind each exam card, read from the database.
@@ -23,6 +24,16 @@ export type ExamTrackStatus = {
   disclaimer: string | null;
   publishedQuestions: number;
   blueprint: ExamBlueprint | null;
+  /**
+   * What a student could actually sit, from the same function the exam page
+   * uses.
+   *
+   * These two screens decided availability separately and disagreed the
+   * moment a bank was thin: /exams offered "Practise MCAT" while
+   * /diagnostics/mcat said there were not enough questions to estimate
+   * anything. A card may only offer practice if a mode behind it is offered.
+   */
+  modes: ModeAvailability[];
 };
 
 /**
@@ -42,6 +53,7 @@ export async function loadExamCatalogStatus(): Promise<ExamTrackStatus[]> {
       disclaimer: null,
       publishedQuestions: 0,
       blueprint: null,
+      modes: [],
     }));
 
   try {
@@ -62,14 +74,25 @@ export async function loadExamCatalogStatus(): Promise<ExamTrackStatus[]> {
     // this page is revalidated hourly, so the simple read wins.
     const { data: questions } = await supabase
       .from("diagnostic_questions")
-      .select("exam_id")
+      .select("exam_id, section")
       .eq("status", "published")
       .limit(20000);
 
     const countByExamId = new Map<string, number>();
+    // Per section as well as per exam: whether a mode can run depends on
+    // which sections have questions, not just how many exist in total.
+    const supplyByExamId = new Map<string, Record<string, number>>();
+
     for (const row of questions || []) {
-      const id = String((row as Record<string, unknown>).exam_id);
+      const record = row as Record<string, unknown>;
+      const id = String(record.exam_id);
+      const section = String(record.section ?? "");
+
       countByExamId.set(id, (countByExamId.get(id) ?? 0) + 1);
+
+      const supply = supplyByExamId.get(id) ?? {};
+      if (section) supply[section] = (supply[section] ?? 0) + 1;
+      supplyByExamId.set(id, supply);
     }
 
     return EXAM_TRACKS.map((track) => {
@@ -82,8 +105,11 @@ export async function loadExamCatalogStatus(): Promise<ExamTrackStatus[]> {
           disclaimer: null,
           publishedQuestions: 0,
           blueprint: null,
+          modes: [],
         };
       }
+
+      const blueprint = parseExamBlueprint(exam.configuration);
 
       return {
         track,
@@ -91,7 +117,8 @@ export async function loadExamCatalogStatus(): Promise<ExamTrackStatus[]> {
         examName: String(exam.name ?? track.name),
         disclaimer: exam.disclaimer ? String(exam.disclaimer) : null,
         publishedQuestions: countByExamId.get(String(exam.id)) ?? 0,
-        blueprint: parseExamBlueprint(exam.configuration),
+        blueprint,
+        modes: describeModes(blueprint, supplyByExamId.get(String(exam.id)) ?? {}),
       };
     });
   } catch (error) {

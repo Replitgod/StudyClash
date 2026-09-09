@@ -54,6 +54,7 @@ function ReadyCard({ entry }: { entry: ExamTrackStatus }) {
     track: entry.track,
     examStatus: entry.examStatus,
     publishedQuestions: entry.publishedQuestions,
+    offeredModes: entry.modes.filter((mode) => mode.offered).length,
   });
 
   return (
@@ -132,6 +133,9 @@ export default async function ExamsLandingPage() {
       track: entry.track,
       examStatus: entry.examStatus,
       publishedQuestions: entry.publishedQuestions,
+      // The same test the exam page applies. A card that offers practice a
+      // student cannot actually sit is the disagreement this closes.
+      offeredModes: entry.modes.filter((mode) => mode.offered).length,
     })
   );
   const notYet = catalog.filter((entry) => !ready.includes(entry));

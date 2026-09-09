@@ -22,6 +22,7 @@ const FILES = [
   "20260906_05_mcat_question_bank.sql",
   "20260906_06_gre_question_bank.sql",
   "20260906_07_voice_topic_tutoring.sql",
+  "20260908_01_mcat_bank_topup.sql",
 ];
 
 const bundle = existsSync(BUNDLE) ? readFileSync(BUNDLE, "utf8").replace(/\r\n/g, "\n") : "";
