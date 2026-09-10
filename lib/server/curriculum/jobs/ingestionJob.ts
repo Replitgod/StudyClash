@@ -7,6 +7,10 @@ import {
   ocrPdfPagesBatch,
   type ExtractedPage,
 } from "@/lib/server/curriculum/extraction";
+import {
+  extractDocxPages,
+  extractPptxPages,
+} from "@/lib/server/curriculum/officeExtraction";
 import { enqueueJob } from "@/lib/server/curriculum/enqueue";
 import type { JobHandler } from "./types";
 
@@ -112,6 +116,26 @@ export const runIngestionJob: JobHandler = async (job, timeBudgetMs) => {
     );
     await finalizeDocument(job.document_id);
     return { done: true, message: "Text file ingested." };
+  }
+
+  // Word and PowerPoint are pure local parsing -- no network, no OCR -- so
+  // like the text-file path they always finish in one invocation and need
+  // no resumable phase.
+  if (payload.sourceType === "word" || payload.sourceType === "powerpoint") {
+    const pages =
+      payload.sourceType === "word"
+        ? await extractDocxPages(fileBuffer)
+        : await extractPptxPages(fileBuffer);
+
+    await supabase.from("document_pages").upsert(
+      pages.map((p) => upsertPageRow(p, job.document_id as string)),
+      { onConflict: "document_id,page_number" }
+    );
+    await finalizeDocument(job.document_id);
+    return {
+      done: true,
+      message: `${payload.sourceType === "word" ? "Word document" : "Presentation"} ingested (${pages.length} page(s)).`,
+    };
   }
 
   if (payload.sourceType === "pdf" && !payload.phase) {

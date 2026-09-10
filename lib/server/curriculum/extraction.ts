@@ -231,11 +231,13 @@ export function extractTextFilePage(fileBuffer: Buffer): ExtractedPage[] {
   ];
 }
 
-// Word/PowerPoint parsing needs a dedicated library (e.g. mammoth for
-// .docx, a pptx parser for slides) that isn't installed in this project
-// yet -- adding a new parsing dependency is a real decision, not something
-// to silently pull in mid-pipeline. Fails the job clearly instead of
-// pretending to support these types.
+// Word and PowerPoint are handled in ./officeExtraction.ts. Both are ZIP
+// archives of XML and jszip was already a dependency, so the "needs a new
+// parsing library" this used to cite was never actually true.
+//
+// web_page remains unsupported: fetching a URL server-side is a different
+// problem (redirects, paywalls, robots, and an SSRF surface) rather than a
+// parsing one, and it should not be quietly folded in with file uploads.
 export function isUnsupportedForExtraction(sourceType: string): boolean {
-  return sourceType === "word" || sourceType === "powerpoint" || sourceType === "web_page";
+  return sourceType === "web_page";
 }

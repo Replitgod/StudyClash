@@ -369,7 +369,7 @@ export default function CourseProgressPage() {
         <form onSubmit={handleUpload} className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
           <input
             type="file"
-            accept=".pdf,.txt,image/*"
+            accept=".pdf,.txt,.docx,.doc,.pptx,.ppt,image/*"
             onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
             className="flex-1 text-sm text-white/70 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-500/20 file:px-3 file:py-2 file:text-xs file:font-bold file:text-indigo-200"
           />
@@ -377,7 +377,7 @@ export default function CourseProgressPage() {
             Upload
           </Button>
         </form>
-        <p className="mt-2 text-[11px] text-[var(--text-3)]">PDF, image, or plain text. Up to 25MB. Word/PowerPoint: export to PDF for now.</p>
+        <p className="mt-2 text-[11px] text-[var(--text-3)]">PDF, Word, PowerPoint, image, or plain text. Up to 25MB. Slide notes are read too.</p>
         {uploadError && <p className="mt-2 text-xs text-red-300">{uploadError}</p>}
       </Card>
 

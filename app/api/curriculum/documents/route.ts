@@ -7,6 +7,7 @@ import {
 } from "@/lib/server/apiUtils";
 import { buildStoragePath, uploadDocumentFile } from "@/lib/server/curriculum/storage";
 import { isUnsupportedForExtraction } from "@/lib/server/curriculum/extraction";
+import { isLegacyOfficeFile } from "@/lib/server/curriculum/officeExtraction";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
   const sourceType = inferSourceType(file);
   if (!sourceType) {
     return NextResponse.json(
-      { error: "Unsupported file type. Supported: PDF, images, and plain text (Word/PowerPoint support is coming soon)." },
+      { error: "Unsupported file type. Supported: PDF, Word, PowerPoint, images, and plain text." },
       { status: 400 }
     );
   }
@@ -114,6 +115,24 @@ export async function POST(request: NextRequest) {
 
   const arrayBuffer = await file.arrayBuffer();
   const fileBuffer = Buffer.from(arrayBuffer);
+
+  // Caught here rather than in the worker. A .doc is an OLE compound file,
+  // not a ZIP of XML, so the parser cannot read it -- and finding that out
+  // asynchronously would leave the student with a failed document and no
+  // idea the fix is one Save As away.
+  if (
+    (sourceType === "word" || sourceType === "powerpoint") &&
+    isLegacyOfficeFile(fileBuffer)
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "That's a Word 97-2003 file. Open it and choose File > Save As to save it as .docx or .pptx, then upload again.",
+      },
+      { status: 400 }
+    );
+  }
+
   const checksum = createHash("sha256").update(fileBuffer).digest("hex");
 
   // Duplicate-file detection within this course (Section 1, point 8).
