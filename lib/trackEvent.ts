@@ -95,6 +95,10 @@ export type AnalyticsEventName =
   | "subscription_activated"
   | "curriculum_course_created"
   | "curriculum_document_uploaded"
+  // The moment an upload stops being a document and becomes something on a
+  // review schedule. Worth measuring on its own: it is the step that decides
+  // whether the whole ingestion pipeline produced any learning.
+  | "curriculum_deck_built"
   | "diagnostic_tutor_action_clicked"
   | "diagnostic_retry_weak_topics_clicked";
 

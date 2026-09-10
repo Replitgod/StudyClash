@@ -107,6 +107,9 @@ export default function CourseProgressPage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [expandedConceptId, setExpandedConceptId] = useState<string | null>(null);
   const [conceptQuestions, setConceptQuestions] = useState<Record<string, QuestionRow[] | "loading" | "error">>({});
+  const [isBuildingDeck, setIsBuildingDeck] = useState(false);
+  const [deckError, setDeckError] = useState<string | null>(null);
+  const [deckResult, setDeckResult] = useState<{ deckId: string; cardsAdded: number } | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const fetchProgress = useCallback(async () => {
@@ -177,6 +180,36 @@ export default function CourseProgressPage() {
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : "Upload failed.");
       setIsUploading(false);
+    }
+  };
+
+  // The step that was missing: verified questions become cards a student
+  // actually reviews, on the SM-2 schedule, counting toward mastery.
+  // Idempotent -- running it again after another document finishes adds the
+  // new cards and leaves existing review history alone.
+  const handleBuildDeck = async () => {
+    setIsBuildingDeck(true);
+    setDeckError(null);
+    try {
+      const response = await authFetch(`/api/curriculum/courses/${courseId}/build-deck`, {
+        method: "POST",
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        setDeckError(json.error || "Could not build the deck.");
+        setIsBuildingDeck(false);
+        return;
+      }
+      void trackEvent("curriculum_deck_built", {
+        courseId,
+        deckId: json.deckId,
+        cardsAdded: json.cardsAdded,
+      });
+      setDeckResult({ deckId: json.deckId, cardsAdded: json.cardsAdded });
+      setIsBuildingDeck(false);
+    } catch (err) {
+      setDeckError(err instanceof Error ? err.message : "Could not build the deck.");
+      setIsBuildingDeck(false);
     }
   };
 
@@ -281,6 +314,55 @@ export default function CourseProgressPage() {
           </p>
         </Card>
       </div>
+
+      {/* The point of the whole pipeline. Rendered only when there is
+          something verified behind it -- a "study this" button with no cards
+          waiting is worse than no button. */}
+      {(data.questionStats.byStatus.approved || 0) > 0 && (
+        <Card padding="md" className="mt-8 border-[var(--accent-line)] bg-[var(--accent-soft)]">
+          {deckResult ? (
+            <>
+              <p className="text-sm font-semibold text-white">
+                {deckResult.cardsAdded > 0
+                  ? `${deckResult.cardsAdded} new card${deckResult.cardsAdded === 1 ? "" : "s"} added to your deck.`
+                  : "Your deck is already up to date with this course."}
+              </p>
+              <p className="mt-1 text-xs text-[var(--text-3)]">
+                These are on your review schedule now, so they will come back before you forget them.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link href={`/study/${deckResult.deckId}`}>
+                  <Button className="sm:w-auto">Study now</Button>
+                </Link>
+                <Link href={`/library/${deckResult.deckId}`}>
+                  <Button variant="ghost" className="sm:w-auto">
+                    View deck
+                  </Button>
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-white">
+                {data.questionStats.byStatus.approved} verified question
+                {data.questionStats.byStatus.approved === 1 ? "" : "s"} ready to study
+              </p>
+              <p className="mt-1 text-xs text-[var(--text-3)]">
+                Turn them into flashcards on your spaced-repetition schedule. Each one keeps the
+                concept it came from, so your weak topics stay accurate.
+              </p>
+              <Button
+                onClick={handleBuildDeck}
+                isLoading={isBuildingDeck}
+                className="mt-3 sm:w-auto"
+              >
+                Build my study deck
+              </Button>
+            </>
+          )}
+          {deckError && <p className="mt-2 text-xs text-red-300">{deckError}</p>}
+        </Card>
+      )}
 
       <Card padding="md" className="mt-8">
         <p className="text-xs font-bold uppercase tracking-wider text-indigo-200">Upload a document</p>
