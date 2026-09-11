@@ -50,6 +50,19 @@ type ResultsPayload = {
   readiness_tier: "needs_review" | "developing" | "strong" | "mastered";
   estimated_score_low: number | null;
   estimated_score_high: number | null;
+  /**
+   * Present only for exams scored arithmetically (JEE Main, NEET), which
+   * report marks rather than a scaled band and so leave the estimate null.
+   */
+  projected_marks: {
+    marksOnAttempted: number;
+    attempted: number;
+    correct: number;
+    incorrect: number;
+    projectedFullPaper: number;
+    maxMarks: number;
+    marksLostToNegativeMarking: number;
+  } | null;
 };
 
 type ReviewPayload = {
@@ -379,6 +392,37 @@ export default function DiagnosticResultsPage() {
               <p className="mt-2 text-sm text-white/60">
                 Based on {responses.length} questions targeting your previously flagged weak areas.
               </p>
+            </>
+          ) : results.projected_marks ? (
+            /* An exam scored by arithmetic rather than by a scale. Nothing
+               here is estimated: these are the marks the board's own rule
+               awards for these answers, which is why it is stated as a
+               number out of the paper's total rather than as a band. */
+            <>
+              <p className="text-xs font-bold uppercase tracking-[0.25em] text-indigo-300">
+                Marks on what you attempted
+              </p>
+              <p className="mt-2 text-4xl font-semibold text-white sm:text-5xl">
+                {results.projected_marks.marksOnAttempted}
+              </p>
+              <p className="mt-2 text-sm text-white/60">
+                {results.projected_marks.correct} correct and{" "}
+                {results.projected_marks.incorrect} wrong out of{" "}
+                {results.projected_marks.attempted} attempted, at +4 and &minus;1. At this
+                rate a full paper comes to about{" "}
+                <span className="font-semibold text-white">
+                  {results.projected_marks.projectedFullPaper}
+                </span>{" "}
+                out of {results.projected_marks.maxMarks}.
+              </p>
+              {results.projected_marks.marksLostToNegativeMarking > 0 && (
+                <p className="mt-2 text-sm text-amber-300/90">
+                  Negative marking cost you about{" "}
+                  {results.projected_marks.marksLostToNegativeMarking} marks. Leaving those
+                  blank would have scored 0 rather than losing a mark each &mdash; but a
+                  guess with one option eliminated is still worth making.
+                </p>
+              )}
             </>
           ) : (
             <>

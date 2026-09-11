@@ -16,6 +16,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { difficultyToBeta, probabilityCorrect, updateAbility } from "@/lib/irt";
 import {
   combineComposite,
+  computeRawMarks,
   estimateScoreRange,
   parseExamBlueprint,
   type ExamBlueprint,
@@ -321,6 +322,7 @@ export async function finalizeAttempt(
     readiness_tier: results.readinessTier,
     estimated_score_low: results.estimatedScoreLow,
     estimated_score_high: results.estimatedScoreHigh,
+    projected_marks: results.projectedMarks,
   });
 
   await supabase
@@ -512,8 +514,31 @@ export type DiagnosticResultsPayload = {
   // means on the mastery map.
   readinessScore: number;
   readinessTier: MasteryTier;
+  /**
+   * For exams that report raw marks (JEE, NEET) rather than a scaled score.
+   * Null everywhere else, which is every exam whose blueprint has no
+   * marking scheme.
+   */
+  projectedMarks: ProjectedMarks | null;
   estimatedScoreLow: number | null;
   estimatedScoreHigh: number | null;
+};
+
+/**
+ * A raw-marks result, counted rather than estimated.
+ *
+ * marksOnAttempted is what these answers were actually worth.
+ * projectedFullPaper scales the same rate to a complete paper, which is a
+ * projection and is labelled as one.
+ */
+export type ProjectedMarks = {
+  marksOnAttempted: number;
+  attempted: number;
+  correct: number;
+  incorrect: number;
+  projectedFullPaper: number;
+  maxMarks: number;
+  marksLostToNegativeMarking: number;
 };
 
 export type AssignedModuleItem = {
@@ -782,6 +807,76 @@ export function computeDiagnosticResults(
     estimatedScoreHigh = composite?.high ?? null;
   }
 
+  // Exams that report raw marks are not estimated -- they are counted.
+  //
+  // JEE Main and NEET award +4 and -1, and the candidate's result IS that
+  // arithmetic. Running them through the theta-to-scale estimator above
+  // would produce a band for an exam that never reports one, so those
+  // blueprints carry no section scales and fall out of that loop with null.
+  //
+  // Projecting to full length is a deliberate scaling of the SAME rate, not
+  // a second model: a student who answered 30 of 75 items gets their marks
+  // on those 30 scaled up, with the blank items counted as blanks. It is
+  // labelled a projection for that reason -- the honest claim is "at this
+  // rate", not "you will score this".
+  let projectedMarks: ProjectedMarks | null = null;
+  if (blueprint.marking && mode !== "weak_area") {
+    let correct = 0;
+    let incorrect = 0;
+
+    // Iterated over the raw responses rather than the per-section
+    // ScoredResponse map, which keeps only difficulty and correctness. The
+    // distinction that matters here is a skip versus a wrong answer, and
+    // only the raw row carries selected_answer.
+    //
+    // A skipped item is not a wrong one. Under +4/-1 that difference is
+    // worth five marks a question, and collapsing the two would misprice
+    // the single decision these exams actually test.
+    for (const response of responses) {
+      if (response.selected_answer === null || response.selected_answer === "") continue;
+      if (response.is_correct) correct += 1;
+      else incorrect += 1;
+    }
+
+    const attempted = correct + incorrect;
+    const totalItems = blueprint.sections.reduce(
+      (sum, section) => sum + section.modules.reduce((n, m) => n + m.questions, 0),
+      0
+    );
+
+    if (attempted > 0 && totalItems > 0) {
+      const scale = totalItems / attempted;
+      const onThisSet = computeRawMarks({
+        marking: blueprint.marking,
+        correct,
+        incorrect,
+        unattempted: 0,
+      });
+
+      const projected = computeRawMarks({
+        marking: blueprint.marking,
+        correct: correct * scale,
+        incorrect: incorrect * scale,
+        unattempted: 0,
+      });
+
+      projectedMarks = {
+        marksOnAttempted: Math.round(onThisSet.marks),
+        attempted,
+        correct,
+        incorrect,
+        projectedFullPaper: Math.round(projected.marks),
+        maxMarks: blueprint.marking.maxMarks,
+        // What the same answers would have been worth with no penalty --
+        // the concrete cost of this student's wrong answers, which is the
+        // number that changes guessing behaviour.
+        marksLostToNegativeMarking: Math.round(
+          incorrect * Math.abs(blueprint.marking.incorrect) * scale
+        ),
+      };
+    }
+  }
+
   return {
     overallAccuracy,
     sectionResults,
@@ -795,6 +890,7 @@ export function computeDiagnosticResults(
     confidenceScore,
     readinessScore,
     readinessTier,
+    projectedMarks,
     estimatedScoreLow,
     estimatedScoreHigh,
   };
