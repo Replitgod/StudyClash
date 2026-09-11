@@ -65,6 +65,34 @@ export default function LoginPage() {
     }
   }, []);
 
+  // Someone who is already signed in has no business being asked to sign in
+  // again. This happens more than it sounds: a bookmarked /login, the browser
+  // restoring tabs, or the back button after a redirect all land here with a
+  // perfectly good session, and the form would take a second set of
+  // credentials and authenticate an already-authenticated user.
+  //
+  // Checked against the auth client rather than the context so it does not
+  // depend on the provider having settled first -- the same reason
+  // useRequireAuth asks directly.
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (cancelled || !data.session) return;
+        router.replace(getSafeRedirectTarget("/home"));
+      } catch {
+        // Unreachable auth client: leave the form up, which is the safe
+        // direction to fail.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
