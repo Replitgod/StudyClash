@@ -71,11 +71,40 @@ export type CompositeRule =
   | { kind: "average" }
   | { kind: "none" };
 
+/**
+ * How raw marks are awarded, for exams that report an arithmetic total
+ * rather than a scaled score.
+ *
+ * The SAT, ACT, MCAT and GRE all convert performance onto a scale, which is
+ * what estimateScoreRange models. JEE Main and NEET do not: the score IS the
+ * arithmetic, +4 for a correct answer and -1 for a wrong one, and a student
+ * reads their result as "287 out of 300", not as a band.
+ *
+ * Modelling that as a scaled score would print a number the student's real
+ * result will never agree with. It would also erase the single most
+ * important strategic fact about these exams -- that a wrong answer costs
+ * more than a blank one, so whether to guess is a real decision with a real
+ * expected value. An engine that scores a blank and a wrong answer the same
+ * way teaches Indian students a habit that will cost them marks on the day.
+ */
+export type MarkingScheme = {
+  correct: number;
+  incorrect: number;
+  unattempted: number;
+  /** Total marks available, for reporting "x out of y". */
+  maxMarks: number;
+};
+
 export type ExamBlueprint = {
   sections: ExamSectionBlueprint[];
   breakMinutesBetweenSections: number;
   adaptive: { module2ThresholdAccuracy: number };
   composite: CompositeRule;
+  /**
+   * Null for every exam that reports a scaled score. Present only where the
+   * board's own result is raw marks.
+   */
+  marking: MarkingScheme | null;
 };
 
 /** Used when a section says nothing about its own modules. */
@@ -238,7 +267,91 @@ export function parseExamBlueprint(raw: unknown): ExamBlueprint {
           : FALLBACK_THRESHOLD,
     },
     composite: parseComposite(root.composite, resolved),
+    marking: parseMarking(root.marking),
   };
+}
+
+/**
+ * Read a marking scheme, or null when the exam does not use one.
+ *
+ * Deliberately strict: a partial or malformed `marking` block yields null
+ * rather than a half-built scheme with a zero penalty. Silently defaulting
+ * `incorrect` to 0 would turn a negative-marking exam into a
+ * no-penalty one and quietly teach the student to guess freely -- which is
+ * the exact habit that loses marks on JEE and NEET.
+ */
+export function parseMarking(raw: unknown): MarkingScheme | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Record<string, unknown>;
+
+  const correct = Number(row.correct);
+  const incorrect = Number(row.incorrect);
+  const unattempted = Number(row.unattempted);
+  const maxMarks = Number(row.maxMarks);
+
+  if (!Number.isFinite(correct) || correct <= 0) return null;
+  if (!Number.isFinite(incorrect)) return null;
+  if (!Number.isFinite(maxMarks) || maxMarks <= 0) return null;
+
+  return {
+    correct,
+    incorrect,
+    unattempted: Number.isFinite(unattempted) ? unattempted : 0,
+    maxMarks,
+  };
+}
+
+/**
+ * The actual result, for an exam that reports raw marks.
+ *
+ * No estimation and no band: this is the arithmetic the board itself does,
+ * so the number AceDecks shows is the number the student would have got.
+ * Unattempted is counted explicitly rather than inferred as
+ * `total - correct - incorrect`, because those three are what the student
+ * did and a mismatch should not be silently absorbed into a blank.
+ */
+export function computeRawMarks(args: {
+  marking: MarkingScheme;
+  correct: number;
+  incorrect: number;
+  unattempted: number;
+}): { marks: number; maxMarks: number; percent: number } {
+  const { marking, correct, incorrect, unattempted } = args;
+
+  const marks =
+    correct * marking.correct +
+    incorrect * marking.incorrect +
+    unattempted * marking.unattempted;
+
+  // A heavily negative run can go below zero on paper; boards report the
+  // floor rather than a negative total.
+  const bounded = Math.max(0, Math.min(marking.maxMarks, marks));
+
+  return {
+    marks: bounded,
+    maxMarks: marking.maxMarks,
+    percent: marking.maxMarks > 0 ? Math.round((bounded / marking.maxMarks) * 100) : 0,
+  };
+}
+
+/**
+ * Is guessing worth it, under this marking scheme?
+ *
+ * The expected value of a blind guess on an n-option question is
+ * `correct/n + incorrect*(n-1)/n`. On JEE and NEET (+4/-1, four options)
+ * that is +0.25, so a blind guess is very slightly positive and eliminating
+ * even one option makes it clearly worth it -- which is the opposite of the
+ * folklore many students are taught ("never guess with negative marking").
+ *
+ * Returned as a number rather than a boolean so the UI can say how much,
+ * and so a scheme with a harsher penalty reports honestly instead of being
+ * flattened to "no".
+ */
+export function guessExpectedValue(marking: MarkingScheme, optionCount: number): number {
+  if (optionCount <= 1) return marking.correct;
+  return (
+    marking.correct / optionCount + (marking.incorrect * (optionCount - 1)) / optionCount
+  );
 }
 
 /* ------------------------------------------------------------------ lookups */

@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
   combineComposite,
+  computeRawMarks,
   estimateScoreRange,
   firstSectionKey,
+  guessExpectedValue,
   moduleBlueprint,
   moduleCount,
   moduleSize,
   nextSectionKey,
   parseExamBlueprint,
+  parseMarking,
   sectionByKey,
   sectionKeys,
   sectionLabel,
@@ -319,5 +322,63 @@ describe("a section that is scored but not counted", () => {
       sections: [{ key: "math", modules: [], score: { min: 200, max: 800 } }],
     });
     expect(sectionByKey(blueprint, "math")?.inComposite).toBe(true);
+  });
+});
+
+describe("marking schemes", () => {
+  const JEE = { correct: 4, incorrect: -1, unattempted: 0, maxMarks: 300 };
+
+  it("is absent for the exams that report a scaled score", () => {
+    expect(parseMarking(undefined)).toBeNull();
+    expect(parseMarking(null)).toBeNull();
+  });
+
+  it("reads a full scheme", () => {
+    expect(parseMarking(JEE)).toEqual(JEE);
+  });
+
+  it("refuses a partial scheme rather than assuming no penalty", () => {
+    // Defaulting `incorrect` to 0 would turn a negative-marking exam into a
+    // no-penalty one and teach the student to guess freely -- the exact
+    // habit that loses marks on the day.
+    expect(parseMarking({ correct: 4, maxMarks: 300 })).toBeNull();
+    expect(parseMarking({ incorrect: -1, maxMarks: 300 })).toBeNull();
+    expect(parseMarking({ correct: 4, incorrect: -1 })).toBeNull();
+  });
+
+  it("computes the marks the board itself would award", () => {
+    // 60 right, 10 wrong, 5 blank on JEE Main: 240 - 10 = 230.
+    const result = computeRawMarks({
+      marking: JEE,
+      correct: 60,
+      incorrect: 10,
+      unattempted: 5,
+    });
+    expect(result.marks).toBe(230);
+    expect(result.maxMarks).toBe(300);
+    expect(result.percent).toBe(77);
+  });
+
+  it("floors at zero rather than reporting a negative total", () => {
+    const result = computeRawMarks({ marking: JEE, correct: 0, incorrect: 20, unattempted: 0 });
+    expect(result.marks).toBe(0);
+  });
+
+  it("cannot exceed the maximum", () => {
+    const result = computeRawMarks({ marking: JEE, correct: 100, incorrect: 0, unattempted: 0 });
+    expect(result.marks).toBe(300);
+  });
+
+  it("prices a blind guess, against the folklore", () => {
+    // "Never guess with negative marking" is wrong at +4/-1 on four
+    // options: the expected value is +0.25, and eliminating one option
+    // makes it clearly worth it.
+    expect(guessExpectedValue(JEE, 4)).toBeCloseTo(0.25, 5);
+    expect(guessExpectedValue(JEE, 3)).toBeCloseTo(0.6667, 3);
+    expect(guessExpectedValue(JEE, 2)).toBeCloseTo(1.5, 5);
+
+    // A harsher penalty flips it negative, and must say so.
+    const harsh = { correct: 4, incorrect: -2, unattempted: 0, maxMarks: 300 };
+    expect(guessExpectedValue(harsh, 4)).toBeLessThan(0);
   });
 });

@@ -14,7 +14,17 @@
 // Pure data and pure functions: the pages that render it are server
 // components, and everything here has to be readable from a test.
 
-export type ExamTrackSlug = "sat" | "act" | "ap" | "mcat" | "lsat" | "nclex" | "gre";
+export type ExamTrackSlug =
+  | "sat"
+  | "act"
+  | "ap"
+  | "mcat"
+  | "lsat"
+  | "nclex"
+  | "gre"
+  | "jee-main"
+  | "neet"
+  | "usmle-step-1";
 
 export type ExamTrackEntry = {
   /** The URL segment. Never changes -- these are indexed. */
@@ -114,6 +124,36 @@ const CATALOG: ExamTrackEntry[] = [
     promise: "Argument structure, logical flaws, and timed pressure drills.",
     officialLabel: "LSAC free PrepTests (LawHub)",
     officialUrl: "https://www.lsac.org/lsat/prepare/official-lsat-practice-tests",
+    needsExpertReview: true,
+  },
+  {
+    slug: "jee-main",
+    examSlug: "jee-main",
+    name: "JEE Main",
+    promise:
+      "Physics, Chemistry and Maths at the real +4/-1 stakes, so you practise the guessing decision, not just the content.",
+    officialLabel: "Official information bulletin and past papers, from NTA",
+    officialUrl: "https://jeemain.nta.nic.in/",
+    needsExpertReview: true,
+  },
+  {
+    slug: "neet",
+    examSlug: "neet-ug",
+    name: "NEET UG",
+    promise:
+      "All 180 compulsory questions in the 2026 pattern: Physics, Chemistry, and Biology weighted the way the paper actually weights them.",
+    officialLabel: "Official information bulletin, from NTA",
+    officialUrl: "https://neet.nta.nic.in/",
+    needsExpertReview: true,
+  },
+  {
+    slug: "usmle-step-1",
+    examSlug: "usmle-step-1",
+    name: "USMLE Step 1",
+    promise:
+      "Clinical vignettes in 20-item blocks -- exactly one block of the post-May-2026 format, scored the way Step 1 reports it: pass or fail.",
+    officialLabel: "Official content outline and practice materials, from USMLE",
+    officialUrl: "https://www.usmle.org/exam-resources/step-1-materials",
     needsExpertReview: true,
   },
 ];
