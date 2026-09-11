@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { includedInProLabel, TIERS } from "@/lib/tiers";
-import { findExamTrack, trackAction } from "@/lib/examCatalog";
+import { EXAM_TRACKS, findExamTrack, trackAction } from "@/lib/examCatalog";
 import { moduleSize } from "@/lib/examBlueprint";
 import { loadExamTrackStatus } from "@/lib/server/examCatalogData";
 import { ArrowRightIcon } from "@/app/components/app/Icons";
@@ -19,17 +19,21 @@ import { ArrowRightIcon } from "@/app/components/app/Icons";
 // attempt out of the real bank.
 export const revalidate = 3600;
 
-/** Every track has a page, and every page is in the sitemap. */
+/**
+ * Every track has a page, and every page is in the sitemap.
+ *
+ * Derived from the catalog rather than written out, because it was written
+ * out: this list said seven tracks while EXAM_TRACKS held ten, so JEE Main,
+ * NEET and USMLE Step 1 were added to the catalog, rendered on /exams, and
+ * then silently left without a prerendered page or a sitemap entry.
+ *
+ * Nothing broke loudly -- the routes still resolved on demand -- which is
+ * what makes a hand-maintained copy of a list the worst kind of duplication.
+ * The same failure already happened once in this codebase, when /practice
+ * advertised exams that had no bank behind them.
+ */
 export function generateStaticParams() {
-  return [
-    { track: "sat" },
-    { track: "act" },
-    { track: "nclex" },
-    { track: "mcat" },
-    { track: "gre" },
-    { track: "ap" },
-    { track: "lsat" },
-  ];
+  return EXAM_TRACKS.map((track) => ({ track: track.slug }));
 }
 
 export default async function ExamTrackPage({

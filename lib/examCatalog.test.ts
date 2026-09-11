@@ -149,3 +149,23 @@ describe("agreeing with the exam page about what can be practiced", () => {
     ).not.toBeNull();
   });
 });
+
+describe("every track is reachable and indexable", () => {
+  it("prerenders a page for each catalog track", async () => {
+    // generateStaticParams was a hand-written list of seven while the catalog
+    // held ten, so three exams rendered on /exams and linked to pages that
+    // were never prerendered or submitted for indexing. Nothing looked
+    // broken, which is exactly why it survived.
+    const mod = await import("@/app/exams/[track]/page");
+    const params = mod.generateStaticParams() as { track: string }[];
+
+    expect(params.map((p) => p.track).sort()).toEqual(
+      EXAM_TRACKS.map((t) => t.slug).sort()
+    );
+  });
+
+  it("has no duplicate slugs, which would collide as routes", () => {
+    const slugs = EXAM_TRACKS.map((t) => t.slug);
+    expect(new Set(slugs).size).toBe(slugs.length);
+  });
+});

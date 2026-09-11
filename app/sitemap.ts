@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { EXAM_TRACKS } from "@/lib/examCatalog";
 import { getServiceSupabaseClient } from "@/lib/server/apiUtils";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acedecks.org";
@@ -46,13 +47,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "", changeFrequency: "daily", priority: 1 },
     { path: "/pricing", changeFrequency: "weekly", priority: 0.95 },
     { path: "/exams", changeFrequency: "weekly", priority: 0.9 },
-    { path: "/exams/sat", changeFrequency: "weekly", priority: 0.88 },
-    { path: "/exams/act", changeFrequency: "weekly", priority: 0.88 },
-    { path: "/exams/gre", changeFrequency: "weekly", priority: 0.84 },
-    { path: "/exams/ap", changeFrequency: "weekly", priority: 0.88 },
-    { path: "/exams/mcat", changeFrequency: "weekly", priority: 0.84 },
-    { path: "/exams/lsat", changeFrequency: "weekly", priority: 0.84 },
-    { path: "/exams/nclex", changeFrequency: "weekly", priority: 0.84 },
+    // Generated from the catalog, not listed by hand. This was a hand-written
+    // list of seven while EXAM_TRACKS held ten, so three exam pages existed,
+    // rendered, and were never submitted for indexing -- a silent failure,
+    // since nothing about the site looks broken when a URL is merely absent
+    // from the sitemap.
+    ...EXAM_TRACKS.map((track) => ({
+      path: `/exams/${track.slug}`,
+      changeFrequency: "weekly" as const,
+      // A track with a real bank behind it is worth more than one that is
+      // still a placeholder page pointing at the board's own material.
+      priority: track.examSlug ? 0.88 : 0.8,
+    })),
     { path: "/demo/battle", changeFrequency: "weekly", priority: 0.86 },
     { path: "/contact", changeFrequency: "monthly", priority: 0.78 },
     { path: "/privacy", changeFrequency: "monthly", priority: 0.35 },
