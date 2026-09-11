@@ -163,11 +163,31 @@ describe("the shipped question bank", () => {
   // A bank that is all easy questions cannot route an adaptive module, and a
   // bank that is all hard ones tells a struggling student nothing except
   // that they are struggling.
+  //
+  // Checked per EXAM rather than per file, which is what the concern above
+  // actually depends on: adaptive selection draws from an exam's whole
+  // published pool, and never from one migration in isolation.
+  //
+  // The distinction started mattering when the hard tiers landed. A file
+  // that deliberately contains nothing but hard items is a legitimate way to
+  // raise a bank's ceiling, and asserting per file would have forced easy
+  // questions into a file whose entire purpose is not to have any.
   it("spreads each exam's questions across all three difficulties", () => {
+    const byExam = new Map<string, Set<string>>();
+
     for (const [file, questions] of BY_FILE) {
-      const seen = new Set(questions.map((question) => question.difficulty));
-      expect({ file, seen: [...seen].sort() }).toEqual({
-        file,
+      // The insert names its exam once, in `where e.slug = '...'`.
+      const sql = readFileSync(join(MIGRATIONS_DIR, file), "utf8");
+      const slug = /where e\.slug = '([^']+)'/.exec(sql)?.[1] ?? file;
+
+      const seen = byExam.get(slug) ?? new Set<string>();
+      for (const question of questions) seen.add(String(question.difficulty));
+      byExam.set(slug, seen);
+    }
+
+    for (const [slug, seen] of byExam) {
+      expect({ exam: slug, seen: [...seen].sort() }).toEqual({
+        exam: slug,
         seen: ["easy", "hard", "medium"],
       });
     }
