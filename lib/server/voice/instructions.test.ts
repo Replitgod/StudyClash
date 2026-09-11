@@ -23,6 +23,7 @@ function material(overrides: Partial<StudyMaterial> = {}): StudyMaterial {
     ],
     priorWeakTopics: ["Nucleus"],
     studentName: "Sam",
+    sessionMemory: null,
     generated: false,
     ...overrides,
   };
@@ -270,5 +271,36 @@ describe("buildTutorInstructions", () => {
     expect(text).toMatch(/even when the wording is loose/i);
     expect(text).toMatch(/Never hand over the answer/i);
     expect(text).toMatch(/Never use markdown/i);
+  });
+});
+
+describe("session memory in the instructions", () => {
+  it("carries what happened last call into the prompt", () => {
+    // The point of the whole feature: a tutor who has met this student
+    // before. Without this the prompt knows only a list of topic names.
+    const text = buildTutorInstructions({
+      material: material({
+        sessionMemory: {
+          when: "2 days ago",
+          topics: ["Photosynthesis"],
+          strengths: ["Light Reactions"],
+          weaknesses: ["Calvin Cycle"],
+          misconceptions: ["Calvin Cycle: thinks it needs direct light"],
+        },
+      }),
+      options: OPTIONS,
+    });
+
+    expect(text).toContain("You last spoke 2 days ago");
+    expect(text).toContain("thinks it needs direct light");
+  });
+
+  it("says nothing about history on a first call", () => {
+    const text = buildTutorInstructions({
+      material: material({ sessionMemory: null }),
+      options: OPTIONS,
+    });
+
+    expect(text).not.toContain("You last spoke");
   });
 });

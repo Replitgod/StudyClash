@@ -2,6 +2,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeTopic } from "@/lib/voice/topics";
 import type { Concept, EducationLevel, SourceType } from "@/lib/voice/types";
 import { loadTopicConcepts } from "./topicConcepts";
+import {
+  readSessionMemory,
+  type PastSessionRow,
+  type SessionMemory,
+} from "@/lib/voice/sessionMemory";
 
 // Turning a student's material into something a voice tutor can teach from.
 //
@@ -52,6 +57,14 @@ export type StudyMaterial = {
   /** Topics the app already knew were weak, for the opening line. */
   priorWeakTopics: string[];
   studentName: string | null;
+  /**
+   * What happened the last time this student was on a call.
+   *
+   * Null for a first call, and for a previous call where nothing was
+   * actually answered. Every session already wrote one of these; until now
+   * nothing read them back, so the tutor met every student as a stranger.
+   */
+  sessionMemory: SessionMemory | null;
   /**
    * True when the concepts were written for this topic rather than read
    * from the student's own material.
@@ -245,7 +258,7 @@ export async function loadStudyMaterial(args: {
 }> {
   const { supabase, userId, sourceType, sourceId } = args;
 
-  const [{ data: profile }, { data: due }] = await Promise.all([
+  const [{ data: profile }, { data: due }, { data: pastSessions }] = await Promise.all([
     supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle(),
     supabase
       .from("topic_review_schedule")
@@ -253,7 +266,23 @@ export async function loadStudyMaterial(args: {
       .eq("user_id", userId)
       .lte("next_review_at", new Date().toISOString())
       .limit(12),
+    // The most recent finished calls. More than one is fetched because the
+    // latest may have recorded nothing answerable -- a call that connected
+    // and ended -- and the memory should fall through to the last call that
+    // actually taught something rather than give up.
+    supabase
+      .from("voice_sessions")
+      .select("ended_at, started_at, topics_covered, summary")
+      .eq("user_id", userId)
+      .eq("status", "completed")
+      .order("ended_at", { ascending: false, nullsFirst: false })
+      .limit(3),
   ]);
+
+  const sessionMemory =
+    (pastSessions ?? [])
+      .map((row) => readSessionMemory(row as PastSessionRow))
+      .find((memory): memory is SessionMemory => memory !== null) ?? null;
 
   const studentName = (profile?.display_name || "").trim() || null;
   const priorWeakTopics = (due || [])
@@ -300,6 +329,8 @@ export async function loadStudyMaterial(args: {
         // student, and the tutor sounding like it has met them before is
         // most of the difference between a tutor and a search box.
         priorWeakTopics,
+
+        sessionMemory,
         studentName,
         generated: true,
       },
@@ -337,6 +368,8 @@ export async function loadStudyMaterial(args: {
         courseName: sanitizeMaterial(String(deck.course_name || "")) || null,
         concepts,
         priorWeakTopics,
+
+        sessionMemory,
         studentName,
         generated: false,
       },
@@ -377,6 +410,8 @@ export async function loadStudyMaterial(args: {
       courseName: null,
       concepts,
       priorWeakTopics,
+
+      sessionMemory,
       studentName,
       generated: false,
     },

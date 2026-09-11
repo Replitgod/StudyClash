@@ -5,6 +5,7 @@ import type {
   TutoringMode,
 } from "@/lib/voice/types";
 import type { StudyMaterial } from "./studyContext";
+import { describeSessionMemory } from "@/lib/voice/sessionMemory";
 
 // What VYRA is told before she says a word.
 //
@@ -280,6 +281,13 @@ export function buildTutorInstructions(args: {
 
   const student: string[] = [];
   if (material.studentName) student.push(`Their name is ${material.studentName}.`);
+
+  // What happened last time. Placed before the weak-topic list because it is
+  // more specific: "they think the Calvin cycle needs direct light" tells the
+  // tutor what to do in a way that "weak on the Calvin cycle" does not.
+  const memory = describeSessionMemory(material.sessionMemory);
+  if (memory) student.push(memory);
+
   if (material.priorWeakTopics.length > 0) {
     student.push(
       `Before this call, the app had them down as weak on: ${material.priorWeakTopics
