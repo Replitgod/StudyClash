@@ -10,30 +10,31 @@ import { getNextAction, getTodaysPlan, greeting } from "@/lib/nextAction";
 import { Composer } from "@/app/components/app/Composer";
 import { ArrowRightIcon } from "@/app/components/app/Icons";
 import { ProgressSummary } from "@/app/components/app/ProgressSummary";
+import {
+  LOCAL_PROFILE_KEY,
+  ONBOARDING_DISMISSED_KEY,
+  Onboarding,
+} from "@/app/components/app/Onboarding";
 import { useProgress } from "@/lib/useProgress";
-import { resolveExamTrack } from "@/lib/examTracks";
+import { composerTrackForExam, resolveExamTrack } from "@/lib/examTracks";
+import { EXAM_TRACKS } from "@/lib/examCatalog";
+import { describeCountdown, type LearnerProfile } from "@/lib/learnerProfile";
 import { trackEvent } from "@/lib/trackEvent";
 
 // Home answers exactly one question: what should I study right now?
 //
-// The order on this screen is the design. A greeting, one input, one
-// recommended action -- and only then progress, quests and today's plan.
-// Progression lives *below* the primary action rather than in a stat grid
-// at the top, because a screen where six things look equally important
-// reads the same as a screen where nothing is.
+// The order on this screen is the design. A greeting (with the exam
+// countdown and today's goal, when the student has one), one input, one
+// recommended action -- and only then progress and today's plan. A screen
+// where six things look equally important reads the same as a screen where
+// nothing is.
 //
-// Nothing here is decorative. Every number comes from the database, and a
-// section with nothing real to say renders nothing at all rather than a
-// placeholder zero.
+// Nothing here is decorative. Every number comes from the student's own
+// record, and a section with nothing real to say renders nothing at all.
 
-// Offered to an account with nothing in it yet. Deliberately three, and
-// deliberately ordinary school subjects: the point is to remove the "what
-// do I even type?" pause, not to show off range.
-const STARTER_TOPICS = [
-  "Photosynthesis",
-  "The French Revolution",
-  "Quadratic equations",
-];
+// Offered to an account with nothing in it yet. Ordinary school subjects:
+// the point is to remove the "what do I even type?" pause.
+const STARTER_TOPICS = ["Photosynthesis", "The French Revolution", "Quadratic equations"];
 
 function DeckCard({
   href,
@@ -48,15 +49,12 @@ function DeckCard({
 }) {
   return (
     <Link href={href} className="card-link group p-4">
-      <p
-        className="truncate text-[15px] font-medium"
-        style={{ color: "var(--text-1)" }}
-      >
+      <p className="truncate text-[15px] font-medium" style={{ color: "var(--text-1)" }}>
         {title}
       </p>
       <p className="t-meta mt-1 truncate">{detail}</p>
       {mastery !== null && (
-        <div className="meter mt-3">
+        <div className="meter mt-3" aria-hidden="true">
           <span style={{ width: `${Math.min(100, Math.max(2, mastery))}%` }} />
         </div>
       )}
@@ -66,7 +64,7 @@ function DeckCard({
 
 function Skeletons() {
   return (
-    <div className="app-page">
+    <div className="app-page" aria-busy="true">
       <div className="skeleton h-9 w-64" />
       <div className="skeleton mt-8 h-[140px] w-full" />
       <div className="skeleton mt-10 h-5 w-36" />
@@ -78,35 +76,96 @@ function Skeletons() {
   );
 }
 
+function readLocalProfile(): LearnerProfile | null {
+  try {
+    const raw = window.localStorage.getItem(LOCAL_PROFILE_KEY);
+    return raw ? (JSON.parse(raw) as LearnerProfile) : null;
+  } catch {
+    return null;
+  }
+}
+
 export default function HomeView() {
   const searchParams = useSearchParams();
   const { user, profile } = useAuth();
   const { isReady } = useRequireAuth();
   const { snapshot, isLoading } = useStudy();
 
-  // Rendered on the client only: the greeting depends on the reader's clock,
-  // and a server-rendered "Good morning" would hydrate into a mismatch.
-  const [hello, setHello] = useState<string | null>(null);
-  useEffect(() => setHello(greeting(new Date())), []);
+  // Client-only values: the greeting and countdown depend on the reader's
+  // clock, and the saved setup lives in their browser when the server could
+  // not store it. Read once after mount, so nothing hydrates mismatched.
+  const [clientState, setClientState] = useState<{
+    hello: string;
+    now: number;
+    localProfile: LearnerProfile | null;
+    dismissed: boolean;
+  } | null>(null);
+  useEffect(() => {
+    let dismissed = false;
+    try {
+      dismissed = window.localStorage.getItem(ONBOARDING_DISMISSED_KEY) === "1";
+    } catch {
+      dismissed = false;
+    }
+    setClientState({
+      hello: greeting(new Date()),
+      now: Date.now(),
+      localProfile: readLocalProfile(),
+      dismissed,
+    });
+  }, []);
+
+  // Setup the student just finished in this visit, before the profile
+  // reloads with it.
+  const [justSaved, setJustSaved] = useState<LearnerProfile | null>(null);
+  const [onboardingClosed, setOnboardingClosed] = useState(false);
+
+  const learner: LearnerProfile | null = useMemo(() => {
+    if (justSaved) return justSaved;
+    if (profile?.onboarded_at) {
+      return {
+        educationLevel: (profile.education_level as LearnerProfile["educationLevel"]) ?? null,
+        targetExam: profile.target_exam ?? null,
+        examDate: profile.exam_date ?? null,
+        dailyGoal: profile.daily_goal ?? null,
+      };
+    }
+    return clientState?.localProfile ?? null;
+  }, [justSaved, profile, clientState]);
+
+  const showOnboarding =
+    Boolean(profile) &&
+    clientState !== null &&
+    !learner &&
+    !clientState.dismissed &&
+    !onboardingClosed;
 
   const firstName = useMemo(() => {
     const name = profile?.display_name || user?.email?.split("@")[0] || "";
     return name.split(/[\s._-]/)[0].replace(/^\w/, (c) => c.toUpperCase());
   }, [profile?.display_name, user?.email]);
 
-  // Arriving from an exam page (/exams -> /home?track=sat) tells the
-  // composer to write questions in that exam's style -- and now also
-  // changes what this screen says, because a track that only existed as a
-  // hidden request field made the button look like it did nothing.
-  const examTrack = searchParams.get("track");
+  // The exam the student is preparing for, from the URL (an exam page sent
+  // them here) or from their setup.
+  const examEntry = useMemo(
+    () => EXAM_TRACKS.find((track) => track.name === learner?.targetExam) ?? null,
+    [learner?.targetExam]
+  );
+  const urlTrack = searchParams.get("track");
+  const examTrack = urlTrack || (examEntry ? composerTrackForExam(examEntry.slug) : null);
   const track = useMemo(() => resolveExamTrack(examTrack), [examTrack]);
+  const arrivedForExam = Boolean(urlTrack && track);
+
+  // A topic handed over by Vyra ("Make a practice set on ...").
+  const prefill = (searchParams.get("topic") || "").slice(0, 200);
 
   const next = useMemo(() => getNextAction(snapshot), [snapshot]);
   const plan = useMemo(() => getTodaysPlan(snapshot), [snapshot]);
   const recent = snapshot.decks.slice(0, 4);
 
-  // Loaded independently of the study snapshot: a slow progression read
-  // must never delay telling the student what to study.
+  const countdown = learner && clientState ? describeCountdown(learner, clientState.now) : null;
+  const goal = learner?.dailyGoal ?? null;
+
   const { progress } = useProgress({
     hasReviewsDue: snapshot.dueTopics.length > 0,
     enabled: isReady,
@@ -114,34 +173,71 @@ export default function HomeView() {
 
   if (isLoading || !isReady) return <Skeletons />;
 
+  const dismissOnboarding = () => {
+    try {
+      window.localStorage.setItem(ONBOARDING_DISMISSED_KEY, "1");
+    } catch {
+      // Closed for this visit either way.
+    }
+    setOnboardingClosed(true);
+    void trackEvent("onboarding_skipped", {});
+  };
+
   return (
     <div className="app-page">
-      {track ? (
+      {arrivedForExam && track ? (
         <>
           <p className="t-section">Exam practice</p>
           <h1 className="t-page mt-2">{track.label}</h1>
           <p className="t-body mt-2">{track.blurb}</p>
-          <Link
-            href="/exams"
-            className="t-meta mt-3 inline-block underline underline-offset-2"
-          >
-            Practising something else?
+          <Link href="/exams" className="t-meta mt-3 inline-block underline underline-offset-2">
+            Practicing for something else?
           </Link>
         </>
       ) : (
-        <h1 className="t-page">
-          {hello || "Welcome"}
-          {firstName ? `, ${firstName}` : ""}
-        </h1>
+        <>
+          <h1 className="t-page">
+            {clientState?.hello || "Welcome"}
+            {firstName ? `, ${firstName}` : ""}
+          </h1>
+          {(countdown || goal) && (
+            <p className="t-body mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+              {countdown && <span style={{ color: "var(--text-1)" }}>{countdown}</span>}
+              {countdown && goal ? <span aria-hidden="true">·</span> : null}
+              {goal && (
+                <span>
+                  {snapshot.answeredToday >= goal
+                    ? `Today's goal done: ${snapshot.answeredToday} questions`
+                    : `${snapshot.answeredToday} of ${goal} questions today`}
+                </span>
+              )}
+            </p>
+          )}
+        </>
+      )}
+
+      {showOnboarding && (
+        <div className="mt-6">
+          <Onboarding
+            onDone={(saved) => {
+              setJustSaved(saved);
+              void trackEvent("onboarding_completed", {
+                hasExam: Boolean(saved.targetExam),
+                hasDate: Boolean(saved.examDate),
+              });
+            }}
+            onSkip={dismissOnboarding}
+          />
+        </div>
       )}
 
       <div className="mt-6 rise">
         <Composer
-          autoFocus={snapshot.isEmpty || !!track}
+          key={examTrack || "none"}
+          autoFocus={!showOnboarding && (snapshot.isEmpty || arrivedForExam || Boolean(prefill))}
           examTrack={examTrack}
-          suggestions={
-            track ? track.starters : snapshot.isEmpty ? STARTER_TOPICS : undefined
-          }
+          initialValue={prefill}
+          suggestions={track ? track.starters : snapshot.isEmpty ? STARTER_TOPICS : undefined}
           placeholder={
             track
               ? track.placeholder
@@ -151,12 +247,8 @@ export default function HomeView() {
           }
           footer={
             <p className="t-meta">
-              Type a topic, paste your notes, or attach a PDF or photo.{" "}
-              <Link
-                href="/vyra"
-                className="underline underline-offset-2"
-                style={{ color: "var(--brand-text)" }}
-              >
+              Type a topic, paste your notes, or attach a PDF, Word or PowerPoint file, or a photo.{" "}
+              <Link href="/vyra" className="underline underline-offset-2" style={{ color: "var(--brand-text)" }}>
                 Or ask Vyra
               </Link>
               .
@@ -189,16 +281,27 @@ export default function HomeView() {
         </section>
       )}
 
+      {/* ---- Timed practice for the exam they are preparing for ---- */}
+      {examEntry?.examSlug && !arrivedForExam && (
+        <Link href={`/exams/${examEntry.slug}`} className="card-link mt-3 flex items-center gap-3 px-4 py-3.5">
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-medium" style={{ color: "var(--text-1)" }}>
+              Timed {examEntry.name} practice
+            </p>
+            <p className="t-meta mt-0.5">
+              Real format and timing, and a breakdown of your weakest areas.
+            </p>
+          </div>
+          <ArrowRightIcon className="h-4 w-4 shrink-0 opacity-50" />
+        </Link>
+      )}
+
       {/* ---- Continue studying ---- */}
       {recent.length > 0 && (
         <section className="mt-10 rise">
           <div className="flex items-baseline justify-between gap-4">
             <h2 className="t-section">Continue studying</h2>
-            <Link
-              href="/library"
-              className="text-[13px] font-medium"
-              style={{ color: "var(--text-3)" }}
-            >
+            <Link href="/library" className="text-[13px] font-medium" style={{ color: "var(--text-3)" }}>
               Library
             </Link>
           </div>
@@ -211,7 +314,9 @@ export default function HomeView() {
                 detail={
                   deck.mastery === null
                     ? "Not studied yet"
-                    : `${deck.mastery}% mastered`
+                    : deck.dueTopics.length > 0
+                      ? `${deck.mastery}% mastered · ${deck.dueTopics.length} due`
+                      : `${deck.mastery}% mastered`
                 }
                 mastery={deck.mastery}
               />
@@ -220,34 +325,28 @@ export default function HomeView() {
         </section>
       )}
 
-      {/* ---- Progress: level, streak, today's quests ---- */}
+      {/* ---- Progress: this week, level, streak, today's quests ---- */}
       {progress && <ProgressSummary progress={progress} />}
 
       {/* ---- Today's plan ---- */}
       {plan.length > 1 && (
         <section className="mt-10 rise">
-          <h2 className="t-section">Today</h2>
-          <ul className="card mt-3 divide-y" style={{ borderColor: "var(--line)" }}>
+          <h2 className="t-section">Also today</h2>
+          <ul className="card mt-3 divide-y overflow-hidden" style={{ borderColor: "var(--line)" }}>
             {plan.map((item) => (
-              <li key={item.id} className="divide-y" style={{ borderColor: "var(--line)" }}>
+              <li key={item.id}>
                 <Link
                   href={item.href}
                   className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-[var(--panel-raised)]"
                 >
                   <div className="min-w-0 flex-1">
-                    <p
-                      className="truncate text-[15px] font-medium"
-                      style={{ color: "var(--text-1)" }}
-                    >
+                    <p className="truncate text-[15px] font-medium" style={{ color: "var(--text-1)" }}>
                       {item.title}
                     </p>
                     <p className="t-meta truncate">{item.detail}</p>
                   </div>
                   <span className="t-meta shrink-0">{item.minutes} min</span>
-                  <ArrowRightIcon
-                    className="h-4 w-4 shrink-0"
-                    // Decorative: the whole row is the link.
-                  />
+                  <ArrowRightIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
                 </Link>
               </li>
             ))}
@@ -255,28 +354,23 @@ export default function HomeView() {
         </section>
       )}
 
-      {/* ---- Nothing yet ----
-          The three example topics used to be rendered here as plain
-          paragraphs that looked like cards, under copy telling the student
-          to type one of them into the box themselves. They are now chips on
-          the composer itself (one tap fills the box), so this section only
-          has to explain what happens next. */}
-      {snapshot.isEmpty && (
+      {/* ---- Nothing yet ---- */}
+      {snapshot.isEmpty && !showOnboarding && (
         <section className="mt-10 rise">
           <h2 className="t-section">How this works</h2>
           <ol className="card mt-3 divide-y" style={{ borderColor: "var(--line)" }}>
             {[
               {
-                title: "Give it your material",
-                detail: "A topic, your notes, a PDF, or a photo of the page.",
+                title: "Give it what you're studying",
+                detail: "A topic, your notes, a PDF or slides, or a photo of the page.",
               },
               {
-                title: "It writes your study set",
-                detail: "Notes, questions and flashcards, in about 20 seconds.",
+                title: "Answer before you see the answer",
+                detail: "Questions and flashcards, each one checked before you get it.",
               },
               {
-                title: "Study, and it learns what you forget",
-                detail: "Weak topics come back until they stop being weak.",
+                title: "It brings back what you're forgetting",
+                detail: "Weak topics come back soon; solid ones come back just before they'd slip.",
               },
             ].map((step, index) => (
               <li key={step.title} className="flex gap-3.5 px-4 py-3.5">
@@ -297,12 +391,6 @@ export default function HomeView() {
             ))}
           </ol>
 
-          {/* The other way in, and on an empty account it is now the faster
-              one: a call needs no deck, no upload and no setup at all. That
-              was not true until topic calls existed -- the tutor could only
-              be grounded in material the student had already built, so
-              offering it here would have sent a new account to a screen with
-              nothing to teach from. */}
           <Link
             href="/vyra?call=1"
             className="card-link mt-3 flex items-center gap-3 px-4 py-3.5"
@@ -314,7 +402,7 @@ export default function HomeView() {
               </p>
               <p className="t-meta mt-0.5">
                 Call Vyra and name any subject. She teaches it from the start,
-                and you can change your mind halfway through.
+                and you can change topic halfway through.
               </p>
             </div>
           </Link>

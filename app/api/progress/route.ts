@@ -4,7 +4,13 @@ import {
   requireAuthenticatedUser,
 } from "@/lib/server/apiUtils";
 import { ensureTodaysQuests } from "@/lib/server/progression";
-import { levelProgress, questProgress, type QuestKey } from "@/lib/progression";
+import {
+  levelProgress,
+  questProgress,
+  XP_REASONS,
+  type QuestKey,
+  type XpReason,
+} from "@/lib/progression";
 import { rankForRating, rankProgress, winRate } from "@/lib/ranking";
 
 export const runtime = "nodejs";
@@ -64,7 +70,9 @@ export async function GET(req: NextRequest) {
 
     const seasonId = seasonResult.data?.id ?? null;
 
-    const [questResult, ratingResult, achievementResult] = await Promise.all([
+    const weekStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const [questResult, ratingResult, achievementResult, weekResult] = await Promise.all([
       supabase
         .from("daily_quests")
         .select("quest_key, progress, target, completed_at")
@@ -83,7 +91,27 @@ export async function GET(req: NextRequest) {
         .not("earned_at", "is", null)
         .order("earned_at", { ascending: false })
         .limit(12),
+      // The last seven days, from the event log. Only learning events are
+      // counted -- questions answered, mistakes fixed, topics that moved up
+      // a tier -- never time spent or XP, which is what "improvement" has to
+      // mean if it is going to mean anything.
+      supabase
+        .from("xp_events")
+        .select("reason, amount")
+        .eq("user_id", userId)
+        .gte("created_at", weekStart)
+        .in("reason", ["question_answered", "mistake_recovered", "topic_improved"])
+        .limit(5000),
     ]);
+
+    const week = { questionsAnswered: 0, mistakesFixed: 0, topicsImproved: 0 };
+    for (const row of (weekResult.data || []) as Array<{ reason: XpReason; amount: number }>) {
+      const unit = XP_REASONS[row.reason]?.amount || 1;
+      const count = Math.max(1, Math.round((row.amount || 0) / unit));
+      if (row.reason === "question_answered") week.questionsAnswered += count;
+      if (row.reason === "mistake_recovered") week.mistakesFixed += count;
+      if (row.reason === "topic_improved") week.topicsImproved += count;
+    }
 
     const xp = progressResult.data?.xp ?? 0;
 
@@ -124,6 +152,7 @@ export async function GET(req: NextRequest) {
         freezes: progressResult.data?.streak_freezes ?? 0,
       },
       quests,
+      week,
       ratings,
       season: seasonResult.data
         ? {
@@ -147,6 +176,7 @@ export async function GET(req: NextRequest) {
       xp: 0,
       streak: { current: 0, longest: 0, lastActiveOn: null, freezes: 0 },
       quests: [],
+      week: { questionsAnswered: 0, mistakesFixed: 0, topicsImproved: 0 },
       ratings: [],
       season: null,
       achievements: [],

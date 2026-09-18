@@ -33,7 +33,7 @@ function StreakFlame({ className }: { className?: string }) {
 }
 
 export function ProgressSummary({ progress }: { progress: ProgressSnapshot }) {
-  const { level, streak, quests } = progress;
+  const { level, streak, quests, week } = progress;
   const openQuests = quests.filter((quest) => !quest.isComplete);
   const doneCount = quests.length - openQuests.length;
 
@@ -63,6 +63,29 @@ export function ProgressSummary({ progress }: { progress: ProgressSnapshot }) {
       </div>
 
       <div className="card mt-3 p-4 sm:p-5">
+        {/* ---- This week: learning, not time spent ---- */}
+        {week && (week.questionsAnswered > 0 || week.mistakesFixed > 0 || week.topicsImproved > 0) && (
+          <div className="mb-5 border-b pb-4" style={{ borderColor: "var(--line)" }}>
+            <p className="t-section" style={{ fontSize: "0.6875rem" }}>
+              Last 7 days
+            </p>
+            <dl className="mt-2 grid grid-cols-3 gap-3">
+              {[
+                { label: "Questions answered", value: week.questionsAnswered },
+                { label: "Mistakes fixed", value: week.mistakesFixed },
+                { label: "Topics improved", value: week.topicsImproved },
+              ].map((stat) => (
+                <div key={stat.label} className="flex flex-col-reverse">
+                  <dt className="t-meta">{stat.label}</dt>
+                  <dd className="text-[20px] font-semibold tabular-nums" style={{ color: "var(--text-1)" }}>
+                    {stat.value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )}
+
         {/* ---- Level ---- */}
         <div className="flex items-baseline justify-between gap-4">
           <p className="text-[15px] font-medium" style={{ color: "var(--text-1)" }}>

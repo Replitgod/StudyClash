@@ -37,6 +37,7 @@ function topic(overrides: Partial<TopicSummary> & { topic: string }): TopicSumma
     isDue: state.isDue,
     isFading: state.isFading,
     priority: 1 - state.mastery / 100,
+    confidentMisses: 0,
     ...overrides,
   };
 }

@@ -18,7 +18,7 @@ export type FaqItem = { q: string; a: string };
 export const FAQ_ITEMS: FaqItem[] = [
   {
     q: "What does it cost?",
-    a: "Free covers 3 knowledge maps a month with 5 cards per concept — enough to prove it on your own material, no card required. Ace Pro is $9.99 a month and removes every cap, adds handwriting and large-PDF ingestion, custom themes, and the full Card Crack breakdown.",
+    a: "Free covers 3 study sets a month with up to 5 flashcards per topic, and practice is unlimited. No card required. Ace Pro is $9.99 a month or $99 a year: no caps, the full breakdown of every mistake with a follow-up question, and custom themes.",
   },
   {
     q: "Do I need to have notes?",
@@ -26,7 +26,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   },
   {
     q: "What can I upload?",
-    a: "PDFs, photos of a textbook or your own handwriting, and plain text. You can also import a Quizlet set, an Anki deck, or a Google Doc.",
+    a: "PDFs, Word and PowerPoint files, photos of a textbook page or your own handwriting, and plain text. You can also import a Quizlet set, an Anki deck, or a Google Doc.",
   },
   {
     q: "How does it know what I am bad at?",

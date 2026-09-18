@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   generateOpaqueToken,
+  getBearerToken,
   getClientIpAddress,
   getServiceSupabaseClient,
   hashIdentifier,
@@ -36,12 +37,23 @@ export async function POST(req: NextRequest) {
 
     const { data: match, error: fetchError } = await supabase
       .from("matches")
-      .select("id, share_token, share_token_expires_at")
+      .select("id, user_id, share_token, share_token_expires_at")
       .eq("id", matchId)
       .single();
 
     if (fetchError || !match) {
-      return NextResponse.json({ error: "Match not found." }, { status: 404 });
+      return NextResponse.json({ error: "That session wasn't found." }, { status: 404 });
+    }
+
+    // A share link makes the session, and the deck it was played on,
+    // readable by anyone with the link. Only the student who played it may
+    // create one. Guest sessions (no owner) keep working as before.
+    if (match.user_id) {
+      const token = getBearerToken(req);
+      const { data: auth } = token ? await supabase.auth.getUser(token) : { data: { user: null } };
+      if (!auth.user || auth.user.id !== match.user_id) {
+        return NextResponse.json({ error: "That session wasn't found." }, { status: 404 });
+      }
     }
 
     const now = Date.now();

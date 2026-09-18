@@ -19,13 +19,19 @@ export type SessionQuestion = {
   topic: string | null;
   difficulty: string | null;
   question_type?: string | null;
+  /** Why each wrong option is wrong, keyed by option text. Newer decks only. */
+  choice_feedback?: Record<string, string> | null;
 };
+
+export type Confidence = "sure" | "unsure" | "guess";
 
 export type SessionAnswer = {
   questionId: string;
   selectedAnswer: string;
   isCorrect: boolean;
   responseTimeMs: number;
+  /** How sure the student said they were, before seeing the answer. */
+  confidence?: Confidence;
 };
 
 // Matches normalizeTopicKey in app/battle/[deckId]/page.tsx so a link built
@@ -127,5 +133,159 @@ export function summarize(args: {
     review: results
       .filter((r) => r.correct < r.total)
       .sort((a, b) => a.correct / a.total - b.correct / b.total),
+  };
+}
+
+/* ------------------------------------------------------------ calibration */
+
+export type Calibration = {
+  /** Answers given with each confidence, and how many of those were right. */
+  sure: { right: number; total: number };
+  unsure: { right: number; total: number };
+  guess: { right: number; total: number };
+  /** Topics answered wrong while sure: misconceptions, not slips. */
+  confidentMissTopics: string[];
+  /** Topics answered right on a guess: not known yet, just lucky. */
+  luckyTopics: string[];
+};
+
+/**
+ * How well the student's confidence matched their answers.
+ *
+ * This is the metacognition half of the session. A student who is sure and
+ * wrong holds a misconception and will not go looking for it; a student who
+ * guesses right thinks they know it. Neither shows up in a percentage.
+ */
+export function calibration(args: {
+  questions: SessionQuestion[];
+  answers: SessionAnswer[];
+}): Calibration {
+  const topicById = new Map(args.questions.map((q) => [q.id, (q.topic || "General").trim()]));
+  const result: Calibration = {
+    sure: { right: 0, total: 0 },
+    unsure: { right: 0, total: 0 },
+    guess: { right: 0, total: 0 },
+    confidentMissTopics: [],
+    luckyTopics: [],
+  };
+
+  for (const answer of args.answers) {
+    if (!answer.confidence) continue;
+    const bucket = result[answer.confidence];
+    bucket.total += 1;
+    if (answer.isCorrect) bucket.right += 1;
+    const topic = topicById.get(answer.questionId) || "General";
+    if (answer.confidence === "sure" && !answer.isCorrect && !result.confidentMissTopics.includes(topic)) {
+      result.confidentMissTopics.push(topic);
+    }
+    if (answer.confidence === "guess" && answer.isCorrect && !result.luckyTopics.includes(topic)) {
+      result.luckyTopics.push(topic);
+    }
+  }
+
+  return result;
+}
+
+/** One plain sentence about calibration, or null when there is nothing to say. */
+export function describeCalibration(c: Calibration): string | null {
+  const rated = c.sure.total + c.unsure.total + c.guess.total;
+  if (rated < 3) return null;
+  if (c.sure.total > 0 && c.sure.right === c.sure.total && c.confidentMissTopics.length === 0) {
+    return `When you were sure, you were right: ${c.sure.right} of ${c.sure.total}.`;
+  }
+  if (c.confidentMissTopics.length > 0) {
+    const wrong = c.sure.total - c.sure.right;
+    return `You were sure about ${wrong} answer${wrong === 1 ? "" : "s"} you got wrong. Those are misconceptions, so they come back first.`;
+  }
+  if (c.guess.right > 0) {
+    return `You guessed right ${c.guess.right} time${c.guess.right === 1 ? "" : "s"}. Those come back soon, because a lucky guess is not knowing it.`;
+  }
+  return null;
+}
+
+/* --------------------------------------------------------------- resuming */
+
+/**
+ * An unfinished session, as saved in the browser.
+ *
+ * Refreshing the page, a phone locking, or tapping a link mid-session used to
+ * throw every answer away: the state lived only in React. It is now written
+ * to localStorage after every answer and picked back up on return.
+ */
+export type SavedSession = {
+  version: 1;
+  deckId: string;
+  /** The URL query the session was started with, so a different session does not resume it. */
+  scope: string;
+  /** Question ids in the order they are being asked, retries included (as "id#retry"). */
+  order: string[];
+  index: number;
+  answers: SessionAnswer[];
+  recoveredIds: string[];
+  startedAt: number;
+  savedAt: number;
+};
+
+/** Sessions older than this start fresh: the student has moved on. */
+export const RESUME_WINDOW_MS = 12 * 60 * 60 * 1000;
+
+export function sessionStorageKey(deckId: string): string {
+  return `acedecks_session_${deckId}`;
+}
+
+/**
+ * Reads a saved session back, or null if it is missing, stale, for a
+ * different session, or no longer matches the deck's questions.
+ */
+export function restoreSession(args: {
+  raw: string | null;
+  deckId: string;
+  scope: string;
+  questionIds: Set<string>;
+  now: number;
+}): SavedSession | null {
+  if (!args.raw) return null;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(args.raw);
+  } catch {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") return null;
+  const saved = parsed as Partial<SavedSession>;
+
+  if (saved.version !== 1 || saved.deckId !== args.deckId || saved.scope !== args.scope) return null;
+  if (typeof saved.savedAt !== "number" || args.now - saved.savedAt > RESUME_WINDOW_MS) return null;
+  if (!Array.isArray(saved.order) || saved.order.length === 0) return null;
+  if (!Array.isArray(saved.answers) || !Array.isArray(saved.recoveredIds)) return null;
+  if (typeof saved.index !== "number" || saved.index < 0 || saved.index >= saved.order.length) return null;
+  if (saved.answers.length === 0) return null;
+
+  // Every question must still exist: a regenerated or edited deck makes
+  // the saved order meaningless.
+  const baseIds = saved.order.map((key) => key.replace(/#retry$/, ""));
+  if (!baseIds.every((id) => args.questionIds.has(id))) return null;
+
+  const answers = saved.answers.filter(
+    (a) =>
+      a &&
+      typeof a.questionId === "string" &&
+      args.questionIds.has(a.questionId) &&
+      typeof a.selectedAnswer === "string" &&
+      typeof a.isCorrect === "boolean" &&
+      typeof a.responseTimeMs === "number"
+  );
+  if (answers.length !== saved.answers.length) return null;
+
+  return {
+    version: 1,
+    deckId: args.deckId,
+    scope: args.scope,
+    order: saved.order,
+    index: saved.index,
+    answers,
+    recoveredIds: saved.recoveredIds.filter((id): id is string => typeof id === "string"),
+    startedAt: typeof saved.startedAt === "number" ? saved.startedAt : saved.savedAt,
+    savedAt: saved.savedAt,
   };
 }

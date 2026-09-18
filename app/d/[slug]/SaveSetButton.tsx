@@ -76,7 +76,7 @@ export function SaveSetButton({ slug, title }: { slug: string; title: string }) 
         {isSaving ? "Saving…" : "Save to my library"}
       </button>
       {error && (
-        <p className="t-meta" role="alert" style={{ color: "var(--danger)" }}>
+        <p className="t-meta" role="alert" style={{ color: "var(--bad)" }}>
           {error}
         </p>
       )}

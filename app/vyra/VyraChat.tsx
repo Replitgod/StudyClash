@@ -12,8 +12,10 @@ import { useRequireAuth } from "@/lib/useRequireAuth";
 import {
   VYRA_STREAM_HEADER,
   VYRA_STREAM_META_DELIMITER,
+  type StreamedResourceRecommendation,
   type VyraStreamMeta,
 } from "@/lib/vyraStream";
+import { sessionHref } from "@/lib/nextAction";
 import { MathText } from "@/app/components/ui/MathText";
 import {
   ArrowRightIcon,
@@ -38,6 +40,11 @@ type ChatMessage = {
   /** Real actions Vyra performed, rendered as links to the actual result. */
   battleAction?: { deckId: string; topics: string[] };
   studyPlanAction?: { planId: string; assessmentName: string };
+  /** A practice set Vyra offered to build. */
+  practiceTopic?: string;
+  /** Grounded study resources found for this message. */
+  resources?: StreamedResourceRecommendation[];
+  resourcesDisclaimer?: string;
 };
 
 type Conversation = {
@@ -109,18 +116,18 @@ export default function VyraChat() {
   const context = useMemo(() => {
     return {
       weakTopics: snapshot.weakTopics.slice(0, 8).map((t) => t.topic),
-      masteryProgress: snapshot.decks.slice(0, 6).map((deck) => ({
-        label: deck.title,
-        value: deck.mastery ?? 0,
-        details:
-          deck.mastery === null
-            ? "not studied yet"
-            : `${deck.mastery}% mastered${deck.dueTopics.length ? `, ${deck.dueTopics.length} topics due` : ""}`,
-      })),
       deckId: snapshot.weakTopics[0]?.deckId || snapshot.decks[0]?.id,
       deckTitle: snapshot.weakTopics[0]?.deckTitle || snapshot.decks[0]?.title,
     };
   }, [snapshot]);
+
+  // The study set and question the student arrived about, if any. These are
+  // the only ones sent as the chat's focus: the server reads the actual
+  // material and the student's answer, and checks both are theirs.
+  const focusDeckId = searchParams.get("deckId");
+  const focusQuestionId = searchParams.get("question");
+  const focusDeckTitle =
+    (focusDeckId && snapshot.decks.find((deck) => deck.id === focusDeckId)?.title) || null;
 
   // Which deck a call should be grounded in. The URL wins, because it is the
   // student's explicit choice; otherwise fall back to whatever they are
@@ -230,11 +237,11 @@ export default function VyraChat() {
             mode,
             sessionId,
             message: trimmed,
-            deckId: context.deckId,
-            deckTitle: context.deckTitle,
+            deckId: focusDeckId || undefined,
+            deckTitle: focusDeckTitle || undefined,
+            questionId: focusQuestionId || undefined,
             playerName: profile?.display_name || user?.email?.split("@")[0] || "Student",
             weakTopics: context.weakTopics,
-            masteryProgress: context.masteryProgress,
             chatHistory: history.slice(-12).map((m) => ({
               role: m.role,
               content: m.content,
@@ -312,6 +319,9 @@ export default function VyraChat() {
                       content: meta.finalReply?.trim() || m.content,
                       battleAction: meta.battleAction,
                       studyPlanAction: meta.studyPlanAction,
+                      practiceTopic: meta.practiceTopic,
+                      resources: meta.resources,
+                      resourcesDisclaimer: meta.resourcesDisclaimer,
                     }
                   : m
               )
@@ -334,16 +344,21 @@ export default function VyraChat() {
 
       return finalReply;
     },
-    [messages, isSending, sessionId, context, profile, user, loadConversations]
+    [messages, isSending, sessionId, context, profile, user, loadConversations, focusDeckId, focusDeckTitle, focusQuestionId]
   );
 
-  // A material workspace can hand Vyra its subject: /vyra?about=Photosynthesis
+  // A study set or a missed question can hand Vyra its subject:
+  // /vyra?about=Photosynthesis, or ...&question=<id> from a session.
   useEffect(() => {
     if (didSeedRef.current) return;
     const about = searchParams.get("about");
-    if (!about) return;
+    if (!about && !searchParams.get("question")) return;
     didSeedRef.current = true;
-    setInput(`Help me understand ${about}.`);
+    setInput(
+      searchParams.get("question")
+        ? "I got this question wrong and I don't see why. Can you help me work through it?"
+        : `Help me understand ${about}.`
+    );
     inputRef.current?.focus();
   }, [searchParams]);
 
@@ -592,18 +607,60 @@ export default function VyraChat() {
                         )}
                       </div>
 
+                      {message.resources && message.resources.length > 0 && (
+                        <ul className="mt-4 flex flex-col gap-2">
+                          {message.resources.map((resource) => (
+                            <li key={resource.url}>
+                              <a
+                                href={resource.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="card-link block px-4 py-3"
+                              >
+                                <p className="text-[14px] font-medium" style={{ color: "var(--text-1)" }}>
+                                  {resource.title}
+                                  <span className="sr-only"> (opens in a new tab)</span>
+                                </p>
+                                <p className="t-meta mt-0.5">
+                                  {resource.source}
+                                  {resource.trustTier === "official" ? " · official" : ""}
+                                  {resource.estimatedStudyTime ? ` · ${resource.estimatedStudyTime}` : ""}
+                                </p>
+                                {resource.whyChosen && (
+                                  <p className="t-meta mt-1" style={{ color: "var(--text-2)" }}>
+                                    {resource.whyChosen}
+                                  </p>
+                                )}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {message.resourcesDisclaimer && (
+                        <p className="t-meta mt-2">{message.resourcesDisclaimer}</p>
+                      )}
+
                       {message.battleAction && (
                         <Link
-                          href={`/battle/${message.battleAction.deckId}${
-                            message.battleAction.topics.length
-                              ? `?mode=weak_topic&topics=${message.battleAction.topics
-                                  .map(encodeURIComponent)
-                                  .join(",")}`
-                              : ""
-                          }`}
+                          href={sessionHref({
+                            deckId: message.battleAction.deckId,
+                            topics: message.battleAction.topics,
+                            mode: "weak_topic",
+                            limit: 10,
+                          })}
                           className="btn btn-secondary btn-sm mt-3"
                         >
-                          Practice this now
+                          Practice these topics
+                          <ArrowRightIcon className="h-4 w-4" />
+                        </Link>
+                      )}
+
+                      {message.practiceTopic && (
+                        <Link
+                          href={`/home?topic=${encodeURIComponent(message.practiceTopic)}`}
+                          className="btn btn-secondary btn-sm mt-3"
+                        >
+                          Make a practice set on {message.practiceTopic}
                           <ArrowRightIcon className="h-4 w-4" />
                         </Link>
                       )}
@@ -642,8 +699,14 @@ export default function VyraChat() {
           className="fixed inset-0 z-50 lg:hidden"
           style={{ background: "rgb(0 0 0 / 0.5)" }}
           onClick={() => setIsHistoryOpen(false)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") setIsHistoryOpen(false);
+          }}
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Your chats"
             className="absolute inset-y-0 left-0 flex w-72 flex-col px-2 py-4"
             style={{ background: "var(--app-bg)" }}
             onClick={(event) => event.stopPropagation()}

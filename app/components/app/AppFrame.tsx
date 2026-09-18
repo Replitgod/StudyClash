@@ -181,7 +181,13 @@ function MobileTabBar({ pathname }: { pathname: string }) {
         paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}
     >
-      <ul className="grid grid-cols-4">
+      {/* One column per destination, derived rather than written down: this
+          was grid-cols-4 after Exams became the fifth item, which wrapped
+          Vyra onto a second row hidden behind the page on every phone. */}
+      <ul
+        className="grid"
+        style={{ gridTemplateColumns: `repeat(${NAV_ITEMS.length}, minmax(0, 1fr))` }}
+      >
         {NAV_ITEMS.map((item) => {
           const Icon = NAV_ICONS[item.id];
           const isActive = active === item.id;

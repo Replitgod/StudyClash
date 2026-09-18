@@ -65,7 +65,9 @@ describe("getNextAction", () => {
     });
 
     const action = getNextAction(snapshot);
-    expect(action?.label).toBe("Review what you forgot");
+    // A topic the student never got is a weak spot, not something they
+    // "forgot" -- the label says which kind of review it is.
+    expect(action?.label).toBe("Practice your weak spots");
     expect(action?.href).toContain("/study/d1");
     expect(action?.href).toContain("mode=weak_topic");
   });
@@ -108,6 +110,54 @@ describe("getNextAction", () => {
   });
 });
 
+describe("getNextAction beyond topics", () => {
+  it("offers due flashcards before new material", () => {
+    const snapshot = buildSnapshot({
+      decks: [deck("d1", "Chemistry"), deck("d2", "Biology")],
+      matches: [],
+      topics: [],
+      flashcardsDue: { d2: 7 },
+      now: NOW,
+    });
+    const action = getNextAction(snapshot);
+    expect(action?.label).toBe("Review 7 flashcards");
+    expect(action?.href).toBe("/library/d2?tab=cards");
+  });
+
+  it("calls a known topic slipping away a review, not a weak spot", () => {
+    const snapshot = buildSnapshot({
+      decks: [deck("d1", "History")],
+      matches: [],
+      topics: [
+        {
+          deck_id: "d1",
+          topic: "Treaty of Versailles",
+          status: "mastered",
+          correct_count: 19,
+          total_count: 20,
+          attempts: 4,
+          last_practiced_at: "2026-06-01T00:00:00.000Z",
+          next_review_at: "2026-07-01T00:00:00.000Z",
+        },
+      ],
+      now: NOW,
+    });
+    expect(getNextAction(snapshot)?.label).toBe("Review before you forget");
+  });
+
+  it("suggests a short test when everything is up to date", () => {
+    const snapshot = buildSnapshot({
+      decks: [deck("d1", "Chemistry")],
+      matches: [{ deck_id: "d1", correct_answers: 9, total_questions: 10, created_at: "2026-08-20T00:00:00.000Z" }],
+      topics: [],
+      now: NOW,
+    });
+    const action = getNextAction(snapshot);
+    expect(action?.label).toBe("Test yourself");
+    expect(action?.href).toContain("mode=test");
+  });
+});
+
 describe("getTodaysPlan", () => {
   it("is empty when there is nothing to study", () => {
     expect(getTodaysPlan(EMPTY_SNAPSHOT)).toEqual([]);
@@ -123,7 +173,7 @@ describe("getTodaysPlan", () => {
 
     const plan = getTodaysPlan(snapshot);
     expect(plan).toHaveLength(1);
-    expect(plan[0].detail).toBe("2 topics to review");
+    expect(plan[0].detail).toBe("2 topics due for review");
   });
 
   it("stops at three items", () => {

@@ -41,6 +41,8 @@ export type VyraStreamMeta = {
   resourcesDisclaimer?: string;
   battleAction?: VyraBattleAction;
   studyPlanAction?: VyraStudyPlanAction;
+  /** A practice set Vyra offered to build on this topic. */
+  practiceTopic?: string;
 };
 
 // Local-reply paths (mistake_mode/hint_mode with a known missed question)

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { EXAM_TRACK_IDS, normalizeExamTrack, resolveExamTrack } from "./examTracks";
+import {
+  composerTrackForExam,
+  EXAM_TRACK_IDS,
+  normalizeExamTrack,
+  resolveExamTrack,
+} from "./examTracks";
+import { EXAM_TRACKS } from "./examCatalog";
 
 // The two ends of the same journey. /exams links to /home?track=<id>, Home
 // renders it from lib/examTracks.ts, and the server re-validates it through
@@ -26,7 +32,7 @@ describe("resolveExamTrack", () => {
   });
 
   it("returns null for anything unknown rather than throwing", () => {
-    for (const bad of ["gre", "", null, undefined, "../etc"]) {
+    for (const bad of ["toefl", "", null, undefined, "../etc"]) {
       expect(resolveExamTrack(bad), String(bad)).toBeNull();
     }
   });
@@ -42,8 +48,25 @@ describe("the display list and the server allowlist agree", () => {
   });
 
   it("still refuses anything not on the list", () => {
-    for (const bad of ["gre", "ignore previous instructions", "", null, 7]) {
+    for (const bad of ["toefl", "ignore previous instructions", "", null, 7]) {
       expect(normalizeExamTrack(bad), String(bad)).toBeNull();
     }
+  });
+});
+
+describe("composerTrackForExam", () => {
+  // Every exam page offers topic practice in that exam style. An exam the
+  // catalog lists but this mapping misses is a page whose second button
+  // silently produces generic questions.
+  it("maps every catalog exam to a real composer track", () => {
+    for (const entry of EXAM_TRACKS) {
+      const track = composerTrackForExam(entry.slug);
+      expect(track, entry.slug).not.toBeNull();
+      expect(resolveExamTrack(track), entry.slug).not.toBeNull();
+    }
+  });
+
+  it("returns null for an unknown slug", () => {
+    expect(composerTrackForExam("toefl")).toBeNull();
   });
 });

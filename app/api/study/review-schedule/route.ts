@@ -31,21 +31,34 @@ export async function GET(req: NextRequest) {
   }
 
   const supabase = getServiceSupabaseClient();
-  const { data, error } = await supabase
-    .from("topic_review_schedule")
-    // `attempts` and `last_practiced_at` are what let the mastery engine
-    // model forgetting (lib/mastery.ts). Without them every topic looks
-    // equally fresh and nothing can ever be reported as fading.
-    .select(
-      "deck_id, topic, status, correct_count, total_count, next_review_at, attempts, last_practiced_at, recoveries"
-    )
-    .eq("user_id", userId)
-    .limit(MAX_ROWS);
+  // `attempts` and `last_practiced_at` are what let the mastery engine
+  // model forgetting (lib/mastery.ts). Without them every topic looks
+  // equally fresh and nothing can ever be reported as fading.
+  const baseColumns =
+    "deck_id, topic, status, correct_count, total_count, next_review_at, attempts, last_practiced_at, recoveries";
+
+  // confident_misses (20260918_02) is read when it exists. Selecting an
+  // unknown column is an error, not a null, so fall back without it.
+  const [topicsResult, flashcardsDue] = await Promise.all([
+    supabase
+      .from("topic_review_schedule")
+      .select(`${baseColumns}, confident_misses`)
+      .eq("user_id", userId)
+      .limit(MAX_ROWS)
+      .then(async (result) =>
+        result.error
+          ? supabase.from("topic_review_schedule").select(baseColumns).eq("user_id", userId).limit(MAX_ROWS)
+          : result
+      ),
+    loadFlashcardsDue(supabase, userId),
+  ]);
+
+  const { data, error } = topicsResult;
 
   if (error) {
     // The table may not exist in this environment. "Nothing is due" is the
     // honest answer and keeps every screen that reads this usable.
-    return NextResponse.json({ topics: [] });
+    return NextResponse.json({ topics: [], flashcardsDue });
   }
 
   // A session screen additionally asks for per-question history on the one
@@ -55,7 +68,7 @@ export async function GET(req: NextRequest) {
   // a bounded read, and same RLS reasoning as the topic table above.
   const deckId = req.nextUrl.searchParams.get("deckId");
   if (!deckId) {
-    return NextResponse.json({ topics: data || [], questions: [] });
+    return NextResponse.json({ topics: data || [], questions: [], flashcardsDue });
   }
 
   const { data: questionRows } = await supabase
@@ -68,5 +81,29 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     topics: data || [],
     questions: questionRows || [],
+    flashcardsDue,
   });
+}
+
+/**
+ * Flashcard reviews due right now, per study set. Only cards the student
+ * has already started: new cards are offered by the Flashcards tab itself,
+ * and counting them here would make every fresh set look overdue.
+ */
+async function loadFlashcardsDue(
+  supabase: ReturnType<typeof getServiceSupabaseClient>,
+  userId: string
+): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from("flashcard_state")
+    .select("deck_id")
+    .eq("user_id", userId)
+    .lte("due_at", new Date().toISOString())
+    .limit(2000);
+  if (error || !data) return {};
+  const counts: Record<string, number> = {};
+  for (const row of data as Array<{ deck_id: string }>) {
+    counts[row.deck_id] = (counts[row.deck_id] ?? 0) + 1;
+  }
+  return counts;
 }

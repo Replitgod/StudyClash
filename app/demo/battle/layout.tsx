@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Guided Product Demo | AceDecks",
     description:
-      "No-signup guided demo for the full AI-powered study battle loop.",
+      "Try AceDecks without an account: answer a few questions and see how it handles a mistake.",
     images: ["/twitter-image"],
   },
 };

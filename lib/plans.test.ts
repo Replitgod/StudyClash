@@ -3,6 +3,7 @@ import {
   ALL_PLANS,
   FREE_PLAN_IDS,
   getPlanMetadata,
+  tierIdForPlan,
   isKnownPlanId,
   PRIORITY_PLAN_IDS,
   PUBLIC_PLANS,
@@ -42,5 +43,24 @@ describe("plan metadata", () => {
       expect(isKnownPlanId(plan.id)).toBe(true);
     }
     expect(isKnownPlanId("not_a_real_plan")).toBe(false);
+  });
+});
+
+describe("tierIdForPlan", () => {
+  it("grants Pro to every paid or manually granted plan", () => {
+    for (const plan of ["pro_individual", "pro_preview", "founder", "exam_tunnel", "pro"]) {
+      expect(tierIdForPlan(plan), plan).toBe("pro");
+    }
+  });
+
+  it("maps team plans to Classroom", () => {
+    expect(tierIdForPlan("team_pass")).toBe("classroom");
+    expect(tierIdForPlan("classroom")).toBe("classroom");
+  });
+
+  it("treats free and unknown plans as free", () => {
+    for (const plan of ["free_beta", "", null, undefined, "something_new"]) {
+      expect(tierIdForPlan(plan), String(plan)).toBe("free");
+    }
   });
 });

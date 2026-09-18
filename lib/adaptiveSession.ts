@@ -117,11 +117,38 @@ export function planSession(args: {
   limit: number | null;
   topicPriorities?: TopicPriority[];
   history?: QuestionHistory[];
+  /**
+   * Only questions the student got wrong the last time they saw them.
+   * "Review mistakes" promised exactly this and used to deliver the whole
+   * deck, weakest-first.
+   */
+  onlyMissed?: boolean;
+  /**
+   * Varies the order between sessions. Without it two sessions on the same
+   * deck ask the same questions in the same order, which a student learns
+   * as a sequence instead of as material. Omitted, planning is fully
+   * deterministic (and testable).
+   */
+  seed?: number;
 }): SessionPlan {
   const { questions, topics, limit } = args;
 
   let pool = questions;
   let didFallBack = false;
+
+  if (args.onlyMissed) {
+    const missed = new Set(
+      (args.history || []).filter((h) => h.correctStreak === 0).map((h) => h.questionId)
+    );
+    pool = pool.filter((question) => missed.has(question.id));
+    if (pool.length === 0) {
+      return {
+        questions: [],
+        didFallBack: false,
+        rationale: "Nothing you have missed is waiting for review.",
+      };
+    }
+  }
 
   if (topics.length > 0) {
     const matched = questions.filter((question) => {
@@ -145,6 +172,8 @@ export function planSession(args: {
     (args.history || []).map((h) => [h.questionId, h])
   );
 
+  const random = args.seed === undefined ? null : seededRandom(args.seed);
+
   const scored = pool.map((question, originalIndex) => {
     const key = normalizeTopicKey(question.topic || "");
     const topicState = priorityByTopic.get(key);
@@ -154,7 +183,10 @@ export function planSession(args: {
     // keeps missing inside a topic they are weak at is the single most
     // valuable thing the session can ask.
     const topicWeight = topicState ? 0.4 + topicState.priority * 1.6 : 1;
-    const score = topicWeight * historyWeight(history);
+    // Up to 15% of jitter: enough to reshuffle questions of similar value,
+    // never enough to put a mastered question ahead of a missed one.
+    const jitter = random ? 1 + (random() - 0.5) * 0.3 : 1;
+    const score = topicWeight * historyWeight(history) * jitter;
 
     return { question, score, originalIndex, difficulty: difficultyValue(question.difficulty) };
   });
@@ -166,7 +198,9 @@ export function planSession(args: {
   });
 
   const take = limit && limit > 0 ? Math.min(limit, scored.length) : scored.length;
-  const selected = scored.slice(0, take);
+  const selected = interleaveByTopic(scored.slice(0, take), (entry) =>
+    normalizeTopicKey(entry.question.topic || "")
+  );
 
   // Open with the most winnable of the first few rather than the hardest
   // thing in the set. Starting a weak-topic session with its hardest
@@ -196,6 +230,65 @@ export function planSession(args: {
       ).length,
     }),
   };
+}
+
+/**
+ * Mixes topics so the same one does not come up twice in a row when there is
+ * an alternative close behind it.
+ *
+ * Blocked practice -- ten questions on one idea, then ten on the next --
+ * feels productive and tests worse. Interleaving makes the student decide
+ * which idea a question needs before using it, which is the skill an exam
+ * actually tests. The search only looks three places ahead, so a question
+ * never moves far from where its value put it.
+ */
+export function interleaveByTopic<T>(items: T[], topicOf: (item: T) => string): T[] {
+  const result: T[] = [];
+  const remaining = items.slice();
+  while (remaining.length > 0) {
+    const previous = result.length > 0 ? topicOf(result[result.length - 1]) : null;
+    let pick = 0;
+    if (previous !== null && topicOf(remaining[0]) === previous) {
+      const lookahead = Math.min(remaining.length, 4);
+      for (let i = 1; i < lookahead; i += 1) {
+        if (topicOf(remaining[i]) !== previous) {
+          pick = i;
+          break;
+        }
+      }
+    }
+    result.push(remaining.splice(pick, 1)[0]);
+  }
+  return result;
+}
+
+/** Small deterministic PRNG (mulberry32), so a seeded plan is reproducible. */
+export function seededRandom(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * Where a missed question comes back in the same session.
+ *
+ * A few questions later, not immediately: straight after the explanation
+ * the answer is still on screen in the student's head, and getting it right
+ * then proves nothing. After a short gap filled with other questions, a
+ * right answer is retrieval. At the end of the session if it is nearly over.
+ */
+export function retryPosition(args: {
+  currentIndex: number;
+  queueLength: number;
+  gap?: number;
+}): number {
+  const gap = args.gap ?? 3;
+  return Math.min(args.currentIndex + 1 + gap, args.queueLength);
 }
 
 function describePlan(args: {

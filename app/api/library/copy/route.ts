@@ -81,12 +81,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ deckId: source.id, alreadyYours: true });
   }
 
-  const { data: questions, error: questionsError } = await supabase
-    .from("questions")
-    .select(
-      "question_text, answer_choices, correct_answer, explanation, topic, difficulty, source_excerpt, question_type"
-    )
-    .eq("deck_id", source.id);
+  const baseColumns =
+    "question_text, answer_choices, correct_answer, explanation, topic, difficulty, source_excerpt, question_type";
+  // choice_feedback arrives with 20260918_02; copy it when it exists.
+  type QuestionCopy = Record<string, unknown>;
+  let questionsResult: { data: QuestionCopy[] | null; error: { message: string } | null } =
+    await supabase.from("questions").select(`${baseColumns}, choice_feedback`).eq("deck_id", source.id);
+  if (questionsResult.error) {
+    questionsResult = await supabase.from("questions").select(baseColumns).eq("deck_id", source.id);
+  }
+  const { data: questions, error: questionsError } = questionsResult;
 
   if (questionsError) {
     return NextResponse.json({ error: "Could not open that set. Please try again." }, { status: 500 });
@@ -136,6 +140,20 @@ export async function POST(request: NextRequest) {
       await supabase.from("decks").delete().eq("id", copy.id).eq("user_id", userId);
       return NextResponse.json({ error: "Could not save that set. Please try again." }, { status: 500 });
     }
+  }
+
+  // The set's flashcards come too -- the content, never the publisher's
+  // review state, which lives in flashcard_state and stays theirs. Best
+  // effort: without them the Flashcards tab writes a fresh set on first open.
+  const { data: cards } = await supabase
+    .from("flashcards")
+    .select("front, back, note, topic, kind, position")
+    .eq("deck_id", source.id);
+  if (cards && cards.length > 0) {
+    const { error: cardsError } = await supabase
+      .from("flashcards")
+      .insert(cards.map((card) => ({ ...card, deck_id: copy.id })));
+    if (cardsError) console.error("Deck copy flashcards failed:", cardsError.message);
   }
 
   return NextResponse.json({ deckId: copy.id, questionCount: questions.length });

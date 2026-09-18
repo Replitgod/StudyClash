@@ -15,12 +15,13 @@ import type { StudySnapshot, TopicSummary } from "@/lib/studySnapshot";
 // Anything else is silently ignored, which is how a link ends up looking
 // like it worked while quietly starting the wrong session.
 //
-// `mode` is carried through for the older /battle screen, which reads it;
-// /study derives what it needs from `topics` and `limit` alone.
+// `mode` is read by /study for "test" (no feedback until the end) and
+// "mistakes" (only what was missed last time); the older /battle screen
+// reads the others.
 export function sessionHref(args: {
   deckId: string;
   topics?: string[];
-  mode?: "battle" | "practice" | "weak_topic";
+  mode?: "battle" | "practice" | "weak_topic" | "test" | "mistakes";
   limit?: number;
 }): string {
   const { deckId, topics = [], mode = "battle", limit } = args;
@@ -53,20 +54,30 @@ function minutesFor(questionCount: number): number {
   return Math.max(5, Math.round((questionCount * 45) / 60));
 }
 
+function wasKnownOnce(topic: TopicSummary): boolean {
+  return topic.tier !== "needs_review" || topic.isFading;
+}
+
 export function getNextAction(snapshot: StudySnapshot): NextAction | null {
   if (snapshot.isEmpty) return null;
 
   // 1. Anything due for review beats anything new. This is the whole point
-  //    of tracking mastery.
+  //    of tracking mastery. The wording says which kind of review it is:
+  //    something the student knew and is losing, or something they never
+  //    got. "Review what you forgot" on a topic they never learned was
+  //    telling them a story about themselves that was not true.
   const due = snapshot.dueTopics[0];
   if (due) {
     const topics = topicsInDeck(snapshot.dueTopics, due.deckId);
+    const known = wasKnownOnce(due);
     return {
-      label: "Review what you forgot",
+      label: known ? "Review before you forget" : "Practice your weak spots",
       reason:
         topics.length > 1
-          ? `${topics.length} topics in ${due.deckTitle} are ready for review`
-          : `${due.topic} is ready for review`,
+          ? `${topics.length} topics in ${due.deckTitle} are due`
+          : known
+            ? `${due.topic} is due for review`
+            : `${due.topic} is ready for another try`,
       href: sessionHref({
         deckId: due.deckId,
         topics,
@@ -77,12 +88,27 @@ export function getNextAction(snapshot: StudySnapshot): NextAction | null {
     };
   }
 
-  // 2. Otherwise, the weakest thing they have practiced.
+  // 2. Flashcards that are due. Short, and the cheapest review there is.
+  const cardDeck = snapshot.decks
+    .filter((deck) => deck.flashcardsDue > 0)
+    .sort((a, b) => b.flashcardsDue - a.flashcardsDue)[0];
+  if (cardDeck) {
+    return {
+      label: `Review ${cardDeck.flashcardsDue} flashcard${cardDeck.flashcardsDue === 1 ? "" : "s"}`,
+      reason: `${cardDeck.title}: due today`,
+      href: `/library/${cardDeck.id}?tab=cards`,
+      minutes: Math.max(3, Math.round(cardDeck.flashcardsDue * 0.25)),
+    };
+  }
+
+  // 3. Otherwise, the weakest thing they have practiced.
   const weak = snapshot.weakTopics[0];
   if (weak && weak.total >= 2) {
     return {
-      label: "Fix your weak spot",
-      reason: `${weak.topic} is at ${weak.accuracy}% — worth another pass`,
+      label: "Practice your weak spot",
+      reason: `${weak.topic} is at ${weak.mastery}% mastery${
+        weak.confidentMisses > 0 ? ", and you've been sure of wrong answers on it" : ""
+      }`,
       href: sessionHref({
         deckId: weak.deckId,
         topics: [weak.topic],
@@ -93,28 +119,30 @@ export function getNextAction(snapshot: StudySnapshot): NextAction | null {
     };
   }
 
-  // 3. Otherwise, anything they have added but never studied.
+  // 4. Otherwise, anything they have added but never studied.
   const unstudied = snapshot.decks.find((deck) => deck.mastery === null);
   if (unstudied) {
     return {
       label: "Start studying",
-      reason: `You have not studied ${unstudied.title} yet`,
+      reason: `You haven't studied ${unstudied.title} yet`,
       href: sessionHref({ deckId: unstudied.id }),
       minutes: minutesFor(15),
     };
   }
 
-  // 4. Otherwise, keep going on the most recent thing.
+  // 5. Everything is up to date. A short test without hints is the most
+  //    useful thing left: it checks that "mastered" still holds without
+  //    the explanation arriving straight after each answer.
   const recent = snapshot.decks[0];
   if (recent) {
     return {
-      label: "Keep studying",
+      label: "Test yourself",
       reason:
         recent.mastery !== null
-          ? `${recent.title} — ${recent.mastery}% mastered`
-          : recent.title,
-      href: sessionHref({ deckId: recent.id, mode: "practice" }),
-      minutes: minutesFor(15),
+          ? `Nothing is due. ${recent.title} is at ${recent.mastery}%; a quick test keeps it there`
+          : `Nothing is due. A quick test on ${recent.title} keeps it that way`,
+      href: sessionHref({ deckId: recent.id, mode: "test", limit: 10 }),
+      minutes: minutesFor(10),
     };
   }
 
@@ -146,7 +174,7 @@ export function getTodaysPlan(snapshot: StudySnapshot): PlanItem[] {
       title: topic.deckTitle,
       detail:
         deckTopics.length > 1
-          ? `${deckTopics.length} topics to review`
+          ? `${deckTopics.length} topics due for review`
           : `Review ${topic.topic}`,
       minutes: minutesFor(10),
       href: sessionHref({
@@ -158,6 +186,19 @@ export function getTodaysPlan(snapshot: StudySnapshot): PlanItem[] {
     });
   }
 
+  for (const deck of snapshot.decks) {
+    if (items.length >= 3) break;
+    if (deck.flashcardsDue <= 0 || usedDecks.has(deck.id)) continue;
+    usedDecks.add(deck.id);
+    items.push({
+      id: `cards-${deck.id}`,
+      title: deck.title,
+      detail: `${deck.flashcardsDue} flashcard${deck.flashcardsDue === 1 ? "" : "s"} due`,
+      minutes: Math.max(3, Math.round(deck.flashcardsDue * 0.25)),
+      href: `/library/${deck.id}?tab=cards`,
+    });
+  }
+
   for (const weak of snapshot.weakTopics) {
     if (items.length >= 3) break;
     if (usedDecks.has(weak.deckId)) continue;
@@ -165,7 +206,7 @@ export function getTodaysPlan(snapshot: StudySnapshot): PlanItem[] {
     items.push({
       id: `weak-${weak.deckId}`,
       title: weak.deckTitle,
-      detail: `Weak area: ${weak.topic}`,
+      detail: `Weak spot: ${weak.topic}`,
       minutes: minutesFor(10),
       href: sessionHref({
         deckId: weak.deckId,

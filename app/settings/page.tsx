@@ -11,6 +11,8 @@ import { OPEN_FEEDBACK_EVENT } from "@/lib/uiLayout";
 import { FREE_PLAN_LIMIT_SUMMARY } from "@/lib/planLimits";
 import { useTheme } from "@/lib/useTheme";
 import { resolveTier } from "@/lib/tiers";
+import { tierIdForPlan } from "@/lib/plans";
+import { Onboarding, LOCAL_PROFILE_KEY } from "@/app/components/app/Onboarding";
 import {
   describeSubscription,
   isLiveSubscription,
@@ -53,11 +55,12 @@ export default function SettingsPage() {
   const router = useRouter();
   const { user, profile, isLoading, refreshProfile } = useAuth();
 
-  // `profile.plan` carries legacy plan ids; resolveTier maps anything it
-  // does not recognize to free rather than throwing.
-  const currentTier = resolveTier(
-    profile?.plan === "pro_individual" || profile?.plan === "pro" ? "pro" : profile?.plan
-  );
+  // profile.plan holds Stripe-managed and manually granted plan ids; the
+  // shared mapping turns every one of them into the tier it grants. The
+  // copy that used to live here only knew pro_individual, so founders and
+  // preview seats were shown as Free.
+  const currentTier = resolveTier(tierIdForPlan(profile?.plan));
+  const [isEditingSetup, setIsEditingSetup] = useState(false);
   const { themeId, themes, setTheme, canUseThemes } = useTheme(currentTier.id);
   const { isReady } = useRequireAuth();
 
@@ -309,6 +312,49 @@ export default function SettingsPage() {
 
           <Row label="Email" description={user?.email || "—"} />
 
+          {/* What onboarding asked. Shown here so it can be changed, because
+              the card on Home says it can be. */}
+          {isEditingSetup ? (
+            <div className="px-4 py-4">
+              <Onboarding
+                onDone={() => {
+                  setIsEditingSetup(false);
+                  refreshProfile();
+                }}
+                onSkip={() => setIsEditingSetup(false)}
+              />
+            </div>
+          ) : (
+            <Row
+              label="Your studying"
+              description={
+                [
+                  profile?.target_exam,
+                  profile?.exam_date ? `on ${profile.exam_date}` : null,
+                  profile?.education_level,
+                  profile?.daily_goal ? `${profile.daily_goal} questions a day` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ") || "Tell AceDecks your exam, level and daily goal."
+              }
+            >
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    window.localStorage.removeItem(LOCAL_PROFILE_KEY);
+                  } catch {
+                    // Nothing stored locally; nothing to clear.
+                  }
+                  setIsEditingSetup(true);
+                }}
+                className="btn btn-sm btn-secondary"
+              >
+                {profile?.onboarded_at ? "Change" : "Set up"}
+              </button>
+            </Row>
+          )}
+
           {/* The description used to be the free-plan cap summary for
               everyone, so a paying customer was told about limits they had
               already paid to remove. It now describes the plan they are
@@ -344,12 +390,12 @@ export default function SettingsPage() {
           {(billingError || subscription?.status === "past_due") && (
             <div className="px-4 py-3">
               {subscription?.status === "past_due" && (
-                <p className="t-meta" style={{ color: "var(--warning)" }}>
+                <p className="t-meta" style={{ color: "var(--warn)" }}>
                   Your last payment failed. Update your card in the billing portal to keep Pro.
                 </p>
               )}
               {billingError && (
-                <p className="t-meta mt-1" style={{ color: "var(--danger)" }} role="alert">
+                <p className="t-meta mt-1" style={{ color: "var(--bad)" }} role="alert">
                   {billingError}
                 </p>
               )}
@@ -439,7 +485,7 @@ export default function SettingsPage() {
           </Row>
           {exportError && (
             <div className="px-4 py-3">
-              <p className="t-meta" role="alert" style={{ color: "var(--danger)" }}>
+              <p className="t-meta" role="alert" style={{ color: "var(--bad)" }}>
                 {exportError}
               </p>
             </div>
@@ -509,13 +555,13 @@ export default function SettingsPage() {
               type="button"
               onClick={() => setIsDeleteOpen(true)}
               className="btn btn-sm btn-quiet"
-              style={{ color: "var(--danger)" }}
+              style={{ color: "var(--bad)" }}
             >
               Delete my account
             </button>
           </div>
         ) : (
-          <div className="card mt-3 px-4 py-4" style={{ borderColor: "var(--danger)" }}>
+          <div className="card mt-3 px-4 py-4" style={{ borderColor: "var(--bad)" }}>
             <p className="text-[15px] font-medium" style={{ color: "var(--text-1)" }}>
               This deletes everything, permanently.
             </p>
@@ -536,7 +582,7 @@ export default function SettingsPage() {
               placeholder="DELETE"
             />
             {deleteError && (
-              <p className="t-meta mt-2" style={{ color: "var(--danger)" }} role="alert">
+              <p className="t-meta mt-2" style={{ color: "var(--bad)" }} role="alert">
                 {deleteError}
               </p>
             )}
@@ -547,7 +593,7 @@ export default function SettingsPage() {
                 disabled={deleteConfirmation.trim() !== "DELETE" || isDeleting}
                 className="btn btn-sm"
                 style={{
-                  background: "var(--danger)",
+                  background: "var(--bad)",
                   color: "#1a0708",
                   fontWeight: 600,
                 }}

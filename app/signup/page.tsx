@@ -31,7 +31,10 @@ function getSafeRedirectTarget(fallback: string): string {
       redirect &&
       redirect.startsWith("/") &&
       !redirect.startsWith("//") &&
-      !redirect.includes("://")
+      !redirect.includes("://") &&
+      // Browsers read "/\\evil.com" as "//evil.com"; control characters
+      // can smuggle the same trick past the checks above.
+      !/[\\\u0000-\u001f]/.test(redirect)
     ) {
       return redirect;
     }

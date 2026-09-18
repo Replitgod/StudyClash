@@ -25,7 +25,7 @@ export const IS_UNLIMITED =
 // upgrade prompts) should use to describe the generation limit, so wording
 // never drifts from what's actually enforced.
 export const FREE_PLAN_LIMIT_SUMMARY =
-  "Free covers 3 knowledge maps a month with 5 cards per concept. Ace Pro removes every cap.";
+  "Free covers 3 study sets a month, with up to 5 flashcards per topic. Ace Pro removes every cap.";
 
 // Short form for tight spaces (badges, plan cards).
-export const FREE_PLAN_LIMIT_SHORT = "3 maps a month";
+export const FREE_PLAN_LIMIT_SHORT = "3 study sets a month";

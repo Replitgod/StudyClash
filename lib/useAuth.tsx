@@ -18,6 +18,12 @@ export type Profile = {
   created_at: string;
   display_name?: string | null;
   roasts_enabled?: boolean;
+  // From onboarding (20260918_02). Absent until that migration is applied.
+  education_level?: string | null;
+  target_exam?: string | null;
+  exam_date?: string | null;
+  daily_goal?: number | null;
+  onboarded_at?: string | null;
 };
 
 type AuthContextValue = {

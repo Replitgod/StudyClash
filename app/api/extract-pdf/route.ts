@@ -6,9 +6,18 @@ import {
   requireAuthenticatedUser,
 } from "@/lib/server/apiUtils";
 import { checkDistributedRateLimit } from "@/lib/server/rateLimit";
+import {
+  extractDocxPages,
+  extractPptxPages,
+  isLegacyOfficeFile,
+} from "@/lib/server/curriculum/officeExtraction";
 
 export const runtime = "nodejs";
 
+// Reads the text out of a document the student attached in the composer.
+// Named for PDFs, which it started with; it also takes Word (.docx) and
+// PowerPoint (.pptx), using the same extractors the document pipeline uses,
+// so the composer accepts the files a student actually has.
 const MAX_PDF_SIZE_BYTES = 8 * 1024 * 1024;
 // Matches generate-questions' MAX_NOTES_CHARACTERS -- a densely-packed PDF
 // could otherwise extract to a multi-megabyte text payload with no cap.
@@ -31,7 +40,7 @@ export async function POST(req: NextRequest) {
 
     if (!rateLimit.allowed) {
       return NextResponse.json(
-        { error: "Too many PDF extraction requests. Please try again shortly." },
+        { error: "You've uploaded a lot of files in a minute. Wait a moment and try again." },
         {
           status: 429,
           headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
@@ -43,31 +52,56 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file");
 
     if (!file || !(file instanceof File)) {
-      return NextResponse.json(
-        { error: "No PDF file uploaded." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No file arrived. Please attach it again." }, { status: 400 });
     }
 
-    const isPdf =
-      file.type === "application/pdf" ||
-      file.name.toLowerCase().endsWith(".pdf");
+    const name = file.name.toLowerCase();
+    const isPdf = file.type === "application/pdf" || name.endsWith(".pdf");
+    const isDocx = name.endsWith(".docx");
+    const isPptx = name.endsWith(".pptx");
 
-    if (!isPdf) {
+    if (!isPdf && !isDocx && !isPptx) {
       return NextResponse.json(
-        { error: "Please upload a PDF file." },
+        { error: "Attach a PDF, Word (.docx) or PowerPoint (.pptx) file." },
         { status: 400 }
       );
     }
 
     if (file.size > MAX_PDF_SIZE_BYTES) {
       return NextResponse.json(
-        { error: "PDF exceeds size limit (8MB)." },
+        { error: "That file is over 8 MB. Try a smaller file, or paste the text in." },
         { status: 413 }
       );
     }
 
     const arrayBuffer = await file.arrayBuffer();
+
+    if (isDocx || isPptx) {
+      const buffer = Buffer.from(arrayBuffer);
+      if (isLegacyOfficeFile(buffer)) {
+        return NextResponse.json(
+          {
+            error:
+              "That's an older Office file (.doc or .ppt). Open it and use File > Save As to save it as .docx or .pptx, then attach it again.",
+          },
+          { status: 400 }
+        );
+      }
+      const pages = isDocx ? await extractDocxPages(buffer) : await extractPptxPages(buffer);
+      const text = pages
+        .map((page) => page.rawText.trim())
+        .filter(Boolean)
+        .join("\n\n")
+        .slice(0, MAX_EXTRACTED_TEXT_CHARACTERS);
+      if (!text) {
+        return NextResponse.json(
+          { error: "We couldn't find any text in that file. Try pasting the text in instead." },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json({ text });
+    }
+
     const uint8Array = new Uint8Array(arrayBuffer);
 
     const result = await extractText(uint8Array);
@@ -79,7 +113,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Could not find any text in this PDF. If it's a scanned or image-only document, try pasting the text directly instead.",
+            "We couldn't find any text in this PDF. If it's a scan, attach a clear photo of the page instead, or paste the text in.",
         },
         { status: 400 }
       );
@@ -89,9 +123,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ text: extractedText });
   } catch (error) {
-    console.error("PDF extraction failed:", error instanceof Error ? error.message : error);
+    console.error("Document extraction failed:", error instanceof Error ? error.message : error);
     return NextResponse.json(
-      { error: "Could not read this PDF. Please try a different file or paste the text directly." },
+      { error: "We couldn't read that file. Try a different copy, or paste the text in." },
       { status: 500 }
     );
   }

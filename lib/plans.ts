@@ -14,6 +14,7 @@
 // string, so this label can't drift from what's really enforced again.
 
 import { FREE_PLAN_LIMIT_SHORT } from "./planLimits";
+import type { TierId } from "./tiers";
 
 export type PlanId =
   | "free_beta"
@@ -45,14 +46,14 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
   free_beta: {
     id: "free_beta",
     label: "Free",
-    tagline: "Everything, unlocked",
+    tagline: "Enough to prove it works on your own material",
     price: "$0",
     dailyLimit: FREE_PLAN_LIMIT_SHORT,
     features: [
-      "Unlimited decks and uploads",
+      "3 study sets a month",
       "Unlimited practice and tests",
       "Unlimited Vyra (AI tutor)",
-      "Full mastery tracking and mistake repair",
+      "Full mastery tracking",
     ],
     tier: "free",
     publiclyListed: true,
@@ -60,9 +61,9 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
   },
   pro_individual: {
     id: "pro_individual",
-    label: "AceDecks Pro",
+    label: "Ace Pro",
     tagline: "For students who want the full loop",
-    price: "$3/mo",
+    price: "$9.99/mo",
     dailyLimit: "Unlimited uploads and battles",
     features: [
       "More deck generations",
@@ -97,15 +98,15 @@ export const PLAN_METADATA: Record<PlanId, PlanMetadata> = {
     publiclyListed: false,
   },
   // No longer sold on its own -- every feature that used to be exclusive to
-  // Exam Pro is now bundled into pro_individual (AceDecks Pro, $3/mo), and
+  // Exam Pro is now bundled into pro_individual (Ace Pro), and
   // Stripe checkout only ever creates pro_individual subscriptions. This id
   // is kept, unlisted, purely so any account still on it from before the
   // merge keeps resolving to a real label/tier instead of showing nothing.
   exam_tunnel: {
     id: "exam_tunnel",
-    label: "AceDecks Pro",
+    label: "Ace Pro",
     tagline: "Full diagnostics and long-term tracking",
-    price: "$3/mo",
+    price: "$9.99/mo",
     dailyLimit: "Premium board-style generation",
     features: [
       "Everything in AceDecks Pro",
@@ -166,4 +167,22 @@ export function getPlanMetadata(planId: string | null | undefined): PlanMetadata
 
 export function isKnownPlanId(planId: string | null | undefined): planId is PlanId {
   return !!planId && planId in PLAN_METADATA;
+}
+
+/**
+ * Which tier a stored plan id grants.
+ *
+ * profiles.plan holds the Stripe-managed ids (free_beta, pro_individual) and
+ * several manually granted ones (founder, pro_preview, team_pass, the legacy
+ * exam_tunnel). Every route used to map these itself, and each copy knew a
+ * different subset: generation only recognised pro_individual, so founders
+ * and preview seats hit the free tier's monthly cap; Settings showed them as
+ * Free; the mistake explainer served them the free breakdown. One mapping,
+ * derived from each plan's own metadata, and every caller reads it.
+ */
+export function tierIdForPlan(planId: string | null | undefined): TierId {
+  if (!planId) return "free";
+  if (planId === "pro" || planId === "classroom") return planId;
+  if (planId === "team_pass") return "classroom";
+  return getPlanMetadata(planId)?.tier === "priority" ? "pro" : "free";
 }

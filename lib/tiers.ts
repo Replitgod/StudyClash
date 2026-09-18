@@ -53,7 +53,7 @@ export type Tier = {
   prices: TierPrice[];
   tagline: string;
   features: string[];
-  /** Knowledge maps per calendar month. null = unlimited. */
+  /** Study sets per calendar month. null = unlimited. */
   monthlyMapCap: number | null;
   /** Flashcards generated per concept. null = unlimited. */
   cardsPerConceptCap: number | null;
@@ -77,12 +77,12 @@ export const TIERS: Record<TierId, Tier> = {
     period: "forever",
     amountCents: 0,
     prices: [],
-    tagline: "Enough to prove it works on your own material.",
+    tagline: "Enough to see it work on your own material.",
     features: [
-      "3 knowledge maps per month",
-      "5 flashcards per concept",
-      "Standard processing speed",
-      "The answer, and why it is right",
+      "3 study sets a month",
+      "Up to 5 flashcards per topic",
+      "Unlimited practice, reviews and exam practice",
+      "What went wrong on every mistake",
     ],
     monthlyMapCap: 3,
     cardsPerConceptCap: 5,
@@ -118,14 +118,12 @@ export const TIERS: Record<TierId, Tier> = {
         stripePriceEnvVar: "STRIPE_PRO_ANNUAL_PRICE_ID",
       },
     ],
-    tagline: "Unlimited everything, and the full misconception breakdown.",
+    tagline: "Unlimited study sets, and the full breakdown of every mistake.",
     features: [
-      "Unlimited knowledge maps",
-      "Unlimited flashcards per concept",
-      "Handwriting and large-PDF ingestion",
-      "Priority processing",
-      "Full Card Crack breakdowns",
-      "Custom aesthetic themes",
+      "Unlimited study sets",
+      "Unlimited flashcards per topic",
+      "Full mistake breakdowns: the trap, how to spot it, and a follow-up question",
+      "Custom themes",
     ],
     monthlyMapCap: null,
     cardsPerConceptCap: null,
@@ -150,12 +148,12 @@ export const TIERS: Record<TierId, Tier> = {
         stripePriceEnvVar: "STRIPE_CLASSROOM_PRICE_ID",
       },
     ],
-    tagline: "Everything in Pro, shared across a class.",
+    tagline: "Ace Pro for a whole class, set up with you.",
     features: [
-      "Everything in Ace Pro",
-      "Collaborative knowledge maps",
-      "Collective group decay tracking",
-      "Class-wide weak-topic reporting",
+      "Ace Pro for every student in the class",
+      "Class rooms students join with a code",
+      "Class tournaments on your own study sets",
+      "One price per class, billed yearly",
     ],
     monthlyMapCap: null,
     cardsPerConceptCap: null,
@@ -237,7 +235,7 @@ export function resolveTier(id: string | null | undefined): Tier {
 /* ------------------------------------------------- the billing governor */
 
 export type UsageState = {
-  /** Knowledge maps created in the current calendar month. */
+  /** Study sets created in the current calendar month. */
   mapsThisMonth: number;
 };
 
@@ -311,7 +309,7 @@ export function evaluateRequest(args: {
       limitEnforced: true,
       actionAllowed: false,
       upgradeUnlocks: true,
-      reason: `You have used all ${tier.monthlyMapCap} knowledge maps this month. Ace Pro removes the cap.`,
+      reason: `You've used all ${tier.monthlyMapCap} free study sets this month. Ace Pro removes the cap.`,
     };
   }
 
@@ -322,7 +320,7 @@ export function evaluateRequest(args: {
       actionAllowed: false,
       upgradeUnlocks: true,
       reason:
-        "Card Crack breaks a wrong answer into the misconception behind it. It is part of Ace Pro.",
+        "The full breakdown of a mistake, with a follow-up question, is part of Ace Pro.",
     };
   }
 

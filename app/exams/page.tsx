@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { includedInProLabel } from "@/lib/tiers";
 import { trackAction, type ExamTrackEntry } from "@/lib/examCatalog";
+import { composerTrackForExam } from "@/lib/examTracks";
 import { loadExamCatalogStatus, type ExamTrackStatus } from "@/lib/server/examCatalogData";
 import { ArrowRightIcon } from "@/app/components/app/Icons";
 
@@ -93,31 +93,38 @@ function ReadyCard({ entry }: { entry: ExamTrackStatus }) {
   );
 }
 
-function NotYetCard({ track }: { track: ExamTrackEntry }) {
+function TopicOnlyCard({ track }: { track: ExamTrackEntry }) {
+  const composerTrack = composerTrackForExam(track.slug);
+
   return (
-    <article className="card flex flex-col p-5" style={{ opacity: 0.85 }}>
+    <article className="card flex flex-col p-5">
       <div className="flex items-start justify-between gap-3">
         <p className="text-[17px] font-medium" style={{ color: "var(--text-1)" }}>
           {track.name}
         </p>
-        <span className="chip shrink-0">Not yet</span>
+        <span className="chip shrink-0">By topic</span>
       </div>
 
       <p className="t-body mt-2">{track.promise}</p>
-      {/* Said plainly rather than as "coming soon". A student deciding what to
-          buy needs to know this track has nothing in it today. */}
+      {/* Said plainly: there is no timed bank, and what there is instead is
+          practice written on demand for the topic the student names. */}
       <p className="t-meta mt-2">
-        There is no {track.name} question bank yet, so there is nothing here to
-        practice. Vyra can still teach and quiz you on any {track.name} topic
-        out loud.
+        No full practice test yet. Name a topic and AceDecks writes original
+        questions in the {track.name} format, then keeps track of what you miss.
       </p>
 
       <div className="mt-auto pt-5">
+        {composerTrack && (
+          <Link href={`/home?track=${composerTrack}`} className="btn btn-primary w-full">
+            Practice {track.name} by topic
+            <ArrowRightIcon className="h-[18px] w-[18px]" />
+          </Link>
+        )}
         <Link
           href={`/vyra?call=1&topic=${encodeURIComponent(track.name)}`}
-          className="btn btn-secondary w-full"
+          className="btn btn-quiet mt-2 w-full"
         >
-          Work on {track.name} with Vyra
+          Talk it through with Vyra
         </Link>
         <OfficialLink label={track.officialLabel} url={track.officialUrl} />
       </div>
@@ -147,7 +154,7 @@ export default async function ExamsLandingPage() {
       <h1 className="t-page">Exam practice</h1>
       <p className="t-body mt-2 max-w-2xl">
         Questions written in your exam&rsquo;s format, with the timing and the
-        marking to match. {includedInProLabel()}
+        marking to match. Free on every plan.
       </p>
 
       {/* Stated once, up front, rather than repeated on every card. The
@@ -190,14 +197,14 @@ export default async function ExamsLandingPage() {
 
       {notYet.length > 0 && (
         <section className="mt-10">
-          <h2 className="t-section">Not built yet</h2>
+          <h2 className="t-section">Practice by topic</h2>
           <p className="t-meta mt-1">
-            These do not have a question bank. They are listed so you know
-            where the product actually is, not to suggest otherwise.
+            These have no timed practice test yet. Practice on any topic works
+            today.
           </p>
           <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {notYet.map((entry) => (
-              <NotYetCard key={entry.track.slug} track={entry.track} />
+              <TopicOnlyCard key={entry.track.slug} track={entry.track} />
             ))}
           </div>
         </section>

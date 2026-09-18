@@ -30,15 +30,15 @@ import { SiteFooter } from "@/app/components/marketing/SiteFooter";
 const FAQ = [
   {
     q: "What happens when I hit the free limit?",
-    a: "Nothing you have already made goes away. You keep every map, card and score you have built; you just cannot create a fourth map until the month rolls over, or until you upgrade.",
+    a: "Nothing you've made goes away. You keep every study set, card and score, and practice stays unlimited. You just can't create a fourth study set until the month rolls over, or until you upgrade.",
   },
   {
     q: "Can I cancel Ace Pro?",
-    a: "Any time, from Settings. You keep Pro until the end of the period you have paid for, and your maps stay readable afterwards on the free tier.",
+    a: "Any time, from Settings. You keep Pro until the end of the period you've paid for, and your study sets stay yours on the free plan afterwards.",
   },
   {
-    q: "What is Card Crack?",
-    a: "When you get something wrong, it names the exact misconception behind the option you picked, the idea underneath it, how to spot the trap next time, and a follow-up question that repairs the gap.",
+    q: "What's in the full mistake breakdown?",
+    a: "On every plan, a wrong answer tells you what went wrong. Pro adds the idea underneath it, how to spot the trap next time, and a follow-up question on the same idea so you can check the fix stuck.",
   },
   {
     q: "Is yearly billing cheaper?",
@@ -46,7 +46,7 @@ const FAQ = [
   },
   {
     q: "Is Classroom per teacher or per student?",
-    a: "Per class. One price covers the roster, shared knowledge maps, and collective decay tracking so a teacher can see what the whole group is losing.",
+    a: "Per class. One yearly price covers Ace Pro for every student on the roster, plus class rooms and tournaments on your own study sets. Get in touch and we'll set it up with you.",
   },
 ];
 

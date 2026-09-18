@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { MathText } from "@/app/components/ui/MathText";
+import { authFetch } from "@/lib/authFetch";
 import { CheckIcon } from "@/app/components/app/Icons";
 import type { FollowUpQuestion, RecoveryOutcome } from "@/lib/mistakeRecovery";
 import type { CardCrack } from "@/lib/cardCrack";
@@ -23,8 +24,13 @@ import type { CardCrack } from "@/lib/cardCrack";
 type Props = {
   questionId: string;
   selectedAnswer: string;
-  /** The deck's own explanation, already on screen above this. */
   onOutcome?: (outcome: RecoveryOutcome) => void;
+  /**
+   * True when the screen already says why this specific option is wrong
+   * (the question's own choice feedback). The AI's "What went wrong" would
+   * say the same thing twice, so only the deeper sections are shown.
+   */
+  hideMisconception?: boolean;
 };
 
 // `how_to_spot` and `socratic_loop` come back null on the free tier -- the
@@ -57,7 +63,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-export function MistakeRecovery({ questionId, selectedAnswer, onOutcome }: Props) {
+export function MistakeRecovery({ questionId, selectedAnswer, onOutcome, hideMisconception = false }: Props) {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [showFollowUp, setShowFollowUp] = useState(false);
   const [picked, setPicked] = useState<string | null>(null);
@@ -75,9 +81,11 @@ export function MistakeRecovery({ questionId, selectedAnswer, onOutcome }: Props
     setPicked(null);
     setChecked(false);
 
-    fetch("/api/explain-mistake", {
+    // authFetch, not fetch: without the session token the server cannot
+    // tell a Pro subscriber from a guest, and every paying student was
+    // being served the free version with an upgrade prompt on it.
+    authFetch("/api/explain-mistake", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ questionId, selectedAnswer }),
     })
       .then(async (response) => {
@@ -146,9 +154,11 @@ export function MistakeRecovery({ questionId, selectedAnswer, onOutcome }: Props
       style={{ borderColor: "var(--line)", background: "var(--panel)" }}
     >
       <div className="space-y-4">
-        <Section label="What went wrong">
-          <MathText text={crack.misconception} />
-        </Section>
+        {!hideMisconception && (
+          <Section label="What went wrong">
+            <MathText text={crack.misconception} />
+          </Section>
+        )}
         {crack.underlying_idea && (
           <Section label="The idea">
             <MathText text={crack.underlying_idea} />

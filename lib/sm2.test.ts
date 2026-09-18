@@ -221,3 +221,35 @@ describe("toPayload", () => {
     expect(String(payload.ease_factor)).not.toMatch(/\d{5,}/);
   });
 });
+
+describe("gradeFromAnswer with confidence", () => {
+  it("treats a confident wrong answer as the heaviest lapse", () => {
+    expect(gradeFromAnswer({ isCorrect: false, confidence: "sure" })).toBe(0);
+    expect(gradeFromAnswer({ isCorrect: false, confidence: "guess" })).toBe(2);
+  });
+
+  it("passes a correct guess at the lowest passing grade", () => {
+    expect(
+      gradeFromAnswer({ isCorrect: true, confidence: "guess", responseMs: 1000, baselineMs: 5000 })
+    ).toBe(3);
+  });
+
+  it("never grades a correct-but-unsure answer as effortless", () => {
+    expect(
+      gradeFromAnswer({ isCorrect: true, confidence: "unsure", responseMs: 1000, baselineMs: 5000 })
+    ).toBe(4);
+    expect(
+      gradeFromAnswer({ isCorrect: true, confidence: "sure", responseMs: 1000, baselineMs: 5000 })
+    ).toBe(5);
+  });
+
+  it("makes a misconception come back sooner than a slip", () => {
+    const slip = reviewSm2(INITIAL_SM2, gradeFromAnswer({ isCorrect: false }), NOW);
+    const misconception = reviewSm2(
+      INITIAL_SM2,
+      gradeFromAnswer({ isCorrect: false, confidence: "sure" }),
+      NOW
+    );
+    expect(misconception.easeFactor).toBeLessThan(slip.easeFactor);
+  });
+});

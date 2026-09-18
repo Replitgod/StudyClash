@@ -45,11 +45,11 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "AceDecks | AI Study App for Battle-Based Learning",
+    default: "AceDecks | Study it once, remember it for the test",
     template: "%s | AceDecks",
   },
   description:
-    "AceDecks is an AI study app where students upload notes, battle an AI, and improve with weak-topic diagnostics, rematches, and exam-focused practice loops.",
+    "Turn a topic, your notes, a PDF or a photo into practice questions and flashcards. AceDecks checks every answer, finds what you keep getting wrong, and brings it back before you forget it.",
   applicationName: "AceDecks",
   category: "education",
   referrer: "origin-when-cross-origin",
@@ -57,18 +57,17 @@ export const metadata: Metadata = {
   publisher: "AceDecks",
   authors: [{ name: "AceDecks" }],
   keywords: [
-    "AI Study App",
-    "Quizlet Alternative",
-    "Knowt Alternative",
-    "Study Battle",
-    "Flashcard Battle",
-    "Competitive Learning",
-    "Competitive Studying",
-    "SAT Study App",
-    "AP Study App",
-    "AI Flashcards",
-    "Study Game",
-    "AI Learning Platform",
+    "study app",
+    "flashcards",
+    "spaced repetition",
+    "active recall",
+    "practice questions",
+    "Quizlet alternative",
+    "Anki alternative",
+    "Digital SAT practice",
+    "AP exam practice",
+    "MCAT practice",
+    "study from notes",
   ],
   formatDetection: {
     telephone: false,
@@ -77,9 +76,9 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    title: "AceDecks | AI Study App for Competitive Learning",
+    title: "AceDecks | Study it once, remember it for the test",
     description:
-      "Turn notes into AI study battles with weak-topic diagnostics, flashcard battle loops, and exam-ready practice.",
+      "Practice questions and flashcards from your own material, with every answer checked, and review timed to what you're forgetting.",
     siteName: "AceDecks",
     url: "/",
     locale: "en_US",
@@ -88,15 +87,15 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "AceDecks AI study battles preview",
+        alt: "AceDecks",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "AceDecks | AI Study App and Quizlet Alternative",
+    title: "AceDecks | Study it once, remember it for the test",
     description:
-      "Upload notes, battle an AI instantly, and improve with weak-topic diagnostics.",
+      "Practice questions and flashcards from your own material, and review timed to what you're forgetting.",
     images: ["/twitter-image"],
   },
   robots: {
@@ -120,7 +119,7 @@ const organizationSchema = {
   url: siteUrl,
   logo: `${siteUrl}/opengraph-image`,
   description:
-    "AceDecks is an AI study platform for interactive quiz battles, weak-topic analysis, and personalized study improvement.",
+    "AceDecks turns study material into checked practice questions and flashcards, and schedules review around what each student is forgetting.",
   sameAs: [
     `${siteUrl}/`,
   ],

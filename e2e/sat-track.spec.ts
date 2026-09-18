@@ -48,13 +48,19 @@ test("an exam that is ready to practise starts a real attempt", async ({ page })
   await expect(sat).toHaveAttribute("href", "/diagnostics/digital-sat");
 });
 
-test("an exam with no bank says so instead of offering practice", async ({ page }) => {
+test("an exam with no bank says so, and offers practice by topic instead", async ({ page }) => {
   await page.goto("/exams/lsat");
 
-  // LSAT has no question bank. The page must say that in words rather than
-  // rendering a card that implies otherwise.
-  await expect(page.getByRole("heading", { name: /No question bank yet/i })).toBeVisible();
-  await expect(page.getByRole("link", { name: /^Practise LSAT/i })).toHaveCount(0);
+  // LSAT has no timed bank. The page says so in words, and its one real
+  // offer -- LSAT-style questions on a topic the student names -- goes to
+  // the composer with the LSAT track, not to a diagnostic that does not
+  // exist.
+  await expect(page.getByRole("heading", { name: /Practice by topic/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Practice LSAT by topic/i })).toHaveAttribute(
+    "href",
+    "/home?track=lsat"
+  );
+  await expect(page.locator('a[href^="/diagnostics/"]')).toHaveCount(0);
 });
 
 test("/exams/sat is a real page, not a generic fallback", async ({ page }) => {

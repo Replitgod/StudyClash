@@ -15,6 +15,7 @@ export type AceCapability =
   | "source_synthesis"
   | "concept_map"
   | "question"
+  | "flashcards"
   | "verify_question"
   | "grade"
   | "card_crack"
@@ -51,6 +52,7 @@ const CAPABILITY_POLICY: Record<AceCapability, string> = {
   question: `TASK: QUESTION CONSTRUCTION. Select the lowest question level that creates useful evidence, then progress from recognition to cued retrieval, free recall, application, transfer, and synthesis as capability warrants. Prefer retrieval once the learner has prior exposure. Distractors must encode plausible misconceptions.
 
 Before returning an item, silently check source validity, answerability, uniqueness of the defensible answer when required, clarity, distractor quality, difficulty fit, concept purity, answer leakage, and transfer distance. Rewrite or suppress any item that fails. A transfer item must change the surface form while preserving the underlying idea.`,
+  flashcards: `TASK: FLASHCARD WRITING. Write atomic active-recall cards: one fact or idea per card, a specific prompt with exactly one short answer, and nothing on the front that gives the answer away. A card must stand alone -- never depend on a list of options, a figure, or another card. Prefer the ideas a teacher would test over trivia. Add a reverse card only where recalling the term from its meaning is itself worth practicing.`,
   verify_question: `TASK: ADVERSARIAL QUESTION VERIFICATION. Re-derive the answer from allowed evidence instead of trusting the author's key. Challenge source support, answerability, uniqueness, clarity, distractors, difficulty fit, concept purity, leakage, and—when applicable—whether transfer is meaningfully different. A knowledgeable teacher's reasonable disagreement is a failure unless the schema supports multiple valid answers.`,
   grade: `TASK: SEMANTIC GRADING. Judge meaning, not keyword overlap. Use required ideas, acceptable variants, optional enrichment, contradictions, and fatal errors from the supplied rubric and evidence. Accept different wording when the meaning is correct; reject keyword-rich answers with broken reasoning. Distinguish fully correct, mostly correct, partially correct, misconception present, and insufficient evidence through the route's scoring schema. Confidence is not mastery.`,
   card_crack: `TASK: CARD CRACK MISCONCEPTION REPAIR. Describe the observed error, infer the smallest likely misconception, show exactly where that reasoning breaks, restore the foundational truth in one to three sentences, provide a durable recognition cue, and require active reconstruction. When thought process is not explicit, use uncertainty language such as "you may be treating" rather than claiming certainty. A correct repair response is not mastery: create a meaningfully different transfer check when the schema permits it.`,

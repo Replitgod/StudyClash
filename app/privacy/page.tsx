@@ -34,12 +34,12 @@ export default function PrivacyPage() {
         <div className="mt-6 space-y-5 text-sm leading-relaxed text-white/80">
           <section>
             <h2 className="text-base font-bold text-white">What we collect</h2>
-            <p className="mt-1">We collect account data (email, profile), deck content you create or upload, battle results, and optional feedback you send in-app.</p>
+            <p className="mt-1">We collect your account details (email and the name you choose), the material you create or upload, your answers and study history, what you tell us in setup (your level, exam and exam date), and any feedback you send.</p>
           </section>
 
           <section>
             <h2 className="text-base font-bold text-white">How we use it</h2>
-            <p className="mt-1">We use your data to run AceDecks features: generate decks, score battles, show weak-topic reports, and power VYRA coaching responses.</p>
+            <p className="mt-1">We use it only to run AceDecks: to write your study sets, check your answers, work out what to review and when, and let Vyra tutor you. Your notes and results are private to you unless you choose to share a study set; a shared set never shows your name, scores or progress.</p>
           </section>
 
           <section>

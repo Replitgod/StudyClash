@@ -17,6 +17,8 @@ export type AnalyticsEventName =
   | "demo_started"
   | "demo_completed"
   | "signup_started"
+  | "onboarding_completed"
+  | "onboarding_skipped"
   | "feedback_submitted"
   | "question_report_submitted"
   | "challenge_link_copied"

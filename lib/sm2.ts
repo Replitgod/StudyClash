@@ -153,10 +153,21 @@ export function gradeFromAnswer(args: {
   baselineMs?: number | null;
   /** True when they read the explanation before answering. */
   usedHelp?: boolean;
+  /**
+   * How sure the student said they were before seeing the answer. The one
+   * self-report worth one tap per question, because it separates the two
+   * outcomes response time cannot: a lucky guess from a known answer, and a
+   * slip from a misconception.
+   */
+  confidence?: "sure" | "unsure" | "guess" | null;
 }): RecallGrade {
-  const { isCorrect, responseMs, baselineMs, usedHelp } = args;
+  const { isCorrect, responseMs, baselineMs, usedHelp, confidence } = args;
 
   if (!isCorrect) {
+    // Sure and wrong is a misconception: the student holds a wrong idea
+    // firmly. It is the heaviest lapse there is, and the extra ease penalty
+    // is what keeps the card coming back until the idea is replaced.
+    if (confidence === "sure") return 0;
     // 2 = "wrong, but the right answer felt familiar"; 1 = slow and wrong,
     // which in SM-2 terms is a heavier lapse.
     if (responseMs && baselineMs && responseMs > baselineMs * 2) return 1;
@@ -166,12 +177,21 @@ export function gradeFromAnswer(args: {
   // Correct, but only after reading the explanation, is not free recall.
   if (usedHelp) return 3;
 
-  if (!responseMs || !baselineMs || baselineMs <= 0) return 4;
+  // A correct guess is not evidence of knowing it. Passing it, but at the
+  // lowest passing grade, keeps the interval short enough to check again.
+  if (confidence === "guess") return 3;
 
-  const ratio = responseMs / baselineMs;
-  if (ratio <= 0.75) return 5; // Instant.
-  if (ratio <= 1.6) return 4; // Normal.
-  return 3; // Correct, but laboured.
+  let grade: RecallGrade = 4;
+  if (responseMs && baselineMs && baselineMs > 0) {
+    const ratio = responseMs / baselineMs;
+    if (ratio <= 0.75) grade = 5; // Instant.
+    else if (ratio <= 1.6) grade = 4; // Normal.
+    else grade = 3; // Correct, but laboured.
+  }
+
+  // Right but unsure is shaky knowledge: never graded as effortless.
+  if (confidence === "unsure" && grade > 4) grade = 4;
+  return grade;
 }
 
 /** The payload shape the brief specifies for the frontend map. */

@@ -7,6 +7,7 @@ import { useRequireAuth } from "@/lib/useRequireAuth";
 import { getNextAction, sessionHref } from "@/lib/nextAction";
 import { MASTERY_TIER_LABELS } from "@/lib/masteryTiers";
 import { tracksWithBanks } from "@/lib/examCatalog";
+import { progressBreakdown } from "@/lib/progressBreakdown";
 import { ArrowRightIcon } from "@/app/components/app/Icons";
 import {
   OpportunityCard,
@@ -85,9 +86,10 @@ export default function PracticePage() {
   // Null while the recorded mistake patterns are still loading.
   const opportunities = useOpportunities(snapshot.topics);
 
-  // Readiness: the one number a student actually wants. Everything behind
-  // it (per-topic accuracy, attempt counts, review timing) stays internal.
-  const readiness = snapshot.overallMastery;
+  // Where every topic stands, in four plain buckets. It replaced "You are
+  // 62% ready" -- ready for what, the student could not tell, and an
+  // average hides the one topic that is about to cost them marks.
+  const breakdown = useMemo(() => progressBreakdown(snapshot.topics), [snapshot.topics]);
 
   // The list below the opportunity card must not repeat what the card
   // already says, or the same topic appears twice on one screen.
@@ -98,9 +100,14 @@ export default function PracticePage() {
     .filter((topic) => `${topic.deckId}-${topic.topic}` !== featuredKey)
     .slice(0, 6);
 
-  // Review mode targets the deck the student is weakest in overall.
-  const reviewDeckId = snapshot.weakTopics[0]?.deckId || snapshot.decks[0]?.id;
-  const testDeckId = snapshot.decks[0]?.id;
+  // The set each mode will use, named on the card rather than chosen
+  // silently. Mistakes go to the set with the most topics needing work;
+  // a test goes to whatever the student studied most recently.
+  const reviewDeck =
+    snapshot.decks
+      .filter((deck) => deck.weakTopics.length > 0)
+      .sort((a, b) => b.weakTopics.length - a.weakTopics.length)[0] || null;
+  const testDeck = snapshot.decks.find((deck) => deck.mastery !== null) || snapshot.decks[0] || null;
 
   if (isLoading || !isReady) {
     return (
@@ -135,24 +142,75 @@ export default function PracticePage() {
   return (
     <div className="app-page">
       <h1 className="t-page">Practice</h1>
-      <p className="t-body mt-2">What do you want to work on?</p>
+      <p className="t-body mt-2">What to work on, and where everything stands.</p>
 
-      {/* ---- Readiness ---- */}
-      {readiness !== null && (
-        <div className="card mt-6 p-5 sm:p-6">
-          <p
-            className="text-[28px] font-semibold leading-none tracking-tight sm:text-[32px]"
-            style={{ color: "var(--text-1)" }}
-          >
-            You are {readiness}% ready.
-          </p>
-          <div className="meter mt-4">
-            <span style={{ width: `${Math.min(100, Math.max(2, readiness))}%` }} />
+      {/* ---- Where everything stands ---- */}
+      {breakdown.total > 0 && (
+        <section className="card mt-6 p-5 sm:p-6" aria-labelledby="progress-heading">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="progress-heading" className="text-[16px] font-medium" style={{ color: "var(--text-1)" }}>
+              Your {breakdown.total} topic{breakdown.total === 1 ? "" : "s"}
+            </h2>
+            {snapshot.overallMastery !== null && (
+              <span className="t-meta">Average mastery {snapshot.overallMastery}%</span>
+            )}
           </div>
-          <p className="t-meta mt-3">
-            Based on everything you have practiced so far.
-          </p>
-        </div>
+
+          <div
+            className="mt-4 flex h-2.5 w-full overflow-hidden rounded-full"
+            style={{ background: "var(--panel-raised)" }}
+            role="img"
+            aria-label={breakdown.buckets
+              .map((b) => `${b.count} ${b.label.toLowerCase()}`)
+              .join(", ")}
+          >
+            {breakdown.buckets
+              .filter((bucket) => bucket.count > 0)
+              .map((bucket) => (
+                <span
+                  key={bucket.id}
+                  style={{
+                    width: `${(bucket.count / breakdown.total) * 100}%`,
+                    background: bucket.color,
+                  }}
+                />
+              ))}
+          </div>
+
+          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+            {breakdown.buckets.map((bucket) => (
+              <div key={bucket.id}>
+                <dt className="flex items-center gap-1.5 t-meta">
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-2 w-2 rounded-full"
+                    style={{ background: bucket.color }}
+                  />
+                  {bucket.label}
+                </dt>
+                <dd className="mt-0.5 text-[20px] font-semibold tabular-nums" style={{ color: "var(--text-1)" }}>
+                  {bucket.count}
+                </dd>
+              </div>
+            ))}
+          </dl>
+
+          {(snapshot.dueTopics.length > 0 || snapshot.flashcardsDue > 0) && (
+            <p className="t-meta mt-4">
+              Due now:{" "}
+              {[
+                snapshot.dueTopics.length > 0
+                  ? `${snapshot.dueTopics.length} topic${snapshot.dueTopics.length === 1 ? "" : "s"}`
+                  : null,
+                snapshot.flashcardsDue > 0
+                  ? `${snapshot.flashcardsDue} flashcard${snapshot.flashcardsDue === 1 ? "" : "s"}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" and ")}
+            </p>
+          )}
+        </section>
       )}
 
       {/* ---- Three modes ---- */}
@@ -160,30 +218,30 @@ export default function PracticePage() {
         <div className="grid gap-3">
           <ModeCard
             primary
-            title="Smart practice"
-            description={next ? next.reason : "AceDecks picks exactly what you need next."}
+            title={next ? next.label : "Smart practice"}
+            description={next ? `${next.reason} · about ${next.minutes} min` : "AceDecks picks what you need next."}
             href={next?.href || sessionHref({ deckId: snapshot.decks[0].id })}
           />
           <div className="grid gap-3 sm:grid-cols-2">
             <ModeCard
               title="Take a test"
-              description="10 questions, scored, like the real thing."
-              href={
-                testDeckId
-                  ? sessionHref({ deckId: testDeckId, mode: "practice", limit: 10 })
-                  : "/library"
+              description={
+                testDeck
+                  ? `10 questions from ${testDeck.title}. No hints until the end.`
+                  : "10 questions, no hints until the end."
               }
-              disabled={!testDeckId}
+              href={testDeck ? sessionHref({ deckId: testDeck.id, mode: "test", limit: 10 }) : "/library"}
+              disabled={!testDeck}
             />
             <ModeCard
               title="Review mistakes"
-              description="Only the questions you have got wrong."
-              href={
-                reviewDeckId
-                  ? sessionHref({ deckId: reviewDeckId, mode: "weak_topic", limit: 10 })
-                  : "/library"
+              description={
+                reviewDeck
+                  ? `Only what you got wrong last time, in ${reviewDeck.title}.`
+                  : "Nothing to review yet. Mistakes show up here after you practice."
               }
-              disabled={!reviewDeckId}
+              href={reviewDeck ? sessionHref({ deckId: reviewDeck.id, mode: "mistakes" }) : "/library"}
+              disabled={!reviewDeck}
             />
           </div>
         </div>
@@ -229,7 +287,12 @@ export default function PracticePage() {
                     >
                       {topic.topic}
                     </p>
-                    <p className="t-meta truncate">{topic.deckTitle}</p>
+                    <p className="t-meta truncate">
+                      {topic.deckTitle}
+                      {topic.confidentMisses > 0
+                        ? ` · sure but wrong ${topic.confidentMisses === 1 ? "once" : `${topic.confidentMisses} times`}`
+                        : ""}
+                    </p>
                   </div>
                   <span className={`${TIER_CHIP[topic.tier] || "chip"} shrink-0`}>
                     {MASTERY_TIER_LABELS[topic.tier]}

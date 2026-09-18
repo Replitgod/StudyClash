@@ -34,6 +34,8 @@ export type ProgressSnapshot = {
     freezes: number;
   };
   quests: QuestProgress[];
+  /** The last seven days of actual learning, from the event log. */
+  week?: { questionsAnswered: number; mistakesFixed: number; topicsImproved: number };
   ratings: SubjectRating[];
   season: { id: string; name: string; startedAt: string; endsAt: string } | null;
   achievements: Array<{

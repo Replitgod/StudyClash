@@ -18,7 +18,11 @@ import { PaperclipIcon, ArrowRightIcon, CloseIcon } from "./Icons";
 // configure: question count, difficulty, and question type are all chosen
 // server-side defaults.
 
-const MAX_PDF_BYTES = 8 * 1024 * 1024;
+// Documents are sent to a serverless function, and the platform refuses any
+// request body over about 4.5 MB before our code ever runs -- which surfaced
+// as a bare "server error 413" for a 6 MB PDF the UI had just said was under
+// the limit. The limit shown here is the one that actually holds.
+const MAX_DOCUMENT_BYTES = 4 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const MAX_TEXT_BYTES = 5 * 1024 * 1024;
 const MAX_NOTES_CHARACTERS = 120_000;
@@ -32,15 +36,16 @@ const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"];
 
 // Everything the file picker will accept. Anything else gets a plain-English
 // message instead of a silent no-op, which is what the old upload control did.
-const ACCEPT = ".pdf,.txt,.md,.jpg,.jpeg,.png,.webp,.heic,.heif";
+const ACCEPT = ".pdf,.docx,.pptx,.txt,.md,.jpg,.jpeg,.png,.webp,.heic,.heif";
 
-type Stage = "idle" | "reading" | "thinking" | "writing" | "done";
+type Stage = "idle" | "reading" | "thinking" | "writing" | "checking" | "done";
 
 const STAGE_LABEL: Record<Stage, string> = {
   idle: "",
-  reading: "Reading your material",
-  thinking: "Understanding it",
-  writing: "Writing your questions",
+  reading: "Reading your file",
+  thinking: "Writing notes on this topic",
+  writing: "Writing your questions and flashcards",
+  checking: "Checking every answer",
   done: "Ready",
 };
 
@@ -67,9 +72,9 @@ export type ComposerProps = {
   /** Rendered under the input. Kept to at most three quiet actions. */
   footer?: React.ReactNode;
   /**
-   * Optional exam track ("ap" | "sat" | "mcat" | "lsat" | "nclex"), set when
-   * the student arrived from an exam page. It makes the generated questions
-   * match that exam's style; the server ignores anything it does not know.
+   * Optional exam track (see lib/examTracks.ts), set when the student came
+   * from an exam page or chose an exam in onboarding. It makes the questions
+   * match that exam's format; the server ignores anything it does not know.
    */
   examTrack?: string | null;
   /**
@@ -81,6 +86,8 @@ export type ComposerProps = {
    * without a ref or a remount.
    */
   suggestions?: string[];
+  /** Text to start with, e.g. a topic Vyra offered to build a set on. */
+  initialValue?: string;
 };
 
 export function Composer({
@@ -89,12 +96,13 @@ export function Composer({
   footer,
   examTrack = null,
   suggestions,
+  initialValue = "",
 }: ComposerProps) {
   const router = useRouter();
   const { user, profile } = useAuth();
   const { refresh } = useStudy();
 
-  const [value, setValue] = useState("");
+  const [value, setValue] = useState(initialValue);
   const [fileName, setFileName] = useState<string | null>(null);
   // Text pulled out of an attachment. Kept separate from `value` so a
   // 40-page PDF does not dump 100,000 characters into the box the student
@@ -134,25 +142,32 @@ export function Composer({
 
   const readFile = useCallback(async (file: File) => {
     const lowerName = file.name.toLowerCase();
-    const isPdf = lowerName.endsWith(".pdf");
+    const isDocument = [".pdf", ".docx", ".pptx"].some((ext) => lowerName.endsWith(ext));
     const isImage = IMAGE_EXTENSIONS.some((ext) => lowerName.endsWith(ext));
     const isText = lowerName.endsWith(".txt") || lowerName.endsWith(".md");
 
-    if (!isPdf && !isImage && !isText) {
+    if (lowerName.endsWith(".doc") || lowerName.endsWith(".ppt")) {
       setError(
-        "That file type is not supported yet. Attach a PDF, a photo, or a .txt file — or paste the text in directly."
+        "That's an older Office file. Open it and use File > Save As to save it as .docx or .pptx, then attach it again."
       );
       return;
     }
 
-    const limit = isPdf ? MAX_PDF_BYTES : isImage ? MAX_IMAGE_BYTES : MAX_TEXT_BYTES;
+    if (!isDocument && !isImage && !isText) {
+      setError(
+        "That file type isn't supported. Attach a PDF, Word or PowerPoint file, a photo, or a .txt file, or paste the text in."
+      );
+      return;
+    }
+
+    const limit = isDocument ? MAX_DOCUMENT_BYTES : isImage ? MAX_IMAGE_BYTES : MAX_TEXT_BYTES;
     if (file.size > limit) {
       setError(
-        `That file is ${(file.size / 1024 / 1024).toFixed(1)}MB, which is over the ${(
+        `That file is ${(file.size / 1024 / 1024).toFixed(1)} MB, and the limit is ${(
           limit /
           1024 /
           1024
-        ).toFixed(0)}MB limit. Try a smaller file, or paste the text in directly.`
+        ).toFixed(0)} MB. Try splitting it (one chapter at a time works well), or paste the text in.`
       );
       return;
     }
@@ -175,7 +190,7 @@ export function Composer({
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await authFetch(isPdf ? "/api/extract-pdf" : "/api/extract-image", {
+      const response = await authFetch(isDocument ? "/api/extract-pdf" : "/api/extract-image", {
         method: "POST",
         body: formData,
       });
@@ -184,18 +199,22 @@ export function Composer({
       // throws an unhelpful "Unexpected token <".
       const contentType = response.headers.get("content-type") || "";
       if (!contentType.includes("application/json")) {
-        throw new Error(`We could not read that file (server error ${response.status}).`);
+        throw new Error(
+          response.status === 413
+            ? "That file is too large to upload. Try splitting it, or paste the text in."
+            : "We couldn't read that file. Try again, or paste the text in."
+        );
       }
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "We could not read that file.");
+        throw new Error(data.error || "We couldn't read that file.");
       }
 
       const text = String(data.text || "").trim();
       if (!text) {
         throw new Error(
-          "We could not find any readable text in that file. If it is a scan, try a clearer photo, or paste the text in directly."
+          "We couldn't find any text in that file. If it's a scan, try a clearer photo, or paste the text in."
         );
       }
 
@@ -206,7 +225,7 @@ export function Composer({
       setAttachedText("");
       setStage("idle");
       setError(
-        err instanceof Error ? err.message : "We could not read that file. Please try another."
+        err instanceof Error ? err.message : "We couldn't read that file. Please try another."
       );
     }
   }, []);
@@ -256,11 +275,14 @@ export function Composer({
     setStage(isTopic ? "thinking" : "writing");
 
     // Move the label forward while the single request is in flight so the
-    // wait reads as progress rather than a frozen screen. It never claims
-    // the last step is done -- the redirect does that.
+    // wait reads as progress rather than a frozen screen. The steps are the
+    // real ones the server runs, in order; it never claims the last one is
+    // done -- the redirect does that.
+    const writingAt = isTopic ? 7000 : 0;
     if (isTopic) {
-      stageTimersRef.current.push(setTimeout(() => setStage("writing"), 3500));
+      stageTimersRef.current.push(setTimeout(() => setStage("writing"), writingAt));
     }
+    stageTimersRef.current.push(setTimeout(() => setStage("checking"), writingAt + 16000));
 
     // The activation funnel needs the denominator, not just the wins.
     // deck_generation_started/_failed were declared in lib/trackEvent.ts and
@@ -276,14 +298,17 @@ export function Composer({
         method: "POST",
         body: JSON.stringify({
           studentName: profile?.display_name || user.email?.split("@")[0] || "Student",
-          courseName: "My Study",
           deckTitle: title,
+          // Where the title came from decides whether the server may improve
+          // it: a typed topic or a file name is the student's own; the first
+          // line of pasted notes usually is not a title at all.
+          titleSource: isTopic ? "topic" : fileName ? "file" : "text",
           notes: material,
           topicFocus: attachedText && typed ? typed.slice(0, 200) : undefined,
           sourceMode: isTopic ? "topic" : "notes",
           examTrack: examTrack || undefined,
           uploadKind: fileName
-            ? fileName.toLowerCase().endsWith(".pdf")
+            ? [".pdf", ".docx", ".pptx"].some((ext) => fileName.toLowerCase().endsWith(ext))
               ? "pdf"
               : IMAGE_EXTENSIONS.some((ext) => fileName.toLowerCase().endsWith(ext))
                 ? "image"
@@ -294,7 +319,11 @@ export function Composer({
 
       const contentType = response.headers.get("content-type") || "";
       if (!contentType.includes("application/json")) {
-        throw new Error(`Something went wrong (server error ${response.status}). Please try again.`);
+        throw new Error(
+          response.status === 504
+            ? "That took longer than it should. Please try again; shorter notes finish faster."
+            : "Something went wrong on our side. Please try again."
+        );
       }
 
       const data = await response.json();
@@ -310,19 +339,19 @@ export function Composer({
         setCapReached(
           typeof data.error === "string" && data.error.trim()
             ? data.error
-            : "You have used all your free knowledge maps this month."
+            : "You've used all your free study sets this month."
         );
         void trackEvent("generation_cap_reached", { mode: isTopic ? "topic" : "notes" });
         return;
       }
 
       if (!response.ok) {
-        throw new Error(data.error || "We could not create your study material. Please try again.");
+        throw new Error(data.error || "We couldn't create your study set. Please try again.");
       }
 
       const deckId = data?.deckId;
       if (!deckId) {
-        throw new Error("Your material was created but we could not open it. Check your Library.");
+        throw new Error("Your study set was created, but we couldn't open it. You'll find it in your Library.");
       }
 
       clearStageTimers();
@@ -339,7 +368,7 @@ export function Composer({
       setStage("idle");
       const message =
         err instanceof Error && err.message.includes("Failed to fetch")
-          ? "Network error. Check your connection and try again."
+          ? "You seem to be offline. Check your connection and try again."
           : err instanceof Error
             ? err.message
             : "Something went wrong. Please try again.";
@@ -366,7 +395,9 @@ export function Composer({
   const onKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter starts. Shift+Enter is a newline, so pasting multi-line notes
     // still works.
-    if (event.key === "Enter" && !event.shiftKey) {
+    // isComposing: an input method (Japanese, Chinese, Korean...) uses Enter
+    // to confirm a character, and that must not submit a half-typed topic.
+    if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
       event.preventDefault();
       void start();
     }
@@ -391,7 +422,8 @@ export function Composer({
             {STAGE_LABEL[stage]}…
           </p>
           <p className="t-meta truncate">
-            {fileName || "This usually takes about 20 seconds."}
+            {fileName ||
+              "Usually under a minute. Every question is checked before you see it."}
           </p>
         </div>
       </div>
@@ -464,7 +496,7 @@ export function Composer({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             className="btn btn-quiet btn-sm"
-            title="Attach a PDF, photo, or text file"
+            title="Attach a PDF, Word or PowerPoint file, a photo, or a text file"
           >
             <PaperclipIcon className="h-[17px] w-[17px]" />
             Attach
@@ -492,8 +524,8 @@ export function Composer({
             {capReached}
           </p>
           <p className="t-meta mt-1">
-            Everything you have already made stays exactly where it is. Pro
-            removes the cap, and your maps carry straight over.
+            Everything you&rsquo;ve made stays where it is, and practice is
+            still unlimited. Pro removes the cap.
           </p>
           <div className="mt-3.5 flex flex-wrap items-center gap-2">
             <Link

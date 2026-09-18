@@ -8,7 +8,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://acedecks.org";
 export const metadata: Metadata = {
   title: "Contact AceDecks Support",
   description:
-    "Contact AceDecks support for account help, AI deck generation issues, battle troubleshooting, and beta feedback.",
+    "Contact AceDecks for help with your account, billing, study sets, or anything that isn't working.",
   alternates: {
     canonical: "/contact",
   },
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Contact Support | AceDecks",
     description:
-      "Reach AceDecks support for account, battle, and study workflow help.",
+      "Help with your account, billing, or study sets.",
     url: "/contact",
     images: ["/opengraph-image"],
   },
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Contact Support | AceDecks",
     description:
-      "Get help with account access, AI generation, and study battle issues.",
+      "Help with your account, billing, or study sets.",
     images: ["/twitter-image"],
   },
 };

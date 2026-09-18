@@ -3,7 +3,7 @@
 export const metadata: Metadata = {
   title: "AceDecks Pricing | AI Study App and Quizlet Alternative",
   description:
-    "Compare AceDecks pricing for high-school students, including a free plan and paid tiers for AI study battles and exam prep.",
+    "AceDecks is free to start. Ace Pro removes the monthly limit on study sets and adds full mistake breakdowns, for $9.99 a month or $99 a year.",
   alternates: {
     canonical: "/pricing",
   },
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "AceDecks Pricing | AI Study App Plans",
     description:
-      "See Free and paid plans for AI study battles, adaptive practice, and exam prep.",
+      "Free to start. Ace Pro is $9.99 a month or $99 a year.",
     images: ["/twitter-image"],
   },
 };

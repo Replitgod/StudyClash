@@ -70,7 +70,10 @@ describe("buildSnapshot", () => {
     expect(snapshot.decks.map((d) => d.id)).toEqual(["old", "new"]);
   });
 
-  it("treats a weak topic as due regardless of its scheduled date", () => {
+  // It used to be due no matter what, which put the topic a student had
+  // just spent ten minutes on straight back at the top of Home. Weak topics
+  // come back on their (short) schedule, and are listed as weak meanwhile.
+  it("does not treat a weak topic as due before its review date, but lists it as weak", () => {
     const snapshot = buildSnapshot({
       decks: [deck({ id: "a" })],
       matches: [],
@@ -79,13 +82,49 @@ describe("buildSnapshot", () => {
           deck_id: "a",
           topic: "Stoichiometry",
           status: "weak",
+          correct_count: 2,
+          total_count: 10,
           next_review_at: "2027-01-01T00:00:00.000Z",
         }),
       ],
       now: NOW,
     });
-    expect(snapshot.dueTopics.map((t) => t.topic)).toEqual(["Stoichiometry"]);
-    expect(snapshot.decks[0].dueTopics).toEqual(["Stoichiometry"]);
+    expect(snapshot.dueTopics).toEqual([]);
+    expect(snapshot.weakTopics.map((t) => t.topic)).toEqual(["Stoichiometry"]);
+    expect(snapshot.decks[0].weakTopics).toEqual(["Stoichiometry"]);
+  });
+
+  it("ranks a topic with confident wrong answers above an equally weak one without", () => {
+    const snapshot = buildSnapshot({
+      decks: [deck({ id: "a" })],
+      matches: [],
+      topics: [
+        topic({ deck_id: "a", topic: "Slips", correct_count: 4, total_count: 10, next_review_at: "2026-08-01T00:00:00.000Z" }),
+        topic({
+          deck_id: "a",
+          topic: "Misconception",
+          correct_count: 4,
+          total_count: 10,
+          confident_misses: 3,
+          next_review_at: "2026-08-01T00:00:00.000Z",
+        }),
+      ],
+      now: NOW,
+    });
+    expect(snapshot.dueTopics.map((t) => t.topic)).toEqual(["Misconception", "Slips"]);
+    expect(snapshot.dueTopics[0].confidentMisses).toBe(3);
+  });
+
+  it("counts flashcards due per deck and overall", () => {
+    const snapshot = buildSnapshot({
+      decks: [deck({ id: "a" }), deck({ id: "b" })],
+      matches: [],
+      topics: [],
+      flashcardsDue: { a: 4, b: 2, deleted: 9 },
+      now: NOW,
+    });
+    expect(snapshot.decks.find((d) => d.id === "a")?.flashcardsDue).toBe(4);
+    expect(snapshot.flashcardsDue).toBe(6);
   });
 
   it("treats a past review date as due even when the topic is not weak", () => {
@@ -120,8 +159,8 @@ describe("buildSnapshot", () => {
       decks: [deck({ id: "a" })],
       matches: [],
       topics: [
-        topic({ deck_id: "a", topic: "Strong", correct_count: 9, total_count: 10, status: "weak" }),
-        topic({ deck_id: "a", topic: "Weak", correct_count: 2, total_count: 10, status: "weak" }),
+        topic({ deck_id: "a", topic: "Strong", correct_count: 9, total_count: 10, next_review_at: "2026-08-01T00:00:00.000Z" }),
+        topic({ deck_id: "a", topic: "Weak", correct_count: 2, total_count: 10, next_review_at: "2026-08-01T00:00:00.000Z" }),
       ],
       now: NOW,
     });

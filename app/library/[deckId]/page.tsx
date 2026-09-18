@@ -11,7 +11,7 @@ import { useAuth } from "@/lib/useAuth";
 import { useStudy } from "@/lib/useStudy";
 import { sessionHref } from "@/lib/nextAction";
 import { MathText } from "@/app/components/ui/MathText";
-import { FlashcardDeck, type Card } from "@/app/components/app/FlashcardDeck";
+import { FlashcardDeck } from "@/app/components/app/FlashcardDeck";
 import {
   ArrowRightIcon,
   BackIcon,
@@ -67,7 +67,11 @@ export default function MaterialWorkspacePage() {
   const { snapshot, refresh } = useStudy();
   const userId = user?.id;
 
-  const [tab, setTab] = useState<TabId>("study");
+  // ?tab=cards (from "Review 7 flashcards" on Home) opens straight to a tab.
+  const [tab, setTab] = useState<TabId>(() => {
+    const requested = searchParams.get("tab");
+    return TABS.some((t) => t.id === requested) ? (requested as TabId) : "study";
+  });
   const [deck, setDeck] = useState<DeckRecord | null>(null);
   const [questions, setQuestions] = useState<QuestionRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -76,6 +80,7 @@ export default function MaterialWorkspacePage() {
   const [testSize, setTestSize] = useState(DEFAULT_TEST_SIZE);
   const [isDeleting, setIsDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -159,17 +164,6 @@ export default function MaterialWorkspacePage() {
   const summary = useMemo(
     () => snapshot.decks.find((d) => d.id === deckId) || null,
     [snapshot.decks, deckId]
-  );
-
-  const cards: Card[] = useMemo(
-    () =>
-      questions.map((q) => ({
-        id: q.id,
-        front: q.question_text,
-        back: q.correct_answer,
-        note: q.explanation,
-      })),
-    [questions]
   );
 
   const topics = useMemo(() => {
@@ -266,8 +260,10 @@ export default function MaterialWorkspacePage() {
       );
       if (!response.ok) throw new Error("delete failed");
     } catch {
+      // Said next to the button. Replacing the whole screen with an error
+      // made a set that still exists look like it had vanished.
       setIsDeleting(false);
-      setLoadError("We could not delete this. Please try again.");
+      setDeleteError("We couldn't delete this. Please try again.");
       return;
     }
 
@@ -330,8 +326,8 @@ export default function MaterialWorkspacePage() {
         >
           <CheckIcon className="h-[18px] w-[18px] shrink-0" />
           <p className="text-[14px]" style={{ color: "var(--text-1)" }}>
-            Ready. AceDecks wrote your notes, {questions.length} questions, and{" "}
-            {cards.length} flashcards.
+            Your study set is ready: notes, {questions.length} questions (each
+            answer checked before you see it), and flashcards.
           </p>
         </div>
       )}
@@ -367,7 +363,7 @@ export default function MaterialWorkspacePage() {
         })}
 
         <Link
-          href={`/vyra?about=${encodeURIComponent(deck.title)}`}
+          href={`/vyra?about=${encodeURIComponent(deck.title)}&deckId=${encodeURIComponent(deck.id)}`}
           className="ml-auto shrink-0 self-center px-3 py-2 text-[14px] font-medium"
           style={{ color: "var(--brand-text)" }}
         >
@@ -392,10 +388,10 @@ export default function MaterialWorkspacePage() {
 
             <p className="t-body mt-4">
               {mastery === null
-                ? "You have not studied this yet. AceDecks will pick what to ask you first."
+                ? "You haven't studied this yet. AceDecks starts with something you can get right, then works toward the harder questions."
                 : dueTopics.length > 0
-                  ? `${dueTopics.length} ${dueTopics.length === 1 ? "topic is" : "topics are"} ready for review. AceDecks will start there.`
-                  : "AceDecks will pick what you need next."}
+                  ? `${dueTopics.length} ${dueTopics.length === 1 ? "topic is" : "topics are"} due for review. AceDecks will start there.`
+                  : "Nothing is due. A mixed session keeps it that way, weakest topics first."}
             </p>
 
             <Link
@@ -414,7 +410,7 @@ export default function MaterialWorkspacePage() {
                 on this screen; saying an answer out loud is a different
                 shape of the same retrieval, and it goes straight into a call
                 grounded in THIS deck rather than whatever they last opened. */}
-            <div className="mt-3">
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
               <Link
                 href={`/vyra?call=1&deckId=${encodeURIComponent(deck.id)}`}
                 className="btn btn-secondary w-full sm:w-auto"
@@ -422,6 +418,14 @@ export default function MaterialWorkspacePage() {
                 <MicIcon className="h-[17px] w-[17px]" />
                 Practice out loud
               </Link>
+              {mastery !== null && (
+                <Link
+                  href={sessionHref({ deckId: deck.id, mode: "mistakes" })}
+                  className="btn btn-quiet w-full sm:w-auto"
+                >
+                  Only the ones I got wrong
+                </Link>
+              )}
             </div>
           </div>
 
@@ -518,6 +522,11 @@ export default function MaterialWorkspacePage() {
                 >
                   {isDeleting ? "Deleting…" : "Delete"}
                 </button>
+                {deleteError && (
+                  <p className="t-meta w-full" role="alert" style={{ color: "var(--bad)" }}>
+                    {deleteError}
+                  </p>
+                )}
               </div>
             ) : (
               <button
@@ -537,7 +546,7 @@ export default function MaterialWorkspacePage() {
       {/* ---- Flashcards ---- */}
       {tab === "cards" && (
         <section className="mt-6 rise">
-          <FlashcardDeck deckId={deck.id} cards={cards} />
+          <FlashcardDeck deckId={deck.id} onReviewed={refresh} />
         </section>
       )}
 
@@ -567,7 +576,7 @@ export default function MaterialWorkspacePage() {
           )}
 
           <Link
-            href={`/vyra?about=${encodeURIComponent(deck.title)}`}
+            href={`/vyra?about=${encodeURIComponent(deck.title)}&deckId=${encodeURIComponent(deck.id)}`}
             className="btn btn-secondary mt-4"
           >
             <SparkIcon className="h-[17px] w-[17px]" />
@@ -585,11 +594,15 @@ export default function MaterialWorkspacePage() {
             </p>
             <p className="t-meta mt-1">
               {Math.min(testSize, questions.length || testSize)} questions · about{" "}
-              {Math.max(4, Math.round((testSize * 45) / 60))} minutes
+              {Math.max(4, Math.round((Math.min(testSize, questions.length || testSize) * 45) / 60))} minutes · timed
+            </p>
+            <p className="t-body mt-3">
+              No hints and no answers until the end, like the real thing. Then
+              you go through every question you missed, with the reason.
             </p>
 
             <Link
-              href={sessionHref({ deckId: deck.id, mode: "practice", limit: testSize })}
+              href={sessionHref({ deckId: deck.id, mode: "test", limit: testSize })}
               className="btn btn-primary btn-lg mt-5 w-full sm:w-auto"
             >
               Start test

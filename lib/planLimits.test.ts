@@ -27,11 +27,11 @@ describe("plan limits", () => {
 
   it("summary copy describes everything as unlimited", () => {
     // The free tier is capped now, so the copy has to say so.
-    expect(FREE_PLAN_LIMIT_SUMMARY.toLowerCase()).toContain("3 knowledge maps");
+    expect(FREE_PLAN_LIMIT_SUMMARY.toLowerCase()).toContain("3 study sets");
   });
 
-  it("short copy describes everything as unlimited", () => {
-    expect(FREE_PLAN_LIMIT_SHORT.toLowerCase()).toContain("3 maps");
+  it("short copy names the monthly cap", () => {
+    expect(FREE_PLAN_LIMIT_SHORT.toLowerCase()).toContain("3 study sets");
   });
 
   it("no copy mentions a numeric daily cap", () => {

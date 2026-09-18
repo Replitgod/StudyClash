@@ -39,6 +39,8 @@ export type TopicRow = {
   last_practiced_at?: string | null;
   /** Missed-then-recovered questions. Counts as extra spaced repetitions. */
   recoveries?: number | null;
+  /** Wrong answers given while sure: misconceptions. */
+  confident_misses?: number | null;
 };
 
 export type DeckSummary = {
@@ -50,9 +52,11 @@ export type DeckSummary = {
   lastStudiedAt: string | null;
   /** 0-100. Null until the deck has been practiced at least once. */
   mastery: number | null;
-  /** Topics in this deck that are weak or due for review right now. */
+  /** Topics in this deck that are due for review right now. */
   dueTopics: string[];
   weakTopics: string[];
+  /** Flashcards in this deck whose review is due. */
+  flashcardsDue: number;
 };
 
 export type TopicSummary = {
@@ -74,6 +78,8 @@ export type TopicSummary = {
   isFading: boolean;
   /** How urgent it is to fix this, relative to every other topic. */
   priority: number;
+  /** Wrong answers given while sure. Each one is a misconception. */
+  confidentMisses: number;
 };
 
 export type CourseSummary = {
@@ -93,6 +99,10 @@ export type StudySnapshot = {
   fadingTopics: TopicSummary[];
   totalSessions: number;
   overallMastery: number | null;
+  /** Flashcard reviews due across every deck. */
+  flashcardsDue: number;
+  /** Questions answered in sessions since local midnight. */
+  answeredToday: number;
   /** True when the student has never created a deck. */
   isEmpty: boolean;
 };
@@ -106,6 +116,8 @@ export const EMPTY_SNAPSHOT: StudySnapshot = {
   fadingTopics: [],
   totalSessions: 0,
   overallMastery: null,
+  flashcardsDue: 0,
+  answeredToday: 0,
   isEmpty: true,
 };
 
@@ -118,9 +130,14 @@ export function buildSnapshot(args: {
   decks: DeckRow[];
   matches: MatchRow[];
   topics: TopicRow[];
+  /** Flashcard reviews due, by deck id. */
+  flashcardsDue?: Record<string, number>;
+  /** Local midnight, ms. Sessions after it count toward today's goal. */
+  dayStartMs?: number;
   now?: number;
 }): StudySnapshot {
   const { decks, matches, topics } = args;
+  const flashcardsDueByDeck = args.flashcardsDue ?? {};
   const now = args.now ?? Date.now();
 
   // --- Per-deck practice history -----------------------------------------
@@ -172,15 +189,19 @@ export function buildSnapshot(args: {
     );
   }
 
-  // A topic is due if the server scheduled it due, if it was flagged weak,
-  // or if the model says it has decayed past the review threshold. The
-  // union matters: the stored `next_review_at` is only recomputed when the
-  // student practices, so on its own it cannot notice a topic going stale
-  // between sessions -- which is exactly when a reminder is worth most.
+  // A topic is due if the server scheduled it due, or if the model says it
+  // has decayed past the review threshold. The union matters: the stored
+  // `next_review_at` is only recomputed when the student practices, so on
+  // its own it cannot notice a topic going stale between sessions -- which
+  // is exactly when a reminder is worth most.
+  //
+  // A weak topic is NOT due just for being weak. It used to be, which meant
+  // the topic a student had just spent ten minutes on was back at the top of
+  // Home the moment they finished: re-reading, not spacing. A weak topic
+  // gets a short interval from the schedule (hours, not days) and is still
+  // listed among the weak topics in the meantime.
   const isDueRow = (row: TopicRow) =>
-    row.status === "weak" ||
-    Date.parse(row.next_review_at) <= now ||
-    (stateByRow.get(row)?.isDue ?? false);
+    Date.parse(row.next_review_at) <= now || (stateByRow.get(row)?.isDue ?? false);
 
   const deckSummaries: DeckSummary[] = decks.map((deck) => {
     const history = historyByDeck.get(deck.id);
@@ -207,7 +228,13 @@ export function buildSnapshot(args: {
       lastStudiedAt: history?.last || null,
       mastery,
       dueTopics: deckTopics.filter(isDueRow).map((t) => t.topic),
-      weakTopics: deckTopics.filter((t) => t.status === "weak").map((t) => t.topic),
+      weakTopics: deckTopics
+        .filter((t) => {
+          const tier = stateByRow.get(t)?.tier;
+          return tier === "needs_review" || tier === "developing";
+        })
+        .map((t) => t.topic),
+      flashcardsDue: flashcardsDueByDeck[deck.id] ?? 0,
     };
   });
 
@@ -220,6 +247,10 @@ export function buildSnapshot(args: {
     .map((row) => {
       const deck = deckById.get(row.deck_id) as DeckSummary;
       const state = stateByRow.get(row) as MasteryState;
+      const confidentMisses = Math.max(0, row.confident_misses ?? 0);
+      // A misconception is worth more than an equally low score from slips:
+      // the student will not go looking for something they are sure of.
+      const misconceptionWeight = 1 + Math.min(0.5, confidentMisses * 0.15);
       return {
         topic: row.topic,
         deckId: row.deck_id,
@@ -233,7 +264,8 @@ export function buildSnapshot(args: {
         tier: state.tier,
         isDue: isDueRow(row),
         isFading: state.isFading,
-        priority: opportunityScore(state),
+        priority: opportunityScore(state, misconceptionWeight),
+        confidentMisses,
       };
     });
 
@@ -282,6 +314,13 @@ export function buildSnapshot(args: {
       .filter((t) => t.isFading)
       .sort((a, b) => a.state.retrievability - b.state.retrievability),
     totalSessions: matches.length,
+    flashcardsDue: deckSummaries.reduce((sum, d) => sum + d.flashcardsDue, 0),
+    answeredToday:
+      args.dayStartMs === undefined
+        ? 0
+        : matches
+            .filter((m) => Date.parse(m.created_at) >= (args.dayStartMs as number))
+            .reduce((sum, m) => sum + (m.total_questions || 0), 0),
     overallMastery: topicSummaries.length
       ? Math.round(
           topicSummaries.reduce((sum, t) => sum + t.mastery, 0) / topicSummaries.length
@@ -300,19 +339,28 @@ const MATCH_LIMIT = 400;
 // query returns zero rows with no error, which would silently disable every
 // review and weak-topic feature in the app. See
 // app/api/study/review-schedule/route.ts.
-async function fetchReviewSchedule(): Promise<TopicRow[]> {
+async function fetchReviewSchedule(): Promise<{
+  topics: TopicRow[];
+  flashcardsDue: Record<string, number>;
+}> {
   try {
     const response = await authFetch("/api/study/review-schedule");
-    if (!response.ok) return [];
+    if (!response.ok) return { topics: [], flashcardsDue: {} };
     const data = await response.json();
-    return Array.isArray(data.topics) ? (data.topics as TopicRow[]) : [];
+    return {
+      topics: Array.isArray(data.topics) ? (data.topics as TopicRow[]) : [],
+      flashcardsDue:
+        data.flashcardsDue && typeof data.flashcardsDue === "object"
+          ? (data.flashcardsDue as Record<string, number>)
+          : {},
+    };
   } catch {
-    return [];
+    return { topics: [], flashcardsDue: {} };
   }
 }
 
 export async function fetchSnapshot(userId: string): Promise<StudySnapshot> {
-  const [decksResult, matchesResult, topics] = await Promise.all([
+  const [decksResult, matchesResult, schedule] = await Promise.all([
     supabase
       .from("decks")
       .select("id, title, course_name, student_name, created_at")
@@ -333,6 +381,8 @@ export async function fetchSnapshot(userId: string): Promise<StudySnapshot> {
   return buildSnapshot({
     decks: (decksResult.data || []) as DeckRow[],
     matches: (matchesResult.data || []) as MatchRow[],
-    topics,
+    topics: schedule.topics,
+    flashcardsDue: schedule.flashcardsDue,
+    dayStartMs: new Date().setHours(0, 0, 0, 0),
   });
 }

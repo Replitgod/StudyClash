@@ -95,7 +95,7 @@ test("homepage FAQ structured data matches the visible FAQ and the real tiers", 
   // The retired pre-tiers claim must not come back.
   expect(joined).not.toMatch(/free and unlimited|no daily caps|no locked modes/i);
   // And the real free-plan cap must be stated.
-  expect(joined).toContain("3 knowledge maps a month");
+  expect(joined).toContain("3 study sets a month");
 
   // Every schema answer must actually appear on the page.
   for (const entry of faq.mainEntity) {

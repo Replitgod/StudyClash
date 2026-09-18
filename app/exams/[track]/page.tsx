@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { includedInProLabel, TIERS } from "@/lib/tiers";
 import { EXAM_TRACKS, findExamTrack, trackAction } from "@/lib/examCatalog";
+import { composerTrackForExam } from "@/lib/examTracks";
 import { moduleSize } from "@/lib/examBlueprint";
 import { loadExamTrackStatus } from "@/lib/server/examCatalogData";
 import { ArrowRightIcon } from "@/app/components/app/Icons";
@@ -58,6 +58,8 @@ export default async function ExamTrackPage({
     examStatus: status?.examStatus,
     publishedQuestions,
   });
+  const composerTrack = composerTrackForExam(track.slug);
+  const topicHref = composerTrack ? `/home?track=${composerTrack}` : null;
 
   return (
     <div className="app-page">
@@ -106,8 +108,8 @@ export default async function ExamTrackPage({
             </p>
             <p className="t-body mt-2">
               Marked against the same domains the real test reports on, so a
-              weak domain here is the domain you are weak in there. {TIERS.pro.tagline}{" "}
-              {includedInProLabel()}
+              weak domain here is the domain you are weak in there. Free on
+              every plan.
             </p>
 
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
@@ -115,32 +117,43 @@ export default async function ExamTrackPage({
                 {action.label}
                 <ArrowRightIcon className="h-[18px] w-[18px]" />
               </Link>
-              <Link
-                href={`/vyra?call=1&topic=${encodeURIComponent(track.name)}`}
-                className="btn btn-secondary btn-lg"
-              >
-                Talk it through with Vyra
-              </Link>
+              {topicHref && (
+                <Link href={topicHref} className="btn btn-secondary btn-lg">
+                  Practice one topic
+                </Link>
+              )}
             </div>
+            <Link
+              href={`/vyra?call=1&topic=${encodeURIComponent(track.name)}`}
+              className="t-meta mt-4 inline-block underline underline-offset-2"
+            >
+              Or talk it through with Vyra
+            </Link>
           </div>
         </section>
       ) : (
         <section className="mt-8">
           <div className="card p-5 sm:p-6">
-            <h2 className="t-section">No question bank yet</h2>
+            <h2 className="t-section">Practice by topic</h2>
             <p className="t-body mt-2">
-              There is no {track.name} bank in AceDecks today, so there is
-              nothing here to practice and this page is not going to pretend
-              otherwise. Vyra can still teach and quiz you on any {track.name}{" "}
-              topic out loud, and the board&rsquo;s own free material is the
-              right place for real questions.
+              There is no full {track.name} practice test in AceDecks yet. Name
+              any {track.name} topic and AceDecks writes original questions in
+              the {track.name} format, checks each one before you see it, and
+              brings back the ones you miss. For real past questions, use the
+              board&rsquo;s own free material.
             </p>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+              {topicHref && (
+                <Link href={topicHref} className="btn btn-primary btn-lg">
+                  Practice {track.name} by topic
+                  <ArrowRightIcon className="h-[18px] w-[18px]" />
+                </Link>
+              )}
               <Link
                 href={`/vyra?call=1&topic=${encodeURIComponent(track.name)}`}
-                className="btn btn-primary btn-lg"
+                className="btn btn-secondary btn-lg"
               >
-                Work on {track.name} with Vyra
+                Talk it through with Vyra
               </Link>
               <a
                 href={track.officialUrl}

@@ -76,7 +76,7 @@ describe("evaluateRequest", () => {
     expect(d.limitEnforced).toBe(true);
     expect(d.mapsRemaining).toBe(0);
     // A refusal that cannot explain itself is indistinguishable from a bug.
-    expect(d.reason).toMatch(/knowledge maps this month/i);
+    expect(d.reason).toMatch(/study sets this month/i);
     expect(d.upgradeUnlocks).toBe(true);
   });
 

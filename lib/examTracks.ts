@@ -24,7 +24,18 @@
 // mistake the FAQ and the homepage steps both made before they were moved
 // to shared modules.
 
-export type ExamTrackId = "sat" | "ap" | "mcat" | "lsat" | "nclex";
+export type ExamTrackId =
+  | "sat"
+  | "act"
+  | "ap"
+  | "mcat"
+  | "lsat"
+  | "nclex"
+  | "gre"
+  | "gmat"
+  | "jee"
+  | "neet"
+  | "usmle";
 
 export type ExamTrackDisplay = {
   id: ExamTrackId;
@@ -55,7 +66,7 @@ const TRACKS: Record<ExamTrackId, ExamTrackDisplay> = {
     label: "AP Exams",
     blurb: "AP-format questions, marked against AP scoring bands.",
     placeholder: "Which AP course and unit? Or paste your class notes.",
-    starters: ["AP World Unit 3", "AP Bio: cell signalling", "AP Gov: federalism"],
+    starters: ["AP World Unit 3", "AP Bio: cell signaling", "AP Gov: federalism"],
   },
   mcat: {
     id: "mcat",
@@ -78,7 +89,76 @@ const TRACKS: Record<ExamTrackId, ExamTrackDisplay> = {
     placeholder: "Which NCLEX topic? Or paste your notes.",
     starters: ["Prioritization", "Pharmacology safety", "Delegation"],
   },
+  act: {
+    id: "act",
+    label: "ACT",
+    blurb: "Questions in the enhanced ACT format: English, Math, Reading, and Science.",
+    placeholder: "Which ACT topic? Or paste a question you got wrong.",
+    starters: ["Comma rules", "Functions", "Interpreting data tables"],
+  },
+  gre: {
+    id: "gre",
+    label: "GRE",
+    blurb: "Text completion, reading, quantitative comparison, and problem solving.",
+    placeholder: "Which GRE topic? Or paste a question you got wrong.",
+    starters: ["Quantitative comparison", "Text completion", "Probability"],
+  },
+  gmat: {
+    id: "gmat",
+    label: "GMAT",
+    blurb: "GMAT Focus style: problem solving, critical reasoning, and data sufficiency.",
+    placeholder: "Which GMAT topic? Or paste a question you got wrong.",
+    starters: ["Data sufficiency", "Critical reasoning: assumptions", "Rates and work"],
+  },
+  jee: {
+    id: "jee",
+    label: "JEE Main",
+    blurb: "Physics, Chemistry and Maths at JEE Main depth, one correct option each.",
+    placeholder: "Which JEE chapter? Or paste your notes.",
+    starters: ["Rotational motion", "Chemical equilibrium", "Definite integrals"],
+  },
+  neet: {
+    id: "neet",
+    label: "NEET UG",
+    blurb: "NCERT-bound Physics, Chemistry and Biology in NEET's question formats.",
+    placeholder: "Which NEET chapter? Or paste your notes.",
+    starters: ["Human physiology: circulation", "Genetics and inheritance", "Electrochemistry"],
+  },
+  usmle: {
+    id: "usmle",
+    label: "USMLE Step 1",
+    blurb: "Clinical vignettes that test the basic science underneath.",
+    placeholder: "Which Step 1 topic? Or paste your notes.",
+    starters: ["Autonomic pharmacology", "Renal physiology", "Lysosomal storage diseases"],
+  },
 };
+
+/**
+ * Which topic-practice track an /exams page offers, by its URL slug.
+ *
+ * Every exam page can offer two things: the timed attempt out of the
+ * validated bank (when one exists), and practice on a topic the student
+ * names, written in that exam's style. The second is the only practice an
+ * exam with no bank can offer, and before this mapping existed nothing in
+ * the app linked to it at all.
+ */
+const CATALOG_TO_TRACK: Record<string, ExamTrackId> = {
+  sat: "sat",
+  act: "act",
+  ap: "ap",
+  mcat: "mcat",
+  lsat: "lsat",
+  nclex: "nclex",
+  gre: "gre",
+  gmat: "gmat",
+  "jee-main": "jee",
+  neet: "neet",
+  "usmle-step-1": "usmle",
+};
+
+export function composerTrackForExam(catalogSlug: string): ExamTrackId | null {
+  return CATALOG_TO_TRACK[catalogSlug] ?? null;
+}
 
 /** Unknown or missing ids resolve to null rather than throwing. */
 export function resolveExamTrack(id: string | null | undefined): ExamTrackDisplay | null {

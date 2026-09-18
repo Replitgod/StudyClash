@@ -22,6 +22,7 @@ export type ExamTrackSlug =
   | "lsat"
   | "nclex"
   | "gre"
+  | "gmat"
   | "jee-main"
   | "neet"
   | "usmle-step-1";
@@ -127,11 +128,21 @@ const CATALOG: ExamTrackEntry[] = [
     needsExpertReview: true,
   },
   {
+    slug: "gmat",
+    examSlug: null,
+    name: "GMAT",
+    promise:
+      "GMAT Focus style practice on any topic you name: problem solving, critical reasoning, and data sufficiency.",
+    officialLabel: "Free official practice exams, from GMAC",
+    officialUrl: "https://www.mba.com/exams/gmat-exam/prepare-for-the-exam",
+    needsExpertReview: false,
+  },
+  {
     slug: "jee-main",
     examSlug: "jee-main",
     name: "JEE Main",
     promise:
-      "Physics, Chemistry and Maths at the real +4/-1 stakes, so you practise the guessing decision, not just the content.",
+      "Physics, Chemistry and Maths at the real +4/-1 stakes, so you practice the guessing decision, not just the content.",
     officialLabel: "Official information bulletin and past papers, from NTA",
     officialUrl: "https://jeemain.nta.nic.in/",
     needsExpertReview: true,

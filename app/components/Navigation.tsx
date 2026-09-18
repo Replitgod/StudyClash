@@ -82,8 +82,8 @@ export default function Navigation() {
             style={{ color: "var(--accent-bright)" }}
           >
             {/* Not "Unlimited" -- that was true before tiers landed and is
-                not now: the free plan caps at 3 knowledge maps a month and 5
-                cards per concept (lib/tiers.ts). Promising unlimited in the
+                not now: the free plan caps at 3 study sets a month and 5
+                cards per topic (lib/tiers.ts). Promising unlimited in the
                 header while the pricing page and the hero both say "3 maps a
                 month" is the kind of contradiction a student notices at
                 exactly the wrong moment. */}

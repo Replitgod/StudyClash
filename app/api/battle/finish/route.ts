@@ -7,12 +7,14 @@ import {
   getClientIpAddress,
   hashIdentifier,
 } from "@/lib/server/apiUtils";
-import { getQuestionStatus, getReviewIntervalDays, getTopicStatus } from "@/lib/srsSchedule";
 import { recordSessionProgress } from "@/lib/server/progression";
 import { recordRatedResult, type RatedOpponent } from "@/lib/server/ratings";
-import { computeMastery } from "@/lib/mastery";
-import { gradeFromAnswer, INITIAL_SM2, reviewSm2 } from "@/lib/sm2";
-import { MASTERY_TIER_ORDER as TIER_ORDER } from "@/lib/masteryTiers";
+import {
+  recordQuestionEvidence,
+  recordTopicEvidence,
+  type Confidence,
+  type TopicDelta,
+} from "@/lib/server/studyEvidence";
 
 const CHALLENGE_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -42,7 +44,11 @@ type AnswerPayload = {
   selectedAnswer: string;
   isCorrect: boolean;
   responseTimeMs: number;
+  /** How sure the student said they were, before seeing the answer. */
+  confidence?: Confidence;
 };
+
+const CONFIDENCE_VALUES: ReadonlySet<string> = new Set(["sure", "unsure", "guess"]);
 
 type FinishBattlePayload = {
   deckId: string;
@@ -146,7 +152,10 @@ function isValidAnswerPayload(value: unknown): value is AnswerPayload {
     typeof candidate.responseTimeMs === "number" &&
     Number.isFinite(candidate.responseTimeMs) &&
     candidate.responseTimeMs >= 0 &&
-    candidate.responseTimeMs <= MAX_RESPONSE_TIME_MS
+    candidate.responseTimeMs <= MAX_RESPONSE_TIME_MS &&
+    (candidate.confidence === undefined ||
+      candidate.confidence === null ||
+      (typeof candidate.confidence === "string" && CONFIDENCE_VALUES.has(candidate.confidence)))
   );
 }
 
@@ -162,7 +171,7 @@ export async function POST(req: NextRequest) {
 
     if (!rateLimit.allowed) {
       return NextResponse.json(
-        { error: "Too many battle submissions. Please slow down and retry." },
+        { error: "Too many sessions saved at once. Wait a moment and try again." },
         {
           status: 429,
           headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
@@ -182,28 +191,28 @@ export async function POST(req: NextRequest) {
       !Array.isArray(body.answers)
     ) {
       return NextResponse.json(
-        { error: "Missing required battle results." },
+        { error: "This session was missing some results, so it could not be saved." },
         { status: 400 }
       );
     }
 
     if (!body.answers.every(isValidAnswerPayload)) {
       return NextResponse.json(
-        { error: "Battle answers were not valid." },
+        { error: "Some answers in this session could not be read, so it was not saved." },
         { status: 400 }
       );
     }
 
     if (body.totalQuestions <= 0) {
       return NextResponse.json(
-        { error: "This battle did not include a valid question count." },
+        { error: "This session had no questions to save." },
         { status: 400 }
       );
     }
 
     if (body.answers.length !== body.totalQuestions) {
       return NextResponse.json(
-        { error: "This battle was not fully completed before submission." },
+        { error: "Finish every question before saving the session." },
         { status: 400 }
       );
     }
@@ -212,7 +221,7 @@ export async function POST(req: NextRequest) {
 
     if (uniqueQuestionIds.size !== body.answers.length) {
       return NextResponse.json(
-        { error: "Duplicate answers were detected in this battle." },
+        { error: "This session answered the same question twice, so it could not be saved." },
         { status: 400 }
       );
     }
@@ -221,7 +230,7 @@ export async function POST(req: NextRequest) {
 
     if (computedCorrectAnswers !== body.correctAnswers) {
       return NextResponse.json(
-        { error: "Correct-answer totals did not match the submitted answers." },
+        { error: "Some answers could not be checked. Reload and try again." },
         { status: 400 }
       );
     }
@@ -237,7 +246,7 @@ export async function POST(req: NextRequest) {
 
     if (deckError || !deckData) {
       return NextResponse.json(
-        { error: "This deck could not be found." },
+        { error: "This study set no longer exists." },
         { status: 404 }
       );
     }
@@ -252,14 +261,14 @@ export async function POST(req: NextRequest) {
 
     if (questionsError || !questionRows) {
       return NextResponse.json(
-        { error: questionsError?.message || "Failed to validate battle questions." },
+        { error: "We could not check this session's answers. Try again." },
         { status: 500 }
       );
     }
 
     if (questionRows.length !== body.answers.length) {
       return NextResponse.json(
-        { error: "Some submitted answers did not belong to this deck." },
+        { error: "Some answers did not match this study set. Reload and try again." },
         { status: 400 }
       );
     }
@@ -278,7 +287,7 @@ export async function POST(req: NextRequest) {
 
       if (!question) {
         return NextResponse.json(
-          { error: "A submitted answer referenced an unknown question." },
+          { error: "Some answers did not match this study set. Reload and try again." },
           { status: 400 }
         );
       }
@@ -286,7 +295,7 @@ export async function POST(req: NextRequest) {
       const expectedIsCorrect = answer.selectedAnswer === question.correct_answer;
       if (expectedIsCorrect !== answer.isCorrect) {
         return NextResponse.json(
-          { error: "A submitted answer had an invalid correctness flag." },
+          { error: "Some answers could not be checked. Reload and try again." },
           { status: 400 }
         );
       }
@@ -294,7 +303,7 @@ export async function POST(req: NextRequest) {
 
     if (body.timeTakenSeconds < 0 || body.timeTakenSeconds > MAX_TIME_TAKEN_SECONDS) {
       return NextResponse.json(
-        { error: "This battle reported an invalid completion time." },
+        { error: "This session reported an impossible time, so it was not saved." },
         { status: 400 }
       );
     }
@@ -312,7 +321,7 @@ export async function POST(req: NextRequest) {
 
     if (sumResponseTimeMs > body.timeTakenSeconds * 1000 + TIME_CONSISTENCY_TOLERANCE_MS) {
       return NextResponse.json(
-        { error: "This battle's timing did not add up." },
+        { error: "This session's timing did not add up, so it was not saved." },
         { status: 400 }
       );
     }
@@ -446,7 +455,7 @@ export async function POST(req: NextRequest) {
 
     if (matchError || !matchData) {
       return NextResponse.json(
-        { error: matchError?.message || "Failed to save your match." },
+        { error: "We could not save this session. Try again." },
         { status: 500 }
       );
     }
@@ -458,17 +467,32 @@ export async function POST(req: NextRequest) {
         selected_answer: answer.selectedAnswer,
         is_correct: answer.isCorrect,
         response_time_ms: answer.responseTimeMs,
+        ...(answer.confidence ? { confidence: answer.confidence } : {}),
       }));
 
-      const { error: answersError } = await supabase
+      let { error: answersError } = await supabase
         .from("match_answers")
         .insert(answerRows);
+
+      // match_answers.confidence arrives with 20260918_02. Until it is
+      // applied, save the answers without it rather than losing the session.
+      if (answersError && body.answers.some((a) => a.confidence)) {
+        const retry = await supabase.from("match_answers").insert(
+          answerRows.map((row) => {
+            const copy: Record<string, unknown> = { ...row };
+            delete copy.confidence;
+            return copy;
+          })
+        );
+        answersError = retry.error;
+      }
 
       if (answersError) {
         await supabase.from("matches").delete().eq("id", matchData.id);
 
+        console.error("Saving session answers failed:", answersError.message);
         return NextResponse.json(
-          { error: answersError.message },
+          { error: "We could not save this session. Try again." },
           { status: 500 }
         );
       }
@@ -492,7 +516,7 @@ export async function POST(req: NextRequest) {
         .filter((id) => missedIds.has(id))
     );
 
-    // Filled in by updateTopicReviewSchedule below, and used to decide what
+    // Filled in by recordTopicEvidence below, and used to decide what
     // this session was worth.
     let topicsImproved = 0;
     let clearedReviews = false;
@@ -501,46 +525,57 @@ export async function POST(req: NextRequest) {
       ? (body.localDate as string)
       : new Date().toISOString().slice(0, 10);
 
-    try {
-      const questionTopics = new Map<string, string>();
-      for (const question of questionRows as Array<{
-        id: string;
-        topic?: string | null;
-      }>) {
-        if (question.topic) {
-          questionTopics.set(question.id, question.topic);
-        }
-      }
+    const owner = { userId: authenticatedUserId, playerName: body.playerName };
 
-      const outcome = await updateTopicReviewSchedule({
-        deckId: body.deckId,
-        userId: authenticatedUserId,
-        playerName: body.playerName,
-        answers: body.answers,
-        questionTopics,
-        recoveredQuestionIds,
-      });
-      topicsImproved = outcome.topicsImproved;
-      clearedReviews = outcome.clearedReviews;
-    } catch {
-      // topic_review_schedule may not be deployed yet.
+    const perTopic = new Map<string, TopicDelta>();
+    const topicByQuestion = new Map<string, string>();
+    for (const question of questionRows as Array<{ id: string; topic?: string | null }>) {
+      if (question.topic) topicByQuestion.set(question.id, question.topic);
+    }
+    for (const answer of body.answers) {
+      const topic = topicByQuestion.get(answer.questionId);
+      if (!topic) continue;
+      const bucket = perTopic.get(topic) || { correct: 0, total: 0, recoveries: 0, confidentMisses: 0 };
+      bucket.total += 1;
+      if (answer.isCorrect) bucket.correct += 1;
+      // A recovery does not turn the miss into a hit -- the student still got
+      // it wrong first, and mastery should keep saying so. It is recorded
+      // alongside as separate evidence that the explanation worked.
+      if (!answer.isCorrect && recoveredQuestionIds.has(answer.questionId)) bucket.recoveries += 1;
+      if (!answer.isCorrect && answer.confidence === "sure") bucket.confidentMisses += 1;
+      perTopic.set(topic, bucket);
     }
 
-    // Best-effort: same idea as the topic-level schedule above, but tracked
-    // per individual question (question_review_schedule) so weak-topic
-    // rematch can target the exact questions a student is missing instead
-    // of "anything tagged with this topic label." See getQuestionStatus in
-    // lib/srsSchedule.ts.
-    try {
-      await updateQuestionReviewSchedule({
+    // Both schedules in parallel, each one read and a batch of writes. They
+    // are best-effort: the match itself is already saved above.
+    const [topicOutcome] = await Promise.allSettled([
+      recordTopicEvidence(supabase, {
+        owner,
         deckId: body.deckId,
-        userId: authenticatedUserId,
-        playerName: body.playerName,
-        answers: body.answers,
-        recoveredQuestionIds,
-      });
-    } catch {
-      // question_review_schedule may not be deployed yet.
+        perTopic,
+        session: "new",
+      }),
+      recordQuestionEvidence(supabase, {
+        owner,
+        deckId: body.deckId,
+        answers: body.answers.map((answer) => ({
+          questionId: answer.questionId,
+          isCorrect: answer.isCorrect,
+          responseTimeMs: answer.responseTimeMs,
+          confidence: answer.confidence ?? null,
+          recovered: recoveredQuestionIds.has(answer.questionId),
+        })),
+      }),
+    ]);
+
+    if (topicOutcome.status === "fulfilled") {
+      topicsImproved = topicOutcome.value.topicsImproved;
+      clearedReviews = topicOutcome.value.clearedReviews;
+    } else {
+      console.error(
+        "Recording topic evidence failed:",
+        topicOutcome.reason instanceof Error ? topicOutcome.reason.message : topicOutcome.reason
+      );
     }
 
     let crownTaken = false;
@@ -663,7 +698,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("Failed to finish battle:", error instanceof Error ? error.message : error);
-    return NextResponse.json({ error: "Failed to finish battle. Please try again." }, { status: 500 });
+    return NextResponse.json({ error: "We could not save this session. Try again." }, { status: 500 });
   }
 }
 
@@ -676,240 +711,4 @@ function didBeatMatch(args: {
   if (score > previous.score) return true;
   if (score < previous.score) return false;
   return timeTakenSeconds < previous.time_taken_seconds;
-}
-
-// Rolls this match's per-topic results into topic_review_schedule: a
-// cumulative correct/total count per (owner, deck, topic) drives the same
-// weak/improving/mastered thresholds and interval math as Mastery Map (see
-// lib/srsSchedule.ts), so the async reminder cron agrees with what the
-// student sees on that dashboard. Read-then-write rather than an atomic
-// upsert -- battle finish isn't a high-concurrency path (one write per
-// student per completed battle), so this stays simple.
-async function updateTopicReviewSchedule(args: {
-  deckId: string;
-  userId: string | null;
-  playerName: string;
-  answers: AnswerPayload[];
-  questionTopics: Map<string, string>;
-  recoveredQuestionIds: Set<string>;
-}): Promise<{ topicsImproved: number; clearedReviews: boolean }> {
-  const { deckId, userId, playerName, answers, questionTopics, recoveredQuestionIds } = args;
-
-  const perTopic = new Map<
-    string,
-    { correct: number; total: number; recoveries: number }
-  >();
-  for (const answer of answers) {
-    const topic = questionTopics.get(answer.questionId);
-    if (!topic) continue;
-    const bucket = perTopic.get(topic) || { correct: 0, total: 0, recoveries: 0 };
-    bucket.total += 1;
-    if (answer.isCorrect) bucket.correct += 1;
-    // A recovery does not turn the miss into a hit -- the student still got
-    // it wrong first, and mastery should keep saying so. It is recorded
-    // alongside as separate evidence that the explanation worked.
-    if (!answer.isCorrect && recoveredQuestionIds.has(answer.questionId)) {
-      bucket.recoveries += 1;
-    }
-    perTopic.set(topic, bucket);
-  }
-
-  if (perTopic.size === 0) return { topicsImproved: 0, clearedReviews: false };
-
-  const nowMs = Date.now();
-  const nowIso = new Date(nowMs).toISOString();
-
-  // A topic that moved up a mastery tier this session is the single thing
-  // most worth rewarding -- it is the difference between practicing and
-  // improving. Counted here because this is the only place that sees both
-  // the before and after state.
-  let topicsImproved = 0;
-  let clearedReviews = false;
-
-  for (const [topic, delta] of perTopic.entries()) {
-    let existingQuery = supabase
-      .from("topic_review_schedule")
-      .select(
-        "id, correct_count, total_count, attempts, recoveries, last_practiced_at, next_review_at"
-      )
-      .eq("deck_id", deckId)
-      .eq("topic", topic);
-
-    existingQuery = userId
-      ? existingQuery.eq("user_id", userId)
-      : existingQuery.is("user_id", null).eq("player_name", playerName);
-
-    const { data: existing } = await existingQuery.maybeSingle();
-
-    const correctCount = (existing?.correct_count || 0) + delta.correct;
-    const totalCount = (existing?.total_count || 0) + delta.total;
-    const attempts = (existing?.attempts || 0) + 1;
-    const recoveries = (existing?.recoveries || 0) + delta.recoveries;
-    const accuracy = totalCount > 0 ? (correctCount / totalCount) * 100 : 0;
-    const status = getTopicStatus(accuracy);
-    const intervalDays = getReviewIntervalDays(status, attempts);
-    const nextReviewAt = new Date(nowMs + intervalDays * 24 * 60 * 60 * 1000).toISOString();
-
-    if (existing?.next_review_at && Date.parse(existing.next_review_at) <= nowMs) {
-      clearedReviews = true;
-    }
-
-    const tierBefore = computeMastery({
-      correct: existing?.correct_count || 0,
-      total: existing?.total_count || 0,
-      sessions: existing?.attempts || 0,
-      recoveries: existing?.recoveries || 0,
-      lastPracticedMs: existing?.last_practiced_at
-        ? Date.parse(existing.last_practiced_at)
-        : null,
-      now: nowMs,
-    }).tier;
-
-    const tierAfter = computeMastery({
-      correct: correctCount,
-      total: totalCount,
-      sessions: attempts,
-      recoveries,
-      lastPracticedMs: nowMs,
-      now: nowMs,
-    }).tier;
-
-    if (TIER_ORDER.indexOf(tierAfter) > TIER_ORDER.indexOf(tierBefore)) {
-      topicsImproved += 1;
-    }
-
-    const row = {
-      user_id: userId,
-      player_name: userId ? null : playerName,
-      deck_id: deckId,
-      topic,
-      status,
-      correct_count: correctCount,
-      total_count: totalCount,
-      attempts,
-      recoveries,
-      last_practiced_at: nowIso,
-      next_review_at: nextReviewAt,
-      notified_at: null,
-      updated_at: nowIso,
-    };
-
-    if (existing?.id) {
-      await supabase.from("topic_review_schedule").update(row).eq("id", existing.id);
-    } else {
-      await supabase.from("topic_review_schedule").insert(row);
-    }
-  }
-
-  return { topicsImproved, clearedReviews };
-}
-
-// Per-question sibling of updateTopicReviewSchedule above. Status comes
-// from a correct-streak (getQuestionStatus), not accuracy -- a single
-// question's accuracy over a handful of attempts is too noisy to threshold
-// the way topic-level cumulative accuracy can. Interval growth reuses the
-// same getReviewIntervalDays math the topic schedule uses. Same
-// read-then-write justification as the topic version: one write per
-// student per completed battle, bounded by questions-per-battle.
-async function updateQuestionReviewSchedule(args: {
-  deckId: string;
-  userId: string | null;
-  playerName: string;
-  answers: AnswerPayload[];
-  recoveredQuestionIds: Set<string>;
-}): Promise<void> {
-  const { deckId, userId, playerName, answers, recoveredQuestionIds } = args;
-
-  if (answers.length === 0) return;
-
-  const nowMs = Date.now();
-  const nowIso = new Date(nowMs).toISOString();
-
-  // This student's own pace this session, used to turn "correct" into an
-  // SM-2 grade. A global constant would mark a deliberate thinker down on
-  // every card.
-  const timed = answers.map((a) => a.responseTimeMs).filter((ms) => ms > 0);
-  const baselineResponseMs =
-    timed.length >= 3 ? timed.reduce((sum, ms) => sum + ms, 0) / timed.length : null;
-
-  for (const answer of answers) {
-    let existingQuery = supabase
-      .from("question_review_schedule")
-      .select(
-        "id, correct_streak, correct_count, total_count, recoveries, ease_factor, interval_days, repetitions"
-      )
-      .eq("deck_id", deckId)
-      .eq("question_id", answer.questionId);
-
-    existingQuery = userId
-      ? existingQuery.eq("user_id", userId)
-      : existingQuery.is("user_id", null).eq("player_name", playerName);
-
-    const { data: existing } = await existingQuery.maybeSingle();
-
-    const correctStreak = answer.isCorrect
-      ? (existing?.correct_streak || 0) + 1
-      : 0;
-    const correctCount = (existing?.correct_count || 0) + (answer.isCorrect ? 1 : 0);
-    const totalCount = (existing?.total_count || 0) + 1;
-    const recoveries =
-      (existing?.recoveries || 0) +
-      (!answer.isCorrect && recoveredQuestionIds.has(answer.questionId) ? 1 : 0);
-    const status = getQuestionStatus(correctStreak);
-
-    // SM-2 now sets the schedule (lib/sm2.ts). The grade is derived from
-    // correctness and how long the answer took relative to this student's
-    // own pace, because SM-2 assumes a 0-5 self-rating the app cannot ask
-    // for on every card without wrecking the session.
-    //
-    // A recovered question is graded as a pass, not a lapse: the student
-    // did fix it, and scheduling it as if they had not would bury the
-    // recovery loop's whole benefit.
-    const wasRecovered = recoveredQuestionIds.has(answer.questionId);
-    const grade = gradeFromAnswer({
-      isCorrect: answer.isCorrect || wasRecovered,
-      responseMs: answer.responseTimeMs,
-      baselineMs: baselineResponseMs,
-      usedHelp: wasRecovered,
-    });
-
-    const sm2 = reviewSm2(
-      {
-        intervalDays: existing?.interval_days ?? INITIAL_SM2.intervalDays,
-        easeFactor: existing?.ease_factor ?? INITIAL_SM2.easeFactor,
-        repetitions: existing?.repetitions ?? INITIAL_SM2.repetitions,
-        lastReviewedMs: nowMs,
-      },
-      grade,
-      nowMs
-    );
-
-    const nextReviewAt = new Date(
-      nowMs + sm2.intervalDays * 24 * 60 * 60 * 1000
-    ).toISOString();
-
-    const row = {
-      user_id: userId,
-      player_name: userId ? null : playerName,
-      deck_id: deckId,
-      question_id: answer.questionId,
-      status,
-      correct_streak: correctStreak,
-      correct_count: correctCount,
-      total_count: totalCount,
-      recoveries,
-      ease_factor: sm2.easeFactor,
-      interval_days: sm2.intervalDays,
-      repetitions: sm2.repetitions,
-      last_practiced_at: nowIso,
-      next_review_at: nextReviewAt,
-      updated_at: nowIso,
-    };
-
-    if (existing?.id) {
-      await supabase.from("question_review_schedule").update(row).eq("id", existing.id);
-    } else {
-      await supabase.from("question_review_schedule").insert(row);
-    }
-  }
 }
